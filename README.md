@@ -1,4 +1,4 @@
-#Time Series Data Library
+# Time Series Data Library
 This library provides general utility methods for working with 
 time series datasets, which are stored as Xarray Dataset objects.
 In particular, it will provide declarative methods for being able
