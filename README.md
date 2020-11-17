@@ -32,5 +32,5 @@ https://www.anaconda.com/download/#
 
 ## 3) Create Anaconda Environment
 ```bash
-conda create -n mhkit_act_env -c conda-forge python=3.7 act-atmos
+conda create -n mhkit_act_env -c conda-forge python=3.8 act-atmos
 ```
