@@ -34,3 +34,15 @@ https://www.anaconda.com/download/#
 ```bash
 conda create -n mhkit_act_env -c conda-forge python=3.7 act-atmos
 ```
+
+## 4) OR Activate Existing Anaconda Environment
+```bash
+conda activate mhkit_act_env
+```
+
+## 5) Add cfunits to the conda env
+From the Anaconda prompt:
+```bash
+conda install -c conda-forge cfunits
+```
+TODO: create our own conda bundle for tsdat

@@ -107,7 +107,7 @@ class TimeSeriesDataset:
             qc_var.attrs.clear()  # clear old values
             qc_var.name = qc_var_name # rename it
             qc_var.attrs['data_type'] = 'int'
-            # add standard_name attr so it will be compatible with act plotting tools
+            # add standard_name attr so it will be compatible with act plotting tools & ARM recommendations
             qc_var.attrs['standard_name'] = 'quality_flag'
             self.xr[qc_var_name] = qc_var
 
@@ -264,3 +264,5 @@ class TimeSeriesDataset:
         else:
             plt.show()
 
+
+#TODO: Maybe we need a method to be able to quickly dump out a summary of the list of problems with the data.
