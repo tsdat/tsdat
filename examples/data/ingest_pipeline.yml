@@ -1,0 +1,142 @@
+pipeline:
+  title: buoy data
+  description: 
+  location_id: buoy
+  instrument_id: z05
+  temporal: 
+  qualifier: 
+  location_description: 
+  data_level: b1
+  instrument_name: 
+  serial_number: 
+  instrument_description:
+  instrument_manufacturer: 
+  references: 
+  institution: 
+
+---
+output_dataset:
+  # Define the dimensions/coordinates in your output xarray Dataset
+  dimensions:
+    time:
+        length: "unlimited"
+
+  # Define the variables in your output xarray Dataset
+  variables:
+    time:
+      source:
+        name: "Date Time, GMT -0700"
+        units: "seconds since 1970-01-01T00:00:00 -0700"
+      dimensions: [time]
+      type: int64 # Required to meet cf standards (I'm not sure if this is right)
+
+      attrs:
+        long_name: Time offset from epoch
+        standard_name: time
+
+        # Note:  CF Standards require this exact format:
+        # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/ch04s04.html
+        units: "seconds since 1970-01-01T00:00:00"
+
+    temp_mean:
+      source:
+        name: ""
+        units: ""
+      dimensions: [time]
+      type: float
+
+      attrs:
+        long_name: "Mean temperature"
+        units: degC
+        valid_delta: 10
+        valid_range: [-60, 30]
+        _FillValue: -9999
+
+    vapor_pressure_mean:
+      source:
+        name: ""
+        units: ""
+      dimensions: [time]
+      type: float
+
+      attrs:
+        long_name: "Vapor pressure mean, calculated"
+        units: kPa
+        valid_delta: 1
+        valid_range: [0.001, 4.3]
+        _FillValue: -9999
+
+    derived_variable:
+      # Example of a variable that gets created in code, it would have no source
+      dimensions: [time]
+      type: float
+
+      attrs:
+        long_name: "Vapor pressure mean, calculated"
+        units: kPa
+        valid_delta: 1
+        valid_range: [0.001, 4.3]
+        _FillValue: -9999
+
+---
+qc:
+  tests:
+      # TODO: take out coordinate variable tests from default template as they should be
+      # included by default.  But user could specify them here to override.
+      validate_time:  # label that can be used to reference this test in API methods
+        description: "Time is missing or invalid."
+        variables: # Variables for which to apply this test
+          - time
+
+        operators:  # Can list multiple operators - executed in sequence
+          tsdat.qc.operators.CheckMissing:
+          tsdat.qc.operators.CheckMonotonic:
+            direction: increasing    # Each operator can include any arbitrary list of parameters
+            interval: 60             # For now this is in seconds - later we can specify units
+
+        error_handlers: # Can list multiple error handlers - executed in sequence
+          tsdat.qc.error_handlers.Fail:  # if test fails, pipeline will fail
+
+      missing:
+          qc_bit: 1
+          description: "Value is equal to _FillValue or NaN"
+          assessment: Bad
+          variables:
+            - ALL  # keyword to apply test to all variables
+          operators:
+            tsdat.qc.operators.CheckMissing:
+
+      valid_min:
+          qc_bit: 2
+          description: "Value is less than the valid_range."
+          assessment: Bad
+          variables:
+            - ALL
+          operators:
+            tsdat.qc.operators.CheckValidMin:
+          error_handlers:
+            tsdat.qc.error_handlers.ReplaceMissing:  # if test fails, replace with missing_value
+
+      valid_max:
+          qc_bit: 3
+          description: "Value is greater than the valid_range."
+          assessment: Bad
+          variables:
+            - ALL
+          operators:
+            tsdat.qc.operators.CheckValidMax:
+          error_handlers:
+            tsdat.qc.error_handlers.ReplaceMissing:  # if test fails, replace with missing_value
+
+      valid_delta:
+          qc_bit: 4
+          description: "Difference between current and previous values exceeds valid_delta."
+          assessment: Indeterminate
+          variables:
+            - ALL
+          operators:
+            tsdat.qc.operators.CheckValidDelta:
+
+          # Error handlers are optional
+          # error_handlers:
+          
