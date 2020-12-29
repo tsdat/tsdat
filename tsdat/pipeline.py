@@ -67,10 +67,32 @@ class IngestPipeline(Pipeline):
             List[str]:  A list of complete paths to the unzipped files or 
                         `[filepath]` if `filepath` is not a .zip file.
         -------------------------------------------------------------------"""        
-        pass
+        if not filepath.endswith(".zip"):
+            if os.path.isfile(filepath):
+                return [filepath]
+            raise ValueError("filepath must be a .zip archive or a file")
+        # If target_dir not provided, make it be the parent directory of the 
+        # filepath provided
+        if not target_dir:
+            loc = filepath.rfind("/")
+            if loc != -1:
+                target_dir = filepath[:loc]
+            else:
+                target_dir = "."
+        # Extract into a temporary folder in the target_dir
+        temp_dir = f"{target_dir}/.unzipped"
+        os.makedirs(temp_dir, exist_ok=False)
+        with zipfile.ZipFile(filepath, 'r') as zipped:
+            zipped.extractall(temp_dir)
+        # Move files from temp_dir into target_dir and remove temp_dir
+        filenames = os.listdir(temp_dir)
+        temp_paths = [os.path.join(temp_dir,   file) for file in filenames]
+        new_paths  = [os.path.join(target_dir, file) for file in filenames]
+        for temp_path, new_path in zip(temp_paths, new_paths):
+            shutil.move(temp_path, new_path)
+        os.rmdir(temp_dir)
+        return new_paths
     
-    # Rename the local files to standard name for raw data
-    # and return the list of renamed files
     def rename_raw_files(self, file_paths: List[str]) -> List[str]:
         """-------------------------------------------------------------------
         Renames the provided RAW files according to MHKiT-Cloud Data Standards 
@@ -83,7 +105,15 @@ class IngestPipeline(Pipeline):
         Returns:
             List[str]: A list of paths to the renamed raw files.
         -------------------------------------------------------------------"""    
-        pass
+        renamed = []
+        for file_path in file_paths:
+            datastream_name = self.get_datastream_name()[:-2] + "00"
+            date = self.get_datastream_date(file_path)
+            time = self.get_datastream_time(file_path)
+            new_path = f"{datastream_name}.{date}.{time}.raw.{file_path}"
+            shutil.rename(file_path, new_path)
+            renamed.append(new_path)
+        return renamed
         
     def read_input(self, file_paths: List[str]) -> xr.Dataset:
         """-------------------------------------------------------------------
