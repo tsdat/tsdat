@@ -1,35 +1,87 @@
-from abc import abstractmethod
 import os
-import xarray
-import pandas
+import abc
 import yaml
+import pandas
+import functools
 import numpy as np
+import xarray as xr
+from typing import List
 from tsdat import TimeSeriesDataset, Config
 
+FILEHANDLERS = dict()
 
-class FileHandler:
+def register_filehandler(file_extension: str):
+    """-----------------------------------------------------------------------
+    Python decorator to register a class in the FILEHANDLERS dictionary. This
+    dictionary will be used by the MHKiT-Cloud pipeline to read and write raw,
+    intermediate, and processed data, as well as in the DatastreamStorage 
+    class to store the final output dataset.
 
-    @abstractmethod
-    def write(self, ds: TimeSeriesDataset, filename: str, **kwargs):
+    Example Usage:
+    ```
+    @register_filehandler([".nc", ".cdf"])
+    class NetCdfHandler(FileHandler):
+        def write(self, dataset, filename):
+            pass
+        def read(self, filename, config):
+            pass
+    ```
+
+    Args:
+        file_extension (str):   The file extension that the FileHandler should
+                                be used to read from and write to files ending
+                                in this extension. This can also be provided 
+                                as a list if multiple file extensions are used
+                                for the same type of file.        
+    -----------------------------------------------------------------------"""
+    def decorator_register(func):
+        if isinstance(file_extension, List):
+            for ext in file_extension:
+                FILEHANDLERS[ext] = func
+        else:
+            FILEHANDLERS[file_extension] = func
+        @functools.wraps(func)
+        def wrapper_register(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper_register
+    return decorator_register
+
+
+class FileHandler(abc.ABC):
+
+    @abc.abstractmethod
+    def write(self, ds: TimeSeriesDataset, filename: str, **kwargs) -> None:
         """
-        Save the given dataset to file
-        :param ds: The dataset to save
-        :param filename: An absolute or relative path to the file including filename
-        """
+        Classes derived from the FileHandler class must implement this method.
+        ----------------------------------------------------------------------
+        Saves the given dataset to file.
+
+        Args:
+            ds (TimeSeriesDataset): The dataset to save.
+            filename (str): An absolute or relative path to the file including
+                            filename.
+        -------------------------------------------------------------------"""
         pass
 
-    @abstractmethod
-    def read(self, filename: str, config: Config = None, **kwargs):
+    @abc.abstractmethod
+    def read(self, filename: str, config: Config = None, **kwargs) -> TimeSeriesDataset:
         """
-         Read the given file into a TimeSeriesDataset
-        :param filename:
-        :param config: optional tsdat Config
-        :return: The dataset
-        :rtype: TimeSeriesDataset
-        """
+        Classes derived from the FileHandler class must implement this method.
+        ----------------------------------------------------------------------
+        This method reads the given file into a TimeSeriesDataset object.
+
+        Args:
+            filename (str): The path to the file to read in.
+            config (Config, optional):  Optional Config object. Defaults to 
+                                        None.
+
+        Returns:
+            TimeSeriesDataset: A TimeSeriesDataset object
+        -------------------------------------------------------------------"""
         pass
 
 
+@register_filehandler([".nc", ".cdf"])
 class NetCdfHandler(FileHandler):
 
     def write(self, ds: TimeSeriesDataset, filename: str, **kwargs):
@@ -38,10 +90,11 @@ class NetCdfHandler(FileHandler):
     def read(self, filename: str, config: Config = None):
         # TODO: need to have TimeSeriesDataset close the file automatically if user
         #  uses "with" - add a resource manager api
-        ds_disk = xarray.open_dataset(filename)
+        ds_disk = xr.open_dataset(filename)
         return TimeSeriesDataset(ds_disk, config)
 
 
+@register_filehandler(".csv")
 class CsvHandler(FileHandler):
 
     def write(self, ds: TimeSeriesDataset, filename: str, **kwargs):
@@ -92,7 +145,7 @@ class CsvHandler(FileHandler):
     def variable_to_dict(ds: TimeSeriesDataset, variable_name):
         var_dict = {}
         attributes = {}
-        variable: xarray.DataArray = ds.get_var(variable_name)
+        variable: xr.DataArray = ds.get_var(variable_name)
 
         # First save the attributes
         for attr in variable.attrs:
