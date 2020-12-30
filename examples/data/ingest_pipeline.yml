@@ -1,8 +1,8 @@
 pipeline:
   title: buoy data
   description: 
-  location_id: buoy
-  instrument_id: z05
+  location_id: z05
+  instrument_id: buoy
   temporal: 
   qualifier: 
   location_description: 
