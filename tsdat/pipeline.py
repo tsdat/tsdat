@@ -3,8 +3,10 @@ import abc
 import shutil
 import zipfile
 import xarray as xr
-from typing import List
-from tsdat import Config, DatastreamStorage
+from typing import List, Tuple
+from tsdat.config import Config
+from tsdat.io.storage import DatastreamStorage
+from tsdat.io.file_handlers import FILEHANDLERS
 
 
 class Pipeline(abc.ABC):
@@ -108,39 +110,45 @@ class IngestPipeline(Pipeline):
         renamed = []
         for file_path in file_paths:
             datastream_name = self.get_datastream_name()[:-2] + "00"
-            date = self.get_datastream_date(file_path)
-            time = self.get_datastream_time(file_path)
+            date, time = self.get_start_date_time(file_path)
             new_path = f"{datastream_name}.{date}.{time}.raw.{file_path}"
             shutil.rename(file_path, new_path)
             renamed.append(new_path)
         return renamed
-        
+    
     def read_input(self, file_paths: List[str]) -> xr.Dataset:
         """-------------------------------------------------------------------
-        Concatenates data from a number of file paths into an xarray dataset 
-        and returns the xarray dataset. The input files can have any file 
-        extension so long as a FileReader for that file type has been 
+        Merges data from a number of file paths into an xarray dataset and
+        returns the xarray dataset. The input files can have any file 
+        extension so long as a FileReader for that extension has been 
         registered.
 
         Args:
-            file_paths (List[str]): A list of paths to input files
+            file_paths (List[str]): A list of paths to raw input files. Can be
+                                    provided as a string if there is only one 
+                                    raw file to read in.
         
+        Raises:
+            KeyError:   Raises a KeyError if no FileHandler has been
+                        registered for the extension of any raw files in 
+                        `file_paths`.
+
         Returns:
             xr.Dataset: An xarray dataset containing the raw input data. No 
                         qc, corrections, or standard format check/controls 
                         have been applied.
         -------------------------------------------------------------------"""
+        if isinstance(file_paths, str):
+            file_paths = [file_paths]
+        merged_dataset = xr.Dataset()
         for file_path in file_paths:
-            
-            # Our reader/writer registry should be smart enough
-            # to infer the format from the file extension.
-            # If there is no reader defined for the given file ext,
-            # then raise an error.
-            
-            # Read each file into the same xarray dataset
-            pass
-        
-        # return xarray dataset
+            _, ext = os.path.splitext(file_path)
+            if ext not in FILEHANDLERS:
+                raise KeyError(f"no FileHandler for extension: {ext}")
+            handler = FILEHANDLERS[ext]
+            dataset = handler.read(file_path, self.config)
+            merged_dataset = xr.merge([merged_dataset, dataset])            
+        return merged_dataset
     
     def standardize_dataset(self, raw_dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
@@ -155,14 +163,8 @@ class IngestPipeline(Pipeline):
         Returns:
             xr.Dataset: The standardized dataset.
         -------------------------------------------------------------------"""
-        # Use the config object to map the raw dataset variable names
-        # to the output dataset.
-        # Make sure the output dataset conforms to CF standards.
-        # For each variable in the output dataset, convert to the 
-        # standard units defined in the config.add()
-        
-        # Return the output dataset
-        pass
+        # TODO: write this method
+        return raw_dataset
     
     def apply_corrections(self, dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
@@ -178,13 +180,8 @@ class IngestPipeline(Pipeline):
         Returns:
             xr.Dataset: The input xarray dataset with corrections applied.
         -------------------------------------------------------------------"""
-        # This is a placeholder hook that can be used to 
-        # apply standard corrections for the instrument/measurement or calibrations.
-        # It can also be used to insert any derived properties
-        # into the dataset.
-        
-        # Return the dataset with corrections/calibrations applied
-        pass
+        # TODO: write this method
+        return dataset
     
         
     def qc_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
@@ -199,10 +196,8 @@ class IngestPipeline(Pipeline):
         Returns:
             xr.Dataset: The input xarray dataset with qc checks applied.
         -------------------------------------------------------------------"""
-        # Apply the qc tests defined in the config
-        # Some qc tests (such as on a coordinate variable),
-        # may raise an exception, causing the pipeline to fail.
-        pass
+        # TODO: write this method
+        return dataset
     
     def merge_existing_data(self, dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
@@ -219,10 +214,8 @@ class IngestPipeline(Pipeline):
             xr.Dataset: The input xarray dataset merged with existing data for
                         the same processed day.
         -------------------------------------------------------------------"""
-        # See if some data already exists in Storage for the same day
-        # If so, then we need to pull in the remote data and merge with
-        # our new data.
-        pass
+        # TODO: write this method
+        return dataset
         
     def store_dataset(self, dataset: xr.Dataset) -> None:
         """-------------------------------------------------------------------
@@ -232,13 +225,14 @@ class IngestPipeline(Pipeline):
         Args:
             dataset (xr.Dataset): The dataset to store.
         -------------------------------------------------------------------"""
-        # This method should write the dataset to a local netcdf file
-        # and then use the DatastreamStorage object to persist it.
-        # The file path should be automatically determined from the config
+        # TODO: write to a better location locally
+        local_path = f".{self.get_datastream_name()}.temp.nc"
         dataset_file_path = self.get_dataset_filepath(dataset)
-        pass
+        dataset.to_netcdf(local_path)
+        self.storage.save(local_path, dataset_file_path)
+        os.remove(local_path)
 
-    def store_raw(raw_file_paths: List[str]) -> None:
+    def store_raw(self, raw_file_paths: List[str]) -> None:
         """-------------------------------------------------------------------
         Uses the DatastreamStorage object to persist the raw "00"-level files.
 
@@ -247,11 +241,8 @@ class IngestPipeline(Pipeline):
                                         store.
         -------------------------------------------------------------------"""
         for file_path in raw_file_paths:
-            pass
-            # Our reader/writer registry should be smart enough
-            # to infer the format from the file extension.
-            # If there is no reader defined for the given file ext,
-            # then raise an error.
+            self.storage.save(file_path, file_path)
+        return
     
     def get_dataset_filepath(self, dataset: xr.Dataset) -> str:
         """-------------------------------------------------------------------
@@ -271,7 +262,25 @@ class IngestPipeline(Pipeline):
         # name to generate a file path relative to the 
         # storage root
         datastream_name = self.get_datastream_name()
-        
+
+    def get_dataset_filename(self, dataset: xr.Dataset) -> str:
+        """-------------------------------------------------------------------
+        Given an xarray dataset this function will return the base filename of
+        the dataset according to MHkiT-Cloud data standards. The base filename 
+        does not include the directory structure where the file should be 
+        saved, only the name of the file itself, e.g.
+        z05.ExampleBuoyDatastream.b1.20201230.000000.nc
+
+        Args:
+            dataset (xr.Dataset):   The dataset whose filename should be 
+                                    generated.
+
+        Returns:
+            str: The base filename of the dataset.
+        -------------------------------------------------------------------"""
+        # TODO: write this method
+        return ""
+     
     def get_datastream_name(self) -> str:
         """-------------------------------------------------------------------
         Uses the config pipeline parameters to autogenerate the datastream 
@@ -280,38 +289,65 @@ class IngestPipeline(Pipeline):
         Returns:
             str: The datastream name.
         -------------------------------------------------------------------"""
-        # Use the config pipeline parameters to auto generate the
-        # datastream name
-        pass
+        # TODO: move this to Config
+        loc_id = self.config.pipeline["location_id"]
+        instr_id = self.config.pipeline["instrument_id"]
+        qualifier = self.config.pipeline["qualifier"]
+        temporal = self.config.pipeline["temporal"]
+        data_level = self.config.pipeline["data_level"]
+        return f"{loc_id}.{instr_id}{qualifier}{temporal}.{data_level}"
     
-    def get_datastream_date(self, filepath: str) -> str:
+    def get_start_date_time(self, filepath: str) -> Tuple[str, str]:                
         """-------------------------------------------------------------------
         Given the path to a raw "00"-level file, this function returns the 
-        date (yyyymmdd) pertaining to the first time sample in the file.
+        date (yyyymmdd) and time (hhmmss) pertaining to the first time sample
+        in the file.
 
         Args:
             filepath (str): The path to a raw file.
 
         Returns:
-            str:    The date of the first point in the file, in 'yyyymmdd' 
-                    format.
+            Tuple[str, str]:    A 2-tuple of the timestamp of the first point
+                                in the file with date (yyyymmdd) first and 
+                                time (hhmmss) second.
         -------------------------------------------------------------------"""
-        # Use the config pipeline parameters and the filepath 
-        # to retrieve the date from the filepath
-        pass
-
-    def get_datastream_time(self, filepath: str) -> str:
+        # Use the filepath and the appropriate filereader to open the raw file
+        # and read the value of the first time sample in the file. The config
+        # pipeline parameters will also need to be used to get the source name
+        # and units of the time variable in the raw file. The date/time 
+        # returned should be in UTC.
+        # TODO: write this method
+        return "99999999", "999999"
+    
+    def organize_files(self, file_paths: List[str]) -> List[str]:
         """-------------------------------------------------------------------
-        Given the path to a raw "00"-level file, this function returns the 
-        time (hhmmss) pertaining to the first time sample in the file.
+        Given a list of paths to files with filenames consistent with
+        MHKiT-Cloud data standards naming conventions for RAW or processed 
+        data, this method will move the provided files to the correct location
+        on the local filesystem and return their new paths.
 
         Args:
-            filepath (str): The path to a raw file.
+            file_paths (List[str]): A list of paths to file. Can
+                                                be a string if only one file
+                                                is to be organized.
 
         Returns:
-            str:    The time of the first point in the file, in 'hhmmss'
-                    format.
+            List[str]: A list of paths to the organized files.
         -------------------------------------------------------------------"""
-        # Use the config pipeline parameters and the filepath 
-        # to retrieve the time from the filepath
-        pass
+        if isinstance(file_paths, str):
+            file_paths = [file_paths]
+        organized_filepaths = []
+        for filepath in file_paths:
+            if not os.path.isfile(filepath):
+                raise ValueError(f"\"{filepath}\" is not a file")
+            _, filename = os.path.split(filepath)
+            components = filename.split(".")
+            location_id = components[0]
+            datastream_name = components[:3]
+            new_dir = f"/data/{location_id}/{datastream_name}"
+            new_filepath = os.path.join(new_dir, filename)
+            os.makedirs(new_dir)
+            shutil.move(filepath, new_filepath)
+            organized_filepaths.append(new_filepath)
+        return organized_filepaths
+
