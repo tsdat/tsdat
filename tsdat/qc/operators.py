@@ -1,15 +1,15 @@
-from abc import abstractmethod
+import abc
 import numpy as np
 from typing import List, Dict, Any
 from tsdat import TimeSeriesDataset
 
 
-class QCOperator:
+class QCOperator(abc.ABC):
     def __init__(self, tsds: TimeSeriesDataset, params: Dict):
         self.tsds = tsds
         self.params = params
 
-    @abstractmethod
+    @abc.abstractmethod
     def run(self, variable_name: str, coordinates: List[int], value: Any):
         """
         Test a variable's data value and see if it passes a quality check.
