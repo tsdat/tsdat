@@ -1,21 +1,26 @@
-pipeline:
-  title: buoy data
-  description: 
-  location_id: z05
-  instrument_id: buoy
-  temporal: 
-  qualifier: 
-  location_description: 
-  data_level: b1
-  instrument_name: 
-  serial_number: 
-  instrument_description:
-  instrument_manufacturer: 
-  references: 
-  institution: 
-
----
 output_dataset:
+  
+  # Define the global attributes in your output xarray Dataset
+  attributes:
+    title: "Buoy Dataset for Buoy #120"
+    description: "Example ingest dataset."
+    conventions: "MHKiT-Cloud Data Standards v. 1.0"
+    history:
+    doi: "10.21947/1671051"
+    institution: "PNNL"
+    code_url: "https://github.com/clansing/twrmr/releases/tag/1.0"
+    references: 
+    input_files: 
+    location_id: "humboldt_z05"
+    datastream: "humboldt_z05.lidar_buoy_10m.b1"
+    data_level: "b1"
+    location_description: "Buoy is located of the coast of Humboldt, CA"
+    instrument_name: "Wind Sentinel"
+    serial_number: "000011312"
+    instrument_description: "Self-powered floating buoy hosting a suite of meteorological and marine instruments."
+    instrument_manufacturer: "AXYS Technologies Inc."
+    sampling_interval: "10 min"
+  
   # Define the dimensions/coordinates in your output xarray Dataset
   dimensions:
     time:
@@ -24,119 +29,140 @@ output_dataset:
   # Define the variables in your output xarray Dataset
   variables:
     time:
-      source:
-        name: "Date Time, GMT -0700"
-        units: "seconds since 1970-01-01T00:00:00 -0700"
-      dimensions: [time]
+      input:
+        name: "DataTimeStamp(DateTime)"
+        format: "%Y-%m-%d %H:%M:%S" # TODO: how to retrieve/set timezone info?
+      dims: [time]
       type: int64 # Required to meet cf standards (I'm not sure if this is right)
-
       attrs:
         long_name: Time offset from epoch
         standard_name: time
-
         # Note:  CF Standards require this exact format:
         # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/ch04s04.html
         units: "seconds since 1970-01-01T00:00:00"
 
     temp_mean:
-      source:
-        name: ""
-        units: ""
-      dimensions: [time]
-      type: float
-
+      input:
+        name: "ValueAverage(Double)"
+        units: degC
+      dims: [time]
+      type: double
       attrs:
         long_name: "Mean temperature"
+        description: "Rolling 10-minute average sea surface temperature. Aligned such that the temperature reported at time 'n' represents the average across the interval (n-1, n]."
         units: degC
-        valid_delta: 10
-        valid_range: [-60, 30]
+        valid_delta: 0.25
+        valid_range: [-50, 50]
+        _FillValue: -9999
+    
+    temp_min:
+      input:
+        name: "ValueMin(Double)"
+        units: degC
+      dims: [time]
+      type: double
+      attrs:
+        long_name: "Minimum temperature"
+        units: degC
+        valid_delta: 0.25
+        valid_range: [-50, 50]
         _FillValue: -9999
 
-    vapor_pressure_mean:
-      source:
-        name: ""
-        units: ""
-      dimensions: [time]
-      type: float
-
+    temp_max:
+      input:
+        name: "ValueMax(Double)"
+        units: degC
+      dims: [time]
+      type: double
       attrs:
-        long_name: "Vapor pressure mean, calculated"
-        units: kPa
-        valid_delta: 1
-        valid_range: [0.001, 4.3]
+        long_name: "Maximum temperature"
+        units: degC
+        valid_delta: 0.25
+        valid_range: [-50, 50]
+        _FillValue: -9999
+      
+    temp_stddev:
+      input:
+        name: "ValueSD(Double)"
+        units: degC
+      dims: [time]
+      type: double
+      attrs:
+        long_name: "Standard deviation of temperature"
+        units: degC
+        valid_delta: 0.25
+        valid_range: [0, 5]
         _FillValue: -9999
 
-    derived_variable:
-      # Example of a variable that gets created in code, it would have no source
+    temp_mean_30min:
+      # Example of a variable that gets created in code, it would have no input
       dimensions: [time]
-      type: float
-
+      type: double
       attrs:
-        long_name: "Vapor pressure mean, calculated"
-        units: kPa
+        long_name: "Mean temperature (30 min)"
+        description: "30-minute rolling average of temp_mean computed using a sliding window of length 3 and converted to degrees Fahrenheit."
+        units: degF
         valid_delta: 1
-        valid_range: [0.001, 4.3]
+        valid_range: [-58, 122]
         _FillValue: -9999
 
 ---
-qc:
-  tests:
-      # TODO: take out coordinate variable tests from default template as they should be
-      # included by default.  But user could specify them here to override.
-      validate_time:  # label that can be used to reference this test in API methods
-        description: "Time is missing or invalid."
-        variables: # Variables for which to apply this test
-          - time
+qc_tests:
+    # TODO: take out coordinate variable tests from default template as they should be
+    # included by default.  But user could specify them here to override.
+    validate_time:  # label that can be used to reference this test in API methods
+      description: "Time is missing or invalid."
+      variables: # Variables for which to apply this test
+        - time
 
-        operators:  # Can list multiple operators - executed in sequence
+      operators:  # Can list multiple operators - executed in sequence
+        tsdat.qc.operators.CheckMissing:
+        tsdat.qc.operators.CheckMonotonic:
+          direction: increasing    # Each operator can include any arbitrary list of parameters
+          interval: 600            # For now this is in seconds - later we can specify units
+
+      error_handlers: # Can list multiple error handlers - executed in sequence
+        tsdat.qc.error_handlers.Fail:  # if test fails, pipeline will fail
+
+    missing:
+        qc_bit: 1
+        description: "Value is equal to _FillValue or NaN"
+        assessment: Bad
+        variables:
+          - ALL  # keyword to apply test to all variables
+        operators:
           tsdat.qc.operators.CheckMissing:
-          tsdat.qc.operators.CheckMonotonic:
-            direction: increasing    # Each operator can include any arbitrary list of parameters
-            interval: 60             # For now this is in seconds - later we can specify units
 
-        error_handlers: # Can list multiple error handlers - executed in sequence
-          tsdat.qc.error_handlers.Fail:  # if test fails, pipeline will fail
+    valid_min:
+        qc_bit: 2
+        description: "Value is less than the valid_range."
+        assessment: Bad
+        variables:
+          - ALL
+        operators:
+          tsdat.qc.operators.CheckValidMin:
+        error_handlers:
+          tsdat.qc.error_handlers.ReplaceMissing:  # if test fails, replace with missing_value
 
-      missing:
-          qc_bit: 1
-          description: "Value is equal to _FillValue or NaN"
-          assessment: Bad
-          variables:
-            - ALL  # keyword to apply test to all variables
-          operators:
-            tsdat.qc.operators.CheckMissing:
+    valid_max:
+        qc_bit: 3
+        description: "Value is greater than the valid_range."
+        assessment: Bad
+        variables:
+          - ALL
+        operators:
+          tsdat.qc.operators.CheckValidMax:
+        error_handlers:
+          tsdat.qc.error_handlers.ReplaceMissing:  # if test fails, replace with missing_value
 
-      valid_min:
-          qc_bit: 2
-          description: "Value is less than the valid_range."
-          assessment: Bad
-          variables:
-            - ALL
-          operators:
-            tsdat.qc.operators.CheckValidMin:
-          error_handlers:
-            tsdat.qc.error_handlers.ReplaceMissing:  # if test fails, replace with missing_value
+    valid_delta:
+        qc_bit: 4
+        description: "Difference between current and previous values exceeds valid_delta."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operators:
+          tsdat.qc.operators.CheckValidDelta:
 
-      valid_max:
-          qc_bit: 3
-          description: "Value is greater than the valid_range."
-          assessment: Bad
-          variables:
-            - ALL
-          operators:
-            tsdat.qc.operators.CheckValidMax:
-          error_handlers:
-            tsdat.qc.error_handlers.ReplaceMissing:  # if test fails, replace with missing_value
-
-      valid_delta:
-          qc_bit: 4
-          description: "Difference between current and previous values exceeds valid_delta."
-          assessment: Indeterminate
-          variables:
-            - ALL
-          operators:
-            tsdat.qc.operators.CheckValidDelta:
-
-          # Error handlers are optional
-          # error_handlers:
-          
+        # Error handlers are optional
+        # error_handlers:
