@@ -1,30 +1,8 @@
-from typing import List, Set, Dict, Tuple, Optional
 import yaml
+from typing import List, Dict
 
 # TODO: add api method to download yaml templates or put them all
 # in the examples folder.
-
-def load_configs(filepaths: List[str]):
-    """
-    Load one or more yaml config files which
-    define data following netcdf metadata conventions
-    (i.e., global atts, variables w/ atts, dims)
-
-    TODO: add a schema validation check on yaml so users can know if file is valid
-
-    :param filepaths:
-    :type filepaths:
-    :return:
-    :rtype:
-    """
-    config = dict()
-    for filepath in filepaths:
-        with open(filepath, 'r') as file:
-            dict_list = list(yaml.load_all(file))
-            for dictionary in dict_list:
-                config.update(dictionary)
-
-    return Config(config)
 
 
 class Keys():
@@ -81,6 +59,29 @@ class Config:
         self.dictionary = dictionary
         self._parse_variables(dictionary)
         self._parse_qc_tests(dictionary)
+
+    @classmethod
+    def load(self, filepaths: List[str]) -> object:
+        """-------------------------------------------------------------------
+        Load one or more yaml config files which define data following 
+        mhkit-cloud data standards.
+        
+        TODO: add a schema validation check on yaml so users can know if the 
+        file is valid
+        
+        Args:
+            filepaths (List[str]): The paths to the config files to load
+
+        Returns:
+            Config: A Config instance created from the filepaths.
+        -------------------------------------------------------------------"""
+        config = dict()
+        for filepath in filepaths:
+            with open(filepath, 'r') as file:
+                dict_list = list(yaml.load_all(file))
+                for dictionary in dict_list:
+                    config.update(dictionary)
+        return Config(config)
 
     def get_variable_names(self):
         # Stupid python 3 returns keys as a dict_keys object.
