@@ -5,10 +5,11 @@ import pandas
 import functools
 import numpy as np
 import xarray as xr
-from typing import List
+from typing import List, Dict
 from tsdat import TimeSeriesDataset, Config
 
 FILEHANDLERS = dict()
+
 
 def register_filehandler(file_extension: str):
     """-----------------------------------------------------------------------
@@ -161,3 +162,4 @@ class CsvHandler(FileHandler):
 
         return var_dict
 
+FILEHANDLERS: Dict[str, FileHandler] = FILEHANDLERS
