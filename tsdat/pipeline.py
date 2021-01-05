@@ -6,12 +6,12 @@ import xarray as xr
 from typing import List, Tuple
 from tsdat.config import Config
 from tsdat.io.storage import DatastreamStorage
-from tsdat.io.file_handlers import FILEHANDLERS
+from tsdat.io.file_handlers import FILEHANDLERS, FileHandler
 
 
 class Pipeline(abc.ABC):
 
-    def __init__(self, config:Config, storage:DatastreamStorage) -> None:        
+    def __init__(self, config:Config, storage:DatastreamStorage) -> None:
         self.storage = storage
         self.config = config
         pass
@@ -19,6 +19,26 @@ class Pipeline(abc.ABC):
     @abc.abstractmethod
     def run(self, filepath:str):
         return
+    
+    def get_filehandler(file_path: str) -> FileHandler:
+        """-------------------------------------------------------------------
+        Retrieves the appropriate FileHandler for a given file. 
+
+        Args:
+            file_path (str):    The complete path to the file requiring a 
+                                FileHandler.
+
+        Raises:
+            KeyError:   Raises KeyError if no FileHandler has been defined for
+                        the the file provided.
+
+        Returns:
+            FileHandler: The FileHandler class to use for the provided file.
+        -------------------------------------------------------------------"""
+        _, ext = os.path.splitext(file_path)
+        if ext not in FILEHANDLERS:
+            raise KeyError(f"no FileHandler for extension: {ext}")
+        return FILEHANDLERS[ext]
  
  
 class IngestPipeline(Pipeline):       
@@ -142,10 +162,7 @@ class IngestPipeline(Pipeline):
             file_paths = [file_paths]
         merged_dataset = xr.Dataset()
         for file_path in file_paths:
-            _, ext = os.path.splitext(file_path)
-            if ext not in FILEHANDLERS:
-                raise KeyError(f"no FileHandler for extension: {ext}")
-            handler = FILEHANDLERS[ext]
+            handler = self.get_filehandler(file_path)
             dataset = handler.read(file_path, self.config)
             merged_dataset = xr.merge([merged_dataset, dataset])            
         return merged_dataset
@@ -351,3 +368,7 @@ class IngestPipeline(Pipeline):
             organized_filepaths.append(new_filepath)
         return organized_filepaths
 
+a = IngestPipeline(None, None)
+a.get_filehandler("path")
+
+IngestPipeline.get_filehandler("path")
