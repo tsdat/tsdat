@@ -1,5 +1,5 @@
+import os
 from typing import List
-
 
 class Standards:
     """-----------------------------------------------------------------------
@@ -27,22 +27,56 @@ class Standards:
             if not (char.isalpha() or char in [".", "-", "_"]):
                 raise ValueError(f"'{char}' is not a permitted in datastream_name.")
         return
-        
+    
     @staticmethod
-    def get_datastream_path(datastream_name: str, root: str = None) -> str:
+    def validate_filename(filename: str) -> None:
+        """-------------------------------------------------------------------
+        Validates the provided filename. Raises a ValueError if the filename
+        does not conform with standards, None otherwise.
+
+        Args:
+            filename (str): The filename to check
+
+        Raises:
+            ValueError: Raises ValueError if the filename is not legal
+        -------------------------------------------------------------------"""
+        components = filename.split(".")
+        datastream_name = ".".join(components[:3])
+        date = components[3]
+        time = components[4]
+        ext = components[5]
+        Standards.validate_datastream_name(datastream_name)
+        # TODO: break these checks apart into their own methods with more complete handling.
+        if not (date.isnumeric() and len(date) == 8):
+            raise ValueError(f"'{date}' is not a valid date")
+        if not (time.isnumeric() and len(time) == 6):
+            raise ValueError(f"'{time}' is not a valid time")
+        if ext not in ["nc", "csv", "yaml", "metadata", "parquet", "raw"]:
+            raise ValueError(f"'{ext}' is not a valid file extension.")
+        return
+
+    @staticmethod
+    def get_datastream_path(datastream_name: str = None, filename: str = None, root: str = None) -> str:
         """-------------------------------------------------------------------
         Returns the path to the parent directory relative to the root 
         (optional) of where the datastream should be stored according to 
         MHKiT-Cloud Data Standards. 
 
         Args:
-            datastream_name (str):  The name of the datastream.
+            datastream_name (str, optional):    The datastream_name. Must be 
+                                                provided if filename is not.
+            filename (str, optional):   The filename/path to a file whose 
+                                        actual path should be generated. Must
+                                        be provided if datastream_name is not.
             root (str, optional):   The root of the path to return. Defaults 
                                     to None.
 
         Returns:
             str: The path to the directory where the data should be saved.
         -------------------------------------------------------------------"""
+        assert((datastream_name and not filename) or (filename and not datastream_name))
+        if filename:
+            datastream_name = ".".join(os.path.basename(filename).split("."))[:3]
         Standards.validate_datastream_name(datastream_name)
         location_id = datastream_name.split(".")[0]
         return f"{root}/{location_id}/{datastream_name}"
