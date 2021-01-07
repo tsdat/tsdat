@@ -367,8 +367,3 @@ class IngestPipeline(Pipeline):
             shutil.move(filepath, new_filepath)
             organized_filepaths.append(new_filepath)
         return organized_filepaths
-
-a = IngestPipeline(None, None)
-a.get_filehandler("path")
-
-IngestPipeline.get_filehandler("path")
