@@ -163,6 +163,7 @@ qc_tests:
           - ALL
         operators:
           tsdat.qc.operators.CheckValidDelta:
+            dim: time
 
         # Error handlers are optional
         # error_handlers:

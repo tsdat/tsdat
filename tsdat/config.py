@@ -30,6 +30,9 @@ class Variable:
 
 
 class QCTest:
+    BAD = 'Bad'
+    INDETERMINATE = 'Indeterminate'
+
     """
     Converts dictionary of properties into a class
     """
