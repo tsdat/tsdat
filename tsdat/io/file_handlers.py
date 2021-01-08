@@ -1,9 +1,9 @@
 import os
 import abc
 import yaml
-import pandas
 import functools
 import numpy as np
+import pandas as pd
 import xarray as xr
 from typing import List, Dict
 from tsdat import TimeSeriesDataset, Config
@@ -95,7 +95,7 @@ class NetCdfHandler(FileHandler):
         return TimeSeriesDataset(ds_disk, config)
 
 
-@register_filehandler(".csv")
+# @register_filehandler(".csv")
 class CsvHandler(FileHandler):
 
     def write(self, ds: TimeSeriesDataset, filename: str, **kwargs):
@@ -106,7 +106,7 @@ class CsvHandler(FileHandler):
         # First convert the data to a Pandas DataFrame and
         # save the variable metadata in a dictionary
         variables = {}
-        df: pandas.DataFrame = pandas.DataFrame()
+        df: pd.DataFrame = pd.DataFrame()
         for variable_name in ds.xr.variables:
             variable = ds.get_var(variable_name)
             df[variable_name] = variable.to_pandas()
@@ -124,7 +124,7 @@ class CsvHandler(FileHandler):
 
     def read(self, filename: str, config: Config = None, **kwargs):
         # First read the csv into a pandas dataframe
-        dataframe: pandas.DataFrame = pandas.read_csv(filename, **kwargs)
+        dataframe: pd.DataFrame = pd.read_csv(filename, **kwargs)
 
         # Now see if there is an accompanying metadata file.  If so,
         # then merge those attributes into the config
@@ -161,5 +161,14 @@ class CsvHandler(FileHandler):
             var_dict['dims'] = dims
 
         return var_dict
+
+@register_filehandler(".csv")
+class CSVHandler(FileHandler):
+    def write(self, dataset: xr.Dataset, filename: str, **kwargs):
+        dataframe = dataset.to_dataframe()
+        dataframe.to_csv(filename)
+        Config.from(dataset).save(f"{filename}.yaml")
+    def read(self, filename: str):
+        pass
 
 FILEHANDLERS: Dict[str, FileHandler] = FILEHANDLERS
