@@ -49,17 +49,6 @@ class Config:
                     config.update(dictionary)
         return Config(config)
 
-    def get_variable_names(self):
-        # Stupid python 3 returns keys as a dict_keys object.
-        # Not really sure the purpose of this extra class :(.
-        return list(self.variables.keys())
-
-    def get_variable(self, variable_name):
-        return self.variables.get(variable_name, None)
-
-    def get_variables(self):
-        return self.variables.values()
-
     def get_qc_test_names(self):
         # Stupid python 3 returns keys as a dict_keys object.
         # Not really sure the purpose of this extra class :(.
@@ -73,9 +62,5 @@ class Config:
 
     def _parse_qc_tests(self, dictionary):
         self.qc_tests: Dict[str, QCTestDefinition] = {}
-        test_names = dictionary.get(Keys.QC_TESTS, {}).keys()
-        for test_name in test_names:
-            test_dict = dictionary.get(Keys.QC_TESTS, {}).get(test_name, None)
-            if test_dict:
-                self.qc_tests[test_name] = QCTestDefinition(test_name, test_dict)
-
+        for test_name, test_dict in dictionary.get(Keys.QC_TESTS, {}).items():
+            self.qc_tests[test_name] = QCTestDefinition(test_name, test_dict)
