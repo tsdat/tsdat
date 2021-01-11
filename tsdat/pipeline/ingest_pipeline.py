@@ -54,20 +54,6 @@ class IngestPipeline(Pipeline):
             raw_files = self.rename_raw_files(file_paths, datastream_name, start_time, end_time)
             self.store_raw(raw_files)
 
-    def validate_dataset(self, dataset: xr.Dataset):
-        # Putting in a placeholder method to save documentation
-        # We need to check that the coordinate dimensions are valid
-        # We need to check that any unlimited dimension has a coordinate variable
-        # We need to check that the type of variable attributes:
-        # _FillValue, valid_range, fail_range,
-        # fail_max, warn_range, warn_max, and valid_delta are all the same
-        # data type as the corresponding variable
-
-        # TODO: should the standards automatically assign a default _FillValue for
-        # each variable, even if none is defined in the config?
-
-        pass
-
     def extract_files(self, filepath: str, target_dir: str = "") -> List[str]:        
         """-------------------------------------------------------------------
         If provided a path to a .zip archive this function will unzip the 
@@ -199,7 +185,7 @@ class IngestPipeline(Pipeline):
         # TODO start = start_time - 1 day
         netcdf_files = self.storage.fetch(datastream_name, start, end)
         netcdf_file = netcdf_files[-1] if len(netcdf_files) > 0 else None
-
+        dataset = None
         if netcdf_file is not None:
             # TODO: If file exists, use file handler to open this netcdf file to a dataset
             dataset = None
