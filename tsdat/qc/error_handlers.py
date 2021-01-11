@@ -1,6 +1,5 @@
 from abc import abstractmethod
 from typing import List, Dict, Any
-from tsdat import TimeSeriesDataset
 
 
 class QCErrorHandler:

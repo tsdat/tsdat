@@ -7,6 +7,8 @@ from typing import List, Tuple
 from tsdat.config import Config
 from tsdat.io.storage import DatastreamStorage
 from tsdat.io.file_handlers import FILEHANDLERS, FileHandler
+from tsdat.utils import DSUtil
+from tsdat.qc import QC
 
 
 class Pipeline(abc.ABC):
@@ -52,28 +54,54 @@ class IngestPipeline(Pipeline):
                             a collection of files) to run the Ingest Pipeline 
                             on.
         -------------------------------------------------------------------"""        
-        # Convert the raw files 
         file_paths = self.extract_files(filepath)
-        raw_files = self.rename_raw_files(file_paths)
-        
-        # Process the data
-        raw_dataset = self.read_input(file_paths)
-        dataset = self.standardize_dataset(raw_dataset)
-        dataset = self.apply_corrections(dataset)
-        dataset = self.customize_dataset(dataset)
-        
-        if self.config.pipeline.data_level.startswith('b'):
-            dataset = self.qc_dataset(dataset)
-        
-        # See if some data already exists in Storage for the same day
-        # If so, then we need to pull in the remote data and merge with
-        # our new data.
-        dataset = self.merge_existing_data(dataset)
-        
-        # Save the final datastream data to storage
-        self.store_dataset(dataset)
-        self.store_raw(raw_files)
-        
+
+        try:
+            # Process the data
+            raw_dataset = self.read_input(file_paths)
+            dataset = self.standardize_dataset(raw_dataset)
+            dataset = self.apply_corrections(dataset)
+            dataset = self.customize_dataset(dataset)
+            datastream_name = DSUtil.get_datastream_name(dataset)
+            start_time = DSUtil.dataset_accessor.get_start_time(dataset)
+            end_time = DSUtil.dataset_accessor.get_end_time(dataset)
+
+            self.validate_dataset(dataset) # standards class, will fail if ds is not valid
+
+            if self.config.pipeline.data_level.startswith('b'):
+                # If there is previous data in Storage, we need
+                # to load up the last file so we can perform
+                # continuity checks such as monontonically increasing
+                previous_dataset = self.get_previous_dataset(datastream_name, start_time)
+                dataset = QC.apply_tests(dataset, self.config, previous_dataset)
+
+            # See if some data already exists in Storage for the same day
+            # If so, then we need to pull in the remote data and merge with
+            # our new data.
+            dataset = self.merge_existing_data(dataset)
+
+            # Save the final datastream data to storage
+            self.store_dataset(dataset)
+
+        finally:
+            # Standardize the raw file names and store
+            raw_files = self.rename_raw_files(file_paths, datastream_name, start_time, end_time)
+            self.store_raw(raw_files)
+
+    def validate_dataset(self, dataset: xr.Dataset):
+        # Putting in a placeholder method to save documentation
+        # We need to check that the coordinate dimensions are valid
+        # We need to check that any unlimited dimension has a coordinate variable
+        # We need to check that the type of variable attributes:
+        # _FillValue, valid_range, fail_range,
+        # fail_max, warn_range, warn_max, and valid_delta are all the same
+        # data type as the corresponding variable
+
+        # TODO: should the standards automatically assign a default _FillValue for
+        # each variable, even if none is defined in the config?
+
+        pass
+
     def extract_files(self, filepath: str, target_dir: str = "") -> List[str]:        
         """-------------------------------------------------------------------
         If provided a path to a .zip archive this function will unzip the 
@@ -200,20 +228,17 @@ class IngestPipeline(Pipeline):
         # TODO: write this method
         return dataset
     
-        
-    def qc_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Applies the qc tests defined in the config. Some qc tests (such as 
-        those applied to a coordinate variable) may raise an exception, 
-        causing the pipeline to fail.
+    def get_previous_dataset(self, datastream_name: str, start_time: str) -> xr.Dataset:
+        end = start_time
+        start = None
+        # TODO start = start_time - 1 day
+        netcdf_files = self.storage.fetch(datastream_name, start, end)
+        netcdf_file = netcdf_files[-1] if len(netcdf_files) > 0 else None
 
-        Args:
-            dataset (xr.Dataset):   The input dataset, converted to standard 
-                                    format and with corrections applied.
-        Returns:
-            xr.Dataset: The input xarray dataset with qc checks applied.
-        -------------------------------------------------------------------"""
-        # TODO: write this method
+        if netcdf_file is not None:
+            # TODO: If file exists, use file handler to open this netcdf file to a dataset
+            dataset = None
+
         return dataset
     
     def merge_existing_data(self, dataset: xr.Dataset) -> xr.Dataset:

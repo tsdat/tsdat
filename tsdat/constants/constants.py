@@ -2,12 +2,6 @@ import act
 import xarray as xr
 
 
-@xr.register_dataset_accessor('TEST')
-class TEST(object):
-    CONST1 = "1"
-    CONST2 = "2"
-
-
 class ATTS(object):
     """-------------------------------------------------------------------
     Class that adds methods for interacting with tsdat data model
@@ -41,22 +35,3 @@ class ATTS(object):
     WARN_RANGE = 'warn_range'
     FILL_VALUE = '_FillValue'
 
-    @staticmethod
-    def get_missing_value(ds: xr.Dataset, variable_name):
-        return act.utils.get_missing_value(ds, variable_name, use_FillValue=True)
-
-    @staticmethod
-    def get_fail_min(ds: xr.Dataset, variable_name):
-        pass
-
-    @staticmethod
-    def get_fail_max(ds: xr.Dataset, variable_name):
-        pass
-
-    @staticmethod
-    def get_warn_min(ds: xr.Dataset, variable_name):
-        pass
-
-    @staticmethod
-    def get_warn_max(ds: xr.Dataset, variable_name):
-        pass

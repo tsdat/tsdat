@@ -106,62 +106,63 @@ variables:
 
 ---
 qc_tests:
-    # TODO: take out coordinate variable tests from default template as they should be
-    # included by default.  But user could specify them here to override.
-    validate_time:  # label that can be used to reference this test in API methods
-      description: "Time is missing or invalid."
-      variables: # Variables for which to apply this test
-        - time
-
-      operators:  # Can list multiple operators - executed in sequence
-        tsdat.qc.operators.CheckMissing:
-        tsdat.qc.operators.CheckMonotonic:
-          direction: increasing    # Each operator can include any arbitrary list of parameters
-          interval: 600            # For now this is in seconds - later we can specify units
-
-      error_handlers: # Can list multiple error handlers - executed in sequence
-        tsdat.qc.error_handlers.Fail:  # if test fails, pipeline will fail
-
+    #  In general, a user should not specify tests for coordinate variables
+    # (e.g., time) because the pipeline will perform coordinate variable validation
+    # before the qc tests are run.  Any failures in coordinate variables will
+    # cause the dataset to be unusable, and result in a critical pipeline failure.
     missing:
         qc_bit: 1
         description: "Value is equal to _FillValue or NaN"
         assessment: Bad
         variables:
           - ALL  # keyword to apply test to all variables
-        operators:
-          tsdat.qc.operators.CheckMissing:
+        operator:
+          classname: tsdat.qc.operators.CheckMissing
 
-    valid_min:
+    fail_min:
         qc_bit: 2
-        description: "Value is less than the valid_range."
+        description: "Value is less than the fail_range."
         assessment: Bad
         variables:
           - ALL
-        operators:
-          tsdat.qc.operators.CheckValidMin:
-        error_handlers:
-          tsdat.qc.error_handlers.ReplaceMissing:  # if test fails, replace with missing_value
+        operator:
+          classname: tsdat.qc.operators.CheckFailMin
 
-    valid_max:
+    fail_max:
         qc_bit: 3
-        description: "Value is greater than the valid_range."
+        description: "Value is greater than the fail_range."
         assessment: Bad
         variables:
           - ALL
-        operators:
-          tsdat.qc.operators.CheckValidMax:
-        error_handlers:
-          tsdat.qc.error_handlers.ReplaceMissing:  # if test fails, replace with missing_value
+        operator:
+          classname: tsdat.qc.operators.CheckFailMax
+
+    warn_min:
+        qc_bit: 4
+        description: "Value is less than the warn_range."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckWarnMin
+
+    warn_max:
+        qc_bit: 5
+        description: "Value is greater than the warn_range."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckWarnMax
 
     valid_delta:
-        qc_bit: 4
+        qc_bit: 6
         description: "Difference between current and previous values exceeds valid_delta."
         assessment: Indeterminate
         variables:
           - ALL
-        operators:
-          tsdat.qc.operators.CheckValidDelta:
+        operator:
+          classname: tsdat.qc.operators.CheckValidDelta
+          parameters:
             dim: time
 
-        # Error handlers are optional
-        # error_handlers:

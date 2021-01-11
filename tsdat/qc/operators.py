@@ -3,7 +3,8 @@ import numpy as np
 from typing import List, Dict, Any
 import xarray as xr
 from tsdat import QCTest
-from tsdat.data_model.atts import ATTS
+from tsdat.utils import DSUtil
+from tsdat.constants import ATTS
 
 
 class QCOperator(abc.ABC):
@@ -11,7 +12,7 @@ class QCOperator(abc.ABC):
     Class containing the code to perform a single QC test on a Dataset
     variable.
     -------------------------------------------------------------------"""
-    def __init__(self, ds: xr.Dataset, test: QCTest, params: Dict):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QCTest, params: Dict):
         """-------------------------------------------------------------------
         Args:
             ds (xr.Dataset): The dataset the operator will be applied to
@@ -19,6 +20,7 @@ class QCOperator(abc.ABC):
             params(Dict)   : A dictionary of operator-specific parameters
         -------------------------------------------------------------------"""
         self.ds = ds
+        self.previous_data = previous_data
         self.test = test
         self.params = params
 
@@ -49,56 +51,80 @@ class QCOperator(abc.ABC):
 class CheckMissing(QCOperator):
 
     def run(self, variable_name: str):
-        missing_value = ATTS.get_missing_value(variable_name)
+        """-------------------------------------------------------------------
+        Checks if any values are assigned to _FillValue or NaN
+        -------------------------------------------------------------------"""
+        fill_value = DSUtil.get_fill_value(self.ds, variable_name)
 
-        # If the variable has no _FillValue or missing_value attribute, then
+        # If the variable has no _FillValue attribute, then
         # we select a default value to use
-        if (missing_value is None and self.ds[variable_name].values.dtype.type in
-                (type(0.0), np.float16, np.float32, np.float64)):
-            missing_value = float('nan')
-        else:
-            missing_value = -9999
+        if fill_value is None:
+            fill_value = -9999
 
-        # Ensure missing_value attribute is matching data type
-        missing_value = np.array(missing_value, dtype=self.ds[variable_name].values.dtype.type)
-        results_array = np.equal(self.ds[variable_name].values, missing_value)
-        return results_array
+        # Make sure fill value has same data type as the variable
+        fill_value = np.array(fill_value, dtype=self.ds[variable_name].values.dtype.type)
 
+        # First check if any values are assigned to _FillValue
+        results_array = np.equal(self.ds[variable_name].values, fill_value)
 
-class CheckValidMin(QCOperator):
-
-    def run(self, variable_name: str):
-        # Get the correct limit to use depending upon the test assessment
-        valid_min = None
-        if self.test.assessment == QCTest.BAD:
-            valid_min = ATTS.get_fail_min(self.ds, variable_name)
-
-        elif self.test.assessment == QCTest.INDETERMINATE:
-            valid_min = ATTS.get_warn_min(self.ds, variable_name)
-
-        # If no valid_min is available, then we just skip this test
-        results_array = None
-        if valid_min is not None:
-            results_array = np.less(self.ds[variable_name].values, valid_min)
+        # Then, if the value is numeric, we should also check if any values are assigned to
+        # NaN
+        if self.ds[variable_name].values.dtype.type in (type(0.0), np.float16, np.float32, np.float64):
+            nan = float('nan')
+            nan = np.array(nan, dtype=self.ds[variable_name].values.dtype.type)
+            results_array = results_array | np.equal(self.ds[variable_name].values, nan)
 
         return results_array
 
 
-class CheckValidMax(QCOperator):
+class CheckFailMin(QCOperator):
 
     def run(self, variable_name: str):
-        # Get the correct limit to use depending upon the test assessment
-        valid_max = None
-        if self.test.assessment == QCTest.BAD:
-            valid_max = ATTS.get_fail_max(self.ds, variable_name)
-
-        elif self.test.assessment == QCTest.INDETERMINATE:
-            valid_max = ATTS.get_warn_max(self.ds, variable_name)
+        fail_min = DSUtil.get_fail_min(self.ds, variable_name)
 
         # If no valid_min is available, then we just skip this test
         results_array = None
-        if valid_max is not None:
-            results_array = np.greater(self.ds[variable_name].values, valid_max)
+        if fail_min is not None:
+            results_array = np.less(self.ds[variable_name].values, fail_min)
+
+        return results_array
+
+
+class CheckFailMax(QCOperator):
+
+    def run(self, variable_name: str):
+        fail_max = DSUtil.get_fail_max(self.ds, variable_name)
+
+        # If no valid_min is available, then we just skip this test
+        results_array = None
+        if fail_max is not None:
+            results_array = np.greater(self.ds[variable_name].values, fail_max)
+
+        return results_array
+
+
+class CheckWarnMin(QCOperator):
+
+    def run(self, variable_name: str):
+        warn_min = DSUtil.get_warn_min(self.ds, variable_name)
+
+        # If no valid_min is available, then we just skip this test
+        results_array = None
+        if warn_min is not None:
+            results_array = np.less(self.ds[variable_name].values, warn_min)
+
+        return results_array
+
+
+class CheckWarnMax(QCOperator):
+
+    def run(self, variable_name: str):
+        warn_max = DSUtil.get_warn_max(self.ds, variable_name)
+
+        # If no valid_min is available, then we just skip this test
+        results_array = None
+        if warn_max is not None:
+            results_array = np.greater(self.ds[variable_name].values, warn_max)
 
         return results_array
 
@@ -107,7 +133,7 @@ class CheckValidDelta(QCOperator):
 
     def run(self, variable_name: str):
 
-        valid_delta = ATTS.get_valid_delta(variable_name)
+        valid_delta = DSUtil.get_valid_delta(self.ds, variable_name)
 
         # If no valid_delta is available, then we just skip this test
         results_array = None
@@ -120,12 +146,23 @@ class CheckValidDelta(QCOperator):
                 dim = self.ds[variable_name].dims[0]
 
             if dim is not None:
-                diff = self.ds[variable_name].diff("time")
+                # If previous data exists, then we must add the last row of
+                # previous data as the first row of the variable's data array.
+                # This is so that the diff function can compare the first value
+                # of the file to make sure it is consistent with the previous file.
+                variable_data = self.ds[variable_name]
 
-                # Pad the diff array with a good value since it is one less than the length of dim
-                diff = np.insert(diff, 0, valid_delta)
+                if self.previous_data is not None:
+                    previous_variable_data = self.previous_data.get(variable_name, None)
+                    if previous_variable_data is not None:
+                        # Get the last value from the first axis
+                        previous_row = previous_variable_data[-1]
 
-                results_array = np.logical_not(np.less_equal(diff, valid_delta))
+                        # Insert that value as the first value of the first axis
+                        variable_data = np.insert(variable_data, 0, previous_row, 0)
+
+                diff = variable_data.diff(dim)
+                results_array = np.greater_equal(diff, valid_delta)
 
         return results_array
 
@@ -177,11 +214,8 @@ class CheckValidDelta(QCOperator):
 
 
 
-# TODO:
-# check_inf
-# check_nan
+# TODO: Other tests we might implement
 # check_outlier(std_dev)
-# - tsdat.qc.operators.CheckType (not sure if this is realistic)
 
 
 
