@@ -1,56 +1,16 @@
 import yaml
+import numpy as np
+import xarray as xr
 from typing import List, Dict
+from .keys import Keys
+from .attribute_defintion import AttributeDefinition
+from .dimension_definition import DimensionDefinition
+from .variable_definition import VariableDefinition
+from .dataset_definition import DatasetDefinition
+from .qctest_definition import QCTestDefinition
 
 # TODO: add api method to download yaml templates or put them all
 # in the examples folder.
-
-
-class Keys():
-    VARIABLES = 'variables'
-    QC = 'qc'
-    TESTS = 'tests'
-    ALL = 'ALL'
-
-
-class Variable:
-    ALL = 'ALL'
-
-    """
-    Converts dictionary of properties into a class
-    """
-    def __init__(self, name: str, dictionary: Dict):
-        self.name = name
-        self.attrs = dictionary.get('attrs', {})
-        self.dims = dictionary.get('dims', [])
-
-        # Now set any other properties that may have been added by user
-        for key in dictionary:
-            if not hasattr(self, key):
-                setattr(self, key, dictionary[key])
-
-
-class QCTest:
-    BAD = 'Bad'
-    INDETERMINATE = 'Indeterminate'
-
-    """
-    Converts dictionary of properties into a class
-    """
-    def __init__(self, name: str, dictionary: Dict):
-        self.name = name
-        self.description = dictionary.get('description', None)
-        self.qc_bit = dictionary.get('qc_bit', None)
-        self.assessment = dictionary.get('assessment', None)
-        self.variables = dictionary.get('variables', [])
-        self.exclude = dictionary.get('exclude', [])
-        self.operators = dictionary.get('operators', {})
-        self.error_handlers = dictionary.get('error_handlers', {})
-
-        # Now set any other properties that may have been added by user
-        for key in dictionary:
-            if not hasattr(self, key):
-                setattr(self, key, dictionary[key])
-
 
 class Config:
     """
@@ -60,8 +20,10 @@ class Config:
 
     def __init__(self, dictionary: Dict):
         self.dictionary = dictionary
-        self._parse_variables(dictionary)
-        self._parse_qc_tests(dictionary)
+        self.dataset_definition = DatasetDefinition(dictionary)
+        self._parse_variables(dictionary) # Will be moved to dataset_definition
+        self._parse_qc_tests(dictionary) # Will be moved to dataset_definition
+
 
     @classmethod
     def load(self, filepaths: List[str]) -> object:
@@ -78,10 +40,12 @@ class Config:
         Returns:
             Config: A Config instance created from the filepaths.
         -------------------------------------------------------------------"""
+        if isinstance(filepaths, str):
+            filepaths = [filepaths]
         config = dict()
         for filepath in filepaths:
             with open(filepath, 'r') as file:
-                dict_list = list(yaml.load_all(file))
+                dict_list = list(yaml.load_all(file, Loader=yaml.FullLoader))
                 for dictionary in dict_list:
                     config.update(dictionary)
         return Config(config)
@@ -110,11 +74,11 @@ class Config:
 
     def _parse_qc_tests(self, dictionary):
         self.qc_tests = {}
-        test_names = dictionary.get(Keys.QC, {}).get(Keys.TESTS, {}).keys()
+        test_names = dictionary.get(Keys.QC_TESTS, {}).keys()
         for test_name in test_names:
-            test_dict = dictionary.get(Keys.QC, {}).get(Keys.TESTS, {}).get(test_name, None)
+            test_dict = dictionary.get(Keys.QC_TESTS, {}).get(test_name, None)
             if test_dict:
-                self.qc_tests[test_name] = QCTest(test_name, test_dict)
+                self.qc_tests[test_name] = QCTestDefinition(test_name, test_dict)
 
     def _parse_variables(self, dictionary):
         self.variables = {}
@@ -122,6 +86,5 @@ class Config:
         for variable_name in variable_names:
             var_dict = dictionary.get(Keys.VARIABLES, {}).get(variable_name, None)
             if var_dict:
-                self.variables[variable_name] = Variable(variable_name, var_dict)
-
+                self.variables[variable_name] = VariableDefinition(variable_name, var_dict)
 

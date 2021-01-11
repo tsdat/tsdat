@@ -2,7 +2,8 @@ from typing import List
 import importlib
 import xarray as xr
 import act
-from tsdat import Config, QCTest, Variable
+from tsdat.config import Config, QCTestDefinition, VariableDefinition
+from tsdat.constants import VARS
 
 
 class QC(object):
@@ -29,7 +30,7 @@ class QC(object):
         -------------------------------------------------------------------"""
 
         # Iterate through the tests in order
-        qc_tests: List[QCTest] = config.get_qc_tests()
+        qc_tests: List[QCTestDefinition] = config.get_qc_tests()
 
         for qc_test in qc_tests:
             qc_checker = QCChecker(ds, config, qc_test, previous_data)
@@ -40,10 +41,10 @@ class QCChecker:
     """-------------------------------------------------------------------
     Applies a single QC test to the given Dataset, as defined by the Config
     -------------------------------------------------------------------"""
-    def __init__(self, ds: xr.Dataset, config: Config, test: QCTest, previous_data: xr.Dataset):
+    def __init__(self, ds: xr.Dataset, config: Config, test: QCTestDefinition, previous_data: xr.Dataset):
         # Get the variables this test applies to
         variable_names = test.variables
-        if Variable.ALL in variable_names:
+        if VARS.ALL in variable_names:
             variable_names = config.get_variable_names()
 
         # Exclude any excludes
@@ -61,7 +62,7 @@ class QCChecker:
         self.variable_names = variable_names
         self.operator = operator
         self.error_handler = error_handler
-        self.test: QCTest = test
+        self.test: QCTestDefinition = test
         self.previous_data = previous_data
 
     def run(self):
@@ -91,7 +92,7 @@ class QCChecker:
                     test_assessment=self.test.assessment)
 
     @staticmethod
-    def _instantiate_class(ds: xr.Dataset, previous_data: xr.Dataset, test: QCTest, class_desc):
+    def _instantiate_class(ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition, class_desc):
         operator = None
         if class_desc is not None:
             params = class_desc.get('parameters', {})

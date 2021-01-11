@@ -1,5 +1,7 @@
 import os
+import xarray as xr
 from typing import List
+from tsdat import Config
 
 class Standards:
     """-----------------------------------------------------------------------
@@ -7,6 +9,42 @@ class Standards:
     methods for validating data, filenames, and more conform with the defined
     standards.
     -----------------------------------------------------------------------"""
+
+    @staticmethod
+    def standardize(raw_dataset: xr.Dataset, config: Config) -> xr.Dataset:
+        """-------------------------------------------------------------------
+        Uses the config object to map the raw dataset variable names to the 
+        output dataset. Additionally, this function ensures that the dataset 
+        conforms to MHKiT-Cloud data standards. 
+
+        Args:
+            raw_dataset (xr.Dataset):   The raw data into an xarray dataset.
+            config (Config): The config object associated with the dataset.
+
+        Returns:
+            xr.Dataset: The standardized dataset.
+        -------------------------------------------------------------------"""
+        definition = config.dataset_definition.to_dict()
+        
+        # definition["attributes"]
+        # definition["dimensions"]
+
+        # for variable in definition["variables"]:
+            # get original values
+            # convert to formatted values
+            # add the values back to the dict
+        
+        dataset = xr.Dataset(definition)
+        Standards.validate(dataset)
+        return dataset
+    
+    @staticmethod
+    def validate(dataset: xr.Dataset) -> None:
+        # Function to ensure that a dataset conforms with MHKiT-Cloud data standards
+        # Check that it has time variable
+        # appropriate dimensions
+        # variables have units attributes, etc
+        pass
 
     @staticmethod
     def validate_datastream_name(datastream_name: str) -> None:
@@ -80,4 +118,5 @@ class Standards:
         Standards.validate_datastream_name(datastream_name)
         location_id = datastream_name.split(".")[0]
         return f"{root}/{location_id}/{datastream_name}"
+    
 

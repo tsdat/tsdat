@@ -1,48 +1,14 @@
 import os
-import abc
 import shutil
 import zipfile
 import xarray as xr
 from typing import List, Tuple
-from tsdat.config import Config
-from tsdat.io.storage import DatastreamStorage
-from tsdat.io.file_handlers import FILEHANDLERS, FileHandler
+from tsdat.standards import Standards
+from .pipeline import Pipeline
 from tsdat.utils import DSUtil
 from tsdat.qc import QC
 
 
-class Pipeline(abc.ABC):
-
-    def __init__(self, config:Config, storage:DatastreamStorage) -> None:
-        self.storage = storage
-        self.config = config
-        pass
-
-    @abc.abstractmethod
-    def run(self, filepath:str):
-        return
-    
-    def get_filehandler(file_path: str) -> FileHandler:
-        """-------------------------------------------------------------------
-        Retrieves the appropriate FileHandler for a given file. 
-
-        Args:
-            file_path (str):    The complete path to the file requiring a 
-                                FileHandler.
-
-        Raises:
-            KeyError:   Raises KeyError if no FileHandler has been defined for
-                        the the file provided.
-
-        Returns:
-            FileHandler: The FileHandler class to use for the provided file.
-        -------------------------------------------------------------------"""
-        _, ext = os.path.splitext(file_path)
-        if ext not in FILEHANDLERS:
-            raise KeyError(f"no FileHandler for extension: {ext}")
-        return FILEHANDLERS[ext]
- 
- 
 class IngestPipeline(Pipeline):       
 
     def run(self, filepath: str) -> None:
@@ -53,7 +19,7 @@ class IngestPipeline(Pipeline):
             filepath (str): The path to the file (or .zip archive containing 
                             a collection of files) to run the Ingest Pipeline 
                             on.
-        -------------------------------------------------------------------"""        
+        -------------------------------------------------------------------"""
         file_paths = self.extract_files(filepath)
 
         try:
@@ -191,7 +157,7 @@ class IngestPipeline(Pipeline):
         merged_dataset = xr.Dataset()
         for file_path in file_paths:
             handler = self.get_filehandler(file_path)
-            dataset = handler.read(file_path, self.config)
+            dataset = handler.read(file_path)
             merged_dataset = xr.merge([merged_dataset, dataset])            
         return merged_dataset
     
@@ -208,8 +174,7 @@ class IngestPipeline(Pipeline):
         Returns:
             xr.Dataset: The standardized dataset.
         -------------------------------------------------------------------"""
-        # TODO: write this method
-        return raw_dataset
+        return Standards.standardize(raw_dataset, self.config)
     
     def apply_corrections(self, dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------

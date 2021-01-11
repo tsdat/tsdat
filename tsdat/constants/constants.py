@@ -2,6 +2,10 @@ import act
 import xarray as xr
 
 
+class VARS(object):
+    ALL = 'ALL'
+
+
 class ATTS(object):
     """-------------------------------------------------------------------
     Class that adds methods for interacting with tsdat data model
