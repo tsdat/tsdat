@@ -1,145 +1,221 @@
 import abc
 import numpy as np
 from typing import List, Dict, Any
-from tsdat import TimeSeriesDataset
+import xarray as xr
+from tsdat import QCTest
+from tsdat.utils import DSUtil
+from tsdat.constants import ATTS
 
 
 class QCOperator(abc.ABC):
-    def __init__(self, tsds: TimeSeriesDataset, params: Dict):
-        self.tsds = tsds
+    """-------------------------------------------------------------------
+    Class containing the code to perform a single QC test on a Dataset
+    variable.
+    -------------------------------------------------------------------"""
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QCTest, params: Dict):
+        """-------------------------------------------------------------------
+        Args:
+            ds (xr.Dataset): The dataset the operator will be applied to
+            test (QCTest)  : The test definition
+            params(Dict)   : A dictionary of operator-specific parameters
+        -------------------------------------------------------------------"""
+        self.ds = ds
+        self.previous_data = previous_data
+        self.test = test
         self.params = params
 
     @abc.abstractmethod
-    def run(self, variable_name: str, coordinates: List[int], value: Any):
-        """
-        Test a variable's data value and see if it passes a quality check.
+    def run(self, variable_name: str):
+        """-------------------------------------------------------------------
+        Test a dataset's variable to see if it passes a quality check.
+        These tests can be performed on the entire variable at one time by
+        using xarray vectorized numerical operators.
 
-        :param variable_name: Name of the variable to check
-        :param coordinates: n-dimensional data index of the value (i.e., [1246, 1] for [time, height]
-        This is passed in case the operator needs to check other variable values at the same index.
-        :param value: The value to test
-        :return: True if the test passed, False if it failed
-        :rtype: bool
-        """
+        Args:
+            variable_name (str):  The name of the variable to check
+
+        Returns:
+            xr.DataArray | None: If the test was performed, return a
+            DataArray of the same shape as the variable. Each value in the
+            data array will be either True or False, depending upon the
+            results of the test.  True means the test failed.  False means
+            it succeeded.
+
+            If the test was skipped for some reason (i.e., it was not
+            relevant given the current attributes defined for this dataset),
+            then the run method should return None.
+        -------------------------------------------------------------------"""
         pass
 
 
 class CheckMissing(QCOperator):
 
-    def run(self, variable_name: str, coordinates: List[int], value: Any):
-        test_passed = not self.tsds.is_missing(variable_name, value)
-        return test_passed
+    def run(self, variable_name: str):
+        """-------------------------------------------------------------------
+        Checks if any values are assigned to _FillValue or NaN
+        -------------------------------------------------------------------"""
+        fill_value = DSUtil.get_fill_value(self.ds, variable_name)
+
+        # If the variable has no _FillValue attribute, then
+        # we select a default value to use
+        if fill_value is None:
+            fill_value = -9999
+
+        # Make sure fill value has same data type as the variable
+        fill_value = np.array(fill_value, dtype=self.ds[variable_name].values.dtype.type)
+
+        # First check if any values are assigned to _FillValue
+        results_array = np.equal(self.ds[variable_name].values, fill_value)
+
+        # Then, if the value is numeric, we should also check if any values are assigned to
+        # NaN
+        if self.ds[variable_name].values.dtype.type in (type(0.0), np.float16, np.float32, np.float64):
+            nan = float('nan')
+            nan = np.array(nan, dtype=self.ds[variable_name].values.dtype.type)
+            results_array = results_array | np.equal(self.ds[variable_name].values, nan)
+
+        return results_array
 
 
-class CheckValidMin(QCOperator):
+class CheckFailMin(QCOperator):
 
-    def run(self, variable_name: str, coordinates: List[int], value: Any):
-        # Get the variable's valid_min
-        ds_var = self.tsds.get_var(variable_name)
-        valid_min = ds_var.attrs.get(TimeSeriesDataset.ATTS.VALID_MIN)
+    def run(self, variable_name: str):
+        fail_min = DSUtil.get_fail_min(self.ds, variable_name)
 
-        # Only run test if there is a valid_min defined and current value is not missing_value
-        if valid_min and not self.tsds.is_missing(variable_name, value):
-            if value < valid_min:
-                return False
+        # If no valid_min is available, then we just skip this test
+        results_array = None
+        if fail_min is not None:
+            results_array = np.less(self.ds[variable_name].values, fail_min)
 
-        return True
+        return results_array
 
 
-class CheckValidMax(QCOperator):
+class CheckFailMax(QCOperator):
 
-    def run(self, variable_name: str, coordinates: List[int], value: Any):
-        # Get the variable's valid_max
-        ds_var = self.tsds.get_var(variable_name)
-        valid_max = ds_var.attrs.get(TimeSeriesDataset.ATTS.VALID_MAX)
+    def run(self, variable_name: str):
+        fail_max = DSUtil.get_fail_max(self.ds, variable_name)
 
-        # Only run test if there is a valid_max defined and current value is not missing_value
-        if valid_max and not self.tsds.is_missing(variable_name, value):
-            if value > valid_max:
-                return False
+        # If no valid_min is available, then we just skip this test
+        results_array = None
+        if fail_max is not None:
+            results_array = np.greater(self.ds[variable_name].values, fail_max)
 
-        return True
+        return results_array
+
+
+class CheckWarnMin(QCOperator):
+
+    def run(self, variable_name: str):
+        warn_min = DSUtil.get_warn_min(self.ds, variable_name)
+
+        # If no valid_min is available, then we just skip this test
+        results_array = None
+        if warn_min is not None:
+            results_array = np.less(self.ds[variable_name].values, warn_min)
+
+        return results_array
+
+
+class CheckWarnMax(QCOperator):
+
+    def run(self, variable_name: str):
+        warn_max = DSUtil.get_warn_max(self.ds, variable_name)
+
+        # If no valid_min is available, then we just skip this test
+        results_array = None
+        if warn_max is not None:
+            results_array = np.greater(self.ds[variable_name].values, warn_max)
+
+        return results_array
 
 
 class CheckValidDelta(QCOperator):
 
-    def run(self, variable_name: str, coordinates: List[int], value: Any):
-        # Get the variable's valid_delta
-        ds_var = self.tsds.get_var(variable_name)
-        valid_delta = ds_var.attrs.get(TimeSeriesDataset.ATTS.VALID_DELTA)
+    def run(self, variable_name: str):
 
-        # If there is no valid_delta value or current value is missing, skip this test
-        if valid_delta and not self.tsds.is_missing(variable_name, value):
-            # Get the axis to navigate on - by default we will use axis 0 (i.e., x in x,y,z)
-            # TODO: the axis dimension for the delta check should be overridable in the config
-            axis = 0
+        valid_delta = DSUtil.get_valid_delta(self.ds, variable_name)
 
-            # Get the previous value
-            prev_value = self.tsds.get_previous_value(variable_name, coordinates, axis)
+        # If no valid_delta is available, then we just skip this test
+        results_array = None
+        if valid_delta is not None:
+            # We need to get the dim to diff on from the parameters
+            # If dim is not specified, then we use the first dim for the variable
+            dim = self.params.get('dim', None)
 
-            # If there is no previous value or previous value is missing, skip this test
-            # TODO: do we need to navigate backward until we find a non-missing value?
-            # Not sure what the typical logic is for this type of function
-            if prev_value is not None and not self.tsds.is_missing(variable_name, prev_value):
-                delta = abs(value - prev_value)
-                if delta > valid_delta:
-                    return False
+            if dim is None and len(self.ds[variable_name].dims) > 0:
+                dim = self.ds[variable_name].dims[0]
 
-        return True
+            if dim is not None:
+                # If previous data exists, then we must add the last row of
+                # previous data as the first row of the variable's data array.
+                # This is so that the diff function can compare the first value
+                # of the file to make sure it is consistent with the previous file.
+                variable_data = self.ds[variable_name]
 
+                if self.previous_data is not None:
+                    previous_variable_data = self.previous_data.get(variable_name, None)
+                    if previous_variable_data is not None:
+                        # Get the last value from the first axis
+                        previous_row = previous_variable_data[-1]
 
-class CheckMonotonic(QCOperator):
-    def __init__(self, tsds: TimeSeriesDataset, params: Dict):
-        super().__init__(tsds, params)
-        direction = params.get('direction', 'increasing')
-        self.increasing = False
-        if direction == 'increasing':
-            self.increasing = True
-        self.interval = params.get('interval', None)
-        self.interval = abs(self.interval) # make sure it's a positive number
+                        # Insert that value as the first value of the first axis
+                        variable_data = np.insert(variable_data, 0, previous_row, 0)
 
-    def run(self, variable_name: str, coordinates: List[int], value: Any):
+                diff = variable_data.diff(dim)
+                results_array = np.greater_equal(diff, valid_delta)
 
-        # If current value is missing, skip this test
-        if not self.tsds.is_missing(variable_name, value):
-            # Get the axis to navigate on - by default we will use axis 0 (i.e., x in x,y,z)
-            # TODO: the axis dimension for this check should be overridable in the config
-            axis = 0
-
-            # Get the previous value
-            prev_value = self.tsds.get_previous_value(variable_name, coordinates, axis)
-
-            # If there is no previous value or previous value is missing, skip this test
-            # TODO: do we need to navigate backward until we find a non-missing value?
-            # Not sure what the typical logic is for this type of function
-            if prev_value is not None and not self.tsds.is_missing(variable_name, prev_value):
-
-                # If this variable is datetime64, then convert the value to the timestamp
-                # in order to do this check.
-                if type(value) == np.datetime64:
-                    value = TimeSeriesDataset.get_timestamp(value)
-                    prev_value = TimeSeriesDataset.get_timestamp(prev_value)
-
-                if self.increasing:
-                    delta = value - prev_value
-                else:
-                    delta = prev_value - value
-
-                if self.interval and delta != self.interval:
-                    return False
-
-                elif not self.interval and delta <= 0:
-                    return False
-
-        return True
+        return results_array
 
 
+# class CheckMonotonic(QCOperator):
+#     def __init__(self, tsds: TimeSeriesDataset, params: Dict):
+#         super().__init__(tsds, params)
+#         direction = params.get('direction', 'increasing')
+#         self.increasing = False
+#         if direction == 'increasing':
+#             self.increasing = True
+#         self.interval = params.get('interval', None)
+#         self.interval = abs(self.interval) # make sure it's a positive number
+#
+#     def run(self, variable_name: str, coordinates: List[int], value: Any):
+#
+#         # If current value is missing, skip this test
+#         if not self.tsds.is_missing(variable_name, value):
+#             # Get the axis to navigate on - by default we will use axis 0 (i.e., x in x,y,z)
+#             # TODO: the axis dimension for this check should be overridable in the config
+#             axis = 0
+#
+#             # Get the previous value
+#             prev_value = self.tsds.get_previous_value(variable_name, coordinates, axis)
+#
+#             # If there is no previous value or previous value is missing, skip this test
+#             # TODO: do we need to navigate backward until we find a non-missing value?
+#             # Not sure what the typical logic is for this type of function
+#             if prev_value is not None and not self.tsds.is_missing(variable_name, prev_value):
+#
+#                 # If this variable is datetime64, then convert the value to the timestamp
+#                 # in order to do this check.
+#                 if type(value) == np.datetime64:
+#                     value = TimeSeriesDataset.get_timestamp(value)
+#                     prev_value = TimeSeriesDataset.get_timestamp(prev_value)
+#
+#                 if self.increasing:
+#                     delta = value - prev_value
+#                 else:
+#                     delta = prev_value - value
+#
+#                 if self.interval and delta != self.interval:
+#                     return False
+#
+#                 elif not self.interval and delta <= 0:
+#                     return False
+#
+#         return True
 
-# TODO:
-# check_inf
-# check_nan
+
+
+# TODO: Other tests we might implement
 # check_outlier(std_dev)
-# - tsdat.qc.operators.CheckType (not sure if this is realistic)
 
 
 

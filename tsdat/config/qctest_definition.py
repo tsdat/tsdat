@@ -1,5 +1,6 @@
 from typing import Dict
 
+
 class QCTestDefinition:
     """
     Converts dictionary of properties into a class

@@ -21,7 +21,7 @@ class Config:
     def __init__(self, dictionary: Dict):
         self.dictionary = dictionary
         self.dataset_definition = DatasetDefinition(dictionary)
-        self._parse_qc_tests(dictionary) # Will be moved to dataset_definition
+        self._parse_qc_tests(dictionary)
 
 
     @classmethod
@@ -77,5 +77,5 @@ class Config:
         for test_name in test_names:
             test_dict = dictionary.get(Keys.QC_TESTS, {}).get(test_name, None)
             if test_dict:
-                self.qc_tests[test_name] = QCTestDefinition(test_name, test_dict)       
+                self.qc_tests[test_name] = QCTestDefinition(test_name, test_dict)
 
