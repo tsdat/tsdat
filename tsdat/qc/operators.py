@@ -2,7 +2,7 @@ import abc
 import numpy as np
 from typing import List, Dict, Any
 import xarray as xr
-from tsdat import QCTest
+from tsdat import QCTestDefinition
 from tsdat.utils import DSUtil
 from tsdat.constants import ATTS
 
@@ -12,11 +12,11 @@ class QCOperator(abc.ABC):
     Class containing the code to perform a single QC test on a Dataset
     variable.
     -------------------------------------------------------------------"""
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QCTest, params: Dict):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition, params: Dict):
         """-------------------------------------------------------------------
         Args:
             ds (xr.Dataset): The dataset the operator will be applied to
-            test (QCTest)  : The test definition
+            test (QCTestDefinition)  : The test definition
             params(Dict)   : A dictionary of operator-specific parameters
         -------------------------------------------------------------------"""
         self.ds = ds
