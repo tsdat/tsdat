@@ -75,5 +75,5 @@ class Pipeline(abc.ABC):
         Args:
             dataset (xr.Dataset): The dataset to validate.
         -------------------------------------------------------------------"""
-        Standards.validate_dataset(dataset)
+        Standards.validate(dataset)
  
