@@ -4,7 +4,8 @@ from typing import Dict, Optional
 import numpy as np
 import xarray as xr
 
-from tsdat import QCTestDefinition
+from tsdat.config import QCTestDefinition
+from tsdat.constants import ATTS
 from tsdat.utils import DSUtil
 
 
@@ -81,7 +82,7 @@ class CheckMissing(QCOperator):
             nan = np.array(nan, dtype=self.ds[variable_name].values.dtype.type)
             results_array = results_array | np.equal(self.ds[variable_name].values, nan)
 
-        return results_array.data
+        return results_array
 
 
 class CheckFailMin(QCOperator):
@@ -94,7 +95,7 @@ class CheckFailMin(QCOperator):
         if fail_min is not None:
             results_array = np.less(self.ds[variable_name].values, fail_min)
 
-        return results_array.data
+        return results_array
 
 
 class CheckFailMax(QCOperator):
@@ -107,7 +108,7 @@ class CheckFailMax(QCOperator):
         if fail_max is not None:
             results_array = np.greater(self.ds[variable_name].values, fail_max)
 
-        return results_array.data
+        return results_array
 
 
 class CheckWarnMin(QCOperator):
@@ -120,7 +121,7 @@ class CheckWarnMin(QCOperator):
         if warn_min is not None:
             results_array = np.less(self.ds[variable_name].values, warn_min)
 
-        return results_array.data
+        return results_array
 
 
 class CheckWarnMax(QCOperator):
@@ -133,14 +134,14 @@ class CheckWarnMax(QCOperator):
         if warn_max is not None:
             results_array = np.greater(self.ds[variable_name].values, warn_max)
 
-        return results_array.data
+        return results_array
 
 
 class CheckValidDelta(QCOperator):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
 
-        valid_delta = DSUtil.get_valid_delta(self.ds, variable_name)
+        valid_delta = self.ds[variable_name].attrs.get(ATTS.VALID_DELTA, None)
 
         # If no valid_delta is available, then we just skip this test
         results_array = None
@@ -181,7 +182,7 @@ class CheckValidDelta(QCOperator):
                 variable_data = np.insert(variable_data, 0, previous_row, axis=axis)
 
                 diff = np.absolute(np.diff(variable_data, axis=axis))
-                results_array = np.greater_equal(diff, valid_delta)
+                results_array = np.greater(diff, valid_delta)
 
         return results_array
 

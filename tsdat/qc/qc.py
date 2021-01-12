@@ -1,8 +1,10 @@
-from typing import List, Dict
 import importlib
+from typing import List, Dict
+
+import numpy as np
 import xarray as xr
-import act
-from tsdat.config import Config, QCTestDefinition, VariableDefinition
+
+from tsdat.config import Config, QCTestDefinition
 from tsdat.constants import VARS
 from tsdat.utils import DSUtil
 
@@ -46,7 +48,7 @@ class QCChecker:
         # Get the variables this test applies to
         variable_names = test.variables
         if VARS.ALL in variable_names:
-            variable_names = DSUtil.get_non_qc_variables(ds)
+            variable_names = DSUtil.get_non_qc_variable_names(ds)
 
         # Exclude any excludes
         excludes = test.exclude
@@ -76,13 +78,13 @@ class QCChecker:
         for variable_name in self.variable_names:
 
             # Apply the operator
-            results_array = self.operator.run(variable_name)
+            results_array: np.ndarray = self.operator.run(variable_name)
 
             # If results_array is None, then we just skip this test
             if results_array is not None:
 
                 # If any values fail, then call any defined error handlers
-                if sum(results_array) > 0 and self.error_handlers is not None:
+                if np.sum(results_array) > 0 and self.error_handlers is not None:
                     for error_handler in self.error_handlers:
                         error_handler.run(variable_name, results_array)
 
@@ -113,10 +115,10 @@ class QCChecker:
 
             if classname is None: # handler is an dictionary of multiple handlers
                 handler = []
-                for handler_name, handler_dict in handler_desc:
+                for handler_dict in handler_desc.values():
                     classname = handler_dict.get('classname', None)
                     params = handler_dict.get('parameters', {})
-                    handler.add(QCChecker._instantiate_class(ds, previous_data, test, classname, params))
+                    handler.append(QCChecker._instantiate_class(ds, previous_data, test, classname, params))
 
             else:
                 handler = QCChecker._instantiate_class(ds, previous_data, test, classname, params)

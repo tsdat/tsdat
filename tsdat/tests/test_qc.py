@@ -76,8 +76,23 @@ class TestQC(TestCase):
         config = Config.load('data/qc/qc.yml')
 
         # Now apply the qc tests
-        qc_dataset = QC.apply_tests(self.ds, config, None)
+        QC.apply_tests(self.ds, config, None)
 
         # Validate the results
+        # SWdown
+        swdown_expected_qc = np.array([0,0,1], np.int32)
+        np.testing.assert_equal(self.ds.qc_SWdown.values, swdown_expected_qc)
+
+        # LWdown
+        lwdown_expected_qc = np.array([0,0,4], np.int32)
+        np.testing.assert_equal(self.ds.qc_LWdown.values, lwdown_expected_qc)
+
+        # foo
+        foo_expected_qc = np.array([
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 33, 33]], np.int32)
+        np.testing.assert_equal(self.ds.qc_foo.values, foo_expected_qc)
+
 
 

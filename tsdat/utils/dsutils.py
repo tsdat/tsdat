@@ -40,10 +40,15 @@ class DSUtil:
         return ds[variable_name].attrs.get(ATTS.FILL_VALUE, None)
 
     @staticmethod
-    def get_non_qc_variables(ds: xr.Dataset):
+    def get_non_qc_variable_names(ds: xr.Dataset) -> List[str]:
         """-------------------------------------------------------------------
-        Get a list of all variables in this dataset that are not ancillary.
+        Get a list of all variable names in this dataset that are not qc.
         -------------------------------------------------------------------"""
+        varnames = []
+        for varname, da in ds.data_vars.items():
+            varnames.append(varname)
+
+        return varnames
 
     @staticmethod
     def get_shape(ds: xr.Dataset, variable_name):
