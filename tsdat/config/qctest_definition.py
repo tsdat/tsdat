@@ -13,7 +13,7 @@ class QCTestDefinition:
         self.assessment = dictionary.get('assessment', None)
         self.variables = dictionary.get('variables', [])
         self.exclude = dictionary.get('exclude', [])
-        self.operators = dictionary.get('operators', {})
+        self.operator = dictionary.get('operator', {})
         self.error_handlers = dictionary.get('error_handlers', {})
 
         # Now set any other properties that may have been added by user

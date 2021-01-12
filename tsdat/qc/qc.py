@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 import importlib
 import xarray as xr
 import act
@@ -54,15 +54,15 @@ class QCChecker:
             variable_names.remove(exclude)
 
         # Get the operator
-        operator = self._instantiate_class(ds, previous_data, test, test.operator)
+        operator = self._instantiate_handler(ds, previous_data, test, test.operator)
 
-        # Get the error handler (optional)
-        error_handler = self._instantiate_class(ds, previous_data, test, test.error_handler)
+        # Get the error handlers (optional)
+        error_handlers = self._instantiate_handler(ds, previous_data, test, test.error_handlers)
 
         self.ds = ds
         self.variable_names = variable_names
         self.operator = operator
-        self.error_handler = error_handler
+        self.error_handlers = error_handlers
         self.test: QCTestDefinition = test
         self.previous_data = previous_data
 
@@ -82,8 +82,9 @@ class QCChecker:
             if results_array is not None:
 
                 # If any values fail, then call any defined error handlers
-                if sum(results_array) > 0 and self.error_handler is not None:
-                    self.error_handler.run(variable_name, results_array)
+                if sum(results_array) > 0 and self.error_handlers is not None:
+                    for error_handler in self.error_handlers:
+                        error_handler.run(variable_name, results_array)
 
                 # Record the test results in a qc_ companion variable
                 self.ds.qcfilter.add_test(
@@ -93,19 +94,34 @@ class QCChecker:
                     test_assessment=self.test.assessment)
 
     @staticmethod
-    def _instantiate_class(ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition, class_desc):
-        operator = None
-        if class_desc is not None:
-            params = class_desc.get('parameters', {})
+    def _instantiate_class(ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition,
+                           classname: str, parameters: Dict):
+        # Convert the class reference to an object
+        module_name, class_name = QCChecker._parse_fully_qualified_name(classname)
+        module = importlib.import_module(module_name)
+        class_ = getattr(module, class_name)
+        instance = class_(ds, previous_data, test, parameters)
+        return instance
 
-            # Convert the class reference to an object
-            module_name, class_name = QCChecker._parse_fully_qualified_name(class_desc['classname'])
-            module = importlib.import_module(module_name)
-            class_ = getattr(module, class_name)
-            instance = class_(ds, previous_data, test, params)
-            operator = instance
+    @staticmethod
+    def _instantiate_handler(ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition, handler_desc: Dict):
+        handler = None
 
-        return operator
+        if handler_desc is not None:
+            classname = handler_desc.get('classname', None)
+            params = handler_desc.get('parameters', {})
+
+            if classname is None: # handler is an dictionary of multiple handlers
+                handler = []
+                for handler_name, handler_dict in handler_desc:
+                    classname = handler_dict.get('classname', None)
+                    params = handler_dict.get('parameters', {})
+                    handler.add(QCChecker._instantiate_class(ds, previous_data, test, classname, params))
+
+            else:
+                handler = QCChecker._instantiate_class(ds, previous_data, test, classname, params)
+
+        return handler
 
     @staticmethod
     def _parse_fully_qualified_name(fully_qualified_name: str):

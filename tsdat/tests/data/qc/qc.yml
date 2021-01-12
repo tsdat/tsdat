@@ -64,5 +64,4 @@ qc_tests:
             classname: tsdat.qc.error_handlers.SendEmailAWS
             parameters:
               message:
-              sender:  carina.lansing@pnnl.gov
               recipients: [carina.lansing@pnnl.gov, maxwell.levin@pnnl.gov]

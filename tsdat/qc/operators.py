@@ -1,10 +1,11 @@
 import abc
+from typing import Dict
+
 import numpy as np
-from typing import List, Dict, Any
 import xarray as xr
+
 from tsdat import QCTestDefinition
 from tsdat.utils import DSUtil
-from tsdat.constants import ATTS
 
 
 class QCOperator(abc.ABC):
@@ -26,7 +27,7 @@ class QCOperator(abc.ABC):
         self.params = params
 
     @abc.abstractmethod
-    def run(self, variable_name: str):
+    def run(self, variable_name: str) -> np.ndarray | None:
         """-------------------------------------------------------------------
         Test a dataset's variable to see if it passes a quality check.
         These tests can be performed on the entire variable at one time by
@@ -36,11 +37,16 @@ class QCOperator(abc.ABC):
             variable_name (str):  The name of the variable to check
 
         Returns:
-            xr.DataArray | None: If the test was performed, return a
-            DataArray of the same shape as the variable. Each value in the
+            np.ndarray | None: If the test was performed, return a
+            ndarray of the same shape as the variable. Each value in the
             data array will be either True or False, depending upon the
             results of the test.  True means the test failed.  False means
             it succeeded.
+
+            Note that we are using an np.ndarray instead of an xr.DataArray
+            because the DataArray contains coordinate indexes which can
+            sometimes get out of sync when performing np arithmectic vector
+            operations.  So it's easier to just use numpy arrays.
 
             If the test was skipped for some reason (i.e., it was not
             relevant given the current attributes defined for this dataset),
@@ -51,7 +57,7 @@ class QCOperator(abc.ABC):
 
 class CheckMissing(QCOperator):
 
-    def run(self, variable_name: str):
+    def run(self, variable_name: str) -> np.ndarray | None:
         """-------------------------------------------------------------------
         Checks if any values are assigned to _FillValue or NaN
         -------------------------------------------------------------------"""
@@ -75,12 +81,12 @@ class CheckMissing(QCOperator):
             nan = np.array(nan, dtype=self.ds[variable_name].values.dtype.type)
             results_array = results_array | np.equal(self.ds[variable_name].values, nan)
 
-        return results_array
+        return results_array.data
 
 
 class CheckFailMin(QCOperator):
 
-    def run(self, variable_name: str):
+    def run(self, variable_name: str) -> np.ndarray | None:
         fail_min = DSUtil.get_fail_min(self.ds, variable_name)
 
         # If no valid_min is available, then we just skip this test
@@ -88,12 +94,12 @@ class CheckFailMin(QCOperator):
         if fail_min is not None:
             results_array = np.less(self.ds[variable_name].values, fail_min)
 
-        return results_array
+        return results_array.data
 
 
 class CheckFailMax(QCOperator):
 
-    def run(self, variable_name: str):
+    def run(self, variable_name: str) -> np.ndarray | None:
         fail_max = DSUtil.get_fail_max(self.ds, variable_name)
 
         # If no valid_min is available, then we just skip this test
@@ -101,12 +107,12 @@ class CheckFailMax(QCOperator):
         if fail_max is not None:
             results_array = np.greater(self.ds[variable_name].values, fail_max)
 
-        return results_array
+        return results_array.data
 
 
 class CheckWarnMin(QCOperator):
 
-    def run(self, variable_name: str):
+    def run(self, variable_name: str) -> np.ndarray | None:
         warn_min = DSUtil.get_warn_min(self.ds, variable_name)
 
         # If no valid_min is available, then we just skip this test
@@ -114,12 +120,12 @@ class CheckWarnMin(QCOperator):
         if warn_min is not None:
             results_array = np.less(self.ds[variable_name].values, warn_min)
 
-        return results_array
+        return results_array.data
 
 
 class CheckWarnMax(QCOperator):
 
-    def run(self, variable_name: str):
+    def run(self, variable_name: str) -> np.ndarray | None:
         warn_max = DSUtil.get_warn_max(self.ds, variable_name)
 
         # If no valid_min is available, then we just skip this test
@@ -127,12 +133,12 @@ class CheckWarnMax(QCOperator):
         if warn_max is not None:
             results_array = np.greater(self.ds[variable_name].values, warn_max)
 
-        return results_array
+        return results_array.data
 
 
 class CheckValidDelta(QCOperator):
 
-    def run(self, variable_name: str):
+    def run(self, variable_name: str) -> np.ndarray | None:
 
         valid_delta = DSUtil.get_valid_delta(self.ds, variable_name)
 
@@ -151,18 +157,30 @@ class CheckValidDelta(QCOperator):
                 # previous data as the first row of the variable's data array.
                 # This is so that the diff function can compare the first value
                 # of the file to make sure it is consistent with the previous file.
-                variable_data = self.ds[variable_name]
 
+                # convert to np array
+                variable_data = self.ds[variable_name].data
+                axis = self.ds[variable_name].get_axis_num(dim)
+                previous_row = None
+
+                # Load the previous row from the other dataset
                 if self.previous_data is not None:
                     previous_variable_data = self.previous_data.get(variable_name, None)
                     if previous_variable_data is not None:
+                        # convert to np array
+                        previous_variable_data = previous_variable_data.data
+
                         # Get the last value from the first axis
                         previous_row = previous_variable_data[-1]
 
-                        # Insert that value as the first value of the first axis
-                        variable_data = np.insert(variable_data, 0, previous_row, 0)
+                if previous_row is None:
+                    # just use the first row of the current data as the previous row
+                    previous_row = variable_data[0]
 
-                diff = variable_data.diff(dim)
+                # Insert that value as the first value of the first axis
+                variable_data = np.insert(variable_data, 0, previous_row, axis=axis)
+
+                diff = np.absolute(np.diff(variable_data, axis=axis))
                 results_array = np.greater_equal(diff, valid_delta)
 
         return results_array

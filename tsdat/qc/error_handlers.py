@@ -1,16 +1,25 @@
 import abc
-from typing import List, Dict, Any
+from typing import Dict
+
+import numpy as np
 import xarray as xr
+
 from tsdat.config import QCTestDefinition
+from tsdat.exceptions import QCError
+from tsdat.utils import DSUtil
 
 
 class QCErrorHandler(abc.ABC):
+    """-------------------------------------------------------------------
+    Class containing code to be executed if a particular qc test fails.
+    -------------------------------------------------------------------"""
+
     def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition, params: Dict):
         """-------------------------------------------------------------------
         Args:
             ds (xr.Dataset): The dataset the operator will be applied to
             test (QCTestDefinition)  : The test definition
-            params(Dict)   : A dictionary of operator-specific parameters
+            params(Dict)   : A dictionary of handler-specific parameters
         -------------------------------------------------------------------"""
         self.ds = ds
         self.previous_data = previous_data
@@ -18,7 +27,7 @@ class QCErrorHandler(abc.ABC):
         self.params = params
 
     @abc.abstractmethod
-    def run(self, variable_name: str, coordinates: List[int]):
+    def run(self, variable_name: str, results_array: np.ndarray):
         """-------------------------------------------------------------------
         Perform a follow-on action if a qc test fails.  This can be used to
         correct data if needed (such as replacing a bad value with missing value,
@@ -27,41 +36,45 @@ class QCErrorHandler(abc.ABC):
 
         Args:
             variable_name (str): Name of the variable that failed
-            test (QCTestDefinition)  : The test definition
-            params(Dict)   : A dictionary of operator-specific parameters
+            results_array (np.ndarray)  : An array of True/False values for
+            each data value of the variable.  True means the test failed.
         -------------------------------------------------------------------"""
-        """
-        Perform a follow-on action if a qc test fails
-
-        :param variable_name: Name of the variable that failed
-        :param coordinates: n-dimensional data index of the value that failed (i.e., [1246, 1] for [time, height]
-        """
         pass
 
 
-class ReplaceMissing(QCErrorHandler):
+class RemoveFailedValues(QCErrorHandler):
+    """-------------------------------------------------------------------
+    Replace all the failed values with _FillValue
+    -------------------------------------------------------------------"""
+    def run(self, variable_name: str, results_array: np.ndarray):
+        fill_value = DSUtil.get_fill_value(self.ds, variable_name)
 
-    def run(self, variable_name: str, coordinates: List[int]):
-        # Set the value at the given coordinates to missing value
-        missing_value = self.tsds.get_missing_value(variable_name)
-        var = self.tsds.xr.get(variable_name)
+        keep_array = np.logical_not(results_array)
 
-        if len(coordinates) == 1:
-            x = coordinates[0]
-            var.values[x] = missing_value
-
-        elif len(coordinates) == 2:
-            x = coordinates[0]
-            y = coordinates[1]
-            var.values[x][y] = missing_value
-
-        elif len(coordinates) == 3:
-            x = coordinates[0]
-            y = coordinates[1]
-            z = coordinates[2]
-            var.values[x][y][z] = missing_value
+        var_values = self.ds[variable_name].data
+        replaced_values = np.where(keep_array, var_values, fill_value)
+        self.ds[variable_name].data = replaced_values
 
 
-# TODO: possible other error handlers
-# tsdat.qc.error_handlers.Fail  # fail the pipeline
-# TODO: what about an email handler?
+class SendEmailAWS(QCErrorHandler):
+    """-------------------------------------------------------------------
+    Send an email to the recipients using AWS services.
+    -------------------------------------------------------------------"""
+    def run(self, variable_name: str, results_array: np.ndarray):
+        # TODO: we will implement this later after we get the cloud
+        # stuff implemented.
+        pass
+
+
+class FailPipeline(QCErrorHandler):
+    """-------------------------------------------------------------------
+    Throw an exception, halting the pipeline & indicating a critical error
+    -------------------------------------------------------------------"""
+    def run(self, variable_name: str, results_array: np.ndarray):
+        # TODO: Not sure if a critical error should be thrown by an error handler
+        # or by the operator itself.  The operator would know more information,
+        # so would be able to print out a more useful error message.
+        # If we deem this error handler not useful, we should remove it.
+        message = f"QC test {self.test.name} failed for variable {variable_name}"
+        raise QCError(message)
+
