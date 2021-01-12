@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from .keys import Keys
 from .attribute_defintion import AttributeDefinition
 from .dimension_definition import DimensionDefinition
@@ -6,13 +6,14 @@ from .variable_definition import VariableDefinition
 
 class DatasetDefinition:
     def __init__(self, dictionary: Dict):
-        self.attributes = self._parse_attributes(dictionary)
-        self.dimensions = self._parse_dimensions(dictionary)
-        self.variables = self._parse_variables(dictionary)
+        self.attrs = self._parse_attributes(dictionary)
+        self.dims = self._parse_dimensions(dictionary)
+        self.vars = self._parse_variables(dictionary, self.dims)
+        self.coords, self.vars = self._parse_coordinates(self.vars)
 
     def _parse_attributes(self, dictionary: Dict) -> Dict[str, AttributeDefinition]:
         attributes: Dict[str, AttributeDefinition] = {}
-        for attr_name, attr_value in dictionary[Keys.ATTRIBUTES].items():
+        for attr_name, attr_value in dictionary.get(Keys.ATTRIBUTES, {}).items():
             attributes[attr_name] = AttributeDefinition(attr_name, attr_value)
         return attributes
     
@@ -22,34 +23,63 @@ class DatasetDefinition:
             dimensions[dim_name] = DimensionDefinition(dim_name, dim_dict)
         return dimensions
 
-    def _parse_variables(self, dictionary: Dict) -> Dict[str, VariableDefinition]:
+    def _parse_variables(self, dictionary: Dict, available_dimensions: Dict[str, DimensionDefinition]) -> Dict[str, VariableDefinition]:
         variables: Dict[str, VariableDefinition] = {}
         for var_name, var_dict in dictionary[Keys.VARIABLES].items():
-            variables[var_name] = VariableDefinition(var_name, var_dict)
+            variables[var_name] = VariableDefinition(var_name, var_dict, available_dimensions)
         return variables
     
-    # def get_variable_names(self):
-    #     # Stupid python 3 returns keys as a dict_keys object.
-    #     # Not really sure the purpose of this extra class :(.
-    #     return list(self.variables.keys())
+    def _parse_coordinates(self, vars: Dict[str, VariableDefinition]) -> Tuple[Dict[str, VariableDefinition], Dict[str, VariableDefinition]]:
+        """-------------------------------------------------------------------
+        Determines which variables are coordinate variables and moves those 
+        variables from self.vars to self.coords. Coordinate variables are 
+        variables that are dimensioned by themself. I.e. `var.name == 
+        var.dim.name` is a true statement for coordinate variables.
 
-    # def get_variable(self, variable_name):
-    #     return self.variables.get(variable_name, None)
+        Args:
+            vars (Dict[str, VariableDefinition]):   The dictionary of 
+                                                    variables to check.
+            dims (Dict[str, DimensionDefinition]):  The dictionary of 
+                                                    dimensions in the dataset.
+        -------------------------------------------------------------------"""
+        coords = {name: var for name, var in vars.items() if var.is_coordinate()}
+        vars = {name: var for name, var in vars.items() if not var.is_coordinate()}
+        return coords, vars
+    
+    def get_variable_names(self) -> List[str]:
+        return list(self.variables.keys())
 
-    # def get_variables(self):
-    #     return self.variables.values()
+    def get_variable(self, variable_name) -> VariableDefinition:
+        return self.variables.get(variable_name, None)
+
+    def get_variables(self) -> List[VariableDefinition]:
+        return self.variables.values()
 
     def to_dict(self) -> Dict:
         """-------------------------------------------------------------------
-        Returns a dictionary that can be used to instatiate an xarray dataset 
+        Returns a dictionary that can be used to instantiate an xarray dataset 
         with no data.
+
+        Returns a dictionary like:
+        ```
+        {
+            "coords": {"time": {"dims": ["time"], "data": [], "attrs": {"units": "seconds since 1970-01-01T00:00:00"}}},
+            "attrs": {"title": "Ocean Temperature and Salinity"},
+            "dims": "time",
+            "data_vars": {
+                "temperature": {"dims": ["time"], "data": [], "attrs": {"units": "degC"}},
+                "salinity": {"dims": ["time"], "data": [], "attrs": {"units": "kg/m^3"}},
+            },
+        }
+        ```
 
         Returns:
             Dict: A dictionary representing the structure of the dataset.
         -------------------------------------------------------------------"""
         dictionary = {
-            "attributes": self.attributes.to_dict(),
-            "dimensions": self.dimensions.to_dict(),
-            "variables": self.variables.to_dict()
+            "coords":       {coord_name: coord.to_dict() for coord_name, coord in self.coords.items()},
+            "attrs":        {attr_name: attr.value for attr_name, attr in self.attrs.items()},
+            "dims":         list(self.dims.keys()),
+            "data_vars":    {var_name: var.to_dict() for var_name, var in self.vars.items()}
         }
         return dictionary
