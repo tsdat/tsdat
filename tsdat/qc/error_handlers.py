@@ -1,9 +1,11 @@
+import xarray as xr
 from abc import abstractmethod
 from typing import List, Dict, Any
+from tsdat.utils import DSUtil
 
 
 class QCErrorHandler:
-    def __init__(self, tsds: TimeSeriesDataset, params: Dict):
+    def __init__(self, tsds: xr.Dataset, params: Dict):
         self.tsds = tsds
         self.params = params
 
@@ -21,24 +23,24 @@ class QCErrorHandler:
 class ReplaceMissing(QCErrorHandler):
 
     def run(self, variable_name: str, coordinates: List[int]):
-        # Set the value at the given coordinates to missing value
-        missing_value = self.tsds.get_missing_value(variable_name)
-        var = self.tsds.xr.get(variable_name)
+        # Set the value at the given coordinates to fill value
+        _FillValue = DSUtil.get_fill_value(ds, variable_name)
+        var = self.tsds[variable_name]
 
         if len(coordinates) == 1:
             x = coordinates[0]
-            var.values[x] = missing_value
+            var.values[x] = _FillValue
 
         elif len(coordinates) == 2:
             x = coordinates[0]
             y = coordinates[1]
-            var.values[x][y] = missing_value
+            var.values[x][y] = _FillValue
 
         elif len(coordinates) == 3:
             x = coordinates[0]
             y = coordinates[1]
             z = coordinates[2]
-            var.values[x][y][z] = missing_value
+            var.values[x][y][z] = _FillValue
 
 
 # TODO: possible other error handlers

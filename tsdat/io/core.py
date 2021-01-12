@@ -1,5 +1,7 @@
-import ntpath
-from tsdat import TimeSeriesDataset, Config
+import os
+import xarray as xr
+from tsdat.utils import DSUtil
+from tsdat.config import Config
 from tsdat.io.file_handlers import NetCdfHandler, CsvHandler
 
 
@@ -16,15 +18,15 @@ handlers = {
 }
 
 
-def save(dataset: TimeSeriesDataset, filename: str, file_format: str, **kwargs):
+def save(dataset: xr.Dataset, filename: str, file_format: str, **kwargs):
     """
     Save the given dataset to file
     :param dataset: The dataset to save
     :param filename: An absolute or relative path to the file including filename
     :param file_format: Use FileFormat to find the supported formats
     """
-    # Overwrite the datastream name to match the new filename
-    dataset.set_datastream_name(ntpath.basename(filename))
+    # # Overwrite the datastream name to match the new filename
+    # dataset.set_datastream_name(ntpath.basename(filename))
     handlers[file_format].write(dataset, filename, **kwargs)
 
 
@@ -38,7 +40,7 @@ def load(filename: str, file_format: str, config: Config = None, **kwargs):
     :return:
     :rtype: TimeSeriesDataset
     """
-    dataset: TimeSeriesDataset = handlers[file_format].read(filename, config, **kwargs)
-    dataset.set_datastream_name(ntpath.basename(filename))
+    dataset: xr.Dataset = handlers[file_format].read(filename, config, **kwargs)
+    dataset.set_datastream_name(os.path.basename(filename))
     return dataset
 
