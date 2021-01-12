@@ -103,6 +103,14 @@ variables:
       valid_delta: 1
       valid_range: [-58, 122]
       _FillValue: -9999
+    
+  life:
+    # Example of a constant variable whose value is defined here
+    type: int
+    data: 42
+    attrs:
+      long_name: The answer is...
+      description: But what is the question?
 
 ---
 qc_tests:
