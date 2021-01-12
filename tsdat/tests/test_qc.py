@@ -76,7 +76,7 @@ class TestQC(TestCase):
         config = Config.load('data/qc/qc.yml')
 
         # Now apply the qc tests
-        QC.apply_tests(self.ds, config, None)
+        qc_dataset = QC.apply_tests(self.ds, config, None)
 
         # Validate the results
 

@@ -40,6 +40,9 @@ class DSUtil:
         return ds[variable_name].attrs.get(ATTS.FILL_VALUE, None)
 
     @staticmethod
+    def get_non_qc_variables
+
+    @staticmethod
     def get_shape(ds: xr.Dataset, variable_name):
         """-------------------------------------------------------------------
         Convenience method to provide access to dimension names and their

@@ -16,6 +16,7 @@ class QCOperator(abc.ABC):
         """-------------------------------------------------------------------
         Args:
             ds (xr.Dataset): The dataset the operator will be applied to
+            previous_data (xr.Dataset): Data from the previous processing interval
             test (QCTestDefinition)  : The test definition
             params(Dict)   : A dictionary of operator-specific parameters
         -------------------------------------------------------------------"""

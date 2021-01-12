@@ -1,14 +1,35 @@
-from abc import abstractmethod
+import abc
 from typing import List, Dict, Any
+import xarray as xr
+from tsdat.config import QCTestDefinition
 
 
-class QCErrorHandler:
-    def __init__(self, tsds: TimeSeriesDataset, params: Dict):
-        self.tsds = tsds
+class QCErrorHandler(abc.ABC):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition, params: Dict):
+        """-------------------------------------------------------------------
+        Args:
+            ds (xr.Dataset): The dataset the operator will be applied to
+            test (QCTestDefinition)  : The test definition
+            params(Dict)   : A dictionary of operator-specific parameters
+        -------------------------------------------------------------------"""
+        self.ds = ds
+        self.previous_data = previous_data
+        self.test = test
         self.params = params
 
-    @abstractmethod
+    @abc.abstractmethod
     def run(self, variable_name: str, coordinates: List[int]):
+        """-------------------------------------------------------------------
+        Perform a follow-on action if a qc test fails.  This can be used to
+        correct data if needed (such as replacing a bad value with missing value,
+        emailing a contact persion, or raising an exception if the failure
+        constitutes a critical error).
+
+        Args:
+            variable_name (str): Name of the variable that failed
+            test (QCTestDefinition)  : The test definition
+            params(Dict)   : A dictionary of operator-specific parameters
+        -------------------------------------------------------------------"""
         """
         Perform a follow-on action if a qc test fails
 

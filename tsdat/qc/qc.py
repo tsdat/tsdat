@@ -4,6 +4,7 @@ import xarray as xr
 import act
 from tsdat.config import Config, QCTestDefinition, VariableDefinition
 from tsdat.constants import VARS
+from tsdat.utils import DSUtil
 
 
 class QC(object):
@@ -45,7 +46,7 @@ class QCChecker:
         # Get the variables this test applies to
         variable_names = test.variables
         if VARS.ALL in variable_names:
-            variable_names = config.get_variable_names()
+            variable_names = DSUtil.get_non_qc_variables(ds)
 
         # Exclude any excludes
         excludes = test.exclude

@@ -59,3 +59,10 @@ qc_tests:
           parameters:
             dim: time
 
+        error_handlers: # Can list multiple error handlers if needed - executed in sequence
+          send_email:
+            classname: tsdat.qc.error_handlers.SendEmailAWS
+            parameters:
+              message:
+              sender:  carina.lansing@pnnl.gov
+              recipients: [carina.lansing@pnnl.gov, maxwell.levin@pnnl.gov]
