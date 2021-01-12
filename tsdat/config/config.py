@@ -25,7 +25,7 @@ class Config:
 
 
     @classmethod
-    def load(self, filepaths: List[str]) -> object:
+    def load(self, filepaths: List[str]):
         """-------------------------------------------------------------------
         Load one or more yaml config files which define data following 
         mhkit-cloud data standards.
