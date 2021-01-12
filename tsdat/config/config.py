@@ -20,8 +20,14 @@ class Config:
 
     def __init__(self, dictionary: Dict):
         self.dictionary = dictionary
-        self.dataset_definition = DatasetDefinition(dictionary)
-        self._parse_qc_tests(dictionary)
+        dataset_dict = dictionary.get(Keys.DATASET_DEFINITION, None)
+        qc_tests_dict = dictionary.get(Keys.QC_TESTS, None)
+
+        if dataset_dict is not None:
+            self.dataset_definition = DatasetDefinition(dataset_dict)
+
+        if qc_tests_dict is not None:
+            self._parse_qc_tests(qc_tests_dict)
 
 
     @classmethod
@@ -62,5 +68,5 @@ class Config:
 
     def _parse_qc_tests(self, dictionary):
         self.qc_tests: Dict[str, QCTestDefinition] = {}
-        for test_name, test_dict in dictionary.get(Keys.QC_TESTS, {}).items():
+        for test_name, test_dict in dictionary.items():
             self.qc_tests[test_name] = QCTestDefinition(test_name, test_dict)

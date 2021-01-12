@@ -1,5 +1,5 @@
 import abc
-from typing import Dict
+from typing import Dict, Optional
 
 import numpy as np
 import xarray as xr
@@ -27,7 +27,7 @@ class QCOperator(abc.ABC):
         self.params = params
 
     @abc.abstractmethod
-    def run(self, variable_name: str) -> np.ndarray | None:
+    def run(self, variable_name: str) -> Optional[np.ndarray]:
         """-------------------------------------------------------------------
         Test a dataset's variable to see if it passes a quality check.
         These tests can be performed on the entire variable at one time by
@@ -57,7 +57,7 @@ class QCOperator(abc.ABC):
 
 class CheckMissing(QCOperator):
 
-    def run(self, variable_name: str) -> np.ndarray | None:
+    def run(self, variable_name: str) -> Optional[np.ndarray]:
         """-------------------------------------------------------------------
         Checks if any values are assigned to _FillValue or NaN
         -------------------------------------------------------------------"""
@@ -86,7 +86,7 @@ class CheckMissing(QCOperator):
 
 class CheckFailMin(QCOperator):
 
-    def run(self, variable_name: str) -> np.ndarray | None:
+    def run(self, variable_name: str) -> Optional[np.ndarray]:
         fail_min = DSUtil.get_fail_min(self.ds, variable_name)
 
         # If no valid_min is available, then we just skip this test
@@ -99,7 +99,7 @@ class CheckFailMin(QCOperator):
 
 class CheckFailMax(QCOperator):
 
-    def run(self, variable_name: str) -> np.ndarray | None:
+    def run(self, variable_name: str) -> Optional[np.ndarray]:
         fail_max = DSUtil.get_fail_max(self.ds, variable_name)
 
         # If no valid_min is available, then we just skip this test
@@ -112,7 +112,7 @@ class CheckFailMax(QCOperator):
 
 class CheckWarnMin(QCOperator):
 
-    def run(self, variable_name: str) -> np.ndarray | None:
+    def run(self, variable_name: str) -> Optional[np.ndarray]:
         warn_min = DSUtil.get_warn_min(self.ds, variable_name)
 
         # If no valid_min is available, then we just skip this test
@@ -125,7 +125,7 @@ class CheckWarnMin(QCOperator):
 
 class CheckWarnMax(QCOperator):
 
-    def run(self, variable_name: str) -> np.ndarray | None:
+    def run(self, variable_name: str) -> Optional[np.ndarray]:
         warn_max = DSUtil.get_warn_max(self.ds, variable_name)
 
         # If no valid_min is available, then we just skip this test
@@ -138,7 +138,7 @@ class CheckWarnMax(QCOperator):
 
 class CheckValidDelta(QCOperator):
 
-    def run(self, variable_name: str) -> np.ndarray | None:
+    def run(self, variable_name: str) -> Optional[np.ndarray]:
 
         valid_delta = DSUtil.get_valid_delta(self.ds, variable_name)
 
