@@ -1,53 +1,53 @@
 # Define the global attributes in your output xarray Dataset
 attributes:
-  title: "Buoy Dataset for Buoy #120"
-  description: "Example ingest dataset."
-  conventions: "MHKiT-Cloud Data Standards v. 1.0"
+  title: Buoy Dataset for Buoy #120
+  description: Example ingest dataset.
+  conventions: MHKiT-Cloud Data Standards v. 1.0
   history:
-  doi: "10.21947/1671051"
-  institution: "PNNL"
-  code_url: "https://github.com/clansing/tsdat/releases/tag/1.0"
+  doi: 10.21947/1671051
+  institution: PNNL
+  code_url: https://github.com/clansing/tsdat/releases/tag/1.0
   references: 
   input_files: 
-  location_id: "humboldt_z05"
-  datastream: "humboldt_z05.lidar_buoy_10m.b1"
-  data_level: "b1"
-  location_description: "Buoy is located of the coast of Humboldt, CA"
-  instrument_name: "Wind Sentinel"
-  serial_number: "000011312"
-  instrument_description: "Self-powered floating buoy hosting a suite of meteorological and marine instruments."
-  instrument_manufacturer: "AXYS Technologies Inc."
-  sampling_interval: "10 min"
+  location_id: humboldt_z05
+  datastream: humboldt_z05.lidar_buoy_10m.b1
+  data_level: b1
+  location_description: Buoy is located of the coast of Humboldt, CA
+  instrument_name: Wind Sentinel
+  serial_number: '000011312'
+  instrument_description: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
+  instrument_manufacturer: AXYS Technologies Inc.
+  sampling_interval: 10 min
 
 # Define the dimensions/coordinates in your output xarray Dataset
 dimensions:
   time:
-      length: "unlimited"
+      length: unlimited
 
 # Define the variables in your output xarray Dataset
 variables:
   time:
     input:
-      name: "DataTimeStamp(DateTime)"
-      format: "%Y-%m-%d %H:%M:%S" # TODO: how to retrieve/set timezone info?
+      name: DataTimeStamp(DateTime)
+      format: "%Y-%m-%d %H:%M:%S"
     dims: [time]
-    type: int64 # Required to meet cf standards (I'm not sure if this is right)
+    type: long
     attrs:
       long_name: Time offset from epoch
       standard_name: time
       # Note:  CF Standards require this exact format:
       # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/ch04s04.html
-      units: "seconds since 1970-01-01T00:00:00"
+      units: seconds since 1970-01-01T00:00:00
 
   temp_mean:
     input:
-      name: "ValueAverage(Double)"
+      name: ValueAverage(Double)
       units: degC
     dims: [time]
     type: double
     attrs:
-      long_name: "Mean temperature"
-      description: "Rolling 10-minute average sea surface temperature. Aligned such that the temperature reported at time 'n' represents the average across the interval (n-1, n]."
+      long_name: Mean temperature
+      description: Rolling 10-minute average sea surface temperature. Aligned such that the temperature reported at time 'n' represents the average across the interval (n-1, n].
       units: degC
       valid_delta: 0.25
       valid_range: [-50, 50]
@@ -55,12 +55,12 @@ variables:
   
   temp_min:
     input:
-      name: "ValueMin(Double)"
+      name: ValueMin(Double)
       units: degC
     dims: [time]
     type: double
     attrs:
-      long_name: "Minimum temperature"
+      long_name: Minimum temperature
       units: degC
       valid_delta: 0.25
       valid_range: [-50, 50]
@@ -68,12 +68,12 @@ variables:
 
   temp_max:
     input:
-      name: "ValueMax(Double)"
+      name: ValueMax(Double)
       units: degC
     dims: [time]
     type: double
     attrs:
-      long_name: "Maximum temperature"
+      long_name: Maximum temperature
       units: degC
       valid_delta: 0.25
       valid_range: [-50, 50]
@@ -81,12 +81,12 @@ variables:
     
   temp_stddev:
     input:
-      name: "ValueSD(Double)"
+      name: ValueSD(Double)
       units: degC
     dims: [time]
     type: double
     attrs:
-      long_name: "Standard deviation of temperature"
+      long_name: Standard deviation of temperature
       units: degC
       valid_delta: 0.25
       valid_range: [0, 5]
@@ -94,15 +94,23 @@ variables:
 
   temp_mean_30min:
     # Example of a variable that gets created in code, it would have no input
-    dimensions: [time]
+    dims: [time]
     type: double
     attrs:
-      long_name: "Mean temperature (30 min)"
-      description: "30-minute rolling average of temp_mean computed using a sliding window of length 3 and converted to degrees Fahrenheit."
+      long_name: Mean temperature (30 min)
+      description: 30-minute rolling average of temp_mean computed using a sliding window of length 3 and converted to degrees Fahrenheit.
       units: degF
       valid_delta: 1
       valid_range: [-58, 122]
       _FillValue: -9999
+    
+  life:
+    # Example of a constant variable whose value is defined here
+    type: int
+    data: 42
+    attrs:
+      long_name: The answer is...
+      description: But what is the question?
 
 ---
 qc_tests:
@@ -112,7 +120,7 @@ qc_tests:
     # cause the dataset to be unusable, and result in a critical pipeline failure.
     missing:
         qc_bit: 1
-        description: "Value is equal to _FillValue or NaN"
+        description: Value is equal to _FillValue or NaN
         assessment: Bad
         variables:
           - ALL  # keyword to apply test to all variables
@@ -121,7 +129,7 @@ qc_tests:
 
     fail_min:
         qc_bit: 2
-        description: "Value is less than the fail_range."
+        description: Value is less than the fail_range.
         assessment: Bad
         variables:
           - ALL
@@ -130,7 +138,7 @@ qc_tests:
 
     fail_max:
         qc_bit: 3
-        description: "Value is greater than the fail_range."
+        description: Value is greater than the fail_range.
         assessment: Bad
         variables:
           - ALL
@@ -139,7 +147,7 @@ qc_tests:
 
     warn_min:
         qc_bit: 4
-        description: "Value is less than the warn_range."
+        description: Value is less than the warn_range.
         assessment: Indeterminate
         variables:
           - ALL
@@ -148,7 +156,7 @@ qc_tests:
 
     warn_max:
         qc_bit: 5
-        description: "Value is greater than the warn_range."
+        description: Value is greater than the warn_range.
         assessment: Indeterminate
         variables:
           - ALL
@@ -157,7 +165,7 @@ qc_tests:
 
     valid_delta:
         qc_bit: 6
-        description: "Difference between current and previous values exceeds valid_delta."
+        description: Difference between current and previous values exceeds valid_delta.
         assessment: Indeterminate
         variables:
           - ALL

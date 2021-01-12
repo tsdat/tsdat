@@ -6,7 +6,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from typing import List, Dict
-from tsdat import TimeSeriesDataset, Config
+from tsdat.config import Config
+from tsdat.utils import DSUtil
 
 FILEHANDLERS = dict()
 
@@ -51,25 +52,25 @@ def register_filehandler(file_extension: str):
 class FileHandler(abc.ABC):
 
     @abc.abstractmethod
-    def write(self, ds: TimeSeriesDataset, filename: str, **kwargs) -> None:
+    def write(self, ds: xr.Dataset, filename: str, **kwargs) -> None:
         """
         Classes derived from the FileHandler class must implement this method.
         ----------------------------------------------------------------------
         Saves the given dataset to file.
 
         Args:
-            ds (TimeSeriesDataset): The dataset to save.
+            ds (xr.Dataset): The dataset to save.
             filename (str): An absolute or relative path to the file including
                             filename.
         -------------------------------------------------------------------"""
         pass
 
     @abc.abstractmethod
-    def read(self, filename: str, config: Config = None, **kwargs) -> TimeSeriesDataset:
+    def read(self, filename: str, config: Config = None, **kwargs) -> xr.Dataset:
         """
         Classes derived from the FileHandler class must implement this method.
         ----------------------------------------------------------------------
-        This method reads the given file into a TimeSeriesDataset object.
+        This method reads the given file into a xr.Dataset object.
 
         Args:
             filename (str): The path to the file to read in.
@@ -77,7 +78,7 @@ class FileHandler(abc.ABC):
                                         None.
 
         Returns:
-            TimeSeriesDataset: A TimeSeriesDataset object
+            xr.Dataset: A xr.Dataset object
         -------------------------------------------------------------------"""
         pass
 
@@ -85,30 +86,31 @@ class FileHandler(abc.ABC):
 @register_filehandler([".nc", ".cdf"])
 class NetCdfHandler(FileHandler):
 
-    def write(self, ds: TimeSeriesDataset, filename: str, **kwargs):
-        ds.xr.to_netcdf(filename, format='NETCDF4')
+    def write(self, ds: xr.Dataset, filename: str, **kwargs):
+        ds.to_netcdf(filename, format='NETCDF4')
 
     def read(self, filename: str, config: Config = None):
-        # TODO: need to have TimeSeriesDataset close the file automatically if user
+        # TODO: need to have xr.Dataset close the file automatically if user
         #  uses "with" - add a resource manager api
         ds_disk = xr.open_dataset(filename)
-        return TimeSeriesDataset(ds_disk, config)
+        # TODO: Use config?
+        return xr.Dataset(ds_disk)
 
 
 # @register_filehandler(".csv")
 class CsvHandler(FileHandler):
 
-    def write(self, ds: TimeSeriesDataset, filename: str, **kwargs):
+    def write(self, ds: xr.Dataset, filename: str, **kwargs):
         # You can only write one-dimensional data to csv
-        if len(ds.xr.dims) > 1:
+        if len(ds.dims) > 1:
             raise TypeError("Dataset has more than one dimension, so it can't be saved to csv.  Try netcdf instead.")
 
         # First convert the data to a Pandas DataFrame and
         # save the variable metadata in a dictionary
         variables = {}
         df: pd.DataFrame = pd.DataFrame()
-        for variable_name in ds.xr.variables:
-            variable = ds.get_var(variable_name)
+        for variable_name in ds.variables:
+            variable = ds[variable_name]
             df[variable_name] = variable.to_pandas()
             variables[variable_name] = self.variable_to_dict(ds, variable_name)
 
@@ -140,13 +142,14 @@ class CsvHandler(FileHandler):
 
             config = Config(new_dict)
 
-        return TimeSeriesDataset(dataframe.to_xarray(), config)
+        # TODO: Use config?
+        return xr.Dataset(dataframe.to_xarray())
 
     @staticmethod
-    def variable_to_dict(ds: TimeSeriesDataset, variable_name):
+    def variable_to_dict(ds: xr.Dataset, variable_name):
         var_dict = {}
         attributes = {}
-        variable: xr.DataArray = ds.get_var(variable_name)
+        variable: xr.DataArray = ds[variable_name]
 
         # First save the attributes
         for attr in variable.attrs:
@@ -154,10 +157,10 @@ class CsvHandler(FileHandler):
         var_dict['attrs'] = attributes
 
         # Now save the dimension information
-        if ds.is_coord_var(variable_name):
+        if DSUtil.is_coord_var(ds, variable_name):
             var_dict['coodinate_variable'] = True
         else:
-            dims, lengths = ds.get_shape(variable_name)
+            dims, lengths = DSUtil.get_shape(ds, variable_name)
             var_dict['dims'] = dims
 
         return var_dict
@@ -167,7 +170,7 @@ class CSVHandler(FileHandler):
     def write(self, dataset: xr.Dataset, filename: str, **kwargs):
         dataframe = dataset.to_dataframe()
         dataframe.to_csv(filename)
-        Config.from(dataset).save(f"{filename}.yaml")
+        # Config.from(dataset).save(f"{filename}.yaml")
     def read(self, filename: str):
         pass
 
