@@ -6,6 +6,7 @@ class QCTestDefinition:
     Converts dictionary of properties into a class
     """
     def __init__(self, name: str, dictionary: Dict):
+        assert(dictionary is not None)
         self.name = name
         self.description = dictionary.get('description', None)
         self.qc_bit = dictionary.get('qc_bit', None)

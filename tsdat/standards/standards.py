@@ -9,43 +9,7 @@ class Standards:
     methods for validating data, filenames, and more conform with the defined
     standards.
     -----------------------------------------------------------------------"""
-
-    @staticmethod
-    def standardize(raw_dataset: xr.Dataset, config: Config) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Uses the config object to map the raw dataset variable names to the 
-        output dataset. Additionally, this function ensures that the dataset 
-        conforms to MHKiT-Cloud data standards. 
-
-        Args:
-            raw_dataset (xr.Dataset):   The raw data into an xarray dataset.
-            config (Config): The config object associated with the dataset.
-
-        Returns:
-            xr.Dataset: The standardized dataset.
-        -------------------------------------------------------------------"""
-        definition = config.dataset_definition.to_dict()
-        
-        # definition["attributes"]
-        # definition["dimensions"]
-
-        # for variable in definition["variables"]:
-            # get original values
-            # convert to formatted values
-            # add the values back to the dict
-        
-        dataset = xr.Dataset(definition)
-        Standards.validate(dataset)
-        return dataset
     
-    @staticmethod
-    def validate(dataset: xr.Dataset) -> None:
-        # Function to ensure that a dataset conforms with MHKiT-Cloud data standards
-        # Check that it has time variable
-        # appropriate dimensions
-        # variables have units attributes, etc
-        pass
-
     @staticmethod
     def validate_datastream_name(datastream_name: str) -> None:
         """-------------------------------------------------------------------
@@ -119,4 +83,24 @@ class Standards:
         location_id = datastream_name.split(".")[0]
         return f"{root}/{location_id}/{datastream_name}"
     
+    @staticmethod
+    def validate(dataset: xr.Dataset):
+        """-------------------------------------------------------------------
+        Confirms that the dataset conforms with MHKiT-Cloud data standards. 
+        Raises an error if the dataset is improperly formatted. This method 
+        should be overridden if different standards or validation checks 
+        should be applied.
 
+        Args:
+            dataset (xr.Dataset): The dataset to validate.
+        -------------------------------------------------------------------"""
+        # We need to check that the coordinate dimensions are valid
+        # We need to check that any unlimited dimension has a coordinate variable
+        # We need to check that the type of variable attributes:
+        # _FillValue, valid_range, fail_range,
+        # fail_max, warn_range, warn_max, and valid_delta are all the same
+        # data type as the corresponding variable
+
+        # TODO: should the standards automatically assign a default _FillValue for
+        # each variable, even if none is defined in the config?
+        pass
