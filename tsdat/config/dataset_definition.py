@@ -6,10 +6,28 @@ from .variable_definition import VariableDefinition
 
 class DatasetDefinition:
     def __init__(self, dictionary: Dict):
+        self._parse_required_attributes(dictionary.get(Keys.ATTRIBUTES))
         self.attrs = self._parse_attributes(dictionary)
         self.dims = self._parse_dimensions(dictionary)
         self.vars = self._parse_variables(dictionary, self.dims)
         self.coords, self.vars = self._parse_coordinates(self.vars)
+
+    def _parse_required_attributes(self, dictionary: Dict):
+        """-------------------------------------------------------------------
+        Creates handles for several required attributes that must be set 
+        before runtime.
+
+        Args:
+            dictionary (Dict): The dictionary containing global attributes.
+        -------------------------------------------------------------------"""
+        self.title: str             = dictionary.get("title")
+        self.description: str       = dictionary.get("description")
+        self.conventions: str       = dictionary.get("conventions")
+        self.code_url: str          = dictionary.get("code_url")
+        self.input_files: List[str] = dictionary.get("input_files")
+        self.location_id: str       = dictionary.get("location_id")
+        self.datastream: str        = dictionary.get("datastream")
+        self.data_level: str        = dictionary.get("data_level")
 
     def _parse_attributes(self, dictionary: Dict) -> Dict[str, AttributeDefinition]:
         attributes: Dict[str, AttributeDefinition] = {}
