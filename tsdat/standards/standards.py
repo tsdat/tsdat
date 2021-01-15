@@ -26,8 +26,8 @@ class Standards:
         if len(components) != 3:
             raise ValueError("datastream_name must be like: (location_id).(instrument_id)(qualifier)(temporal).(data_level)")
         for char in datastream_name:
-            if not (char.isalpha() or char in [".", "-", "_"]):
-                raise ValueError(f"'{char}' is not a permitted in datastream_name.")
+            if not (char.isalnum() or char in [".", "-", "_"]):
+                raise ValueError(f"'{char}' is not a permitted character in datastream_name.")
         return
     
     @staticmethod
@@ -58,30 +58,23 @@ class Standards:
         return
 
     @staticmethod
-    def get_datastream_path(datastream_name: str = None, filename: str = None, root: str = None) -> str:
+    def get_datastream_path(datastream_name: str, root: str = "") -> str:
         """-------------------------------------------------------------------
         Returns the path to the parent directory relative to the root 
         (optional) of where the datastream should be stored according to 
         MHKiT-Cloud Data Standards. 
 
         Args:
-            datastream_name (str, optional):    The datastream_name. Must be 
-                                                provided if filename is not.
-            filename (str, optional):   The filename/path to a file whose 
-                                        actual path should be generated. Must
-                                        be provided if datastream_name is not.
+            datastream_name (str, optional):    The datastream_name.
             root (str, optional):   The root of the path to return. Defaults 
-                                    to None.
+                                    to an empty string.
 
         Returns:
             str: The path to the directory where the data should be saved.
         -------------------------------------------------------------------"""
-        assert((datastream_name and not filename) or (filename and not datastream_name))
-        if filename:
-            datastream_name = ".".join(os.path.basename(filename).split("."))[:3]
         Standards.validate_datastream_name(datastream_name)
         location_id = datastream_name.split(".")[0]
-        return f"{root}/{location_id}/{datastream_name}"
+        return os.path.join(root, location_id, datastream_name)
     
     @staticmethod
     def validate(dataset: xr.Dataset):
