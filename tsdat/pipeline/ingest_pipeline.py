@@ -1,8 +1,10 @@
 import os
 import shutil
+from tsdat.io.filehandlers import FileHandler
+from tsdat.io.storage import DatastreamStorage
 import zipfile
 import xarray as xr
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 from tsdat.standards import Standards
 from .pipeline import Pipeline
 from tsdat.utils import DSUtil
@@ -20,39 +22,47 @@ class IngestPipeline(Pipeline):
                             a collection of files) to run the Ingest Pipeline 
                             on.
         -------------------------------------------------------------------"""
-        file_paths = self.extract_files(filepath)
+        # TODO: Replace extract_files method with extract_and_rename_raw_files()
+        # file_paths = self.extract_files(filepath)
+        file_paths = self.extract_and_rename_raw_files(filepath)
 
-        try:
-            # Process the data
-            raw_dataset = self.read_input(file_paths)
-            dataset = self.standardize_dataset(raw_dataset)
-            dataset = self.apply_corrections(dataset)
-            dataset = self.customize_dataset(dataset)
-            datastream_name = DSUtil.get_datastream_name(dataset)
-            start_time = DSUtil.dataset_accessor.get_start_time(dataset)
-            end_time = DSUtil.dataset_accessor.get_end_time(dataset)
+        # Open each raw file and rename 
+        # TODO: Implement this. Update docstring and typing.
+        raw_dataset_mapping: Dict[str, xr.Dataset] = self.read_input(file_paths)
 
-            self.validate_dataset(dataset) # standards class, will fail if ds is not valid
+        # Standardize the raw file names and store. Involves opening the raw
+        # files to get the timestamp of the first point of data since this is
+        # required/recommended by raw file naming conventions
+        # TODO: Update this.
+        renamed_dataset_mapping = self.persist_raw_files(raw_dataset_mapping)
 
-            if self.config.pipeline.data_level.startswith('b'):
-                # If there is previous data in Storage, we need
-                # to load up the last file so we can perform
-                # continuity checks such as monontonically increasing
-                previous_dataset = self.get_previous_dataset(datastream_name, start_time)
-                dataset = QC.apply_tests(dataset, self.config, previous_dataset)
+        # Retrieve existing files for the current processing interval (current 
+        # date for now) and returns a list of paths to the retrieved raw files.
+        # TODO: Implement these methods
+        raw_dataset_mapping = self.add_existing_mappings(raw_dataset_mapping)
+        raw_dataset = self.merge_mappings(raw_dataset_mapping)
 
-            # See if some data already exists in Storage for the same day
-            # If so, then we need to pull in the remote data and merge with
-            # our new data.
-            dataset = self.merge_existing_data(dataset)
+        # Process the data
+        dataset = self.standardize_dataset(raw_dataset)
+        dataset = self.apply_corrections(dataset)
+        dataset = self.customize_dataset(dataset)
 
-            # Save the final datastream data to storage
-            self.store_dataset(dataset)
+        # Fail if ds is not valid
+        self.validate_dataset(dataset)
 
-        finally:
-            # Standardize the raw file names and store
-            raw_files = self.rename_raw_files(file_paths, datastream_name, start_time, end_time)
-            self.store_raw(raw_files)
+        if self.config.dataset_definition.data_level.startswith('b'):
+            # If there is previous data in Storage, we need
+            # to load up the last file so we can perform
+            # continuity checks such as monontonically increasing
+            previous_dataset = self.get_previous_dataset(dataset)
+            QC.apply_tests(dataset, self.config, previous_dataset)
+
+        # Hook to generate plots
+        # Users should save plots with self.storage.save(paths_to_plots)
+        self.create_and_persist_plots(dataset)
+
+        # Save the final datastream data to storage
+        self.store_dataset(dataset)
 
     def extract_files(self, filepath: str, target_dir: str = "") -> List[str]:        
         """-------------------------------------------------------------------
@@ -76,11 +86,7 @@ class IngestPipeline(Pipeline):
         # If target_dir not provided, make it be the parent directory of the 
         # filepath provided
         if not target_dir:
-            loc = filepath.rfind("/")
-            if loc != -1:
-                target_dir = filepath[:loc]
-            else:
-                target_dir = "."
+            target_dir, _ = os.path.split(filepath)
         # Extract into a temporary folder in the target_dir
         temp_dir = f"{target_dir}/.unzipped"
         os.makedirs(temp_dir, exist_ok=False)
@@ -95,7 +101,7 @@ class IngestPipeline(Pipeline):
         os.rmdir(temp_dir)
         return new_paths
     
-    def rename_raw_files(self, file_paths: List[str]) -> List[str]:
+    def persist_raw_files(self, file_paths: List[str]) -> List[str]:
         """-------------------------------------------------------------------
         Renames the provided RAW files according to MHKiT-Cloud Data Standards 
         naming conventions for RAW data and returns a list of filepaths to the 
@@ -110,10 +116,14 @@ class IngestPipeline(Pipeline):
         renamed = []
         for file_path in file_paths:
             datastream_name = self.get_datastream_name()[:-2] + "00"
-            date, time = self.get_start_date_time(file_path)
-            new_path = f"{datastream_name}.{date}.{time}.raw.{file_path}"
-            shutil.rename(file_path, new_path)
+            date, time = self.get_raw_start_date_time(file_path)
+            new_dir, old_basename = os.path.split(file_path)
+            new_filename = f"{datastream_name}.{date}.{time}.raw.{old_basename}"
+            new_path = os.path.join(new_dir, new_filename)
             renamed.append(new_path)
+            shutil.move(file_path, new_path)
+            # TODO: Add self.storage.move(old_name, new_name) 
+            # TODO: Remove shutil.move
         return renamed
     
     def read_input(self, file_paths: List[str]) -> xr.Dataset:
@@ -142,8 +152,7 @@ class IngestPipeline(Pipeline):
             file_paths = [file_paths]
         merged_dataset = xr.Dataset()
         for file_path in file_paths:
-            handler = self.get_filehandler(file_path)
-            dataset = handler.read(file_path)
+            dataset = FileHandler.read(file_path, config=self.config)
             merged_dataset = xr.merge([merged_dataset, dataset])            
         return merged_dataset
     
@@ -160,7 +169,7 @@ class IngestPipeline(Pipeline):
         Returns:
             xr.Dataset: The standardized dataset.
         -------------------------------------------------------------------"""
-        return Standards.standardize(raw_dataset, self.config)
+        return super().standardize(raw_dataset)
     
     def apply_corrections(self, dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
@@ -179,19 +188,42 @@ class IngestPipeline(Pipeline):
         # TODO: write this method
         return dataset
     
-    def get_previous_dataset(self, datastream_name: str, start_time: str) -> xr.Dataset:
-        end = start_time
-        start = None
-        # TODO start = start_time - 1 day
-        netcdf_files = self.storage.fetch(datastream_name, start, end)
-        netcdf_file = netcdf_files[-1] if len(netcdf_files) > 0 else None
-        dataset = None
-        if netcdf_file is not None:
-            # TODO: If file exists, use file handler to open this netcdf file to a dataset
-            dataset = None
+    def customize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
+        """-------------------------------------------------------------------
+        Hook to allow for user customizations to the xarray Dataset before it 
+        is validated and saved to the DatastreamStorage.
 
+        Args:
+            dataset (xr.Dataset): The dataset to customize.
+
+        Returns:
+            xr.Dataset: The customized dataset.
+        -------------------------------------------------------------------"""
         return dataset
-    
+        
+    def get_previous_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
+        """-------------------------------------------------------------------
+        Utility method to retrieve the previous set of data for the same 
+        datastream as the provided dataset from the DatastreamStorage.
+
+        Args:
+            dataset (xr.Dataset):   The reference dataset that will be used to
+                                    search the DatastreamStore for prior data.
+
+        Returns:
+            xr.Dataset: The previous dataset from the DatastreamStorage if it
+                        exists, else None.
+        -------------------------------------------------------------------"""
+        start_date, start_time = DSUtil.get_start_time(dataset)
+        end, start = start_date, None
+        # TODO start = start_time - 1 day
+        datastream_name = DSUtil.get_datastream_name(dataset, self.config)
+        netcdf_files = self.storage.fetch(datastream_name, start, end) # TODO - Not sure if this works
+        dataset = None
+        if netcdf_files:
+            dataset = FileHandler.read(netcdf_files[-1], config=self.config)
+        return dataset
+
     def merge_existing_data(self, dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
         Checks the DatastreamStorage to see if data already exists for the 
@@ -219,10 +251,9 @@ class IngestPipeline(Pipeline):
             dataset (xr.Dataset): The dataset to store.
         -------------------------------------------------------------------"""
         # TODO: write to a better location locally
-        local_path = f".{self.get_datastream_name()}.temp.nc"
-        dataset_file_path = self.get_dataset_filepath(dataset)
-        dataset.to_netcdf(local_path)
-        self.storage.save(local_path, dataset_file_path)
+        local_path = self.get_dataset_filename(dataset)
+        dataset.to_netcdf(local_path)  # Currently crashes unless you remove units on 'time'
+        self.storage.save(local_path)
         os.remove(local_path)
 
     def store_raw(self, raw_file_paths: List[str]) -> None:
@@ -234,7 +265,7 @@ class IngestPipeline(Pipeline):
                                         store.
         -------------------------------------------------------------------"""
         for file_path in raw_file_paths:
-            self.storage.save(file_path, file_path)
+            self.storage.save(file_path)
         return
     
     def get_dataset_filepath(self, dataset: xr.Dataset) -> str:
@@ -251,10 +282,12 @@ class IngestPipeline(Pipeline):
             str:    The file path relative to the storage root where the 
                     dataset should be saved.
         -------------------------------------------------------------------"""
-        # Use the times from the dataset and the datastream
-        # name to generate a file path relative to the 
-        # storage root
-        datastream_name = self.get_datastream_name()
+        # TODO: Update these methods to all be in DSUtil. Probably including
+        # this method itself.
+        datastream_name = DSUtil.get_datastream_name(config=self.config)
+        datastream_dir = Standards.get_datastream_path(datastream_name)
+        filename = self.get_dataset_filename(dataset)
+        return os.path.join(datastream_dir, filename)
 
     def get_dataset_filename(self, dataset: xr.Dataset) -> str:
         """-------------------------------------------------------------------
@@ -271,8 +304,9 @@ class IngestPipeline(Pipeline):
         Returns:
             str: The base filename of the dataset.
         -------------------------------------------------------------------"""
-        # TODO: write this method
-        return ""
+        datastream_name = DSUtil.get_datastream_name(dataset)
+        start_date, start_time = DSUtil.get_start_time(dataset)
+        return f"{datastream_name}.{start_date}.{start_time}.nc"
      
     def get_datastream_name(self) -> str:
         """-------------------------------------------------------------------
@@ -282,15 +316,16 @@ class IngestPipeline(Pipeline):
         Returns:
             str: The datastream name.
         -------------------------------------------------------------------"""
-        # TODO: move this to Config
-        loc_id = self.config.pipeline["location_id"]
-        instr_id = self.config.pipeline["instrument_id"]
-        qualifier = self.config.pipeline["qualifier"]
-        temporal = self.config.pipeline["temporal"]
-        data_level = self.config.pipeline["data_level"]
-        return f"{loc_id}.{instr_id}{qualifier}{temporal}.{data_level}"
+        # loc_id = self.config.pipeline["location_id"]
+        # instr_id = self.config.pipeline["instrument_id"]
+        # qualifier = self.config.pipeline["qualifier"]
+        # temporal = self.config.pipeline["temporal"]
+        # data_level = self.config.pipeline["data_level"]
+        # datastream_name = f"{loc_id}.{instr_id}{qualifier}{temporal}.{data_level}"
+        datastream_name = DSUtil.get_datastream_name(config=self.config)
+        return datastream_name
     
-    def get_start_date_time(self, filepath: str) -> Tuple[str, str]:                
+    def get_raw_start_date_time(self, filepath: str) -> Tuple[str, str]:                
         """-------------------------------------------------------------------
         Given the path to a raw "00"-level file, this function returns the 
         date (yyyymmdd) and time (hhmmss) pertaining to the first time sample
@@ -310,6 +345,7 @@ class IngestPipeline(Pipeline):
         # and units of the time variable in the raw file. The date/time 
         # returned should be in UTC.
         # TODO: write this method
+        
         return "99999999", "999999"
     
     def organize_files(self, file_paths: List[str]) -> List[str]:
