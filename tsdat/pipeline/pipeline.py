@@ -1,10 +1,14 @@
 import os
 import abc
+import act
+import numpy as np
 import xarray as xr
+import datetime as dt
+from typing import Dict
 from tsdat.config import Config
 from tsdat.standards import Standards
 from tsdat.io.storage import DatastreamStorage
-from tsdat.io.file_handlers import FILEHANDLERS, FileHandler
+from tsdat.io.filehandlers import FileHandler
 
 
 class Pipeline(abc.ABC):
@@ -17,26 +21,6 @@ class Pipeline(abc.ABC):
     @abc.abstractmethod
     def run(self, filepath: str):
         return
-    
-    def get_filehandler(self, file_path: str) -> FileHandler:
-        """-------------------------------------------------------------------
-        Retrieves the appropriate FileHandler for a given file. 
-
-        Args:
-            file_path (str):    The complete path to the file requiring a 
-                                FileHandler.
-
-        Raises:
-            KeyError:   Raises KeyError if no FileHandler has been defined for
-                        the the file provided.
-
-        Returns:
-            FileHandler: The FileHandler class to use for the provided file.
-        -------------------------------------------------------------------"""
-        _, ext = os.path.splitext(file_path)
-        if ext not in FILEHANDLERS:
-            raise KeyError(f"no FileHandler for extension: {ext}")
-        return FILEHANDLERS[ext]
 
     def standardize(self, dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
@@ -51,19 +35,90 @@ class Pipeline(abc.ABC):
         Returns:
             xr.Dataset: The standardized dataset.
         -------------------------------------------------------------------"""
-        definition = self.config.dataset_definition.to_dict()
-        
-        # definition["attributes"]
-        # definition["dimensions"]
+        dod = self.config.dataset_definition
+        data_dict = dod.to_dict()
 
-        # for variable in definition["variables"]:
+        # Get coordinate variable dimensions. This is used to initialize the 
+        # data array for each variable
+        coord_sizes: Dict[str, int] = {}
+        for coord_name, coord_var_def in dod.coords.items():
+            input_name = coord_name
+            if coord_var_def.input: 
+                input_name = coord_var_def.input.name
+            coord_var = dataset[input_name]
+            shape = coord_var.data.shape
+            if len(shape) != 1:
+                raise ValueError(f"Coordinate variable {coord_name} must be one-dimensional")
+            coord_sizes[coord_name] = shape[0]
+
+        # Populate dataset dictionary for coordinate variables
+        for coord_name, coord_var_def in dod.coords.items():
+
+            # Create array of correct size with _FillValue
+            dim_names = coord_var_def.dims.keys()
+            dim_shapes = tuple([coord_sizes[dim_name] for dim_name in dim_names])
+            _FillValue_ATT = coord_var_def.attrs.get("_FillValue", {})
+            _FillValue = -9999
+            if _FillValue_ATT:
+                _FillValue = _FillValue_ATT.value
+            data = np.empty(dim_shapes, dtype=coord_var_def.type)
+            data.fill(_FillValue)
+
+            # If variable should be copied from input, do that.
+            var_name = coord_name
+            if coord_var_def.input:
+                input_name = coord_var_def.input.name
+                input_data = dataset[input_name].data
+                # input_data = np.array(dataset[input_name].data, dtype=coord_var_def.type)
+                if coord_var_def.input.time_format:  
+                    # Use time_format as input to datetime.datetime.strptime
+                    # Convert datetime.datetime object to np.datetime64 using act
+                    time_format = coord_var_def.input.time_format
+                    datetimes = [dt.datetime.strptime(time, time_format) for time in input_data]
+                    # TODO: use pandas.to_datetime(*) to convert. 
+                    # TODO: Do unit conversion if necessary
+                    input_data = np.array(datetimes, dtype='datetime64[s]') # TODO: Check to see if using seconds instead of default (ms) helps ds.to_netcdf() later
+                data = input_data
+            
+            # Add data to the data dictionary for the current variable
+            data_dict["coords"][coord_name]["data"] = data
+        
+        # Populate dataset dictionary for regular variables
+        for var_name, var_def in dod.vars.items():
+
+            # Create array of correct size with _FillValue
+            dim_names = var_def.dims.keys()
+            dim_shapes = tuple([coord_sizes[dim_name] for dim_name in dim_names])
+            data = np.empty(dim_shapes, dtype=var_def.type)
+            _FillValue_ATT = var_def.attrs.get("_FillValue", {})
+            _FillValue = -9999
+            if _FillValue_ATT:
+                _FillValue = _FillValue_ATT.value
+            data = np.empty(dim_shapes, dtype=var_def.type)
+            data.fill(_FillValue)
+
+            # If variable should be copied from input do that.
+            if var_def.input:
+                input_name = var_def.input.name
+                input_data = np.array(dataset[input_name].data, dtype=var_def.type)
+                # TODO: Don't copy NaN values?
+                data = input_data
+            
+            # Add data to the data dictionary for the current variable
+            if not data_dict["data_vars"][var_name]["data"]:
+                data_dict["data_vars"][var_name]["data"] = data
+        
+        # Create the dataset from our constructed data dictionary
+        formatted_dataset = xr.Dataset.from_dict(data_dict)
+
+        # for variable in dod.vars["variables"]:
             # get original values
             # convert to formatted values
             # add the values back to the dict
         
-        dataset = xr.Dataset(definition)
+        # dataset = xr.Dataset(definition)
         Standards.validate(dataset)
-        return dataset
+        return formatted_dataset
     
     def validate_dataset(self, dataset: xr.Dataset):
         """-------------------------------------------------------------------
