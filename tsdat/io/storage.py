@@ -5,11 +5,12 @@ import zipfile
 import datetime
 from typing import List
 from tsdat.standards import Standards
+from tsdat.utils import DSUtil
 
 class DatastreamStorage(abc.ABC):
 
     @abc.abstractmethod
-    def fetch(self, datastream_name: str, start_time: str, end_time: str, local_path: str) -> List[str]:
+    def fetch(self, datastream_name: str, start_time: str, end_time: str, local_path: str = None) -> List[str]:
         """-------------------------------------------------------------------
         Fetches a file from the datastream store using the datastream_name, 
         start_time, and end_time to specify the file(s) to retrieve. If the 
@@ -36,7 +37,7 @@ class DatastreamStorage(abc.ABC):
         return
     
     @abc.abstractmethod
-    def save(self, local_path: str) -> None:
+    def save(self, local_paths: List[str]) -> None:
         """-------------------------------------------------------------------
         Saves a local file to the datastream store.
 
@@ -94,7 +95,7 @@ class FilesystemStorage(DatastreamStorage):
     DatastreamStorage subclass for a typical Linux-based filesystem.
     -----------------------------------------------------------------------"""
 
-    def __init__(self, root: str):
+    def __init__(self, root: str = ""):
       self.__root = root
 
     @staticmethod
@@ -114,7 +115,7 @@ class FilesystemStorage(DatastreamStorage):
         time = filename.split(".")[2]
         return f"{date}.{time}"
 
-    def fetch(self, datastream_name: str, start_time: str, end_time: str, local_path: str) -> List[str]:
+    def fetch(self, datastream_name: str, start_time: str, end_time: str, local_path: str = None) -> List[str]:
         """-------------------------------------------------------------------
         Fetches a file from the filesystem store using the datastream_name, 
         start_time, and end_time to specify the file(s) to retrieve. The 
@@ -137,7 +138,9 @@ class FilesystemStorage(DatastreamStorage):
             List[str]:  A list of paths where the retrieved files were stored
                         in local storage.  
         -------------------------------------------------------------------"""
-        store_dir = Standards.get_datastream_path(datastream_name, self.__root)
+        store_dir = Standards.get_datastream_path(datastream_name, root=self.__root)
+        if not os.path.isdir(store_dir):
+            return []
         files = [f for f in os.listdir(store_dir) if start_time <= self.get_date_from_filename(f) < end_time]
         sources = [os.path.join(store_dir, file) for file in files]
         targets = [os.path.join(local_path, file) for file in files]
@@ -145,7 +148,7 @@ class FilesystemStorage(DatastreamStorage):
             shutil.copy(source, target)
         return targets
     
-    def save(self, local_path: str) -> None:
+    def save(self, local_paths: List[str]) -> None:
         """-------------------------------------------------------------------
         Saves a local file to the appropriate location in the filesystem.
 
@@ -154,12 +157,16 @@ class FilesystemStorage(DatastreamStorage):
                                 should be named according to MHKiT-Cloud 
                                 naming conventions.
         -------------------------------------------------------------------"""
-        # TODO: copy to storage
-        filename = os.path.basename(local_path)
-        Standards.validate_filename(filename)
-        target_dir = Standards.get_datastream_path(filename=filename, root=self.__root)
-        shutil.copy(local_path, os.path.join(target_dir, filename))
-        return
+        if isinstance(local_paths, str):
+            local_paths = [local_paths]
+        for local_path in local_paths:
+            filename = os.path.basename(local_path)
+            datastream_name = ".".join(filename.split(".")[:3])
+            data_dir = Standards.get_datastream_path(datastream_name) # relative to __root
+            target_dir = os.path.join(self.__root, data_dir) # includes __root
+            target_path = os.path.join(target_dir, filename)
+            os.makedirs(target_dir, exist_ok=True)
+            shutil.copy(local_path, target_path)
     
     def exists(self, datastream_name: str, start_time: str, end_time: str) -> bool:
         """-------------------------------------------------------------------
