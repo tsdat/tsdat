@@ -123,6 +123,16 @@ class VariableDefinition:
             bool: True if the Variable is derived, False otherwise.
         -------------------------------------------------------------------"""
         return self.input is not None
+    
+    def has_input(self) -> bool:
+        """-------------------------------------------------------------------
+        Return True if the variable is derived. A variable is derived if it 
+        does not have an input.
+
+        Returns:
+            bool: True if the Variable is derived, False otherwise.
+        -------------------------------------------------------------------"""
+        return self.input is None
 
     def to_dict(self) -> Dict:
         """-------------------------------------------------------------------
