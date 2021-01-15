@@ -1,9 +1,11 @@
-from typing import List
+import datetime
+from typing import List, Dict, Tuple
 import act
 from matplotlib import pyplot as plt
 import numpy as np
 import xarray as xr
 from tsdat.constants import ATTS
+from tsdat.config import Config
 
 
 class DSUtil:
@@ -12,12 +14,29 @@ class DSUtil:
     -------------------------------------------------------------------"""
 
     @staticmethod
-    def get_datastream_name(ds: xr.Dataset):
-        pass
+    def get_datastream_name(ds: xr.Dataset = None, config: Config = None) -> str:
+        assert(ds or config)
+        if ds and "datastream" in ds.attrs:
+            return ds.attrs["datastream"]
+        elif config :
+            return config.dataset_definition.datastream
+        return None
 
     @staticmethod
-    def get_end_time(ds: xr.Dataset):
-        pass
+    def get_end_time(ds: xr.Dataset, config: Config = None) -> Tuple[str, str]:
+        # If config is passed, use config to determine which is the 'time' variable
+        # else, use ds['time']
+        # Assumes time is array of type np.datetime64
+        TIME = 'time'
+        if config:
+            var_def = config.dataset_definition.coords.get('time', {})
+            if hasattr(var_def, "input") and hasattr(var_def.input, "name"):
+                TIME = var_def.input.name
+        time64 = ds[TIME].data[-1]
+        time_dt = act.utils.datetime64_to_datetime(time64)
+        end_date = time_dt.strftime("%Y%m%d")
+        end_time = time_dt.strftime("%H%M%S")
+        return end_date, end_time
 
     @staticmethod
     def get_fail_max(ds: xr.Dataset, variable_name):
@@ -67,8 +86,28 @@ class DSUtil:
         return dims, lengths
 
     @staticmethod
-    def get_start_time(ds: xr.Dataset):
-        pass
+    def get_start_time(ds: xr.Dataset, config: Config = None) -> Tuple[str, str]:
+        """-------------------------------------------------------------------
+        Convenience method to provide access to dimension names and their
+        lengths in one call.
+
+        If `config: Config` is provided, then this will check for the input to
+        the 'time' variable in `config` and use that instead of `'time'`.
+        -------------------------------------------------------------------"""
+        # If config is passed, use config to determine which is the 'time' variable
+        # else, use ds['time']
+        # Assumes time is array of type np.datetime64
+        TIME = 'time'
+        if config:
+            var_def = config.dataset_definition.coords.get('time', {})
+            if hasattr(var_def, "input") and hasattr(var_def.input, "name"):
+                TIME = var_def.input.name
+        time64 = ds[TIME].data[0]  # TODO: allow monotonically decreasing times (i.e. check last & first time values and use the older of the two)
+        time_dt = act.utils.datetime64_to_datetime(time64)[0]
+        start_date = time_dt.strftime("%Y%m%d")
+        start_time = time_dt.strftime("%H%M%S")
+        return start_date, start_time
+
 
     @staticmethod
     def get_timestamp(dt64: np.datetime64):
@@ -95,8 +134,14 @@ class DSUtil:
                 for dim in variable.sizes:
                     if dim == dim_name:
                         variable_names.append(variable_name)
-
         return variable_names
+
+    @staticmethod
+    def get_metadata(ds: xr.Dataset) -> Dict:
+        attributes = ds.attrs
+        variables = {var_name: ds[var_name].attrs for var_name in ds.variables}
+        metadata = {"attributes": attributes, "variables": variables}
+        return metadata
 
     @staticmethod
     def get_warn_max(ds: xr.Dataset, variable_name):
