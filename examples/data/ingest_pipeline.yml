@@ -30,7 +30,7 @@ dataset_definition:
     time:
       input:
         name: DataTimeStamp(DateTime)
-        format: "%Y-%m-%d %H:%M:%S"
+        time_format: "%Y-%m-%d %H:%M:%S"
       dims: [time]
       type: long
       attrs:
@@ -175,3 +175,9 @@ qc_tests:
           parameters:
             dim: time
 
+---
+customizations:
+    filehandlers:
+      - seapower.io.filehandlers.TdmsFileHandler
+      - seapower.io.filehandlers.BinFileHandler
+      - seapower.io.filehandlers.CsvFileHandler
