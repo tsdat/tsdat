@@ -1,3 +1,9 @@
+import os
+import yaml
+import pandas as pd
+import xarray as xr
+from tsdat.config import Config
+from tsdat.utils import DSUtil
 from .file_handlers import AbstractFileHandler
 from .file_handlers import register_filehandler
 
@@ -36,6 +42,9 @@ class CsvHandler(AbstractFileHandler):
     @staticmethod
     def read(filename: str, **kwargs):
         # First read the csv into a pandas dataframe
+        # dataset_def = DSUTIL.extract_metadata(ds)
+        # ds = DSUTIL.set_metadata(ds, dataset_definition)
+        # or could live in Config/DatasetDefiniton (Or both)
         dataframe: pd.DataFrame = pd.read_csv(filename, **kwargs)
 
         # Now see if there is an accompanying metadata file.  If so,

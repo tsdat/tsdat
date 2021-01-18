@@ -9,42 +9,6 @@ from typing import List, Dict
 from tsdat.config import Config
 from tsdat.utils import DSUtil
 
-FILEHANDLERS = dict()
-
-
-def register_filehandler(file_extension: str):
-    """-----------------------------------------------------------------------
-    Python decorator to register a class in the FILEHANDLERS dictionary. This
-    dictionary will be used by the MHKiT-Cloud pipeline to read and write raw,
-    intermediate, and processed data.
-
-    Example Usage:
-    ```
-    @register_filehandler([".nc", ".cdf"])
-    class NetCdfHandler(AbstractFileHandler):
-        def write(self, dataset, filename):
-            pass
-        def read(self, filename, config):
-            pass
-    ```
-
-    Args:
-        file_extension (str | List):    The file extension(s) that this 
-                                        FileHandler should be registered for.
-    -----------------------------------------------------------------------"""
-    def decorator_register(cls):
-        if isinstance(file_extension, List):
-            for ext in file_extension:
-                FILEHANDLERS[ext] = cls
-        else:
-            FILEHANDLERS[file_extension] = cls
-        @functools.wraps(cls)
-        def wrapper_register(*args, **kwargs):
-            return cls(*args, **kwargs)
-        return wrapper_register
-    return decorator_register
-
-
 class AbstractFileHandler(abc.ABC):
     @staticmethod
     @abc.abstractmethod
@@ -85,7 +49,7 @@ class FileHandler():
     Class to provided methods to read and write files with a variety of 
     extensions.
     -----------------------------------------------------------------------"""
-    FILEHANDLERS: Dict[str, AbstractFileHandler] = FILEHANDLERS
+    FILEHANDLERS: Dict[str, AbstractFileHandler] = {}
     
     @staticmethod
     def _get_handler(filename: str) -> AbstractFileHandler:
@@ -125,3 +89,35 @@ class FileHandler():
         handler = FileHandler._get_handler(filename)
         return handler.read(filename, **kwargs)
 
+
+def register_filehandler(file_extension: str):
+    """-----------------------------------------------------------------------
+    Python decorator to register a class in the FILEHANDLERS dictionary. This
+    dictionary will be used by the MHKiT-Cloud pipeline to read and write raw,
+    intermediate, and processed data.
+
+    Example Usage:
+    ```
+    @register_filehandler([".nc", ".cdf"])
+    class NetCdfHandler(AbstractFileHandler):
+        def write(self, dataset, filename):
+            pass
+        def read(self, filename, config):
+            pass
+    ```
+
+    Args:
+        file_extension (str | List):    The file extension(s) that this 
+                                        FileHandler should be registered for.
+    -----------------------------------------------------------------------"""
+    def decorator_register(cls):
+        if isinstance(file_extension, List):
+            for ext in file_extension:
+                FileHandler.FILEHANDLERS[ext] = cls
+        else:
+            FileHandler.FILEHANDLERS[file_extension] = cls
+        @functools.wraps(cls)
+        def wrapper_register(*args, **kwargs):
+            return cls(*args, **kwargs)
+        return wrapper_register
+    return decorator_register
