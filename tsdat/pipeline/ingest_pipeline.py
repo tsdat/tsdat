@@ -39,7 +39,7 @@ class IngestPipeline(Pipeline):
         # Retrieve existing files for the current processing interval (current 
         # date for now) and returns a list of paths to the retrieved raw files.
         # TODO: Implement these methods
-        raw_dataset_mapping = self.add_existing_mappings(raw_dataset_mapping)
+        raw_dataset_mapping = self.add_existing_raw_files(raw_dataset_mapping)
         raw_dataset = self.merge_mappings(raw_dataset_mapping)
 
         # Process the data
