@@ -30,7 +30,15 @@ dataset_definition:
     time:
       input:
         name: DataTimeStamp(DateTime)
-        time_format: "%Y-%m-%d %H:%M:%S"
+        converter: 
+          classname: tsdat.standards.units.StringTimeConverter
+          parameters:
+            timezone: UTC
+            time_format: "%Y-%m-%d %H:%M:%S"
+        # converter: 
+        #   classname: tsdat.standards.units.TimestampTimeConverter
+        #   parameters:
+        #     units: milliseconds since 1970-01-01T00:00:00
       dims: [time]
       type: long
       attrs:
@@ -44,6 +52,9 @@ dataset_definition:
       input:
         name: ValueAverage(Double)
         units: degC
+        converter: 
+          classname: tsdat.standards.units.DefaultConverter
+          # parameters:
       dims: [time]
       type: double
       attrs:
@@ -58,6 +69,9 @@ dataset_definition:
       input:
         name: ValueMin(Double)
         units: degC
+        converter: 
+          classname: tsdat.standards.units.DefaultConverter
+          # parameters:
       dims: [time]
       type: double
       attrs:
@@ -71,6 +85,9 @@ dataset_definition:
       input:
         name: ValueMax(Double)
         units: degC
+        converter: 
+          classname: tsdat.standards.units.DefaultConverter
+          # parameters:
       dims: [time]
       type: double
       attrs:
@@ -84,6 +101,9 @@ dataset_definition:
       input:
         name: ValueSD(Double)
         units: degC
+        converter: 
+          classname: tsdat.standards.units.DefaultConverter
+          # parameters:
       dims: [time]
       type: double
       attrs:
