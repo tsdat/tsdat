@@ -1,3 +1,6 @@
+import act
+import numpy as np
+import xarray as xr
 from typing import Dict, List, Tuple
 from .keys import Keys
 from .attribute_defintion import AttributeDefinition
@@ -67,11 +70,68 @@ class DatasetDefinition:
     def get_variable_names(self) -> List[str]:
         return list(self.variables.keys())
 
-    def get_variable(self, variable_name) -> VariableDefinition:
+    def get_variable(self, variable_name: str) -> VariableDefinition:
         return self.variables.get(variable_name, None)
 
-    def get_variables(self) -> List[VariableDefinition]:
-        return self.variables.values()
+    def get_variables(self, variable_names: List[str]) -> List[VariableDefinition]:
+        return [self.get_variable(var_name) for var_name in variable_names]
+    
+    def get_coordinates(self, variable: VariableDefinition) -> List[VariableDefinition]:
+        """-------------------------------------------------------------------
+        Returns the coordinate VariableDefinition(s) that dimension the 
+        provided variable.
+
+        Args:
+            variable (VariableDefinition):  The VariableDefinition whose 
+                                            coordinate variables should be 
+                                            retrieved.
+
+        Returns:
+            List[VariableDefinition]:   A list of VariableDefinition 
+                                        coordinate variables that dimension
+                                        the given VariableDefinition.
+        """
+        coordinate_names = variable.get_coordinate_names()
+        return [self.coords.get(coord_name) for coord_name in coordinate_names]
+
+    def get_variable_shape(self, variable: VariableDefinition) -> Tuple[int]:
+        coordinates = self.get_coordinates(variable)
+        shape = tuple(coord.get_shape()[0] for coord in coordinates)
+        return shape
+
+    def extract_data(self, variable: VariableDefinition, dataset: xr.Dataset) -> None:
+        """-------------------------------------------------------------------
+        Adds data from the xarray dataset to the given VariableDefinition. It 
+        can convert units and use _FillValue to initilize variables not taken 
+        from the dataset.
+
+        Args:
+            variable (VariableDefinition): The VariableDefinition to update.
+            dataset (xr.Dataset): The dataset to draw data from.
+        -------------------------------------------------------------------"""
+        # If variable is predefined, it should already have the appropriate 
+        # represention in the definition; do nothing.
+        if variable.is_predefined():
+            dtype = variable.get_data_type()
+            variable.data = np.array(variable.data, dtype=dtype)
+        
+        # If variable has no input, retrieve its _FillValue and shape, then 
+        # initialize the data in the VariableDefinition.
+        if variable.is_derived():
+            if variable.is_coordinate():
+                raise Exception("Error: coordinate variable {variable.name} must not be empty")
+            shape = self.get_variable_shape(variable)
+            _FillValue = variable.get_FillValue()
+            dtype = variable.get_data_type()
+            variable.data = np.full(shape, _FillValue, dtype=dtype)
+        
+        # If variable has input and is in the dataset, perform sanity checks
+        # then convert units and add it to the VariableDefinition
+        if variable.has_input():
+            input_name = variable.get_input_name()
+            data = dataset[input_name].values
+            data = act.utils.data_utils.convert_units(data, variable.get_input_units(), variable.get_output_units())
+            variable.data = data
 
     def to_dict(self) -> Dict:
         """-------------------------------------------------------------------
