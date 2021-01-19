@@ -7,6 +7,7 @@ import xarray as xr
 from tsdat.config import Config, QCTestDefinition
 from tsdat.constants import VARS
 from tsdat.utils import DSUtil
+from tsdat.config.utils import instantiate_handler
 
 
 class QC(object):
@@ -61,10 +62,10 @@ class QCChecker:
             variable_names.remove(exclude)
 
         # Get the operator
-        operator = Config.instantiate_handler(ds, previous_data, test, handler_desc=test.operator)
+        operator = instantiate_handler(ds, previous_data, test, handler_desc=test.operator)
 
         # Get the error handlers (optional)
-        error_handlers = Config.instantiate_handler(ds, previous_data, test, handler_desc=test.error_handlers)
+        error_handlers = instantiate_handler(ds, previous_data, test, handler_desc=test.error_handlers)
 
         self.ds = ds
         self.variable_names = variable_names

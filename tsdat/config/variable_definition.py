@@ -2,7 +2,7 @@ import numpy as np
 from typing import Dict, List
 from .attribute_defintion import AttributeDefinition
 from .dimension_definition import DimensionDefinition
-from .config import Config
+from .utils import instantiate_handler
 
 
 class VarKeys:
@@ -27,7 +27,7 @@ class VarInput:
     -----------------------------------------------------------------------"""
     def __init__(self, dictionary: Dict):
         self.name: str = dictionary[VarInputKeys.NAME]
-        self.converter = Config.instantiate_handler(handler_desc=dictionary[VarInputKeys.CONVERTER])
+        self.converter = instantiate_handler(handler_desc=dictionary[VarInputKeys.CONVERTER])
 
 
 class VariableDefinition:
@@ -89,9 +89,14 @@ class VariableDefinition:
             "ubyte":    np.uint8,
             "short":    np.int16,
             "ushort":   np.uint16,
+            "int":      np.int32,
+            "uint":     np.int32,
+            "int32":    np.int32,
+            "uint32":   np.uint32,
+            "int64":    np.int64,
+            "uint64":   np.uint64,
             "long":     np.int64,
             "ulong":    np.uint64,
-            "int":      np.int32,
             "float":    np.float32,
             "double":   np.float64
         }

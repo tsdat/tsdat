@@ -35,7 +35,9 @@ dataset_definition:
         converter: 
           classname: tsdat.utils.converters.StringTimeConverter
           parameters:
-            timezone: UTC
+            # A list of timezones can be found here:
+            # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+            timezone: US/Pacific
             time_format: "%Y-%m-%d %H:%M:%S"
             
         # Use the TimestampTimeConverter if your input time is a numeric UTC timestamp

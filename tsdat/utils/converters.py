@@ -53,17 +53,27 @@ class StringTimeConverter(Converter):
         Args:
             parameters(Dict) : A dictionary of converter-specific parameters
 
-                format       : The strftime to parse time, eg "%d/%m/%Y",
+                time_format  : The strftime to parse time, eg "%d/%m/%Y",
                                note that "%f" will parse all the way up to
                                nanoseconds. See strftime documentation for
                                more information on choices.
         -------------------------------------------------------------------"""
-        super(Converter, self).__init__(parameters=parameters)
-        self.format = self.parameters.get('format', None)
+        super().__init__(parameters=parameters)
+        self.format = self.parameters.get('time_format', None)
         assert self.format
+        self.timezone = self.parameters.get('timezone', None)
 
     def run(self, data: np.ndarray, in_units: str, out_units: str) -> np.ndarray:
-        return np.array(pd.to_datetime(data, format=self.format), np.datetime64)
+        # This returns time that is timezone naive
+        datetime_index = pd.to_datetime(data, format=self.format)
+
+        if self.timezone:
+            # This adds a timezone for the data
+            datetime_index = datetime_index.tz_localize(self.timezone)
+
+        # This will convert original data into UTC, correcting for
+        # the timezone
+        return np.array(datetime_index, np.datetime64)
 
 
 class TimestampTimeConverter(Converter):
