@@ -1,7 +1,7 @@
 dataset_definition:
   # Define the global attributes in your output xarray Dataset
   attributes:
-    title: Buoy Dataset for Buoy #120
+    title: Buoy Dataset for Buoy \#120
     description: Example ingest dataset.
     conventions: MHKiT-Cloud Data Standards v. 1.0
     history:
