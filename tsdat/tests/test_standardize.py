@@ -3,96 +3,35 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 from tsdat.config import Config
-from tsdat.qc import QC
+from tsdat.pipeline import IngestPipeline
 
 
-class TestQC(TestCase):
+class TestStandardize(TestCase):
+    """-------------------------------------------------------------------
+    Test standardizing an XArray Dataset without running the full pipeline.
+    -------------------------------------------------------------------"""
 
     def setUp(self):
         """-------------------------------------------------------------------
-        Create a sample dataset to run the tests against
+        Create a sample raw dataset to run the standardization against
         -------------------------------------------------------------------"""
-        ds_dict = {
-            'time': xr.DataArray(
-                data=np.array([
-                    pd.to_datetime(1498867200, unit='s'),
-                    pd.to_datetime(1498867260, unit='s'),
-                    pd.to_datetime(1498867320, unit='s')],
-                    np.datetime64),
-                dims=['time'],
-                attrs={
-                    'units': 'seconds since 1970-01-01T00:00:00'
-                }
-            ),
-            'height': xr.DataArray(
-                data=np.array([1000, 2000, 8000], np.float32),
-                dims=['height'],
-                attrs={
-                    'units': 'millimeters'
-                }
-            ),
-            'SWdown': xr.DataArray(
-                data=np.array([1.23, 8.47, -9999], np.float32),
-                dims=['time'],
-                attrs={
-                    '_FillValue': -9999,
-                    'data_type': 'float',
-                    'long_name': 'Shortwave Downwelling Radiation',
-                    'units': 'W/m2',
-                    'comment': 'Short-Wave Downwelling Radiation measured at ground level. Short-wave radiation (visible light) comes from the sun and contains much more energy than Long-wave radiation.'
-                }
-            ),
-            'LWdown': xr.DataArray(
-                data=np.array([1, 3, 800], np.float32),
-                dims=['time'],
-                attrs={
-                    '_FillValue': -9999,
-                    'fail_range': [1, 10],
-                    'data_type': 'float',
-                    'long_name': 'Longwave Downwelling Radiation',
-                    'units': 'W/m2'
-                }
-            ),
-            'foo': xr.DataArray(
-                data=np.array([
-                    [1, 2, 5],
-                    [3, 4, 7],
-                    [5, -9999, -9999]
-                ], np.float32),
-                dims=['time', 'height'],
-                attrs={
-                    '_FillValue': -9999,
-                    'valid_delta': 2,
-                    'data_type': 'float',
-                    'long_name': 'junky test variable',
-                    'units': 'W/m2'
-                }
-            ),
-        }
-        self.ds: xr.Dataset = xr.Dataset(ds_dict, attrs={'example_attr': 'this is a global attribute'})
+        dataframe: pd.DataFrame = pd.read_csv('data/standardize/buoy.z05.00.20200925.000000.gill.csv')
+        self.raw_ds: xr.Dataset = dataframe.to_xarray()
 
-    def test_qc_tests(self):
+    def test_standardize(self):
         # First load the config with the qc test definitions
-        config = Config.load('data/qc/qc.yml')
+        config = Config.load('data/standardize/standardize.yml')
 
-        # Now apply the qc tests
-        QC.apply_tests(self.ds, config, None)
+        # Now create a Pipeline
+        pipeline = IngestPipeline(config=config, storage=None)
 
-        # Validate the results
-        # SWdown
-        swdown_expected_qc = np.array([0,0,1], np.int32)
-        np.testing.assert_equal(self.ds.qc_SWdown.values, swdown_expected_qc)
+        # Now standardize our test data
+        pipeline.standardize(self.raw_ds)
 
-        # LWdown
-        lwdown_expected_qc = np.array([0,0,4], np.int32)
-        np.testing.assert_equal(self.ds.qc_LWdown.values, lwdown_expected_qc)
 
-        # foo
-        foo_expected_qc = np.array([
-            [0, 0, 0],
-            [0, 0, 0],
-            [0, 33, 33]], np.int32)
-        np.testing.assert_equal(self.ds.qc_foo.values, foo_expected_qc)
+
+        # TODO: validate the results
+
 
 
 

@@ -147,7 +147,7 @@ qc_tests:
     # cause the dataset to be unusable, and result in a critical pipeline failure.
     missing:
         qc_bit: 1
-        description: Value is equal to _FillValue or NaN
+        description: "Value is equal to _FillValue or NaN"
         assessment: Bad
         variables:
           - ALL  # keyword to apply test to all variables
@@ -156,7 +156,7 @@ qc_tests:
 
     fail_min:
         qc_bit: 2
-        description: Value is less than the fail_range.
+        description: "Value is less than the fail_range."
         assessment: Bad
         variables:
           - ALL
@@ -165,7 +165,7 @@ qc_tests:
 
     fail_max:
         qc_bit: 3
-        description: Value is greater than the fail_range.
+        description: "Value is greater than the fail_range."
         assessment: Bad
         variables:
           - ALL
@@ -174,7 +174,7 @@ qc_tests:
 
     warn_min:
         qc_bit: 4
-        description: Value is less than the warn_range.
+        description: "Value is less than the warn_range."
         assessment: Indeterminate
         variables:
           - ALL
@@ -183,7 +183,7 @@ qc_tests:
 
     warn_max:
         qc_bit: 5
-        description: Value is greater than the warn_range.
+        description: "Value is greater than the warn_range."
         assessment: Indeterminate
         variables:
           - ALL
@@ -192,7 +192,7 @@ qc_tests:
 
     valid_delta:
         qc_bit: 6
-        description: Difference between current and previous values exceeds valid_delta.
+        description: "Difference between current and previous values exceeds valid_delta."
         assessment: Indeterminate
         variables:
           - ALL
@@ -201,9 +201,10 @@ qc_tests:
           parameters:
             dim: time
 
----
-customizations:
-    filehandlers:
-      - seapower.io.filehandlers.TdmsFileHandler
-      - seapower.io.filehandlers.BinFileHandler
-      - seapower.io.filehandlers.CsvFileHandler
+        error_handlers: # Can list multiple error handlers if needed - executed in sequence
+          send_email:
+            classname: tsdat.qc.error_handlers.SendEmailAWS
+            parameters:
+              message:
+              recipients: [carina.lansing@pnnl.gov, maxwell.levin@pnnl.gov]
+

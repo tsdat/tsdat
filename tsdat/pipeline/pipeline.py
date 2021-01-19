@@ -13,10 +13,9 @@ from tsdat.io.filehandlers import FileHandler
 
 class Pipeline(abc.ABC):
 
-    def __init__(self, config: Config, storage: DatastreamStorage) -> None:
+    def __init__(self, config: Config = None, storage: DatastreamStorage = None) -> None:
         self.storage = storage
         self.config = config
-        pass
 
     @abc.abstractmethod
     def run(self, filepath: str):

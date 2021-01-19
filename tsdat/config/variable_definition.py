@@ -2,7 +2,7 @@ import numpy as np
 from typing import Dict, List
 from .attribute_defintion import AttributeDefinition
 from .dimension_definition import DimensionDefinition
-from tsdat import Config
+from .config import Config
 
 
 class VarKeys:

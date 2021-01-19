@@ -73,7 +73,7 @@ class TestQC(TestCase):
 
     def test_qc_tests(self):
         # First load the config with the qc test definitions
-        config = Config.load('data/qc/qc.yml')
+        config = Config.load('data/qc.yml')
 
         # Now apply the qc tests
         QC.apply_tests(self.ds, config, None)
