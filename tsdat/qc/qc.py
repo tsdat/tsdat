@@ -7,6 +7,7 @@ import xarray as xr
 from tsdat.config import Config, QCTestDefinition
 from tsdat.constants import VARS
 from tsdat.utils import DSUtil
+from tsdat.config.utils import instantiate_handler
 
 
 class QC(object):
@@ -25,7 +26,12 @@ class QC(object):
         This method will create QC companion variables if they don't exist.
 
         Args:
+            ds (xr.Dataset): The dataset to apply tests to
             config (Config): A configuration definition (loaded from yaml)
+            previous_data(xr.Dataset): A dataset from the previous processing
+            interval (i.e., file).  This is used to check for consistency between
+            files, such as for monitonic or delta checks when we need to check
+            the previous value.
 
         Raises:
             QCError:  A QCError indicates that a fatal error has occurred.
@@ -56,10 +62,10 @@ class QCChecker:
             variable_names.remove(exclude)
 
         # Get the operator
-        operator = self._instantiate_handler(ds, previous_data, test, test.operator)
+        operator = instantiate_handler(ds, previous_data, test, handler_desc=test.operator)
 
         # Get the error handlers (optional)
-        error_handlers = self._instantiate_handler(ds, previous_data, test, test.error_handlers)
+        error_handlers = instantiate_handler(ds, previous_data, test, handler_desc=test.error_handlers)
 
         self.ds = ds
         self.variable_names = variable_names
@@ -94,38 +100,3 @@ class QCChecker:
                     test_number=self.test.qc_bit,
                     test_meaning=self.test.description,
                     test_assessment=self.test.assessment)
-
-    @staticmethod
-    def _instantiate_class(ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition,
-                           classname: str, parameters: Dict):
-        # Convert the class reference to an object
-        module_name, class_name = QCChecker._parse_fully_qualified_name(classname)
-        module = importlib.import_module(module_name)
-        class_ = getattr(module, class_name)
-        instance = class_(ds, previous_data, test, parameters)
-        return instance
-
-    @staticmethod
-    def _instantiate_handler(ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition, handler_desc: Dict):
-        handler = None
-
-        if handler_desc is not None:
-            classname = handler_desc.get('classname', None)
-            params = handler_desc.get('parameters', {})
-
-            if classname is None: # handler is an dictionary of multiple handlers
-                handler = []
-                for handler_dict in handler_desc.values():
-                    classname = handler_dict.get('classname', None)
-                    params = handler_dict.get('parameters', {})
-                    handler.append(QCChecker._instantiate_class(ds, previous_data, test, classname, params))
-
-            else:
-                handler = QCChecker._instantiate_class(ds, previous_data, test, classname, params)
-
-        return handler
-
-    @staticmethod
-    def _parse_fully_qualified_name(fully_qualified_name: str):
-        module_name, class_name = fully_qualified_name.rsplit('.', 1)
-        return module_name, class_name

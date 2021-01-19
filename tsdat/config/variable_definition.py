@@ -2,6 +2,8 @@ import numpy as np
 from typing import Any, Dict, List, Tuple
 from .attribute_defintion import AttributeDefinition
 from .dimension_definition import DimensionDefinition
+from .utils import instantiate_handler
+
 
 class VarKeys:
     INPUT = 'input'
@@ -9,9 +11,14 @@ class VarKeys:
     TYPE = 'type'
     ATTRS = 'attrs'
 
+
 class VarInputKeys:
     NAME = 'name'
+    CONVERTER = 'converter'
     TIME_FORMAT = 'time_format'
+    TIMEZONE = 'timezone'
+    UNITS = 'units'
+
 
 class VarInput:    
     """-----------------------------------------------------------------------
@@ -20,7 +27,8 @@ class VarInput:
     -----------------------------------------------------------------------"""
     def __init__(self, dictionary: Dict):
         self.name: str = dictionary[VarInputKeys.NAME]
-        self.time_format: str = dictionary.get(VarInputKeys.TIME_FORMAT, None)
+        self.converter = instantiate_handler(handler_desc=dictionary[VarInputKeys.CONVERTER])
+
 
 class VariableDefinition:
     """-----------------------------------------------------------------------
@@ -83,9 +91,14 @@ class VariableDefinition:
             "ubyte":    np.uint8,
             "short":    np.int16,
             "ushort":   np.uint16,
+            "int":      np.int32,
+            "uint":     np.int32,
+            "int32":    np.int32,
+            "uint32":   np.uint32,
+            "int64":    np.int64,
+            "uint64":   np.uint64,
             "long":     np.int64,
             "ulong":    np.uint64,
-            "int":      np.int32,
             "float":    np.float32,
             "double":   np.float64
         }

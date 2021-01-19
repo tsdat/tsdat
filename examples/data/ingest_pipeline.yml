@@ -30,15 +30,23 @@ dataset_definition:
     time:
       input:
         name: DataTimeStamp(DateTime)
+        
+        # Use the StringTimeConverter if your input time is a formatted string
         converter: 
-          classname: tsdat.standards.units.StringTimeConverter
+          classname: tsdat.utils.converters.StringTimeConverter
           parameters:
-            timezone: UTC
+            # A list of timezones can be found here:
+            # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+            timezone: US/Pacific
             time_format: "%Y-%m-%d %H:%M:%S"
+            
+        # Use the TimestampTimeConverter if your input time is a numeric UTC timestamp
         # converter: 
-        #   classname: tsdat.standards.units.TimestampTimeConverter
+        #   classname: tsdat.utils.converters.TimestampTimeConverter
         #   parameters:
-        #     units: milliseconds since 1970-01-01T00:00:00
+        #     # Unit of the numeric value as used by pandas.to_datetime (D,s,ms,us,ns)
+        #     unit: s
+        
       dims: [time]
       type: long
       attrs:
@@ -52,8 +60,8 @@ dataset_definition:
       input:
         name: ValueAverage(Double)
         units: degC
-        converter: 
-          classname: tsdat.standards.units.DefaultConverter
+        converter:
+          classname: tsdat.utils.converters.DefaultConverter
           # parameters:
       dims: [time]
       type: double
@@ -70,7 +78,7 @@ dataset_definition:
         name: ValueMin(Double)
         units: degC
         converter: 
-          classname: tsdat.standards.units.DefaultConverter
+          classname: tsdat.utils.converters.DefaultConverter
           # parameters:
       dims: [time]
       type: double
@@ -86,7 +94,7 @@ dataset_definition:
         name: ValueMax(Double)
         units: degC
         converter: 
-          classname: tsdat.standards.units.DefaultConverter
+          classname: tsdat.utils.converters.DefaultConverter
           # parameters:
       dims: [time]
       type: double
@@ -102,7 +110,7 @@ dataset_definition:
         name: ValueSD(Double)
         units: degC
         converter: 
-          classname: tsdat.standards.units.DefaultConverter
+          classname: tsdat.utils.converters.DefaultConverter
           # parameters:
       dims: [time]
       type: double
@@ -141,7 +149,7 @@ qc_tests:
     # cause the dataset to be unusable, and result in a critical pipeline failure.
     missing:
         qc_bit: 1
-        description: Value is equal to _FillValue or NaN
+        description: "Value is equal to _FillValue or NaN"
         assessment: Bad
         variables:
           - ALL  # keyword to apply test to all variables
@@ -150,7 +158,7 @@ qc_tests:
 
     fail_min:
         qc_bit: 2
-        description: Value is less than the fail_range.
+        description: "Value is less than the fail_range."
         assessment: Bad
         variables:
           - ALL
@@ -159,7 +167,7 @@ qc_tests:
 
     fail_max:
         qc_bit: 3
-        description: Value is greater than the fail_range.
+        description: "Value is greater than the fail_range."
         assessment: Bad
         variables:
           - ALL
@@ -168,7 +176,7 @@ qc_tests:
 
     warn_min:
         qc_bit: 4
-        description: Value is less than the warn_range.
+        description: "Value is less than the warn_range."
         assessment: Indeterminate
         variables:
           - ALL
@@ -177,7 +185,7 @@ qc_tests:
 
     warn_max:
         qc_bit: 5
-        description: Value is greater than the warn_range.
+        description: "Value is greater than the warn_range."
         assessment: Indeterminate
         variables:
           - ALL
@@ -186,7 +194,7 @@ qc_tests:
 
     valid_delta:
         qc_bit: 6
-        description: Difference between current and previous values exceeds valid_delta.
+        description: "Difference between current and previous values exceeds valid_delta."
         assessment: Indeterminate
         variables:
           - ALL
@@ -195,9 +203,10 @@ qc_tests:
           parameters:
             dim: time
 
----
-customizations:
-    filehandlers:
-      - seapower.io.filehandlers.TdmsFileHandler
-      - seapower.io.filehandlers.BinFileHandler
-      - seapower.io.filehandlers.CsvFileHandler
+        error_handlers: # Can list multiple error handlers if needed - executed in sequence
+          send_email:
+            classname: tsdat.qc.error_handlers.SendEmailAWS
+            parameters:
+              message:
+              recipients: [carina.lansing@pnnl.gov, maxwell.levin@pnnl.gov]
+

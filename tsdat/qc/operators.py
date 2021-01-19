@@ -14,7 +14,7 @@ class QCOperator(abc.ABC):
     Class containing the code to perform a single QC test on a Dataset
     variable.
     -------------------------------------------------------------------"""
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition, params: Dict):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition, parameters={}):
         """-------------------------------------------------------------------
         Args:
             ds (xr.Dataset): The dataset the operator will be applied to
@@ -25,7 +25,7 @@ class QCOperator(abc.ABC):
         self.ds = ds
         self.previous_data = previous_data
         self.test = test
-        self.params = params
+        self.params = parameters
 
     @abc.abstractmethod
     def run(self, variable_name: str) -> Optional[np.ndarray]:
