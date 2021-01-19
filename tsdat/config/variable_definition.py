@@ -2,6 +2,8 @@ import numpy as np
 from typing import Dict, List
 from .attribute_defintion import AttributeDefinition
 from .dimension_definition import DimensionDefinition
+from tsdat import Config
+
 
 class VarKeys:
     INPUT = 'input'
@@ -9,9 +11,14 @@ class VarKeys:
     TYPE = 'type'
     ATTRS = 'attrs'
 
+
 class VarInputKeys:
     NAME = 'name'
+    CONVERTER = 'converter'
     TIME_FORMAT = 'time_format'
+    TIMEZONE = 'timezone'
+    UNITS = 'units'
+
 
 class VarInput:    
     """-----------------------------------------------------------------------
@@ -20,7 +27,8 @@ class VarInput:
     -----------------------------------------------------------------------"""
     def __init__(self, dictionary: Dict):
         self.name: str = dictionary[VarInputKeys.NAME]
-        self.time_format: str = dictionary.get(VarInputKeys.TIME_FORMAT, None)
+        self.converter = Config.instantiate_handler(handler_desc=dictionary[VarInputKeys.CONVERTER])
+
 
 class VariableDefinition:
     """-----------------------------------------------------------------------

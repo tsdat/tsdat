@@ -14,7 +14,7 @@ class QCErrorHandler(abc.ABC):
     Class containing code to be executed if a particular qc test fails.
     -------------------------------------------------------------------"""
 
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition, params: Dict):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition, parameters={}):
         """-------------------------------------------------------------------
         Args:
             ds (xr.Dataset): The dataset the operator will be applied to
@@ -24,7 +24,7 @@ class QCErrorHandler(abc.ABC):
         self.ds = ds
         self.previous_data = previous_data
         self.test = test
-        self.params = params
+        self.params = parameters
 
     @abc.abstractmethod
     def run(self, variable_name: str, results_array: np.ndarray):

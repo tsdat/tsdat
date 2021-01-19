@@ -30,15 +30,21 @@ dataset_definition:
     time:
       input:
         name: DataTimeStamp(DateTime)
+        
+        # Use the StringTimeConverter if your input time is a formatted string
         converter: 
-          classname: tsdat.standards.units.StringTimeConverter
+          classname: tsdat.utils.converters.StringTimeConverter
           parameters:
             timezone: UTC
             time_format: "%Y-%m-%d %H:%M:%S"
+            
+        # Use the TimestampTimeConverter if your input time is a numeric UTC timestamp
         # converter: 
-        #   classname: tsdat.standards.units.TimestampTimeConverter
+        #   classname: tsdat.utils.converters.TimestampTimeConverter
         #   parameters:
-        #     units: milliseconds since 1970-01-01T00:00:00
+        #     # Unit of the numeric value as used by pandas.to_datetime (D,s,ms,us,ns)
+        #     unit: s
+        
       dims: [time]
       type: long
       attrs:
@@ -52,8 +58,8 @@ dataset_definition:
       input:
         name: ValueAverage(Double)
         units: degC
-        converter: 
-          classname: tsdat.standards.units.DefaultConverter
+        converter:
+          classname: tsdat.utils.converters.DefaultConverter
           # parameters:
       dims: [time]
       type: double
@@ -70,7 +76,7 @@ dataset_definition:
         name: ValueMin(Double)
         units: degC
         converter: 
-          classname: tsdat.standards.units.DefaultConverter
+          classname: tsdat.utils.converters.DefaultConverter
           # parameters:
       dims: [time]
       type: double
@@ -86,7 +92,7 @@ dataset_definition:
         name: ValueMax(Double)
         units: degC
         converter: 
-          classname: tsdat.standards.units.DefaultConverter
+          classname: tsdat.utils.converters.DefaultConverter
           # parameters:
       dims: [time]
       type: double
@@ -102,7 +108,7 @@ dataset_definition:
         name: ValueSD(Double)
         units: degC
         converter: 
-          classname: tsdat.standards.units.DefaultConverter
+          classname: tsdat.utils.converters.DefaultConverter
           # parameters:
       dims: [time]
       type: double
