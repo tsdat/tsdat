@@ -1,0 +1,70 @@
+dataset_definition:
+  # Define the global attributes in your output xarray Dataset
+  attributes:
+    title: Buoy Dataset for Buoy #120
+    description: Example ingest dataset.
+    conventions: MHKiT-Cloud Data Standards v. 1.0
+    history:
+    doi: 10.21947/1671051
+    institution: PNNL
+    code_url: https://github.com/clansing/tsdat/releases/tag/1.0
+    references:
+    input_files:
+    location_id: humboldt_z05
+    datastream: humboldt_z05.lidar_buoy_10m.b1
+    data_level: b1
+    location_description: Buoy is located of the coast of Humboldt, CA
+    instrument_name: Wind Sentinel
+    serial_number: '000011312'
+    instrument_description: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
+    instrument_manufacturer: AXYS Technologies Inc.
+    sampling_interval: 10 min
+
+  # Define the dimensions/coordinates in your output xarray Dataset
+  dimensions:
+    time:
+        length: unlimited
+
+  # Define the variables in your output xarray Dataset
+  variables:
+    time:
+      input:
+        name: DataTimeStamp(DateTime)
+
+        # Use the StringTimeConverter if your input time is a formatted string
+        converter:
+          classname: tsdat.utils.converters.StringTimeConverter
+          parameters:
+            timezone: US/Pacific
+            time_format: "%Y-%m-%d %H:%M:%S"
+
+        # Use the TimestampTimeConverter if your input time is a numeric UTC timestamp
+        # converter:
+        #   classname: tsdat.utils.converters.TimestampTimeConverter
+        #   parameters:
+        #     # Unit of the numeric value as used by pandas.to_datetime (D,s,ms,us,ns)
+        #     unit: s
+
+      dims: [time]
+      type: int64
+      attrs:
+        long_name: Time offset from epoch
+        standard_name: time
+        # Note:  CF Standards require this exact format:
+        # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/ch04s04.html
+        units: seconds since 1970-01-01T00:00:00
+
+    HorizontalSpeedAverage:
+      input:
+        name: HorizontalSpeedAverage(Double)
+        units: mi/s
+        converter:
+          classname: tsdat.utils.converters.DefaultConverter
+          # parameters:
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Average of horizontal wind speed
+        description: Rolling 10-minute average wind speed. Aligned such that the wind speed reported at time 'n' represents the average across the interval (n-1, n].
+        units: m/s
+        _FillValue: -9999

@@ -1,0 +1,67 @@
+qc_tests:
+    #  In general, a user should not specify tests for coordinate variables
+    # (e.g., time) because the pipeline will perform coordinate variable validation
+    # before the qc tests are run.  Any failures in coordinate variables will
+    # cause the dataset to be unusable, and result in a critical pipeline failure.
+    missing:
+        qc_bit: 1
+        description: "Value is equal to _FillValue or NaN"
+        assessment: Bad
+        variables:
+          - ALL  # keyword to apply test to all variables
+        operator:
+          classname: tsdat.qc.operators.CheckMissing
+
+    fail_min:
+        qc_bit: 2
+        description: "Value is less than the fail_range."
+        assessment: Bad
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckFailMin
+
+    fail_max:
+        qc_bit: 3
+        description: "Value is greater than the fail_range."
+        assessment: Bad
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckFailMax
+
+    warn_min:
+        qc_bit: 4
+        description: "Value is less than the warn_range."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckWarnMin
+
+    warn_max:
+        qc_bit: 5
+        description: "Value is greater than the warn_range."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckWarnMax
+
+    valid_delta:
+        qc_bit: 6
+        description: "Difference between current and previous values exceeds valid_delta."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckValidDelta
+          parameters:
+            dim: time
+
+        error_handlers: # Can list multiple error handlers if needed - executed in sequence
+          send_email:
+            classname: tsdat.qc.error_handlers.SendEmailAWS
+            parameters:
+              message:
+              recipients: [carina.lansing@pnnl.gov, maxwell.levin@pnnl.gov]
