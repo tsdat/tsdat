@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, List
+from typing import Any, Dict, List, Tuple
 from .attribute_defintion import AttributeDefinition
 from .dimension_definition import DimensionDefinition
 
@@ -37,6 +37,8 @@ class VariableDefinition:
         for key in dictionary:
             if not hasattr(self, key):
                 setattr(self, key, dictionary[key])
+
+        self._predefined = hasattr(self, "data")
     
     def _parse_input(self, dictionary: Dict) -> VarInput:
         input_source = dictionary.get(VarKeys.INPUT, None)
@@ -101,6 +103,16 @@ class VariableDefinition:
             bool: True if the variable is constant, False otherwise.
         -------------------------------------------------------------------"""
         return len(list(self.dims.keys())) == 0
+    
+    def is_predefined(self) -> bool:
+        """-------------------------------------------------------------------
+        Returns True if the variable's data was predefined in the config yaml 
+        file.
+
+        Returns:
+            bool: True if the variable is predefined, False otherwise.
+        -------------------------------------------------------------------"""
+        return self._predefined
 
     def is_coordinate(self) -> bool:
         """-------------------------------------------------------------------
@@ -117,22 +129,72 @@ class VariableDefinition:
     def is_derived(self) -> bool:
         """-------------------------------------------------------------------
         Return True if the variable is derived. A variable is derived if it 
-        does not have an input.
+        does not have an input and it is not predefined.
 
         Returns:
             bool: True if the Variable is derived, False otherwise.
         -------------------------------------------------------------------"""
-        return self.input is not None
+        return self.input is None and not self.is_predefined()
     
     def has_input(self) -> bool:
         """-------------------------------------------------------------------
-        Return True if the variable is derived. A variable is derived if it 
-        does not have an input.
+        Return True if the variable is copied from an input dataset, 
+        regardless of whether or not unit and/or naming conversions should be 
+        applied.
 
         Returns:
-            bool: True if the Variable is derived, False otherwise.
+            bool: True if the Variable has an input defined, False otherwise.
         -------------------------------------------------------------------"""
-        return self.input is None
+        return self.input is not None
+
+    def get_input_name(self) -> str:
+        """-------------------------------------------------------------------
+        Returns the name of the variable in the input if defined, otherwise 
+        returns None.
+
+        Returns:
+            str: The name of the variable in the input, or None.
+        -------------------------------------------------------------------"""
+        if not self.has_input():
+            return None
+        return self.input.name
+    
+    def get_input_units(self) -> str:
+        if not self.has_input():
+            return None
+        output_units = self.get_output_units()
+        return getattr(self.input, "units", output_units)
+    
+    def get_output_units(self) -> str:
+        return self.attrs.get("units", "unitless")
+
+    def get_coordinate_names(self) -> List[str]:
+        """-------------------------------------------------------------------
+        Returns the names of the coordinate VariableDefinition(s) that this 
+        VariableDefinition is dimensioned by.
+
+        Returns:
+            List[str]: A list of dimension/coordinate variable names.
+        -------------------------------------------------------------------"""
+        return list(self.dims.keys())
+    
+    def get_shape(self) -> Tuple[int]:
+        """-------------------------------------------------------------------
+        Returns the shape of the data attribute on the VariableDefinition. 
+        Raises a KeyError if the data attribute has not been set yet.
+
+        Returns:
+            Tuple[int]: The shape of the VariableDefinition's data, or None.
+        -------------------------------------------------------------------"""
+        if not hasattr(self, "data"):
+            raise KeyError(f"No data has been set for variable: '{self.name}'")
+        return None
+
+    def get_data_type(self) -> Any:
+        return self.type
+    
+    def get_FillValue(self):
+        return self.attrs.get("_FillValue", -9999)
 
     def to_dict(self) -> Dict:
         """-------------------------------------------------------------------
