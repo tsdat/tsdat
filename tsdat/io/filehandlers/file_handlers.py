@@ -9,6 +9,7 @@ from typing import List, Dict
 from tsdat.config import Config
 from tsdat.utils import DSUtil
 
+
 class AbstractFileHandler(abc.ABC):
     @staticmethod
     @abc.abstractmethod
@@ -25,6 +26,8 @@ class AbstractFileHandler(abc.ABC):
             config (Config, optional):  Optional Config object. Defaults to 
                                         None.
         -------------------------------------------------------------------"""
+        #TODO: we can derive file name from the dataset - just need to specify the destination folder
+        # Return the path to the local file that was saved
         pass
     
     @staticmethod
