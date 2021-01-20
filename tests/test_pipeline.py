@@ -20,12 +20,15 @@ def copy_raw(raw_path):
 
 class TestIngestPipeline(unittest.TestCase):
 
+    def setUp(self) -> None:
+        self.basedir = os.path.abspath(os.path.dirname(__file__))
+
     def test_ingest_pipeline(self):
-        raw_file = "tsdat/tests/data/test1/buoy.z05.00.20200930.000000.temperature.csv"
+        raw_file = os.path.join(self.basedir, "data/test1/buoy.z05.00.20200930.000000.temperature.csv")
         test_data = copy_raw(raw_file)
 
-        config: Config = Config.load("tsdat/tests/data/test1/ingest_pipeline.yml")
-        storage: FilesystemStorage = FilesystemStorage(root="tsdat/tests/data/test1/outputs")
+        config: Config = Config.load(os.path.join(self.basedir, "data/test1/ingest_pipeline.yml"))
+        storage: FilesystemStorage = FilesystemStorage(root=os.path.join(self.basedir, "data/test1/outputs"))
         ingest: IngestPipeline = IngestPipeline(config, storage)
         ingest.run(test_data)
 

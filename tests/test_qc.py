@@ -1,7 +1,8 @@
-from unittest import TestCase
-import xarray as xr
-import pandas as pd
+import os
 import numpy as np
+import pandas as pd
+import xarray as xr
+from unittest import TestCase
 from tsdat.config import Config
 from tsdat.qc import QC
 
@@ -70,10 +71,11 @@ class TestQC(TestCase):
             ),
         }
         self.ds: xr.Dataset = xr.Dataset(ds_dict, attrs={'example_attr': 'this is a global attribute'})
+        self.basedir = os.path.abspath(os.path.dirname(__file__))
 
     def test_qc_tests(self):
         # First load the config with the qc test definitions
-        config = Config.load('data/qc.yml')
+        config = Config.load(os.path.join(self.basedir, 'data/qc.yml'))
 
         # Now apply the qc tests
         QC.apply_tests(self.ds, config, None)
