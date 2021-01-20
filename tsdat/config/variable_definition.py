@@ -26,8 +26,11 @@ class VarInput:
     defined by the yaml file.
     -----------------------------------------------------------------------"""
     def __init__(self, dictionary: Dict):
-        self.name: str = dictionary[VarInputKeys.NAME]
-        self.converter = instantiate_handler(handler_desc=dictionary[VarInputKeys.CONVERTER])
+        self.name: str = dictionary.get(VarInputKeys.NAME)
+        self.converter = instantiate_handler(handler_desc=dictionary.get(VarInputKeys.CONVERTER, "tsdat.utils.converters.DefaultConverter"))
+        for key in dictionary:
+            if not hasattr(self, key):
+                setattr(self, key, dictionary[key])
 
 
 class VariableDefinition:
@@ -175,11 +178,10 @@ class VariableDefinition:
     def get_input_units(self) -> str:
         if not self.has_input():
             return None
-        output_units = self.get_output_units()
-        return getattr(self.input, "units", output_units)
+        return getattr(self.input, "units", self.get_output_units())
     
     def get_output_units(self) -> str:
-        return self.attrs.get("units", "unitless")
+        return getattr(self.attrs.get("units", None), "value", None)
 
     def get_coordinate_names(self) -> List[str]:
         """-------------------------------------------------------------------
@@ -201,13 +203,13 @@ class VariableDefinition:
         -------------------------------------------------------------------"""
         if not hasattr(self, "data"):
             raise KeyError(f"No data has been set for variable: '{self.name}'")
-        return None
+        return self.data.shape
 
     def get_data_type(self) -> Any:
         return self.type
     
     def get_FillValue(self):
-        return self.attrs.get("_FillValue", -9999)
+        return getattr(self.attrs.get("_FillValue", -9999), "value", -9999)
 
     def to_dict(self) -> Dict:
         """-------------------------------------------------------------------
