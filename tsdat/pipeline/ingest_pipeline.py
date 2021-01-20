@@ -1,8 +1,9 @@
 import os
+import zipfile
+import tarfile
 import shutil
 from tsdat.io.filehandlers import FileHandler
 from tsdat.io.storage import DatastreamStorage
-import zipfile
 import xarray as xr
 from typing import Dict, List, Tuple
 from tsdat.standards import Standards
@@ -18,23 +19,19 @@ class IngestPipeline(Pipeline):
         Runs the Ingest Pipeline from start to finish.
 
         Args:
-            filepath (str): The path to the file (or .zip archive containing 
+            filepath (str): The path to the file (or archive containing
                             a collection of files) to run the Ingest Pipeline 
                             on.
         -------------------------------------------------------------------"""
-        # TODO: Replace extract_files method with extract_and_rename_raw_files()
-        # file_paths = self.extract_files(filepath)
-        file_paths = self.extract_and_rename_raw_files(filepath)
+        # If the file is a zip/tar, then we need to extract the individual files
+        file_paths = self.extract_files(filepath)
 
-        # Open each raw file and rename 
-        # TODO: Implement this. Update docstring and typing.
-        raw_dataset_mapping: Dict[str, xr.Dataset] = self.read_input(file_paths)
-
-        # Standardize the raw file names and store. Involves opening the raw
+        # Open each raw file into a Dataset, standardize the raw file names and store.
+        # Use storage and FileHandler to access and read the file.
+        # Involves opening the raw
         # files to get the timestamp of the first point of data since this is
-        # required/recommended by raw file naming conventions
-        # TODO: Update this.
-        renamed_dataset_mapping = self.persist_raw_files(raw_dataset_mapping)
+        # required/recommended by raw file naming conventions.
+        raw_dataset_mapping: Dict[str, xr.Dataset] = self.read_and_persist_raw_files(file_paths)
 
         # Retrieve existing files for the current processing interval (current 
         # date for now) and returns a list of paths to the retrieved raw files.
@@ -64,44 +61,51 @@ class IngestPipeline(Pipeline):
         # Save the final datastream data to storage
         self.store_dataset(dataset)
 
-    def extract_files(self, filepath: str, target_dir: str = "") -> List[str]:        
+    def extract_files(self, filepath: str) -> List[str]:
         """-------------------------------------------------------------------
-        If provided a path to a .zip archive this function will unzip the 
+        If provided a path to an archive file, this function will unzip the
         archive and return a list of complete paths to each file.
+        Zip or tar/targz archive files are supported.
 
         Args:
-            filepath (str): A path to a .zip file or a regular file.
-            target_dir (str, optional): A path to the directory to extract the 
-                                        files to. Defaults to the parent 
-                                        directory of `filepath`.
+            filepath (str): A path to an archive file or a regular file.
 
         Returns:
             List[str]:  A list of complete paths to the unzipped files or 
                         `[filepath]` if `filepath` is not a .zip file.
-        -------------------------------------------------------------------"""        
-        if not filepath.endswith(".zip"):
-            if os.path.isfile(filepath):
-                return [filepath]
-            raise ValueError("filepath must be a .zip archive or a file")
-        # If target_dir not provided, make it be the parent directory of the 
-        # filepath provided
-        if not target_dir:
-            target_dir, _ = os.path.split(filepath)
-        # Extract into a temporary folder in the target_dir
-        temp_dir = f"{target_dir}/.unzipped"
-        os.makedirs(temp_dir, exist_ok=False)
-        with zipfile.ZipFile(filepath, 'r') as zipped:
-            zipped.extractall(temp_dir)
-        # Move files from temp_dir into target_dir and remove temp_dir
-        filenames = os.listdir(temp_dir)
-        temp_paths = [os.path.join(temp_dir,   file) for file in filenames]
-        new_paths  = [os.path.join(target_dir, file) for file in filenames]
-        for temp_path, new_path in zip(temp_paths, new_paths):
-            shutil.move(temp_path, new_path)
-        os.rmdir(temp_dir)
-        return new_paths
+        -------------------------------------------------------------------"""
+        extracted_files = [filepath]
+
+        if tarfile.is_tarfile(filepath) or zipfile.is_zipfile(filepath):
+            # TODO: make sure that storage creates a unique folder name to unzip to
+            extracted_files = self.storage.tmp_storage.unzip(filepath)
+
+        return extracted_files
+
+        # if not filepath.endswith(".zip"):
+        #     if os.path.isfile(filepath):
+        #         return [filepath]
+        #     raise ValueError("filepath must be a .zip archive or a file")
+        #
+        # # If target_dir not provided, make it be the parent directory of the
+        # # filepath provided
+        # if not target_dir:
+        #     target_dir, _ = os.path.split(filepath)
+        # # Extract into a temporary folder in the target_dir
+        # temp_dir = f"{target_dir}/.unzipped"
+        # os.makedirs(temp_dir, exist_ok=False)
+        # with zipfile.ZipFile(filepath, 'r') as zipped:
+        #     zipped.extractall(temp_dir)
+        # # Move files from temp_dir into target_dir and remove temp_dir
+        # filenames = os.listdir(temp_dir)
+        # temp_paths = [os.path.join(temp_dir,   file) for file in filenames]
+        # new_paths  = [os.path.join(target_dir, file) for file in filenames]
+        # for temp_path, new_path in zip(temp_paths, new_paths):
+        #     shutil.move(temp_path, new_path)
+        # os.rmdir(temp_dir)
+        # return new_paths
     
-    def persist_raw_files(self, file_paths: List[str]) -> List[str]:
+    def read_and_persist_raw_files(self, file_paths: List[str]) -> List[str]:
         """-------------------------------------------------------------------
         Renames the provided RAW files according to MHKiT-Cloud Data Standards 
         naming conventions for RAW data and returns a list of filepaths to the 
@@ -112,49 +116,36 @@ class IngestPipeline(Pipeline):
 
         Returns:
             List[str]: A list of paths to the renamed raw files.
-        -------------------------------------------------------------------"""    
-        renamed = []
-        for file_path in file_paths:
-            datastream_name = self.get_datastream_name()[:-2] + "00"
-            date, time = self.get_raw_start_date_time(file_path)
-            new_dir, old_basename = os.path.split(file_path)
-            new_filename = f"{datastream_name}.{date}.{time}.raw.{old_basename}"
-            new_path = os.path.join(new_dir, new_filename)
-            renamed.append(new_path)
-            shutil.move(file_path, new_path)
-            # TODO: Add self.storage.move(old_name, new_name) 
-            # TODO: Remove shutil.move
-        return renamed
-    
-    def read_input(self, file_paths: List[str]) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Merges data from a number of file paths into an xarray dataset and
-        returns the xarray dataset. The input files can have any file 
-        extension so long as a FileReader for that extension has been 
-        registered.
-
-        Args:
-            file_paths (List[str]): A list of paths to raw input files. Can be
-                                    provided as a string if there is only one 
-                                    raw file to read in.
-        
-        Raises:
-            KeyError:   Raises a KeyError if no FileHandler has been
-                        registered for the extension of any raw files in 
-                        `file_paths`.
-
-        Returns:
-            xr.Dataset: An xarray dataset containing the raw input data. No 
-                        qc, corrections, or standard format check/controls 
-                        have been applied.
         -------------------------------------------------------------------"""
+        raw_dataset_mapping = {}
+        tmp_folder = ''  # TODO: create temp folder (has to be under /tmp in lambda)
+
         if isinstance(file_paths, str):
             file_paths = [file_paths]
-        merged_dataset = xr.Dataset()
+
         for file_path in file_paths:
-            dataset = FileHandler.read(file_path, config=self.config)
-            merged_dataset = xr.merge([merged_dataset, dataset])            
-        return merged_dataset
+
+            # read the raw file into a dataset
+            tmp_path = self.storage.tmp_storage.fetch(file_path, tmp_folder)
+            dataset = FileHandler.read(tmp_path)
+
+            # create the standardized name for raw file
+            datastream_name = DSUtil.get_datastream_name(config=self.config)[:-2] + "00"
+            date, time = self.get_raw_start_date_time(dataset)
+            new_dir, old_basename = os.path.split(tmp_path)
+            new_filename = f"{datastream_name}.{date}.{time}.raw.{old_basename}"
+            new_path = os.path.join(new_dir, new_filename)
+
+            # add the raw dataset to our dictionary
+            raw_dataset_mapping[new_filename] = dataset
+
+            # save the raw data to storage
+            self.storage.save(new_path)
+
+            # Clean up the temp file as we don't need it anymore
+            os.remove(new_path)
+
+        return raw_dataset_mapping
     
     def standardize_dataset(self, raw_dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
@@ -307,23 +298,6 @@ class IngestPipeline(Pipeline):
         datastream_name = DSUtil.get_datastream_name(dataset)
         start_date, start_time = DSUtil.get_start_time(dataset)
         return f"{datastream_name}.{start_date}.{start_time}.nc"
-     
-    def get_datastream_name(self) -> str:
-        """-------------------------------------------------------------------
-        Uses the config pipeline parameters to autogenerate the datastream 
-        name according to MHKiT-Cloud data standards.
-
-        Returns:
-            str: The datastream name.
-        -------------------------------------------------------------------"""
-        # loc_id = self.config.pipeline["location_id"]
-        # instr_id = self.config.pipeline["instrument_id"]
-        # qualifier = self.config.pipeline["qualifier"]
-        # temporal = self.config.pipeline["temporal"]
-        # data_level = self.config.pipeline["data_level"]
-        # datastream_name = f"{loc_id}.{instr_id}{qualifier}{temporal}.{data_level}"
-        datastream_name = DSUtil.get_datastream_name(config=self.config)
-        return datastream_name
     
     def get_raw_start_date_time(self, filepath: str) -> Tuple[str, str]:                
         """-------------------------------------------------------------------
