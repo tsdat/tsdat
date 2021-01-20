@@ -96,7 +96,7 @@ class DatasetDefinition:
 
     def get_variable_shape(self, variable: VariableDefinition) -> Tuple[int]:
         coordinates = self.get_coordinates(variable)
-        shape = tuple(coord.get_shape()[0] for coord in coordinates)
+        shape = tuple([coord.get_shape()[0] for coord in coordinates])
         return shape
 
     def extract_data(self, variable: VariableDefinition, dataset: xr.Dataset) -> None:
@@ -130,8 +130,8 @@ class DatasetDefinition:
         if variable.has_input():
             input_name = variable.get_input_name()
             data = dataset[input_name].values
-            data = act.utils.data_utils.convert_units(data, variable.get_input_units(), variable.get_output_units())
-            variable.data = data
+            converted = variable.input.converter.run(data, variable.get_input_units(), variable.get_output_units())
+            variable.data = converted
 
     def to_dict(self) -> Dict:
         """-------------------------------------------------------------------
