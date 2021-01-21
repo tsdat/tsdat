@@ -57,7 +57,7 @@ dataset_definition:
     HorizontalSpeedAverage:
       input:
         name: HorizontalSpeedAverage(Double)
-        units: mi/s
+        units: km/s
         converter:
           classname: tsdat.utils.converters.DefaultConverter
           # parameters:
@@ -67,4 +67,22 @@ dataset_definition:
         long_name:  Average of horizontal wind speed
         description: Rolling 10-minute average wind speed. Aligned such that the wind speed reported at time 'n' represents the average across the interval (n-1, n].
         units: m/s
+        _FillValue: -9999
+
+    WindDirection:
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Wind Direction
+        description: Wind direction in radians.
+        units: radian
+        _FillValue: -9999
+    
+    PlanckConstant:
+      type: double
+      data: 6.62607015e-34
+      attrs:
+        long_name:  Planck constant
+        description: The quantum of electromagnetic action that relates a photon's energy to its frequency. The Planck constant multiplied by a photon's frequency is equal to a photon's energy.
+        units: J s
         _FillValue: -9999
