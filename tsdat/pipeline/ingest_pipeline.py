@@ -33,10 +33,6 @@ class IngestPipeline(Pipeline):
         # required/recommended by raw file naming conventions.
         raw_dataset_mapping: Dict[str, xr.Dataset] = self.read_and_persist_raw_files(file_paths)
 
-        # Retrieve existing files for the current processing interval (current 
-        # date for now) and returns a list of paths to the retrieved raw files.
-        # TODO: Implement these methods
-        raw_dataset_mapping = self.add_existing_raw_files(raw_dataset_mapping)
         raw_dataset = self.merge_mappings(raw_dataset_mapping)
 
         # Process the data
@@ -44,8 +40,8 @@ class IngestPipeline(Pipeline):
         dataset = self.apply_corrections(dataset)
         dataset = self.customize_dataset(dataset)
 
-        # Fail if ds is not valid
-        self.validate_dataset(dataset)
+        # Fail if ds metadata does not conform to standards
+        self.validate_metadata(dataset)
 
         if self.config.dataset_definition.data_level.startswith('b'):
             # If there is previous data in Storage, we need
@@ -78,7 +74,7 @@ class IngestPipeline(Pipeline):
 
         if tarfile.is_tarfile(filepath) or zipfile.is_zipfile(filepath):
             # TODO: make sure that storage creates a unique folder name to unzip to
-            extracted_files = self.storage.tmp_storage.unzip(filepath)
+            extracted_files = self.storage.tmp.unzip(filepath)
 
         return extracted_files
 
@@ -118,7 +114,6 @@ class IngestPipeline(Pipeline):
             List[str]: A list of paths to the renamed raw files.
         -------------------------------------------------------------------"""
         raw_dataset_mapping = {}
-        tmp_folder = ''  # TODO: create temp folder (has to be under /tmp in lambda)
 
         if isinstance(file_paths, str):
             file_paths = [file_paths]
@@ -126,24 +121,23 @@ class IngestPipeline(Pipeline):
         for file_path in file_paths:
 
             # read the raw file into a dataset
-            tmp_path = self.storage.tmp_storage.fetch(file_path, tmp_folder)
-            dataset = FileHandler.read(tmp_path)
+            with self.storage._tmp.fetch(file_path) as tmp_path:
+                dataset = FileHandler.read(tmp_path)
 
-            # create the standardized name for raw file
-            datastream_name = DSUtil.get_datastream_name(config=self.config)[:-2] + "00"
-            date, time = self.get_raw_start_date_time(dataset)
-            new_dir, old_basename = os.path.split(tmp_path)
-            new_filename = f"{datastream_name}.{date}.{time}.raw.{old_basename}"
-            new_path = os.path.join(new_dir, new_filename)
+                # create the standardized name for raw file
+                # TODO: Need to use the time converter to convert the time in the raw file
+                # to UTC so it matches the same time in the netcdf file
+                datastream_name = DSUtil.get_datastream_name(config=self.config)[:-2] + "00"
+                date, time = self.get_raw_start_date_time(dataset)
+                new_dir, old_basename = os.path.split(tmp_path)
+                new_filename = f"{datastream_name}.{date}.{time}.raw.{old_basename}"
+                new_path = os.path.join(new_dir, new_filename)
 
-            # add the raw dataset to our dictionary
-            raw_dataset_mapping[new_filename] = dataset
+                # add the raw dataset to our dictionary
+                raw_dataset_mapping[new_filename] = dataset
 
-            # save the raw data to storage
-            self.storage.save(new_path)
-
-            # Clean up the temp file as we don't need it anymore
-            os.remove(new_path)
+                # save the raw data to storage
+                self.storage.save(new_path)
 
         return raw_dataset_mapping
     
@@ -205,14 +199,17 @@ class IngestPipeline(Pipeline):
             xr.Dataset: The previous dataset from the DatastreamStorage if it
                         exists, else None.
         -------------------------------------------------------------------"""
-        start_date, start_time = DSUtil.get_start_time(dataset)
-        end, start = start_date, None
-        # TODO start = start_time - 1 day
-        datastream_name = DSUtil.get_datastream_name(dataset, self.config)
-        netcdf_files = self.storage.fetch(datastream_name, start, end) # TODO - Not sure if this works
         dataset = None
-        if netcdf_files:
-            dataset = FileHandler.read(netcdf_files[-1], config=self.config)
+        start_date, start_time = DSUtil.get_start_time(dataset)
+
+        datastream_name = DSUtil.get_datastream_name(dataset, self.config)
+
+        with self.storage._tmp.get_previous_file(datastream_name, start_date, start_time) as netcdf_file:
+
+            dataset = None
+            if netcdf_file:
+                dataset = FileHandler.read(netcdf_file, config=self.config)
+
         return dataset
 
     def merge_existing_data(self, dataset: xr.Dataset) -> xr.Dataset:

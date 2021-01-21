@@ -10,6 +10,11 @@ from tsdat.standards import Standards
 from tsdat.utils import DSUtil
 
 class DatastreamStorage(abc.ABC):
+    # TODO: each storage needs to initialize a temp storage for
+    # writing temporarty files that automatically get cleaned up
+    # Temp storage is a class that is a context manager so it can
+    # clean up files automatically when the code goes out of scope.
+    _tmp = None
 
     @abc.abstractmethod
     def fetch(self, datastream_name: str, start_time: str, end_time: str, local_path: str = None) -> List[str]:
