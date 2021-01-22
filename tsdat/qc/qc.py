@@ -55,6 +55,7 @@ class QCChecker:
         variable_names = test.variables
         if VARS.ALL in variable_names:
             variable_names = DSUtil.get_non_qc_variable_names(ds)
+            # TODO: exclude all coordinate variables by default
 
         # Exclude any excludes
         excludes = test.exclude
