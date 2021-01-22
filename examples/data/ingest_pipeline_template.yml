@@ -58,21 +58,44 @@ dataset_definition:
     # Example: https://github.com/MHKiT-Software/MHKiT-Python
     #references:
 
+    #---------------------------------------------------------------
+    # The following attributes used to create the datastream name
+    # datastream_name = (location_id).(instrument_id)(qualifier)(temporal).data_level
+    #---------------------------------------------------------------
+
     # A label for the location where the data were obtained from
     location_id: humboldt_z05
 
-    # The datastream name as described in the MHKiT-Cloud
-    # Data Standards
-    # TODO: provide a link to the documentation online
-    datastream: humboldt_z05.lidar_buoy_10m.b1
+    # A string consisting of any letters, digits, “-“ or “_” that can
+    # be used to uniquely identify the instrument used to produce
+    # the data.  To prevent confusion with the temporal resolution
+    # of the instrument, the instrument identifier must not end
+    # with a number.
+    instrument_id: lidar_buoy
+
+    # An optional qualifier that distinguishes these data from other
+    # data sets produced by the same instrument.  The qualifier
+    # must not end with a number.
+    #qualifier:
+
+    # A optional description of the data temporal resolution
+    # (e.g., 30m, 1h, 200ms, 14d).  All temporal resolution
+    # descriptors require a units identifier.  Accepted
+    # abbreviations include: ns=nanosecond, us=microsecond,
+    # ms=millisecond, s=second, m=minute, h=hour, d=day, mo=month,
+    # yr=year.
+    #temporal: 10m
 
     # The processing level of the data (e.g., 00, b1, c1, etc.)
-    # as described in the MHKiT-Cloud Data Standards
-    # TODO: provide a link to the documentation online
+    # as described in the MHKiT-Cloud Data Standards.
+    # A two-character descriptor consisting of one lower-case
+    # letter followed by one number
     data_level: b1
 
+    #---------------------------------------------------------------
+
     # A more detailed description of the site location.
-    #location_description: Buoy is located of the coast of Humboldt, CA
+    #location_meaning: Buoy is located of the coast of Humboldt, CA
 
     # Name of instrument(s) used to collect data.
     #instrument_name: Wind Sentinel
@@ -81,7 +104,7 @@ dataset_definition:
     #serial_number: '000011312'
 
     # Description of instrument(s) used to collect data.
-    #instrument_description: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
+    #instrument_meaning: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
 
     # Manufacturer of instrument(s) used to collect data.
     #instrument_manufacturer: AXYS Technologies Inc.
@@ -183,7 +206,7 @@ dataset_definition:
         units: seconds since 1970-01-01T00:00:00
 
     #-----------------------------------------------------------------
-    # Mean temperature variable
+    # Mean temperature variable (non-coordinate variable)
     #-----------------------------------------------------------------
     temp_mean: # Variable name as it will appear in the processed data
 
@@ -313,30 +336,71 @@ dataset_definition:
           valid_range:[-180.f, 180.f]
         data: -156.609
 
+    #-----------------------------------------------------------------
+    # Example of a variable that is derived by the processing pipeline
+    #-----------------------------------------------------------------
+    foo:
+      type: float
+
+      #<-----This variable has no input, which means it will be set by
+      # the pipeline and not pulled from the raw data
+
+      dims: [time]
+
+      attrs:
+        long_name: some other property
+        units: kg/m^3
+        comment: Computed from temp_mean point value using some formula...
+        references: [http://sccoos.org/data/autoss/, http://sccoos.org/about/dmac/]
 
 ---
 ####################################################################
 # PART 2: QC TESTS
 # Define the QC tests that will be applied to variable data.
 ####################################################################
+coordinate_variable_qc_tests:
+  #-----------------------------------------------------------------
+  # The following section defines the default qc tests that will be
+  # performed on coordinate variables in a dataset.  Note that by
+  # default, coordinate variable tests will NOT set a QC bit and
+  # will trigger a critical pipeline failure.  This is because
+  # Problems with coordinate variables are considered to cause
+  # the dataset to be unusable and should be manually reviewed.
+  #
+  # However, the user may override the default coordinate variable
+  # tests and error handlers if they feel that data correction is
+  # warranted.
+  #
+  # For a complete list of tests provided by MHKiT-Cloud, please see
+  # the tsdat.qc.operators package.
+  #
+  # Users are also free to add custom tests defined by their own
+  # operator classes.
+  #-----------------------------------------------------------------
+  missing:
+    variables:
+      - ALL  # keyword to apply test to all coordinate variables
+    operator:
+      classname: tsdat.qc.operators.CheckMissing
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+  monotonic:
+    variables:
+      - All  # keyword to apply test to all coordinate variables
+    operator:
+      classname: tsdat.qc.operators.CheckMonotonic
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
 
 qc_tests:
   #-----------------------------------------------------------------
   # The following section defines the default qc tests that will be
-  # performed on a dataset.  All non-coordinate variables that have
-  # the appropriate metadata attributes will be included in the test.
-  #
-  # Note that the pipeline will NOT include coordinate variables by
-  # default in tests.  This is because the pipeline will perform
-  # coordinate variable validation before the qc tests are run.
-  # By default, any failures in coordinate variables will cause the
-  # dataset to be unusable, and result in a critical pipeline failure,
-  # as manual review is required.
-  #
-  # However, the user may override the default coordinate variable
-  # validation via their pipeline implementation.  They may also
-  # explicitly include a coordinate variable in one of the QC tests
-  # by listing its name below.
+  # performed on non-coordinate variables in a dataset.  All
+  # non-coordinate variables that have the appropriate metadata
+  # attributes will be included in the test.
   #
   # For a complete list of tests provided by MHKiT-Cloud, please see
   # the tsdat.qc.operators package.
@@ -352,15 +416,15 @@ qc_tests:
     # test failed.
     qc_bit: 1
 
-    # The description of the test used in variable metadata
-    description: "Value is equal to _FillValue or NaN"
+    # The description of the QC test performed
+    meaning: "Value is equal to _FillValue or NaN"
 
     # The assessment of the test.  Must be one of [Bad, Indeterminate]
     assessment: Bad
 
     # Which variables to apply the test to
     variables:
-      - ALL  # keyword to apply test to all variables
+      - ALL  # keyword to apply test to all non-coordinate variables
 
     # The class that will implement the test.  Users are free
     # to override with their own class if they want to change
@@ -370,7 +434,7 @@ qc_tests:
 
   fail_min:
     qc_bit: 2
-    description: "Value is less than the fail_range."
+    meaning: "Value is less than the fail_range."
     assessment: Bad
     variables:
       - ALL
@@ -379,7 +443,7 @@ qc_tests:
 
   fail_max:
     qc_bit: 3
-    description: "Value is greater than the fail_range."
+    meaning: "Value is greater than the fail_range."
     assessment: Bad
     variables:
       - ALL
@@ -388,7 +452,7 @@ qc_tests:
 
   warn_min:
     qc_bit: 4
-    description: "Value is less than the warn_range."
+    meaning: "Value is less than the warn_range."
     assessment: Indeterminate
     variables:
       - ALL
@@ -397,7 +461,7 @@ qc_tests:
 
   warn_max:
     qc_bit: 5
-    description: "Value is greater than the warn_range."
+    meaning: "Value is greater than the warn_range."
     assessment: Indeterminate
     variables:
       - ALL
@@ -406,7 +470,7 @@ qc_tests:
 
   valid_delta:
     qc_bit: 6
-    description: "Difference between current and previous values exceeds valid_delta."
+    meaning: "Difference between current and previous values exceeds valid_delta."
     assessment: Indeterminate
     variables:
       - ALL
@@ -422,7 +486,7 @@ qc_tests:
     #-----------------------------------------------------------------
     temp_test:
         qc_bit: 7
-        description: "Test for some special condition in temperature."
+        meaning: "Test for some special condition in temperature."
         assessment: Indeterminate
         variables:
           - temp_mean

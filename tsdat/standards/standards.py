@@ -75,7 +75,7 @@ class Standards:
         Standards.validate_datastream_name(datastream_name)
         location_id = datastream_name.split(".")[0]
         return os.path.join(root, location_id, datastream_name)
-    
+
     @staticmethod
     def validate(dataset: xr.Dataset):
         """-------------------------------------------------------------------
