@@ -1,17 +1,22 @@
 import datetime
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 import act
 from matplotlib import pyplot as plt
 import numpy as np
 import xarray as xr
 from tsdat.constants import ATTS
-from tsdat.config import Config
+from tsdat.config import Config, VariableDefinition
 
 
 class DSUtil:
     """-------------------------------------------------------------------
     Provides helper functions for xarray.Dataset
     -------------------------------------------------------------------"""
+
+    @staticmethod
+    def datetime64_to_string(datetime64: Union[np.ndarray, np.datetime64]) -> Tuple[str, str]:
+        datetime = act.utils.datetime64_to_datetime()[0]
+        return datetime.strftime("%Y%m%d"), datetime.strftime("%H%M%S")
 
     @staticmethod
     def get_datastream_name(ds: xr.Dataset = None, config: Config = None) -> str:
@@ -23,20 +28,13 @@ class DSUtil:
         return None
 
     @staticmethod
-    def get_end_time(ds: xr.Dataset, config: Config = None) -> Tuple[str, str]:
-        # If config is passed, use config to determine which is the 'time' variable
-        # else, use ds['time']
-        # Assumes time is array of type np.datetime64
-        TIME = 'time'
-        if config:
-            var_def = config.dataset_definition.coords.get('time', {})
-            if hasattr(var_def, "input") and hasattr(var_def.input, "name"):
-                TIME = var_def.input.name
-        time64 = ds[TIME].data[-1]
-        time_dt = act.utils.datetime64_to_datetime(time64)
-        end_date = time_dt.strftime("%Y%m%d")
-        end_time = time_dt.strftime("%H%M%S")
-        return end_date, end_time
+    def get_end_time(ds: xr.Dataset) -> Tuple[str, str]:
+        """-------------------------------------------------------------------
+        Convenience method to get the end date and time from a xarray 
+        dataset.
+        -------------------------------------------------------------------"""
+        time64 = np.min(ds['time'].data)
+        return DSUtil.datetime64_to_string(time64)
 
     @staticmethod
     def get_fail_max(ds: xr.Dataset, variable_name):
@@ -70,6 +68,40 @@ class DSUtil:
         return varnames
 
     @staticmethod
+    def get_raw_end_time(raw_ds: xr.Dataset, time_var_definition: VariableDefinition) -> Tuple[str, str]:
+        """-------------------------------------------------------------------
+        Convenience method to get the end date and time from a raw xarray 
+        dataset. This uses `time_var_definition.get_input_name()` as the 
+        dataset key for the time variable and additionally uses the input's
+        `Converter` object if applicable.
+        -------------------------------------------------------------------"""
+        time_var_name = time_var_definition.get_input_name()
+        time_data = raw_ds[time_var_name].values
+        
+        time64_data = time_var_definition.run_converter(time_data)
+        
+        end_datetime64 = np.max(time64_data)
+        end: datetime.datetime = act.utils.datetime64_to_datetime(end_datetime64)[0]
+        return end.strftime("%Y%m%d"), end.strftime("%H%M%S")
+
+    @staticmethod
+    def get_raw_start_time(raw_ds: xr.Dataset, time_var_definition: VariableDefinition) -> Tuple[str, str]:
+        """-------------------------------------------------------------------
+        Convenience method to get the start date and time from a raw xarray 
+        dataset. This uses `time_var_definition.get_input_name()` as the 
+        dataset key for the time variable and additionally uses the input's
+        `Converter` object if applicable.
+        -------------------------------------------------------------------"""
+        time_var_name = time_var_definition.get_input_name()
+        time_data = raw_ds[time_var_name].values
+        
+        time64_data = time_var_definition.run_converter(time_data)
+        
+        start_datetime64 = np.min(time64_data)
+        start: datetime.datetime = act.utils.datetime64_to_datetime(start_datetime64)[0]
+        return start.strftime("%Y%m%d"), start.strftime("%H%M%S")
+
+    @staticmethod
     def get_shape(ds: xr.Dataset, variable_name):
         """-------------------------------------------------------------------
         Convenience method to provide access to dimension names and their
@@ -86,28 +118,14 @@ class DSUtil:
         return dims, lengths
 
     @staticmethod
-    def get_start_time(ds: xr.Dataset, config: Config = None) -> Tuple[str, str]:
+    def get_start_time(ds: xr.Dataset) -> Tuple[str, str]:
         """-------------------------------------------------------------------
-        Convenience method to provide access to dimension names and their
-        lengths in one call.
-
-        If `config: Config` is provided, then this will check for the input to
-        the 'time' variable in `config` and use that instead of `'time'`.
+        Convenience method to get the start date and time from a xarray 
+        dataset.
         -------------------------------------------------------------------"""
-        # If config is passed, use config to determine which is the 'time' variable
-        # else, use ds['time']
-        # Assumes time is array of type np.datetime64
-        TIME = 'time'
-        if config:
-            var_def = config.dataset_definition.coords.get('time', {})
-            if hasattr(var_def, "input") and hasattr(var_def.input, "name"):
-                TIME = var_def.input.name
-        time64 = ds[TIME].data[0]  # TODO: allow monotonically decreasing times (i.e. check last & first time values and use the older of the two)
-        time_dt = act.utils.datetime64_to_datetime(time64)[0]
-        start_date = time_dt.strftime("%Y%m%d")
-        start_time = time_dt.strftime("%H%M%S")
-        return start_date, start_time
-
+        time64 = np.min(ds['time'].data)
+        start = act.utils.datetime64_to_datetime(time64)[0]
+        return start.strftime("%Y%m%d"), start.strftime("%H%M%S")
 
     @staticmethod
     def get_timestamp(dt64: np.datetime64):
@@ -205,5 +223,34 @@ class DSUtil:
         else:
             plt.show()
 
+    @staticmethod
+    def get_plot_filename(args):
+        # TODO 
+        pass
+
+    @staticmethod
+    def get_dataset_filename(dataset: xr.Dataset) -> str:
+        """-------------------------------------------------------------------
+        Given an xarray dataset this function will return the base filename of
+        the dataset according to MHkiT-Cloud data standards. The base filename 
+        does not include the directory structure where the file should be 
+        saved, only the name of the file itself, e.g.
+        z05.ExampleBuoyDatastream.b1.20201230.000000.nc
+
+        Args:
+            dataset (xr.Dataset):   The dataset whose filename should be 
+                                    generated.
+
+        Returns:
+            str: The base filename of the dataset.
+        -------------------------------------------------------------------"""
+        datastream_name = DSUtil.get_datastream_name(dataset)
+        start_date, start_time = DSUtil.get_start_time(dataset)
+        return f"{datastream_name}.{start_date}.{start_time}.nc"
+
+    @staticmethod
+    def get_raw_filename(args):
+        # TODO
+        pass
 
 #TODO: Maybe we need a method to be able to quickly dump out a summary of the list of problems with the data.
