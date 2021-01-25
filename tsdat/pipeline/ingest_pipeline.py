@@ -1,13 +1,11 @@
 import os
 import zipfile
 import tarfile
-import shutil
-from tsdat.io.filehandlers import FileHandler
-from tsdat.io.storage import DatastreamStorage
 import xarray as xr
 from typing import Dict, List, Tuple
-from tsdat.standards import Standards
 from .pipeline import Pipeline
+from tsdat.config import Config
+from tsdat.io.filehandlers import FileHandler
 from tsdat.utils import DSUtil
 from tsdat.qc import QC
 
@@ -24,40 +22,38 @@ class IngestPipeline(Pipeline):
                             on.
         -------------------------------------------------------------------"""
         # If the file is a zip/tar, then we need to extract the individual files
-        file_paths = self.extract_files(filepath)
+        # file_paths = self.extract_raw_files(filepath)
+        with self.storage._tmp.extract_raw_files(filepath) as file_paths:
 
-        # Open each raw file into a Dataset, standardize the raw file names and store.
-        # Use storage and FileHandler to access and read the file.
-        # Involves opening the raw
-        # files to get the timestamp of the first point of data since this is
-        # required/recommended by raw file naming conventions.
-        raw_dataset_mapping: Dict[str, xr.Dataset] = self.read_and_persist_raw_files(file_paths)
+            # Open each raw file into a Dataset, standardize the raw file names and store.
+            # Use storage and FileHandler to access and read the file.
+            # Involves opening the raw
+            # files to get the timestamp of the first point of data since this is
+            # required/recommended by raw file naming conventions.
+            raw_dataset_mapping: Dict[str, xr.Dataset] = self.read_and_persist_raw_files(file_paths)
 
-        raw_dataset = self.merge_mappings(raw_dataset_mapping)
+            raw_dataset = self.merge_mappings(raw_dataset_mapping)
 
-        # Process the data
-        dataset = self.standardize_dataset(raw_dataset, raw_dataset_mapping)
-        dataset = self.apply_corrections(dataset)
-        dataset = self.customize_dataset(dataset)
+            # Process the data
+            dataset = self.standardize_dataset(raw_dataset, raw_dataset_mapping)
+            dataset = self.apply_corrections(dataset)
+            dataset = self.customize_dataset(dataset)
 
-        # Perform metadata and coordinate variable validation
-        self.validate(dataset)
+            if self.config.dataset_definition.data_level.startswith('b'):
+                # If there is previous data in Storage, we need
+                # to load up the last file so we can perform
+                # continuity checks such as monontonically increasing
+                previous_dataset = self.get_previous_dataset(dataset)
+                QC.apply_tests(dataset, self.config, previous_dataset)
 
-        if self.config.dataset_definition.data_level.startswith('b'):
-            # If there is previous data in Storage, we need
-            # to load up the last file so we can perform
-            # continuity checks such as monontonically increasing
-            previous_dataset = self.get_previous_dataset(dataset)
-            QC.apply_tests(dataset, self.config, previous_dataset)
+            # Hook to generate plots
+            # Users should save plots with self.storage.save(paths_to_plots)
+            self.create_and_persist_plots(dataset)
 
-        # Hook to generate plots
-        # Users should save plots with self.storage.save(paths_to_plots)
-        self.create_and_persist_plots(dataset)
+            # Save the final datastream data to storage
+            self.store_dataset(dataset)
 
-        # Save the final datastream data to storage
-        self.store_dataset(dataset)
-
-    def extract_files(self, filepath: str) -> List[str]:
+    def extract_raw_files(self, filepath: str) -> List[str]:
         """-------------------------------------------------------------------
         If provided a path to an archive file, this function will unzip the
         archive and return a list of complete paths to each file.
@@ -113,6 +109,19 @@ class IngestPipeline(Pipeline):
         Returns:
             List[str]: A list of paths to the renamed raw files.
         -------------------------------------------------------------------"""
+
+        def _get_raw_filename(dataset: xr.Dataset, config: Config, old_filename: str) -> str:
+            original_filename = os.path.basename(old_filename)
+            
+            b_datastream_name = DSUtil.get_datastream_name(config=config)
+            raw_datastream_name = b_datastream_name[:-2] + "00"
+
+            time_var = self.config.dataset_definition.get_variable('time')
+
+            start_date, start_time = DSUtil.get_raw_start_time(dataset, time_var)
+            
+            return f"{raw_datastream_name}.{start_date}.{start_time}.raw.{original_filename}"
+
         raw_dataset_mapping = {}
 
         if isinstance(file_paths, str):
@@ -125,43 +134,42 @@ class IngestPipeline(Pipeline):
                 dataset = FileHandler.read(tmp_path)
 
                 # create the standardized name for raw file
-                # TODO: Need to use the time converter to convert the time in the raw file
-                # to UTC so it matches the same time in the netcdf file
-                datastream_name = DSUtil.get_datastream_name(config=self.config)[:-2] + "00"
-                date, time = self.get_raw_start_date_time(dataset)
-                new_dir, old_basename = os.path.split(tmp_path)
-                new_filename = f"{datastream_name}.{date}.{time}.raw.{old_basename}"
-                new_path = os.path.join(new_dir, new_filename)
+                new_filename = _get_raw_filename(dataset, self.config, tmp_path)
 
                 # add the raw dataset to our dictionary
                 raw_dataset_mapping[new_filename] = dataset
 
                 # save the raw data to storage
-                self.storage.save(new_path)
+                self.storage.save(tmp_path, new_filename)
 
         return raw_dataset_mapping
-    
-    def standardize_dataset(self, raw_dataset: xr.Dataset) -> xr.Dataset:
+
+    def merge_mappings(dataset_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         """-------------------------------------------------------------------
-        Uses the config object to map the raw dataset variable names to the 
-        output dataset. Additionally, this function ensures that the dataset 
-        conforms to MHKiT-Cloud data standards. 
+        Merges the provided datasets provided and returns the merged result.
 
         Args:
-            raw_dataset (xr.Dataset):   The raw data ingested into an xarray 
-                                        dataset.
+            dataset_mapping (Dict[str, xr.Dataset]):    The dataset mappings 
+                                                        to merge.
 
         Returns:
-            xr.Dataset: The standardized dataset.
+            xr.Dataset: The merged dataset.
         -------------------------------------------------------------------"""
-        return super().standardize(raw_dataset)
+        merged_dataset = xr.Dataset()
+        for ds in dataset_mapping.values:
+            merged_dataset.merge(ds, inplace=True)
+        return merged_dataset
 
     def apply_corrections(self, dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
         Pipeline hook that can be used to apply standard corrections for the 
         instrument/measurement or calibrations. It can also be used to insert 
         any derived properties into the dataset. This method is called 
-        immediately after the dataset is converted to standard format.
+        immediately after the dataset is converted to standard format. 
+
+        If corrections are applied, then the `corrections_applied` attribute
+        should be updated on the variable(s) that this method applies
+        corrections to.
 
         Args:
             dataset (xr.Dataset):   A standardized xarray dataset where the 
@@ -170,7 +178,6 @@ class IngestPipeline(Pipeline):
         Returns:
             xr.Dataset: The input xarray dataset with corrections applied.
         -------------------------------------------------------------------"""
-        # TODO: write this method
         return dataset
     
     def customize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
@@ -185,6 +192,13 @@ class IngestPipeline(Pipeline):
             xr.Dataset: The customized dataset.
         -------------------------------------------------------------------"""
         return dataset
+
+    def create_and_persist_plots(self, dataset: xr.Dataset) -> None:
+        # TODO: Add documentation with an example. 
+        # Show how to do a qc plot
+        # Show how to save the file to storage
+        # Note that users should save one plot at a time to limit local filesystem use for the cloud
+        pass
         
     def get_previous_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
@@ -210,25 +224,7 @@ class IngestPipeline(Pipeline):
                 dataset = FileHandler.read(netcdf_file, config=self.config)
 
         return dataset
-
-    def merge_existing_data(self, dataset: xr.Dataset) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Checks the DatastreamStorage to see if data already exists for the 
-        same day. If so, then this function fetches that data and merges it 
-        with the current dataset locally.
-
-        Args:
-            dataset (xr.Dataset):   The input dataset converted to standard 
-                                    format with corrections and qc checks 
-                                    applied.
-
-        Returns:
-            xr.Dataset: The input xarray dataset merged with existing data for
-                        the same processed day.
-        -------------------------------------------------------------------"""
-        # TODO: write this method
-        return dataset
-        
+    
     def store_dataset(self, dataset: xr.Dataset) -> None:
         """-------------------------------------------------------------------
         Writes the dataset to a local netcdf file and then uses the 
@@ -237,63 +233,9 @@ class IngestPipeline(Pipeline):
         Args:
             dataset (xr.Dataset): The dataset to store.
         -------------------------------------------------------------------"""
-        # TODO: write to a better location locally
-        local_path = self.get_dataset_filename(dataset)
-        dataset.to_netcdf(local_path)  # Currently crashes unless you remove units on 'time'
-        self.storage.save(local_path)
-        os.remove(local_path)
-
-    def store_raw(self, raw_file_paths: List[str]) -> None:
-        """-------------------------------------------------------------------
-        Uses the DatastreamStorage object to persist the raw "00"-level files.
-
-        Args:
-            raw_file_paths (List[str]): A list of paths to the raw files to 
-                                        store.
-        -------------------------------------------------------------------"""
-        for file_path in raw_file_paths:
-            self.storage.save(file_path)
-        return
-    
-    def get_dataset_filepath(self, dataset: xr.Dataset) -> str:
-        """-------------------------------------------------------------------
-        Uses the times from the dataset and the datastream name to generate a 
-        file path relative to the storage root where the dataset should be 
-        saved.
-
-        Args:
-            dataset (xr.Dataset): The xarray dataset whose filepath should be 
-            generated.
-
-        Returns:
-            str:    The file path relative to the storage root where the 
-                    dataset should be saved.
-        -------------------------------------------------------------------"""
-        # TODO: Update these methods to all be in DSUtil. Probably including
-        # this method itself.
-        datastream_name = DSUtil.get_datastream_name(config=self.config)
-        datastream_dir = Standards.get_datastream_path(datastream_name)
-        filename = self.get_dataset_filename(dataset)
-        return os.path.join(datastream_dir, filename)
-
-    def get_dataset_filename(self, dataset: xr.Dataset) -> str:
-        """-------------------------------------------------------------------
-        Given an xarray dataset this function will return the base filename of
-        the dataset according to MHkiT-Cloud data standards. The base filename 
-        does not include the directory structure where the file should be 
-        saved, only the name of the file itself, e.g.
-        z05.ExampleBuoyDatastream.b1.20201230.000000.nc
-
-        Args:
-            dataset (xr.Dataset):   The dataset whose filename should be 
-                                    generated.
-
-        Returns:
-            str: The base filename of the dataset.
-        -------------------------------------------------------------------"""
-        datastream_name = DSUtil.get_datastream_name(dataset)
-        start_date, start_time = DSUtil.get_start_time(dataset)
-        return f"{datastream_name}.{start_date}.{start_time}.nc"
+        with self.storage._tmp.get_temp_filepath(DSUtil.get_dataset_filename(dataset)) as tmp_path:
+            dataset.to_netcdf(tmp_path)
+            self.storage.save(tmp_path)
     
     def get_raw_start_date_time(self, filepath: str) -> Tuple[str, str]:                
         """-------------------------------------------------------------------
@@ -309,43 +251,5 @@ class IngestPipeline(Pipeline):
                                 in the file with date (yyyymmdd) first and 
                                 time (hhmmss) second.
         -------------------------------------------------------------------"""
-        # Use the filepath and the appropriate filereader to open the raw file
-        # and read the value of the first time sample in the file. The config
-        # pipeline parameters will also need to be used to get the source name
-        # and units of the time variable in the raw file. The date/time 
-        # returned should be in UTC.
-        # TODO: write this method
-        
+        # TODO: remove this
         return "99999999", "999999"
-    
-    def organize_files(self, file_paths: List[str]) -> List[str]:
-        """-------------------------------------------------------------------
-        Given a list of paths to files with filenames consistent with
-        MHKiT-Cloud data standards naming conventions for RAW or processed 
-        data, this method will move the provided files to the correct location
-        on the local filesystem and return their new paths.
-
-        Args:
-            file_paths (List[str]): A list of paths to file. Can
-                                                be a string if only one file
-                                                is to be organized.
-
-        Returns:
-            List[str]: A list of paths to the organized files.
-        -------------------------------------------------------------------"""
-        if isinstance(file_paths, str):
-            file_paths = [file_paths]
-        organized_filepaths = []
-        for filepath in file_paths:
-            if not os.path.isfile(filepath):
-                raise ValueError(f"\"{filepath}\" is not a file")
-            _, filename = os.path.split(filepath)
-            components = filename.split(".")
-            location_id = components[0]
-            datastream_name = components[:3]
-            new_dir = f"/data/{location_id}/{datastream_name}"
-            new_filepath = os.path.join(new_dir, filename)
-            os.makedirs(new_dir)
-            shutil.move(filepath, new_filepath)
-            organized_filepaths.append(new_filepath)
-        return organized_filepaths
