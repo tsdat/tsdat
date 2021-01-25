@@ -131,7 +131,7 @@ class IngestPipeline(Pipeline):
 
         return raw_dataset_mapping
 
-    def merge_mappings(dataset_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
+    def merge_mappings(self, dataset_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         """-------------------------------------------------------------------
         Merges the provided datasets provided and returns the merged result.
 
