@@ -191,7 +191,7 @@ class DSUtil:
         return False
 
     @staticmethod
-    def plot_qc(ds: xr.Dataset, variable_name: str, base_filename: str=None):
+    def plot_qc(ds: xr.Dataset, variable_name: str, filename: str=None):
         """
         Create a QC plot for the given variable.  This is based on the ACT library:
         https://arm-doe.github.io/ACT/source/auto_examples/plot_qc.html#sphx-glr-source-auto-examples-plot-qc-py
@@ -203,8 +203,7 @@ class DSUtil:
         TODO: Depending on use cases, we will likely add more arguments to be able to quickly produce
         the most common types of QC plots.
         :param variable_name: The variable to plot
-        :param base_filename: The base filename for the image.  Base filename will be prepended
-        to .{variable_name}.png
+        :param filename: The filename for the image.  Saves the plot as this filename if provided.
         :return:
         :rtype:
         """
@@ -218,8 +217,7 @@ class DSUtil:
         display.qc_flag_block_plot(variable_name, subplot_index=(1,))
 
         # Either display or save the plot, depending upon the parameters passed
-        if base_filename:
-            filename = f"{base_filename}.{variable_name}.png"
+        if filename:
             plt.savefig(filename)
         else:
             plt.show()
