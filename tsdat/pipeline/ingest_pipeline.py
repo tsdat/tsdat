@@ -109,19 +109,6 @@ class IngestPipeline(Pipeline):
         Returns:
             List[str]: A list of paths to the renamed raw files.
         -------------------------------------------------------------------"""
-
-        def _get_raw_filename(dataset: xr.Dataset, config: Config, old_filename: str) -> str:
-            original_filename = os.path.basename(old_filename)
-            
-            b_datastream_name = DSUtil.get_datastream_name(config=config)
-            raw_datastream_name = b_datastream_name[:-2] + "00"
-
-            time_var = self.config.dataset_definition.get_variable('time')
-
-            start_date, start_time = DSUtil.get_raw_start_time(dataset, time_var)
-            
-            return f"{raw_datastream_name}.{start_date}.{start_time}.raw.{original_filename}"
-
         raw_dataset_mapping = {}
 
         if isinstance(file_paths, str):
@@ -134,7 +121,7 @@ class IngestPipeline(Pipeline):
                 dataset = FileHandler.read(tmp_path)
 
                 # create the standardized name for raw file
-                new_filename = _get_raw_filename(dataset, self.config, tmp_path)
+                new_filename = DSUtil.get_raw_filename(dataset, tmp_path, self.config)
 
                 # add the raw dataset to our dictionary
                 raw_dataset_mapping[new_filename] = dataset
