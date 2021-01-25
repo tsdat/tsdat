@@ -7,7 +7,6 @@ import tarfile
 import datetime
 import boto3
 from typing import List, Dict
-from tsdat.standards import Standards
 from tsdat.io import DatastreamStorage
 from tsdat.utils import DSUtil
 
@@ -152,7 +151,7 @@ class FilesystemStorage(DatastreamStorage):
         Returns:
             bool: True if data exists, False otherwise.
         -------------------------------------------------------------------"""
-        dir_to_check = Standards.get_datastream_path(datastream_name=datastream_name, root=self.__root)
+        dir_to_check = DSUtil.get_datastream_directory(datastream_name=datastream_name, root=self.__root)
         storage_paths = []
         for file in os.listdir(dir_to_check):
             if start_time <= self.get_date_from_filename(file) < end_time:

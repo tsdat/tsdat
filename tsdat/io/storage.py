@@ -8,7 +8,6 @@ import datetime
 import boto3
 import xarray as xr
 from typing import List, Dict
-from tsdat.standards import Standards
 
 
 class LocalTempFile:

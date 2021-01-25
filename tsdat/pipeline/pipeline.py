@@ -1,7 +1,6 @@
 import abc
 import xarray as xr
 from tsdat.config import Config
-from tsdat.standards import Standards
 from tsdat.io.storage import DatastreamStorage
 
 
@@ -52,4 +51,5 @@ class Pipeline(abc.ABC):
         Args:
             dataset (xr.Dataset): The dataset to validate.
         -------------------------------------------------------------------"""
-        Standards.validate(dataset)
+
+        pass
