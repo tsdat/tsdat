@@ -181,10 +181,32 @@ class IngestPipeline(Pipeline):
         return dataset
 
     def create_and_persist_plots(self, dataset: xr.Dataset) -> None:
-        # TODO: Add documentation with an example. 
-        # Show how to do a qc plot
-        # Show how to save the file to storage
-        # Note that users should save one plot at a time to limit local filesystem use for the cloud
+        """-------------------------------------------------------------------
+        Hook to allow users to create plots from the xarray dataset after 
+        processing and QC has been applied and just before the dataset is 
+        saved to disk. To save on filesystem space, this method should only 
+        write one plot to local storage at a time. An example of how this 
+        could be done is below:
+
+        ```
+        filename = DSUtil.get_plot_filename(dataset, "sea_level", "png")
+        with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
+            fig, ax = plt.subplots(figsize=(10,5))
+            ax.plot(dataset["time"].data, dataset["sea_level"].data)
+            fig.save(tmp_path)
+            storage.save(tmp_path)
+        
+        filename = DSUtil.get_plot_filename(dataset, "qc_sea_level", "png")
+        with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
+            fig, ax = plt.subplots(figsize=(10,5))
+            DSUtil.plot_qc(dataset, "sea_level", tmp_path)
+            storage.save(tmp_path)
+        ```
+
+        Args:
+            dataset (xr.Dataset):   The xarray dataset with customizations and 
+                                    QC applied. 
+        -------------------------------------------------------------------"""
         pass
         
     def get_previous_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
