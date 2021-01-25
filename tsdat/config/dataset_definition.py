@@ -7,6 +7,14 @@ from .attribute_defintion import AttributeDefinition
 from .dimension_definition import DimensionDefinition
 from .variable_definition import VariableDefinition
 
+# TODO: Add required attributes that can be autofilled
+# TODO: Ensure required attributes are present
+# TODO: Sanity checks on coordinate variable definitions
+#       Ex: if dimension has no coordinate variable, then log a warning message
+#       If no input defined, log a message that the variable should be user-filled/ calculated
+#       If no converter...
+#       Etc
+
 class DatasetDefinition:
     def __init__(self, dictionary: Dict):
         self._parse_required_attributes(dictionary.get(Keys.ATTRIBUTES))
