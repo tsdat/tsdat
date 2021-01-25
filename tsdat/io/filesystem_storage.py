@@ -69,25 +69,41 @@ class FilesystemStorage(DatastreamStorage):
             shutil.copy(source, target)
         return targets
 
-    def save(self, local_paths: List[str]) -> None:
+    def save(self, local_path: str, new_filename: str = None) -> None:
         """-------------------------------------------------------------------
-        Saves a local file to the appropriate location in the filesystem.
+        Saves a local file to the datastream store.
 
         Args:
-            local_path (str):   The path to the local file to save. The file
-                                should be named according to MHKiT-Cloud
-                                naming conventions.
+            local_path (str):   The local path to the file to save.
+            new_filename (str): If provided, the new filename to save as.
         -------------------------------------------------------------------"""
-        if isinstance(local_paths, str):
-            local_paths = [local_paths]
-        for local_path in local_paths:
-            filename = os.path.basename(local_path)
-            datastream_name = ".".join(filename.split(".")[:3])
-            data_dir = Standards.get_datastream_path(datastream_name)  # relative to __root
-            target_dir = os.path.join(self.__root, data_dir)  # includes __root
-            target_path = os.path.join(target_dir, filename)
-            os.makedirs(target_dir, exist_ok=True)
-            shutil.copy(local_path, target_path)
+
+        # Determine what type of file is being saved -- processed data, raw 
+        # data, or something else: plots, figures, etc -- based on the data
+        # level of the datastream name or the file extension. 
+
+        # Maybe if there is a registered FileHandler for the file extension
+        # then we assume it is for data (raw or processed) and assemble the 
+        # new filename as:
+        # {datastream_name}.{start_date}.{start_time}.raw.{basename(local_path)}
+        # or {datastream_name}.{start_date}.{start_time}.nc
+
+        # If no FileHandler for the extension, then we assume it is a plot or
+        # other ancillary file for the datastream that should be saved according
+        # to our standards -- in that case assume that 
+
+        # raw_filename = os.path.basename(local_path)
+        # location_id = datastream_name.split(".")[0]
+
+        # for local_path in local_paths:
+        #     filename = os.path.basename(local_path)
+        #     datastream_name = ".".join(filename.split(".")[:3])
+        #     data_dir = Standards.get_datastream_path(datastream_name)  # relative to __root
+        #     target_dir = os.path.join(self.__root, data_dir)  # includes __root
+        #     target_path = os.path.join(target_dir, filename)
+        #     os.makedirs(target_dir, exist_ok=True)
+        #     shutil.copy(local_path, target_path)
+        pass
 
     def exists(self, datastream_name: str, start_time: str, end_time: str) -> bool:
         """-------------------------------------------------------------------
