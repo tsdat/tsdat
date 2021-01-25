@@ -1,9 +1,10 @@
-import datetime
-from typing import List, Dict, Tuple, Union
+import os
 import act
-from matplotlib import pyplot as plt
+import datetime
 import numpy as np
 import xarray as xr
+import matplotlib.pyplot as plt
+from typing import List, Dict, Tuple, Union
 from tsdat.constants import ATTS
 from tsdat.config import Config, VariableDefinition
 
@@ -224,9 +225,28 @@ class DSUtil:
             plt.show()
 
     @staticmethod
-    def get_plot_filename(args):
-        # TODO 
-        pass
+    def get_plot_filename(dataset: xr.Dataset, plot_description: str, extension: str) -> str:
+        """-------------------------------------------------------------------
+        Returns the filename for a plot according to MHKIT-Cloud Data 
+        standards. The dataset is used to determine the datastream_name and 
+        start date/time. The standards dictate that a plot filename should 
+        follow the format: `datastream_name.date.time.description.extension`.
+
+        Args:
+            dataset (xr.Dataset):   The dataset from which the plot data is
+                                    drawn from. This is used to collect the 
+                                    datastream_name and start date/time.
+            plot_description (str): The description of the plot. Should be 
+                                    as brief as possible and contain no 
+                                    spaces. Underscores may be used. 
+            extension (str):        The file extension for the plot. 
+
+        Returns:
+            str: The standardized plot filename.
+        """
+        datastream_name = DSUtil.get_datastream_name(dataset)
+        date, time = DSUtil.get_start_time(dataset)
+        return f"{datastream_name}.{date}.{time}.{plot_description}.{extension}"
 
     @staticmethod
     def get_dataset_filename(dataset: xr.Dataset) -> str:
@@ -249,8 +269,30 @@ class DSUtil:
         return f"{datastream_name}.{start_date}.{start_time}.nc"
 
     @staticmethod
-    def get_raw_filename(args):
-        # TODO
-        pass
+    def get_raw_filename(raw_dataset: xr.Dataset, old_filename: str, config: Config) -> str:
+        """-------------------------------------------------------------------
+        Returns the appropriate raw filename of the raw dataset according to 
+        MHKIT-Cloud naming conventions. Uses the config object to parse the 
+        start date and time from the raw dataset for use in the new filename.
+
+        The new filename will follow the MHKIT-Cloud Data standards for raw 
+        filenames, ie: `datastream_name.date.time.raw.old_filename`, where the
+        data level used in the datastream_name is `00`. 
+
+        Args:
+            raw_dataset (xr.Dataset):   The raw data as an xarray dataset.
+            old_filename (str): The name of the original raw file.
+            config (Config):    The Config object used to assist reading time
+                                data from the raw_dataset.
+
+        Returns:
+            str: The standardized filename of the raw file.
+        -------------------------------------------------------------------"""
+        original_filename = os.path.basename(old_filename)
+        b_datastream_name = DSUtil.get_datastream_name(config=config)
+        raw_datastream_name = b_datastream_name[:-2] + "00"
+        time_var = config.dataset_definition.get_variable('time')
+        start_date, start_time = DSUtil.get_raw_start_time(raw_dataset, time_var)
+        return f"{raw_datastream_name}.{start_date}.{start_time}.raw.{original_filename}"
 
 #TODO: Maybe we need a method to be able to quickly dump out a summary of the list of problems with the data.
