@@ -6,8 +6,8 @@ import zipfile
 import tarfile
 import datetime
 import boto3
+import xarray as xr
 from typing import List, Dict
-from tsdat.standards import Standards
 
 
 class LocalTempFile:
@@ -66,16 +66,19 @@ class DatastreamStorage(abc.ABC):
         return
     
     @abc.abstractmethod
-    def save(self, local_paths: List[str]) -> None:
+    def save(self, local_path: str, new_filename: str = None) -> None:
         """-------------------------------------------------------------------
         Saves a local file to the datastream store.
 
         Args:
-            local_path (str):   The path to the local file to save. The file 
+            local_path (str):   The local path to the file to save. The file 
                                 should be named according to MHKiT-Cloud 
                                 naming conventions so that this method can
                                 automatically parse the datastream, date,
                                 and time from the file name.
+            new_filename (str): If provided, the new filename to save as. 
+                                Must also follow MHKIT-Cloud naming 
+                                conventions.
         -------------------------------------------------------------------"""
         return
 

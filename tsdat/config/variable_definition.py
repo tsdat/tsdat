@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Tuple
 from .attribute_defintion import AttributeDefinition
 from .dimension_definition import DimensionDefinition
 from .utils import instantiate_handler
+from tsdat.utils.converters import Converter
 
 
 class VarKeys:
@@ -27,7 +28,7 @@ class VarInput:
     -----------------------------------------------------------------------"""
     def __init__(self, dictionary: Dict):
         self.name: str = dictionary.get(VarInputKeys.NAME)
-        self.converter = instantiate_handler(handler_desc=dictionary.get(VarInputKeys.CONVERTER, "tsdat.utils.converters.DefaultConverter"))
+        self.converter: Converter = instantiate_handler(handler_desc=dictionary.get(VarInputKeys.CONVERTER, "tsdat.utils.converters.DefaultConverter"))
         for key in dictionary:
             if not hasattr(self, key):
                 setattr(self, key, dictionary[key])
@@ -152,6 +153,17 @@ class VariableDefinition:
         -------------------------------------------------------------------"""
         return self.input is None and not self.is_predefined()
     
+    def has_converter(self) -> bool:
+        """-------------------------------------------------------------------
+        Return True if the variable has an input converter defined, False
+        otherwise.
+
+        Returns:
+            bool:   True if the Variable has a converter defined, False 
+                    otherwise.
+        -------------------------------------------------------------------"""
+        return self.has_input() and hasattr(self.input, "converter")
+
     def has_input(self) -> bool:
         """-------------------------------------------------------------------
         Return True if the variable is copied from an input dataset, 
@@ -176,11 +188,25 @@ class VariableDefinition:
         return self.input.name
     
     def get_input_units(self) -> str:
+        """-------------------------------------------------------------------
+        If the variable has input, returns the units of the input variable or 
+        the output units if no input units are defined.
+
+        Returns:
+            str: The units of the input variable data.
+        -------------------------------------------------------------------"""
         if not self.has_input():
             return None
         return getattr(self.input, "units", self.get_output_units())
     
     def get_output_units(self) -> str:
+        """-------------------------------------------------------------------
+        Returns the units of the output data or None if no units attribute has
+        been defined.
+
+        Returns:
+            str: The units of the output variable data.
+        -------------------------------------------------------------------"""
         return getattr(self.attrs.get("units", None), "value", None)
 
     def get_coordinate_names(self) -> List[str]:
@@ -205,11 +231,36 @@ class VariableDefinition:
             raise KeyError(f"No data has been set for variable: '{self.name}'")
         return self.data.shape
 
-    def get_data_type(self) -> Any:
+    def get_data_type(self) -> np.dtype:
+        """-------------------------------------------------------------------
+        Returns the data type of the variable's data as a numpy dtype.
+        -------------------------------------------------------------------"""
         return self.type
     
     def get_FillValue(self):
+        """-------------------------------------------------------------------
+        Returns the variable's _FillValue attribute, using -9999 as a default
+        if the _FillValue attribute has not been defined.
+        -------------------------------------------------------------------"""
         return getattr(self.attrs.get("_FillValue", -9999), "value", -9999)
+
+    def run_converter(self, data: np.ndarray) -> np.ndarray:
+        """-------------------------------------------------------------------
+        If the variable has an input converter, runs the input converter for 
+        the input/output units on the provided data.
+
+        Args:
+            data (np.ndarray): The data to be converted.
+        
+        Returns:
+            np.ndarray: The data, converted to its output units.
+        -------------------------------------------------------------------"""
+        if self.has_converter():
+            in_units = self.get_input_units()
+            out_units = self.get_output_units()
+            return self.input.converter.run(data, in_units, out_units)
+        return data
+
 
     def to_dict(self) -> Dict:
         """-------------------------------------------------------------------
