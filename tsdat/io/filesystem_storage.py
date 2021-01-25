@@ -9,6 +9,7 @@ import boto3
 from typing import List, Dict
 from tsdat.standards import Standards
 from tsdat.io import DatastreamStorage
+from tsdat.utils import DSUtil
 
 
 class FilesystemStorage(DatastreamStorage):
@@ -59,7 +60,7 @@ class FilesystemStorage(DatastreamStorage):
             List[str]:  A list of paths where the retrieved files were stored
                         in local storage.
         -------------------------------------------------------------------"""
-        store_dir = Standards.get_datastream_path(datastream_name, root=self.__root)
+        store_dir = DSUtil.get_datastream_directory(datastream_name, root=self.__root)
         if not os.path.isdir(store_dir):
             return []
         files = [f for f in os.listdir(store_dir) if start_time <= self.get_date_from_filename(f) < end_time]
@@ -124,10 +125,11 @@ class FilesystemStorage(DatastreamStorage):
         Returns:
             bool: True if data exists, False otherwise.
         -------------------------------------------------------------------"""
-        dir_to_check = Standards.get_datastream_path(datastream_name=datastream_name, root=self.__root)
-        for file in os.listdir(dir_to_check):
-            if start_time <= self.get_date_from_filename(file) < end_time:
-                return True
+        dir_to_check = DSUtil.get_datastream_directory(datastream_name, root=self.__root)
+        if os.path.exists(dir_to_check):
+            for file in os.listdir(dir_to_check):
+                if start_time <= self.get_date_from_filename(file) < end_time:
+                    return True
         return False
 
     def _find(self, datastream_name: str, start_time: str, end_time: str) -> List[str]:

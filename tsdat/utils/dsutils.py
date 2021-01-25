@@ -295,4 +295,25 @@ class DSUtil:
         start_date, start_time = DSUtil.get_raw_start_time(raw_dataset, time_var)
         return f"{raw_datastream_name}.{start_date}.{start_time}.raw.{original_filename}"
 
+
+    def get_datastream_directory(datastream_name: str, root: str = None) -> str:
+        """-------------------------------------------------------------------
+        Given the datastream_name and an optional root, returns the path to 
+        where the datastream should be located. Does NOT create the directory
+        where the datastream should be located.
+
+        Args:
+            datastream_name (str):  The name of the datastream whose directory
+                                    path should be generated.
+            root (str, optional):   The directory to use as the root of the 
+                                    directory structure. Defaults to None.
+
+        Returns:
+            str:    The path to the directory where the datastream should be 
+                    located.
+        -------------------------------------------------------------------"""
+        location_id = datastream_name.split(".")[0]
+        _root = "" if not root else root
+        return os.path.join(_root, location_id, datastream_name)
+
 #TODO: Maybe we need a method to be able to quickly dump out a summary of the list of problems with the data.
