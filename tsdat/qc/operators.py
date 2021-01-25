@@ -60,27 +60,32 @@ class CheckMissing(QCOperator):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
         """-------------------------------------------------------------------
-        Checks if any values are assigned to _FillValue or NaN
+        Checks if any values are assigned to _FillValue or 'NaN' (for non-time
+        variables) or checks if values are assigned to 'NaT' (for time variables)
         -------------------------------------------------------------------"""
-        fill_value = DSUtil.get_fill_value(self.ds, variable_name)
 
-        # If the variable has no _FillValue attribute, then
-        # we select a default value to use
-        if fill_value is None:
-            fill_value = -9999
+        # If this is a time variable, we check for 'NaT'
+        if self.ds[variable_name].values.dtype.type == np.datetime64:
+            results_array = np.isnat(self.ds[variable_name].values)
 
-        # Make sure fill value has same data type as the variable
-        fill_value = np.array(fill_value, dtype=self.ds[variable_name].values.dtype.type)
+        else:
+            fill_value = DSUtil.get_fill_value(self.ds, variable_name)
 
-        # First check if any values are assigned to _FillValue
-        results_array = np.equal(self.ds[variable_name].values, fill_value)
+            # If the variable has no _FillValue attribute, then
+            # we select a default value to use
+            if fill_value is None:
+                fill_value = -9999
 
-        # Then, if the value is numeric, we should also check if any values are assigned to
-        # NaN
-        if self.ds[variable_name].values.dtype.type in (type(0.0), np.float16, np.float32, np.float64):
-            nan = float('nan')
-            nan = np.array(nan, dtype=self.ds[variable_name].values.dtype.type)
-            results_array = results_array | np.equal(self.ds[variable_name].values, nan)
+            # Make sure fill value has same data type as the variable
+            fill_value = np.array(fill_value, dtype=self.ds[variable_name].values.dtype.type)
+
+            # First check if any values are assigned to _FillValue
+            results_array = np.equal(self.ds[variable_name].values, fill_value)
+
+            # Then, if the value is numeric, we should also check if any values are assigned to
+            # NaN
+            if self.ds[variable_name].values.dtype.type in (type(0.0), np.float16, np.float32, np.float64):
+                results_array = results_array | np.isnan(self.ds[variable_name].values)
 
         return results_array
 

@@ -61,13 +61,28 @@ class DSUtil:
     @staticmethod
     def get_non_qc_variable_names(ds: xr.Dataset) -> List[str]:
         """-------------------------------------------------------------------
-        Get a list of all variable names in this dataset that are not qc.
+        Get a list of all variable names in this dataset that are not
+        coordinate variables and not qc variables.
         -------------------------------------------------------------------"""
         varnames = []
-        for varname, da in ds.data_vars.items():
-            varnames.append(varname)
+
+        def exclude_qc(variable_name):
+            if variable_name.startswith('qc_'):
+                return False
+            else:
+                return True
+
+        varnames = filter(exclude_qc, list(ds.data_vars.keys()))
 
         return varnames
+
+    @staticmethod
+    def get_coordinate_variable_names(ds: xr.Dataset) -> List[str]:
+        """-------------------------------------------------------------------
+        Get a list of all coordinate variables in this dataset.
+        -------------------------------------------------------------------"""
+        return list(ds.coords.keys())
+
 
     @staticmethod
     def get_shape(ds: xr.Dataset, variable_name):
