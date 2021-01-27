@@ -1,180 +1,136 @@
 import os
-import abc
 import shutil
-import tempfile
-import zipfile
 import tarfile
-import datetime
-import boto3
-from typing import List, Dict
-from tsdat.io import DatastreamStorage
+import zipfile
+from typing import List, Union
+
+from tsdat.io import DatastreamStorage, \
+    TemporaryStorage, \
+    DisposableLocalTempFile, \
+    DisposableStorageTempFileList, \
+    DisposableLocalTempFileList
+
 from tsdat.utils import DSUtil
 
 
+class FilesystemTemporaryStorage(TemporaryStorage):
+
+    def extract_files(self, filepath: str) -> DisposableStorageTempFileList:
+        extracted_files = []
+        delete_on_exception = True
+        is_tar = tarfile.is_tarfile(filepath) # tar or tar.gz
+        is_zip = zipfile.is_zipfile(filepath)
+
+        if is_tar or is_zip:
+            # Extract into a temporary folder in the target_dir
+            temp_dir = self.create_temp_dir()
+
+            if is_tar:
+                with tarfile.open(filepath) as tar:
+                    tar.extractall(path=temp_dir)
+            else:
+                with zipfile.ZipFile(filepath, 'r') as zipped:
+                    zipped.extractall(temp_dir)
+
+            for filename in os.listdir(temp_dir):
+                extracted_files.append(os.path.join(temp_dir, filename))
+
+        else:
+            # If this is not a zip or tar file, we assume it is a regular file
+            extracted_files.append(filepath)
+            delete_on_exception = False
+
+        return DisposableStorageTempFileList(extracted_files, self, delete_on_exception=delete_on_exception)
+
+    def fetch(self, file_path: str) -> DisposableLocalTempFile:
+        return DisposableLocalTempFile(file_path)
+
+    def fetch_previous_file(self, datastream_name: str, start_date: str, start_time: str) -> DisposableLocalTempFile:
+        pass
+
+    def delete(self, file_path: str) -> None:
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+
+        elif os.path.isdir(file_path):
+            # remove directory and all its children
+            shutil.rmtree(file_path)
+
+
 class FilesystemStorage(DatastreamStorage):
+
     """-----------------------------------------------------------------------
-    DatastreamStorage subclass for a typical Linux-based filesystem.
+    DatastreamStorage subclass for a typical Linux-based filesystem.  See
+    parent class for method docstrings.
     -----------------------------------------------------------------------"""
 
     def __init__(self, root: str = ""):
-        self.__root = root
+        self._root = root
+        self._tmp = FilesystemTemporaryStorage(self)
 
-    @staticmethod
-    def get_date_from_filename(filename: str) -> str:
-        """-------------------------------------------------------------------
-        Given a filename that conforms to MHKiT-Cloud Data Standards, return
-        the date of the first point of data in the file.
+    @property
+    def tmp(self):
+        return self._tmp
 
-        Args:
-            filename (str): The filename or path to the file.
-
-        Returns:
-            str: The date, in "yyyymmdd.hhmmss" format.
-        -------------------------------------------------------------------"""
-        filename = os.path.basename(filename)
-        date = filename.split(".")[1]
-        time = filename.split(".")[2]
-        return f"{date}.{time}"
-
-    def fetch(self, datastream_name: str, start_time: str, end_time: str, local_path: str = None) -> List[str]:
-        """-------------------------------------------------------------------
-        Fetches a file from the filesystem store using the datastream_name,
-        start_time, and end_time to specify the file(s) to retrieve. The
-        retrieved files will be saved in the directory `local_path`.
-
-        Args:
-            datastream_name (str):  The datastream_name as defined by
-                                    MHKiT-Cloud Data Standards.
-            start_time (str):   The start time or date to start searching for
-                                data (inclusive). Should be like "20210106" to
-                                search for data beginning on or after
-                                January 6th, 2021.
-            end_time (str): The end time or date to stop searching for data
-                            (exclusive). Should be like "20210108" to search
-                            for data ending before January 8th, 2021.
-            local_path (str):   The path to the directory where the data
-                                should be stored.
-
-        Returns:
-            List[str]:  A list of paths where the retrieved files were stored
-                        in local storage.
-        -------------------------------------------------------------------"""
-        store_dir = DSUtil.get_datastream_directory(datastream_name, root=self.__root)
-        if not os.path.isdir(store_dir):
-            return []
-        files = [f for f in os.listdir(store_dir) if start_time <= self.get_date_from_filename(f) < end_time]
-        sources = [os.path.join(store_dir, file) for file in files]
-        targets = [os.path.join(local_path, file) for file in files]
-        for source, target in zip(sources, targets):
-            shutil.copy(source, target)
-        return targets
-
-    def save(self, local_path: str, new_filename: str = None) -> None:
-        """-------------------------------------------------------------------
-        Saves a local file to the datastream store.
-
-        Args:
-            local_path (str):   The local path to the file to save.
-            new_filename (str): If provided, the new filename to save as.
-        -------------------------------------------------------------------"""
-
-        # Determine what type of file is being saved -- processed data, raw 
-        # data, or something else: plots, figures, etc -- based on the data
-        # level of the datastream name or the file extension. 
-
-        # Maybe if there is a registered FileHandler for the file extension
-        # then we assume it is for data (raw or processed) and assemble the 
-        # new filename as:
-        # {datastream_name}.{start_date}.{start_time}.raw.{basename(local_path)}
-        # or {datastream_name}.{start_date}.{start_time}.nc
-
-        # If no FileHandler for the extension, then we assume it is a plot or
-        # other ancillary file for the datastream that should be saved according
-        # to our standards -- in that case assume that 
-
-        # raw_filename = os.path.basename(local_path)
-        # location_id = datastream_name.split(".")[0]
-
-        # for local_path in local_paths:
-        #     filename = os.path.basename(local_path)
-        #     datastream_name = ".".join(filename.split(".")[:3])
-        #     data_dir = Standards.get_datastream_path(datastream_name)  # relative to __root
-        #     target_dir = os.path.join(self.__root, data_dir)  # includes __root
-        #     target_path = os.path.join(target_dir, filename)
-        #     os.makedirs(target_dir, exist_ok=True)
-        #     shutil.copy(local_path, target_path)
-        pass
-
-    def exists(self, datastream_name: str, start_time: str, end_time: str) -> bool:
-        """-------------------------------------------------------------------
-        Checks if data exists in the filesystem for the provided datastream
-        and time range.
-
-        Args:
-            datastream_name (str):  The datastream_name as defined by
-                                    MHKiT-Cloud Data Standards.
-            start_time (str):   The start time or date to start searching for
-                                data (inclusive). Should be like "20210106" to
-                                search for data beginning on or after
-                                January 6th, 2021.
-            end_time (str): The end time or date to stop searching for data
-                            (exclusive). Should be like "20210108" to search
-                            for data ending before January 8th, 2021.
-
-        Returns:
-            bool: True if data exists, False otherwise.
-        -------------------------------------------------------------------"""
-        dir_to_check = DSUtil.get_datastream_directory(datastream_name, root=self.__root)
-        if os.path.exists(dir_to_check):
-            for file in os.listdir(dir_to_check):
-                if start_time <= self.get_date_from_filename(file) < end_time:
-                    return True
-        return False
-
-    def _find(self, datastream_name: str, start_time: str, end_time: str) -> List[str]:
-        """-------------------------------------------------------------------
-        Returns paths to the datastream's files in the filesystem where the
-        start and end times of the data files fall within the provided
-        start_time and end_time range.
-
-        Args:
-            datastream_name (str):  The datastream_name as defined by
-                                    MHKiT-Cloud Data Standards.
-            start_time (str):   The start time or date to start searching for
-                                data (inclusive). Should be like "20210106" to
-                                search for data beginning on or after
-                                January 6th, 2021.
-            end_time (str): The end time or date to stop searching for data
-                            (exclusive). Should be like "20210108" to search
-                            for data ending before January 8th, 2021.
-
-        Returns:
-            bool: True if data exists, False otherwise.
-        -------------------------------------------------------------------"""
-        dir_to_check = DSUtil.get_datastream_directory(datastream_name=datastream_name, root=self.__root)
+    def find(self, datastream_name: str, start_time: str, end_time: str,
+             filetype: int = None) -> List[str]:
+        dir_to_check = DSUtil.get_datastream_directory(datastream_name=datastream_name, root=self._root)
         storage_paths = []
-        for file in os.listdir(dir_to_check):
-            if start_time <= self.get_date_from_filename(file) < end_time:
-                storage_paths.append(os.path.join(dir_to_check, file))
+
+        if os.path.isdir(dir_to_check):
+            for file in os.listdir(dir_to_check):
+                if start_time <= DSUtil.get_date_from_filename(file) < end_time:
+                    storage_paths.append(os.path.join(dir_to_check, file))
+
+            if filetype == DatastreamStorage.FILE_TYPE.NETCDF:
+                storage_paths = list(filter(lambda x: x.endswith('.nc'), storage_paths))
+
+            elif filetype == DatastreamStorage.FILE_TYPE.PLOTS:
+                storage_paths = list(filter(lambda x: DSUtil.is_image(x), storage_paths))
+
+            elif filetype == DatastreamStorage.FILE_TYPE.RAW:
+                storage_paths = list(filter(lambda x: '.raw.' in x, storage_paths))
+
         return storage_paths
 
-    def delete(self, datastream_name: str, start_time: str, end_time: str) -> None:
-        """-------------------------------------------------------------------
-        Deletes datastream data in the datastream store in between the
-        specified time range.
+    def fetch(self, datastream_name: str, start_time: str, end_time: str,
+              local_path: str = None,
+              filetype: int = None,
+              disposable=True) -> Union[List[str], DisposableLocalTempFileList]:
+        fetched_files = []
+        datastream_store_files = self.find(datastream_name, start_time, end_time, filetype=filetype)
+        local_dir = local_path
+        if local_dir is None:
+            local_dir = self.tmp.create_temp_dir()
 
-        Args:
-            datastream_name (str):  The datastream_name as defined by
-                                    MHKiT-Cloud Data Standards.
-            start_time (str):   The start time or date to start searching for
-                                data (inclusive). Should be like "20210106" to
-                                search for data beginning on or after
-                                January 6th, 2021.
-            end_time (str): The end time or date to stop searching for data
-                            (exclusive). Should be like "20210108" to search
-                            for data ending before January 8th, 2021.
-        -------------------------------------------------------------------"""
-        files_to_delete = self._find(datastream_name, start_time, end_time)
+        for datastream_file in datastream_store_files:
+            fetched_file = os.path.join(local_dir, os.path.basename(datastream_file))
+            shutil.copy(datastream_file, fetched_file)
+            fetched_files.append(fetched_file)
+
+        if disposable:
+            return DisposableLocalTempFileList(fetched_files)
+
+        return fetched_files
+
+    def save(self, local_path: str, new_filename: str = None) -> None:
+        # TODO: we should perform a REGEX check to make sure that the
+        # filename is valid
+        filename = os.path.basename(local_path) if not new_filename else new_filename
+        datastream_name = DSUtil.get_datastream_name_from_filename(filename)
+
+        dest_dir = DSUtil.get_datastream_directory(datastream_name=datastream_name, root=self._root)
+        os.makedirs(dest_dir, exist_ok=True)  # make sure the dest folder exists
+        dest_path = os.path.join(dest_dir, filename)
+
+        shutil.copy(local_path, dest_path)
+
+    def exists(self, datastream_name: str, start_time: str, end_time: str, filetype: int = None) -> bool:
+        datastream_store_files = self.find(datastream_name, start_time, end_time, filetype=filetype)
+        return len(datastream_store_files) > 0
+
+    def delete(self, datastream_name: str, start_time: str, end_time: str, filetype: int = None) -> None:
+        files_to_delete = self.find(datastream_name, start_time, end_time, filetype=filetype)
         for file in files_to_delete:
             os.remove(file)
         return

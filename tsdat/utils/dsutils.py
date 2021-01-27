@@ -1,12 +1,20 @@
-import os
-import act
 import datetime
+import mimetypes
+import os
+from typing import List, Dict, Tuple, Union
+
+import act
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-import matplotlib.pyplot as plt
-from typing import List, Dict, Tuple, Union
 from tsdat.constants import ATTS
-from tsdat.config import Config, VariableDefinition
+
+# Note that we can't use these in the type hints because
+# importing them here causes a circular dependency
+# from tsdat.config import Config, VariableDefinition
+
+
+mimetypes.init()
 
 
 class DSUtil:
@@ -20,7 +28,18 @@ class DSUtil:
         return datetime.strftime("%Y%m%d"), datetime.strftime("%H%M%S")
 
     @staticmethod
-    def get_datastream_name(ds: xr.Dataset = None, config: Config = None) -> str:
+    def get_datastream_name(ds: xr.Dataset = None, config=None) -> str:
+        """-------------------------------------------------------------------
+        Returns the datastream name defined in the dataset or in the provided
+        pipeline configuration.
+
+        Args:
+            dataset (xr.Dataset):   The data as an xarray dataset.
+            config (Config):    The Config object used to assist reading time
+                                data from the raw_dataset.
+        Returns:
+            str: The datastream name
+        -------------------------------------------------------------------"""
         assert(ds or config)
         if ds and "datastream" in ds.attrs:
             return ds.attrs["datastream"]
@@ -76,7 +95,7 @@ class DSUtil:
         return varnames
 
     @staticmethod
-    def get_raw_end_time(raw_ds: xr.Dataset, time_var_definition: VariableDefinition) -> Tuple[str, str]:
+    def get_raw_end_time(raw_ds: xr.Dataset, time_var_definition) -> Tuple[str, str]:
         """-------------------------------------------------------------------
         Convenience method to get the end date and time from a raw xarray
         dataset. This uses `time_var_definition.get_input_name()` as the
@@ -93,7 +112,7 @@ class DSUtil:
         return end.strftime("%Y%m%d"), end.strftime("%H%M%S")
 
     @staticmethod
-    def get_raw_start_time(raw_ds: xr.Dataset, time_var_definition: VariableDefinition) -> Tuple[str, str]:
+    def get_raw_start_time(raw_ds: xr.Dataset, time_var_definition) -> Tuple[str, str]:
         """-------------------------------------------------------------------
         Convenience method to get the start date and time from a raw xarray
         dataset. This uses `time_var_definition.get_input_name()` as the
@@ -283,7 +302,7 @@ class DSUtil:
         return f"{datastream_name}.{start_date}.{start_time}.nc"
 
     @staticmethod
-    def get_raw_filename(raw_dataset: xr.Dataset, old_filename: str, config: Config) -> str:
+    def get_raw_filename(raw_dataset: xr.Dataset, old_filename: str, config) -> str:
         """-------------------------------------------------------------------
         Returns the appropriate raw filename of the raw dataset according to
         MHKIT-Cloud naming conventions. Uses the config object to parse the
@@ -309,7 +328,48 @@ class DSUtil:
         start_date, start_time = DSUtil.get_raw_start_time(raw_dataset, time_var)
         return f"{raw_datastream_name}.{start_date}.{start_time}.raw.{original_filename}"
 
+    @staticmethod
+    def get_date_from_filename(filename: str) -> str:
+        """-------------------------------------------------------------------
+        Given a filename that conforms to MHKiT-Cloud Data Standards, return
+        the date of the first point of data in the file.
 
+        Args:
+            filename (str): The filename or path to the file.
+
+        Returns:
+            str: The date, in "yyyymmdd.hhmmss" format.
+        -------------------------------------------------------------------"""
+        filename = os.path.basename(filename)
+        date = filename.split(".")[3]
+        time = filename.split(".")[4]
+        return f"{date}.{time}"
+
+    @staticmethod
+    def get_datastream_name_from_filename(filename: str) -> str:
+        """-------------------------------------------------------------------
+        Given a filename that conforms to MHKiT-Cloud Data Standards, return
+        the datastream name.  Datastream name is everything to the left of the
+        third '.' in the filename.
+
+        e.g., humboldt_ca.buoy_data.b1.20210120.000000.nc
+
+        Args:
+            filename (str): The filename or path to the file.
+
+        Returns:
+            str | None:     The datstream name, or None if filename is not in
+                            proper format.
+        -------------------------------------------------------------------"""
+        datastream_name = None
+
+        parts = filename.split(".")
+        if len(parts) > 2:
+            datastream_name = f'{parts[0]}.{parts[1]}.{parts[2]}'
+
+        return datastream_name
+
+    @staticmethod
     def get_datastream_directory(datastream_name: str, root: str = None) -> str:
         """-------------------------------------------------------------------
         Given the datastream_name and an optional root, returns the path to
@@ -330,4 +390,27 @@ class DSUtil:
         _root = "" if not root else root
         return os.path.join(_root, location_id, datastream_name)
 
-#TODO: Maybe we need a method to be able to quickly dump out a summary of the list of problems with the data.
+    @staticmethod
+    def is_image(filename: str) -> bool:
+        """-------------------------------------------------------------------
+        Detect the mimetype from the file extension and use it to determine
+        if the file is an image or not
+
+        Args:
+            filename (str):  The name of the file to check
+
+        Returns:
+            bool:   True if the file extension matches an image mimetype
+        -------------------------------------------------------------------"""
+        is_an_image = False
+        mimetype = mimetypes.guess_type(filename)[0]
+        if mimetype is not None:
+            mimetype = mimetype.split('/')[0]
+            if mimetype == 'image':
+                is_an_image = True
+
+        return is_an_image
+
+# TODO: Maybe we need a method to be able to quickly dump out a summary of the list of problems with the data.
+
+

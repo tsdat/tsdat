@@ -1,13 +1,11 @@
-import os
-import zipfile
-import tarfile
-import xarray as xr
 from typing import Dict, List, Tuple
-from .pipeline import Pipeline
-from tsdat.config import Config
+
+import xarray as xr
 from tsdat.io.filehandlers import FileHandler
-from tsdat.utils import DSUtil
 from tsdat.qc import QC
+from tsdat.utils import DSUtil
+
+from .pipeline import Pipeline
 
 
 class IngestPipeline(Pipeline):       
@@ -22,8 +20,7 @@ class IngestPipeline(Pipeline):
                             on.
         -------------------------------------------------------------------"""
         # If the file is a zip/tar, then we need to extract the individual files
-        # file_paths = self.extract_raw_files(filepath)
-        with self.storage._tmp.extract_raw_files(filepath) as file_paths:
+        with self.storage.tmp.extract_files(filepath) as file_paths:
 
             # Open each raw file into a Dataset, standardize the raw file names and store.
             # Use storage and FileHandler to access and read the file.
@@ -53,50 +50,6 @@ class IngestPipeline(Pipeline):
             # Save the final datastream data to storage
             self.store_dataset(dataset)
 
-    def extract_raw_files(self, filepath: str) -> List[str]:
-        """-------------------------------------------------------------------
-        If provided a path to an archive file, this function will unzip the
-        archive and return a list of complete paths to each file.
-        Zip or tar/targz archive files are supported.
-
-        Args:
-            filepath (str): A path to an archive file or a regular file.
-
-        Returns:
-            List[str]:  A list of complete paths to the unzipped files or 
-                        `[filepath]` if `filepath` is not a .zip file.
-        -------------------------------------------------------------------"""
-        extracted_files = [filepath]
-
-        if tarfile.is_tarfile(filepath) or zipfile.is_zipfile(filepath):
-            # TODO: make sure that storage creates a unique folder name to unzip to
-            extracted_files = self.storage._tmp.unzip(filepath)
-
-        return extracted_files
-
-        # if not filepath.endswith(".zip"):
-        #     if os.path.isfile(filepath):
-        #         return [filepath]
-        #     raise ValueError("filepath must be a .zip archive or a file")
-        #
-        # # If target_dir not provided, make it be the parent directory of the
-        # # filepath provided
-        # if not target_dir:
-        #     target_dir, _ = os.path.split(filepath)
-        # # Extract into a temporary folder in the target_dir
-        # temp_dir = f"{target_dir}/.unzipped"
-        # os.makedirs(temp_dir, exist_ok=False)
-        # with zipfile.ZipFile(filepath, 'r') as zipped:
-        #     zipped.extractall(temp_dir)
-        # # Move files from temp_dir into target_dir and remove temp_dir
-        # filenames = os.listdir(temp_dir)
-        # temp_paths = [os.path.join(temp_dir,   file) for file in filenames]
-        # new_paths  = [os.path.join(target_dir, file) for file in filenames]
-        # for temp_path, new_path in zip(temp_paths, new_paths):
-        #     shutil.move(temp_path, new_path)
-        # os.rmdir(temp_dir)
-        # return new_paths
-    
     def read_and_persist_raw_files(self, file_paths: List[str]) -> List[str]:
         """-------------------------------------------------------------------
         Renames the provided RAW files according to MHKiT-Cloud Data Standards 
@@ -117,7 +70,7 @@ class IngestPipeline(Pipeline):
         for file_path in file_paths:
 
             # read the raw file into a dataset
-            with self.storage._tmp.fetch(file_path) as tmp_path:
+            with self.storage.tmp.fetch(file_path) as tmp_path:
                 dataset = FileHandler.read(tmp_path)
 
                 # create the standardized name for raw file
@@ -204,7 +157,7 @@ class IngestPipeline(Pipeline):
         start_date, start_time = DSUtil.get_start_time(dataset)
         datastream_name = DSUtil.get_datastream_name(dataset, self.config)
 
-        with self.storage._tmp.fetch_previous_file(datastream_name, start_date, start_time) as netcdf_file:
+        with self.storage.tmp.fetch_previous_file(datastream_name, start_date, start_time) as netcdf_file:
 
             dataset = None
             if netcdf_file:
@@ -220,7 +173,7 @@ class IngestPipeline(Pipeline):
         Args:
             dataset (xr.Dataset): The dataset to store.
         -------------------------------------------------------------------"""
-        with self.storage._tmp.get_temp_filepath(DSUtil.get_dataset_filename(dataset)) as tmp_path:
+        with self.storage.tmp.get_temp_filepath(DSUtil.get_dataset_filename(dataset)) as tmp_path:
             dataset.to_netcdf(tmp_path)
             self.storage.save(tmp_path)
     
