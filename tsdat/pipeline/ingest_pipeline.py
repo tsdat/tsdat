@@ -1,10 +1,8 @@
-import os
 import zipfile
 import tarfile
 import xarray as xr
-from typing import Dict, List, Tuple
+from typing import Dict, List
 from .pipeline import Pipeline
-from tsdat.config import Config
 from tsdat.io.filehandlers import FileHandler
 from tsdat.utils import DSUtil
 from tsdat.qc import QC
@@ -245,20 +243,3 @@ class IngestPipeline(Pipeline):
         with self.storage._tmp.get_temp_filepath(DSUtil.get_dataset_filename(dataset)) as tmp_path:
             dataset.to_netcdf(tmp_path)
             self.storage.save(tmp_path)
-    
-    def get_raw_start_date_time(self, filepath: str) -> Tuple[str, str]:                
-        """-------------------------------------------------------------------
-        Given the path to a raw "00"-level file, this function returns the 
-        date (yyyymmdd) and time (hhmmss) pertaining to the first time sample
-        in the file.
-
-        Args:
-            filepath (str): The path to a raw file.
-
-        Returns:
-            Tuple[str, str]:    A 2-tuple of the timestamp of the first point
-                                in the file with date (yyyymmdd) first and 
-                                time (hhmmss) second.
-        -------------------------------------------------------------------"""
-        # TODO: remove this
-        return "99999999", "999999"
