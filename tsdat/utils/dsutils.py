@@ -28,6 +28,22 @@ class DSUtil:
         return datetime.strftime("%Y%m%d"), datetime.strftime("%H%M%S")
 
     @staticmethod
+    def datetime64_to_timestamp(variable_data: np.ndarray) -> np.ndarray:
+        """-------------------------------------------------------------------
+        Converts each datetime64 value to a timestamp in same units as
+        the variable.
+        -------------------------------------------------------------------"""
+        # First we need to get the units of the time variable.
+        # Since this is a time array, we assume it will be one dimensional, so
+        # we use the first data point to find out the type.
+        units = np.datetime_data(variable_data[0])[0]  # datetime_data produces: ('ns', 1)
+
+        # Compute the timestamp
+        ts = (variable_data - np.datetime64('1970-01-01T00:00:00Z', units)) / np.timedelta64(1, units)
+        return ts
+
+
+    @staticmethod
     def get_datastream_name(ds: xr.Dataset = None, config=None) -> str:
         """-------------------------------------------------------------------
         Returns the datastream name defined in the dataset or in the provided

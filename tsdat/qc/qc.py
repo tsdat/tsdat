@@ -65,7 +65,11 @@ class QCChecker:
 
         # Get the variables this test applies to
         variable_names = test.variables
-        if VARS.ALL in variable_names:
+
+        # Convert the list to upper case in case the user made a typo in the yaml
+        variable_names_upper = [x.upper() for x in variable_names]
+
+        if VARS.ALL in variable_names_upper:
             if coord:
                 variable_names = DSUtil.get_coordinate_variable_names(ds)
             else:
