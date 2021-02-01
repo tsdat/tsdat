@@ -62,6 +62,7 @@ class VariableDefinition:
         attributes: Dict[str, AttributeDefinition] = {}
         for attr_name, attr_value in dictionary.get(VarKeys.ATTRS, {}).items():
             attributes[attr_name] = AttributeDefinition(attr_name, attr_value)
+        attributes = self.add_fillvalue_if_none(attributes)
         return attributes
 
     def _parse_dimensions(self, dictionary: Dict, available_dimensions: Dict[str, DimensionDefinition]) -> Dict[str, DimensionDefinition]:
@@ -110,6 +111,30 @@ class VariableDefinition:
             error_message = f"'{data_type}' is not a standard data type. Data type must be one of: \n{', '.join(list(mappings.keys()))}"
             raise KeyError(error_message)
         return mappings[data_type]
+
+    def add_fillvalue_if_none(self, attributes: Dict[str, AttributeDefinition]) -> Dict[str, AttributeDefinition]:
+        """-------------------------------------------------------------------
+        Adds the _FillValue attribute to the provided attributes dictionary if
+        the _FillValue attribute has not already been defined and returns the 
+        modified attributes dictionary.
+
+        Args:
+            attributes (Dict[str, AttributeDefinition]):    The dictionary 
+                                                            containing user- 
+                                                            defined variable
+                                                            attributes.
+
+        Returns:
+            Dict[str, AttributeDefinition]: The dictionary containing user-
+                                            defined variable attributes. Is
+                                            guaranteed to have a _FillValue 
+                                            attribute.
+        -------------------------------------------------------------------"""
+        current_attr = attributes.get("_FillValue", None)
+        if current_attr is None or current_attr.value is None:
+            current_attr = AttributeDefinition("_FillValue", -9999)
+        attributes["_FillValue"] = current_attr
+        return attributes
 
     def is_constant(self) -> bool:
         """-------------------------------------------------------------------
@@ -285,3 +310,4 @@ class VariableDefinition:
             "attrs":    {attr_name: attr.value for attr_name, attr in self.attrs.items()}
         }
         return dictionary
+        
