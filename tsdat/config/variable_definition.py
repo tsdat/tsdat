@@ -28,7 +28,10 @@ class VarInput:
     -----------------------------------------------------------------------"""
     def __init__(self, dictionary: Dict):
         self.name: str = dictionary.get(VarInputKeys.NAME)
-        self.converter: Converter = instantiate_handler(handler_desc=dictionary.get(VarInputKeys.CONVERTER, "tsdat.utils.converters.DefaultConverter"))
+        default_converter = {
+            'classname': 'tsdat.utils.converters.DefaultConverter'
+        }
+        self.converter: Converter = instantiate_handler(handler_desc=dictionary.get(VarInputKeys.CONVERTER, default_converter))
         for key in dictionary:
             if not hasattr(self, key):
                 setattr(self, key, dictionary[key])
