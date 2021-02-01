@@ -1,11 +1,11 @@
-import importlib
-import yaml
-import numpy as np
-import xarray as xr
 from typing import List, Dict
-from .keys import Keys
+
+import yaml
+
 from .dataset_definition import DatasetDefinition
+from .keys import Keys
 from .qctest_definition import QCTestDefinition
+
 
 # TODO: add api method to download yaml templates or put them all
 # in the examples folder.
@@ -20,12 +20,16 @@ class Config:
         self.dictionary = dictionary
         dataset_dict = dictionary.get(Keys.DATASET_DEFINITION, None)
         qc_tests_dict = dictionary.get(Keys.QC_TESTS, None)
+        qc_tests_coord_dict = dictionary.get(Keys.QC_TESTS_COORD, None)
 
         if dataset_dict is not None:
             self.dataset_definition = DatasetDefinition(dataset_dict)
 
         if qc_tests_dict is not None:
-            self._parse_qc_tests(qc_tests_dict)
+            self.qc_tests = self._parse_qc_tests(qc_tests_dict)
+
+        if qc_tests_coord_dict is not None:
+            self.qc_tests_coord = self._parse_qc_tests(qc_tests_coord_dict)
 
 
     @classmethod
@@ -53,18 +57,16 @@ class Config:
                     config.update(dictionary)
         return Config(config)
 
-    def get_qc_test_names(self):
-        # Stupid python 3 returns keys as a dict_keys object.
-        # Not really sure the purpose of this extra class :(.
-        return list(self.qc_tests.keys())
-
-    def get_qc_test(self, test_name):
-        return self.qc_tests.get(test_name, None)
-
     def get_qc_tests(self):
         return self.qc_tests.values()
 
+    def get_qc_tests_coord(self):
+        return self.qc_tests_coord.values()
+
     def _parse_qc_tests(self, dictionary):
-        self.qc_tests: Dict[str, QCTestDefinition] = {}
+        qc_tests: Dict[str, QCTestDefinition] = {}
         for test_name, test_dict in dictionary.items():
-            self.qc_tests[test_name] = QCTestDefinition(test_name, test_dict)
+            qc_tests[test_name] = QCTestDefinition(test_name, test_dict)
+
+        return qc_tests
+

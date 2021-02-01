@@ -1,12 +1,20 @@
-import os
-import act
 import datetime
+import mimetypes
+import os
+from typing import List, Dict, Tuple, Union
+
+import act
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-import matplotlib.pyplot as plt
-from typing import List, Dict, Tuple, Union
 from tsdat.constants import ATTS
-from tsdat.config import Config, VariableDefinition
+
+# Note that we can't use these in the type hints because
+# importing them here causes a circular dependency
+# from tsdat.config import Config, VariableDefinition
+
+
+mimetypes.init()
 
 
 class DSUtil:
@@ -20,7 +28,34 @@ class DSUtil:
         return datetime.strftime("%Y%m%d"), datetime.strftime("%H%M%S")
 
     @staticmethod
-    def get_datastream_name(ds: xr.Dataset = None, config: Config = None) -> str:
+    def datetime64_to_timestamp(variable_data: np.ndarray) -> np.ndarray:
+        """-------------------------------------------------------------------
+        Converts each datetime64 value to a timestamp in same units as
+        the variable.
+        -------------------------------------------------------------------"""
+        # First we need to get the units of the time variable.
+        # Since this is a time array, we assume it will be one dimensional, so
+        # we use the first data point to find out the type.
+        units = np.datetime_data(variable_data[0])[0]  # datetime_data produces: ('ns', 1)
+
+        # Compute the timestamp
+        ts = (variable_data - np.datetime64('1970-01-01T00:00:00Z', units)) / np.timedelta64(1, units)
+        return ts
+
+
+    @staticmethod
+    def get_datastream_name(ds: xr.Dataset = None, config=None) -> str:
+        """-------------------------------------------------------------------
+        Returns the datastream name defined in the dataset or in the provided
+        pipeline configuration.
+
+        Args:
+            dataset (xr.Dataset):   The data as an xarray dataset.
+            config (Config):    The Config object used to assist reading time
+                                data from the raw_dataset.
+        Returns:
+            str: The datastream name
+        -------------------------------------------------------------------"""
         assert(ds or config)
         if ds and "datastream" in ds.attrs:
             return ds.attrs["datastream"]
@@ -31,7 +66,7 @@ class DSUtil:
     @staticmethod
     def get_end_time(ds: xr.Dataset) -> Tuple[str, str]:
         """-------------------------------------------------------------------
-        Convenience method to get the end date and time from a xarray 
+        Convenience method to get the end date and time from a xarray
         dataset.
         -------------------------------------------------------------------"""
         time64 = np.min(ds['time'].data)
@@ -60,47 +95,61 @@ class DSUtil:
     @staticmethod
     def get_non_qc_variable_names(ds: xr.Dataset) -> List[str]:
         """-------------------------------------------------------------------
-        Get a list of all variable names in this dataset that are not qc.
+        Get a list of all variable names in this dataset that are not
+        coordinate variables and not qc variables.
         -------------------------------------------------------------------"""
         varnames = []
-        for varname, da in ds.data_vars.items():
-            varnames.append(varname)
+
+        def exclude_qc(variable_name):
+            if variable_name.startswith('qc_'):
+                return False
+            else:
+                return True
+
+        varnames = filter(exclude_qc, list(ds.data_vars.keys()))
 
         return varnames
 
     @staticmethod
-    def get_raw_end_time(raw_ds: xr.Dataset, time_var_definition: VariableDefinition) -> Tuple[str, str]:
+    def get_raw_end_time(raw_ds: xr.Dataset, time_var_definition) -> Tuple[str, str]:
         """-------------------------------------------------------------------
-        Convenience method to get the end date and time from a raw xarray 
-        dataset. This uses `time_var_definition.get_input_name()` as the 
+        Convenience method to get the end date and time from a raw xarray
+        dataset. This uses `time_var_definition.get_input_name()` as the
         dataset key for the time variable and additionally uses the input's
         `Converter` object if applicable.
         -------------------------------------------------------------------"""
         time_var_name = time_var_definition.get_input_name()
         time_data = raw_ds[time_var_name].values
-        
+
         time64_data = time_var_definition.run_converter(time_data)
-        
+
         end_datetime64 = np.max(time64_data)
         end: datetime.datetime = act.utils.datetime64_to_datetime(end_datetime64)[0]
         return end.strftime("%Y%m%d"), end.strftime("%H%M%S")
 
     @staticmethod
-    def get_raw_start_time(raw_ds: xr.Dataset, time_var_definition: VariableDefinition) -> Tuple[str, str]:
+    def get_raw_start_time(raw_ds: xr.Dataset, time_var_definition) -> Tuple[str, str]:
         """-------------------------------------------------------------------
-        Convenience method to get the start date and time from a raw xarray 
-        dataset. This uses `time_var_definition.get_input_name()` as the 
+        Convenience method to get the start date and time from a raw xarray
+        dataset. This uses `time_var_definition.get_input_name()` as the
         dataset key for the time variable and additionally uses the input's
         `Converter` object if applicable.
         -------------------------------------------------------------------"""
         time_var_name = time_var_definition.get_input_name()
         time_data = raw_ds[time_var_name].values
-        
+
         time64_data = time_var_definition.run_converter(time_data)
-        
+
         start_datetime64 = np.min(time64_data)
         start: datetime.datetime = act.utils.datetime64_to_datetime(start_datetime64)[0]
         return start.strftime("%Y%m%d"), start.strftime("%H%M%S")
+
+    @staticmethod
+    def get_coordinate_variable_names(ds: xr.Dataset) -> List[str]:
+        """-------------------------------------------------------------------
+        Get a list of all coordinate variables in this dataset.
+        -------------------------------------------------------------------"""
+        return list(ds.coords.keys())
 
     @staticmethod
     def get_shape(ds: xr.Dataset, variable_name):
@@ -121,7 +170,7 @@ class DSUtil:
     @staticmethod
     def get_start_time(ds: xr.Dataset) -> Tuple[str, str]:
         """-------------------------------------------------------------------
-        Convenience method to get the start date and time from a xarray 
+        Convenience method to get the start date and time from a xarray
         dataset.
         -------------------------------------------------------------------"""
         time64 = np.min(ds['time'].data)
@@ -225,19 +274,19 @@ class DSUtil:
     @staticmethod
     def get_plot_filename(dataset: xr.Dataset, plot_description: str, extension: str) -> str:
         """-------------------------------------------------------------------
-        Returns the filename for a plot according to MHKIT-Cloud Data 
-        standards. The dataset is used to determine the datastream_name and 
-        start date/time. The standards dictate that a plot filename should 
+        Returns the filename for a plot according to MHKIT-Cloud Data
+        standards. The dataset is used to determine the datastream_name and
+        start date/time. The standards dictate that a plot filename should
         follow the format: `datastream_name.date.time.description.extension`.
 
         Args:
             dataset (xr.Dataset):   The dataset from which the plot data is
-                                    drawn from. This is used to collect the 
+                                    drawn from. This is used to collect the
                                     datastream_name and start date/time.
-            plot_description (str): The description of the plot. Should be 
-                                    as brief as possible and contain no 
-                                    spaces. Underscores may be used. 
-            extension (str):        The file extension for the plot. 
+            plot_description (str): The description of the plot. Should be
+                                    as brief as possible and contain no
+                                    spaces. Underscores may be used.
+            extension (str):        The file extension for the plot.
 
         Returns:
             str: The standardized plot filename.
@@ -250,13 +299,13 @@ class DSUtil:
     def get_dataset_filename(dataset: xr.Dataset) -> str:
         """-------------------------------------------------------------------
         Given an xarray dataset this function will return the base filename of
-        the dataset according to MHkiT-Cloud data standards. The base filename 
-        does not include the directory structure where the file should be 
+        the dataset according to MHkiT-Cloud data standards. The base filename
+        does not include the directory structure where the file should be
         saved, only the name of the file itself, e.g.
         z05.ExampleBuoyDatastream.b1.20201230.000000.nc
 
         Args:
-            dataset (xr.Dataset):   The dataset whose filename should be 
+            dataset (xr.Dataset):   The dataset whose filename should be
                                     generated.
 
         Returns:
@@ -267,15 +316,15 @@ class DSUtil:
         return f"{datastream_name}.{start_date}.{start_time}.nc"
 
     @staticmethod
-    def get_raw_filename(raw_dataset: xr.Dataset, old_filename: str, config: Config) -> str:
+    def get_raw_filename(raw_dataset: xr.Dataset, old_filename: str, config) -> str:
         """-------------------------------------------------------------------
-        Returns the appropriate raw filename of the raw dataset according to 
-        MHKIT-Cloud naming conventions. Uses the config object to parse the 
+        Returns the appropriate raw filename of the raw dataset according to
+        MHKIT-Cloud naming conventions. Uses the config object to parse the
         start date and time from the raw dataset for use in the new filename.
 
-        The new filename will follow the MHKIT-Cloud Data standards for raw 
+        The new filename will follow the MHKIT-Cloud Data standards for raw
         filenames, ie: `datastream_name.date.time.raw.old_filename`, where the
-        data level used in the datastream_name is `00`. 
+        data level used in the datastream_name is `00`.
 
         Args:
             raw_dataset (xr.Dataset):   The raw data as an xarray dataset.
@@ -293,25 +342,89 @@ class DSUtil:
         start_date, start_time = DSUtil.get_raw_start_time(raw_dataset, time_var)
         return f"{raw_datastream_name}.{start_date}.{start_time}.raw.{original_filename}"
 
+    @staticmethod
+    def get_date_from_filename(filename: str) -> str:
+        """-------------------------------------------------------------------
+        Given a filename that conforms to MHKiT-Cloud Data Standards, return
+        the date of the first point of data in the file.
 
+        Args:
+            filename (str): The filename or path to the file.
+
+        Returns:
+            str: The date, in "yyyymmdd.hhmmss" format.
+        -------------------------------------------------------------------"""
+        filename = os.path.basename(filename)
+        date = filename.split(".")[3]
+        time = filename.split(".")[4]
+        return f"{date}.{time}"
+
+    @staticmethod
+    def get_datastream_name_from_filename(filename: str) -> str:
+        """-------------------------------------------------------------------
+        Given a filename that conforms to MHKiT-Cloud Data Standards, return
+        the datastream name.  Datastream name is everything to the left of the
+        third '.' in the filename.
+
+        e.g., humboldt_ca.buoy_data.b1.20210120.000000.nc
+
+        Args:
+            filename (str): The filename or path to the file.
+
+        Returns:
+            str | None:     The datstream name, or None if filename is not in
+                            proper format.
+        -------------------------------------------------------------------"""
+        datastream_name = None
+
+        parts = filename.split(".")
+        if len(parts) > 2:
+            datastream_name = f'{parts[0]}.{parts[1]}.{parts[2]}'
+
+        return datastream_name
+
+    @staticmethod
     def get_datastream_directory(datastream_name: str, root: str = None) -> str:
         """-------------------------------------------------------------------
-        Given the datastream_name and an optional root, returns the path to 
+        Given the datastream_name and an optional root, returns the path to
         where the datastream should be located. Does NOT create the directory
         where the datastream should be located.
 
         Args:
             datastream_name (str):  The name of the datastream whose directory
                                     path should be generated.
-            root (str, optional):   The directory to use as the root of the 
+            root (str, optional):   The directory to use as the root of the
                                     directory structure. Defaults to None.
 
         Returns:
-            str:    The path to the directory where the datastream should be 
+            str:    The path to the directory where the datastream should be
                     located.
         -------------------------------------------------------------------"""
         location_id = datastream_name.split(".")[0]
         _root = "" if not root else root
         return os.path.join(_root, location_id, datastream_name)
 
-#TODO: Maybe we need a method to be able to quickly dump out a summary of the list of problems with the data.
+    @staticmethod
+    def is_image(filename: str) -> bool:
+        """-------------------------------------------------------------------
+        Detect the mimetype from the file extension and use it to determine
+        if the file is an image or not
+
+        Args:
+            filename (str):  The name of the file to check
+
+        Returns:
+            bool:   True if the file extension matches an image mimetype
+        -------------------------------------------------------------------"""
+        is_an_image = False
+        mimetype = mimetypes.guess_type(filename)[0]
+        if mimetype is not None:
+            mimetype = mimetype.split('/')[0]
+            if mimetype == 'image':
+                is_an_image = True
+
+        return is_an_image
+
+# TODO: Maybe we need a method to be able to quickly dump out a summary of the list of problems with the data.
+
+

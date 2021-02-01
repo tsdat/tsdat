@@ -1,3 +1,22 @@
+coordinate_variable_qc_tests:
+  missing:
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckMissing
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+  monotonic:
+    variables:
+      - All
+    operator:
+      classname: tsdat.qc.operators.CheckMonotonic
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
 qc_tests:
     #  In general, a user should not specify tests for coordinate variables
     # (e.g., time) because the pipeline will perform coordinate variable validation

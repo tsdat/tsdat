@@ -38,7 +38,14 @@ class QC(object):
 
         -------------------------------------------------------------------"""
 
-        # Iterate through the tests in order
+        # First run the coordinate variable tests, in order
+        qc_tests: List[QCTestDefinition] = config.get_qc_tests_coord()
+
+        for qc_test in qc_tests:
+            qc_checker = QCChecker(ds, config, qc_test, previous_data, coord=True)
+            qc_checker.run()
+
+        # Then run the other variable qc tests, in order
         qc_tests: List[QCTestDefinition] = config.get_qc_tests()
 
         for qc_test in qc_tests:
@@ -50,12 +57,23 @@ class QCChecker:
     """-------------------------------------------------------------------
     Applies a single QC test to the given Dataset, as defined by the Config
     -------------------------------------------------------------------"""
-    def __init__(self, ds: xr.Dataset, config: Config, test: QCTestDefinition, previous_data: xr.Dataset):
+    def __init__(self, ds: xr.Dataset,
+                 config: Config,
+                 test: QCTestDefinition,
+                 previous_data: xr.Dataset,
+                 coord: bool = False):
+
         # Get the variables this test applies to
         variable_names = test.variables
-        if VARS.ALL in variable_names:
-            variable_names = DSUtil.get_non_qc_variable_names(ds)
-            # TODO: exclude all coordinate variables by default
+
+        # Convert the list to upper case in case the user made a typo in the yaml
+        variable_names_upper = [x.upper() for x in variable_names]
+
+        if VARS.ALL in variable_names_upper:
+            if coord:
+                variable_names = DSUtil.get_coordinate_variable_names(ds)
+            else:
+                variable_names = DSUtil.get_non_qc_variable_names(ds)
 
         # Exclude any excludes
         excludes = test.exclude
@@ -74,6 +92,7 @@ class QCChecker:
         self.error_handlers = error_handlers
         self.test: QCTestDefinition = test
         self.previous_data = previous_data
+        self.coord = coord
 
     def run(self):
         """-------------------------------------------------------------------
@@ -95,9 +114,11 @@ class QCChecker:
                     for error_handler in self.error_handlers:
                         error_handler.run(variable_name, results_array)
 
-                # Record the test results in a qc_ companion variable
-                self.ds.qcfilter.add_test(
-                    variable_name, index=results_array,
-                    test_number=self.test.qc_bit,
-                    test_meaning=self.test.description,
-                    test_assessment=self.test.assessment)
+                # If this is not a coordinate variable, then record
+                # the test results in a qc_ companion variable
+                if not self.coord:
+                    self.ds.qcfilter.add_test(
+                        variable_name, index=results_array,
+                        test_number=self.test.qc_bit,
+                        test_meaning=self.test.description,
+                        test_assessment=self.test.assessment)

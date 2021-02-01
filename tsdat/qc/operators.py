@@ -60,27 +60,32 @@ class CheckMissing(QCOperator):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
         """-------------------------------------------------------------------
-        Checks if any values are assigned to _FillValue or NaN
+        Checks if any values are assigned to _FillValue or 'NaN' (for non-time
+        variables) or checks if values are assigned to 'NaT' (for time variables)
         -------------------------------------------------------------------"""
-        fill_value = DSUtil.get_fill_value(self.ds, variable_name)
 
-        # If the variable has no _FillValue attribute, then
-        # we select a default value to use
-        if fill_value is None:
-            fill_value = -9999
+        # If this is a time variable, we check for 'NaT'
+        if self.ds[variable_name].values.dtype.type == np.datetime64:
+            results_array = np.isnat(self.ds[variable_name].values)
 
-        # Make sure fill value has same data type as the variable
-        fill_value = np.array(fill_value, dtype=self.ds[variable_name].values.dtype.type)
+        else:
+            fill_value = DSUtil.get_fill_value(self.ds, variable_name)
 
-        # First check if any values are assigned to _FillValue
-        results_array = np.equal(self.ds[variable_name].values, fill_value)
+            # If the variable has no _FillValue attribute, then
+            # we select a default value to use
+            if fill_value is None:
+                fill_value = -9999
 
-        # Then, if the value is numeric, we should also check if any values are assigned to
-        # NaN
-        if self.ds[variable_name].values.dtype.type in (type(0.0), np.float16, np.float32, np.float64):
-            nan = float('nan')
-            nan = np.array(nan, dtype=self.ds[variable_name].values.dtype.type)
-            results_array = results_array | np.equal(self.ds[variable_name].values, nan)
+            # Make sure fill value has same data type as the variable
+            fill_value = np.array(fill_value, dtype=self.ds[variable_name].values.dtype.type)
+
+            # First check if any values are assigned to _FillValue
+            results_array = np.equal(self.ds[variable_name].values, fill_value)
+
+            # Then, if the value is numeric, we should also check if any values are assigned to
+            # NaN
+            if self.ds[variable_name].values.dtype.type in (type(0.0), np.float16, np.float32, np.float64):
+                results_array = results_array | np.isnan(self.ds[variable_name].values)
 
         return results_array
 
@@ -174,68 +179,82 @@ class CheckValidDelta(QCOperator):
                         # Get the last value from the first axis
                         previous_row = previous_variable_data[-1]
 
-                if previous_row is None:
-                    # just use the first row of the current data as the previous row
-                    previous_row = variable_data[0]
+                        # Insert that value as the first value of the first axis
+                        variable_data = np.insert(variable_data, 0, previous_row, axis=axis)
 
-                # Insert that value as the first value of the first axis
-                variable_data = np.insert(variable_data, 0, previous_row, axis=axis)
+                # If the variable is a time variable, then we convert to nanoseconds before doing our check
+                if self.ds[variable_name].values.dtype.type == np.datetime64:
+                    variable_data = DSUtil.datetime64_to_timestamp(variable_data)
 
+                # Compute the difference between each two numbers and check if it exceeds valid_delta
                 diff = np.absolute(np.diff(variable_data, axis=axis))
                 results_array = np.greater(diff, valid_delta)
+
+                if previous_row is None:
+                    # This means our results array is missing one value for the first row, which is
+                    # not included in the diff computation.
+                    # We need to add False for the first row of results, since it won't fail
+                    # the test.
+                    first_row = np.zeros(results_array[0].size, dtype=bool)
+                    results_array = np.insert(results_array, 0, first_row, axis=axis)
 
         return results_array
 
 
-# class CheckMonotonic(QCOperator):
-#     def __init__(self, tsds: TimeSeriesDataset, params: Dict):
-#         super().__init__(tsds, params)
-#         direction = params.get('direction', 'increasing')
-#         self.increasing = False
-#         if direction == 'increasing':
-#             self.increasing = True
-#         self.interval = params.get('interval', None)
-#         self.interval = abs(self.interval) # make sure it's a positive number
-#
-#     def run(self, variable_name: str, coordinates: List[int], value: Any):
-#
-#         # If current value is missing, skip this test
-#         if not self.tsds.is_missing(variable_name, value):
-#             # Get the axis to navigate on - by default we will use axis 0 (i.e., x in x,y,z)
-#             # TODO: the axis dimension for this check should be overridable in the config
-#             axis = 0
-#
-#             # Get the previous value
-#             prev_value = self.tsds.get_previous_value(variable_name, coordinates, axis)
-#
-#             # If there is no previous value or previous value is missing, skip this test
-#             # TODO: do we need to navigate backward until we find a non-missing value?
-#             # Not sure what the typical logic is for this type of function
-#             if prev_value is not None and not self.tsds.is_missing(variable_name, prev_value):
-#
-#                 # If this variable is datetime64, then convert the value to the timestamp
-#                 # in order to do this check.
-#                 if type(value) == np.datetime64:
-#                     value = TimeSeriesDataset.get_timestamp(value)
-#                     prev_value = TimeSeriesDataset.get_timestamp(prev_value)
-#
-#                 if self.increasing:
-#                     delta = value - prev_value
-#                 else:
-#                     delta = prev_value - value
-#
-#                 if self.interval and delta != self.interval:
-#                     return False
-#
-#                 elif not self.interval and delta <= 0:
-#                     return False
-#
-#         return True
+class CheckMonotonic(QCOperator):
 
+    def run(self, variable_name: str) -> Optional[np.ndarray]:
+
+        results_array = None
+        # We need to get the dim to diff on from the parameters
+        # If dim is not specified, then we use the first dim for the variable
+        dim = self.params.get('dim', None)
+
+        if dim is None and len(self.ds[variable_name].dims) > 0:
+            dim = self.ds[variable_name].dims[0]
+
+        if dim is not None:
+            # If previous data exists, then we must add the last row of
+            # previous data as the first row of the variable's data array.
+            # This is so that the diff function can compare the first value
+            # of the file to make sure it is consistent with the previous file.
+
+            # convert to np array
+            variable_data = self.ds[variable_name].data
+            axis = self.ds[variable_name].get_axis_num(dim)
+            previous_row = None
+
+            # Load the previous row from the other dataset
+            if self.previous_data is not None:
+                previous_variable_data = self.previous_data.get(variable_name, None)
+                if previous_variable_data is not None:
+                    # convert to np array
+                    previous_variable_data = previous_variable_data.data
+
+                    # Get the last value from the first axis
+                    previous_row = previous_variable_data[-1]
+
+                    # Insert that value as the first value of the first axis
+                    variable_data = np.insert(variable_data, 0, previous_row, axis=axis)
+
+            # If the variable is a time variable, then we convert to nanoseconds before doing our check
+            if self.ds[variable_name].values.dtype.type == np.datetime64:
+                variable_data = DSUtil.datetime64_to_timestamp(variable_data)
+
+            # Compute the difference between each two numbers and check if they are either all
+            # increasing or all decreasing
+            diff = np.diff(variable_data, axis=axis)
+            is_monotonic = np.all(diff > 0) | np.all(diff < 0) # this returns a scalar
+
+            # Create a results array, with all values set to the results of the is_monotonic check
+            results_array = np.full(variable_data.shape, not is_monotonic, dtype=bool)
+
+        return results_array
 
 
 # TODO: Other tests we might implement
 # check_outlier(std_dev)
+
 
 
 

@@ -1,37 +1,22 @@
-import os
 import abc
+import os
 import shutil
 import tempfile
-import zipfile
-import tarfile
-import datetime
-import boto3
-import xarray as xr
-from typing import List, Dict
-
-
-class LocalTempFile:
-    """-------------------------------------------------------------------
-    TemporaryFile is a context manager wrapper class for a temp file on
-    the local filesystem.  It will ensure that the file is deleted when
-    it goes out of scope.
-    -------------------------------------------------------------------"""
-    def __init__(self, filepath: str):
-        self.filepath = filepath
-
-    def __enter__(self):
-        return self.filepath
-
-    def __exit__(self, type, value, traceback):
-        os.remove(self.filepath)
+from datetime import datetime
+from typing import List, Union
 
 
 class DatastreamStorage(abc.ABC):
 
+    class FILE_TYPE():
+        NETCDF = 1
+        PLOTS = 2
+        RAW = 3
+
     @property
-    def _tmp(self):
+    def tmp(self):
         """-------------------------------------------------------------------
-        Each subclass should define the _tmp property, which provides
+        Each subclass should define the tmp property, which provides
         access to a TemporaryStorage object that is used to efficiently
         handle reading writing temporary files used during the processing
         pipeline.  Is is not intended to be used outside of the pipeline.
@@ -39,9 +24,39 @@ class DatastreamStorage(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fetch(self, datastream_name: str, start_time: str, end_time: str, local_path: str = None) -> List[str]:
+    def find(self, datastream_name: str, start_time: str, end_time: str,
+             filetype: int = None) -> List[str]:
         """-------------------------------------------------------------------
-        Fetches a file from the datastream store using the datastream_name, 
+        Finds all files of the given type from the datastream store with the
+        given datastream_name and timestamps from start_time (inclusive) up to
+        end_time (exclusive).  Returns a list of paths to files that match the
+        criteria.
+
+        Args:
+            datastream_name (str):  The datastream_name as defined by
+                                    MHKiT-Cloud Data Standards.
+            start_time (str):   The start time or date to start searching for
+                                data (inclusive). Should be like "20210106" to
+                                search for data beginning on or after
+                                January 6th, 2021.
+            end_time (str): The end time or date to stop searching for data
+                            (exclusive). Should be like "20210108" to search
+                            for data ending before January 8th, 2021.
+
+            filetype (int): A file type from the DatastreamStorage.FILE_TYPE
+                            list.  If no type is specified, all files will
+                            be returned.
+
+        Returns:
+            List[str]:  A list of paths in datastream storage
+        -------------------------------------------------------------------"""
+        return
+
+    @abc.abstractmethod
+    def fetch(self, datastream_name: str, start_time: str, end_time: str,
+              local_path: str = None, filetype: int = None, disposable=True) -> List[str]:
+        """-------------------------------------------------------------------
+        Fetches files from the datastream store using the datastream_name,
         start_time, and end_time to specify the file(s) to retrieve. If the 
         local path is not specified, it is up to the subclass to determine
         where to put the retrieved file(s).
@@ -56,12 +71,19 @@ class DatastreamStorage(abc.ABC):
             end_time (str): The end time or date to stop searching for data
                             (exclusive). Should be like "20210108" to search
                             for data ending before January 8th, 2021.
-            local_path (str):   The path to the directory where the data 
-                                should be stored. 
+            local_path (str):   The path to the directory where the data
+                                should be stored.
+            filetype (int):   A file type from the DatastreamStorage.FILE_TYPE
+                              list.  If no type is specified, all files will
+                              be returned.
+            disposable (str):   If True, this method will return the results
+                                wrapped in a context manager so that the
+                                fetched files will be automatically deleted
+                                when they go out of scope.
 
         Returns:
-            List[str]:  A list of paths where the retrieved files were stored
-                        in local storage.  
+            List[str] | DisposableStorageTempFileList:  A list of paths where
+                                the retrieved files were stored in local storage.
         -------------------------------------------------------------------"""
         return
     
@@ -83,9 +105,10 @@ class DatastreamStorage(abc.ABC):
         return
 
     @abc.abstractmethod
-    def exists(self, datastream_name: str, start_time: str, end_time: str) -> bool:
+    def exists(self, datastream_name: str, start_time: str, end_time: str,
+               filetype: int = None) -> bool:
         """-------------------------------------------------------------------
-        Checks if data exists in the datastream store for the provided 
+        Checks if any data exists in the datastream store for the provided
         datastream and time range.
 
         Args:
@@ -98,6 +121,9 @@ class DatastreamStorage(abc.ABC):
             end_time (str): The end time or date to stop searching for data
                             (exclusive). Should be like "20210108" to search
                             for data ending before January 8th, 2021.
+            filetype (int):  A file type from the DatastreamStorage.FILE_TYPE
+                             list.  If no type is specified, all files will
+                             be returned.
 
         Returns:
             bool: True if data exists, False otherwise.
@@ -105,7 +131,8 @@ class DatastreamStorage(abc.ABC):
         return
 
     @abc.abstractmethod
-    def delete(self, datastream_name: str, start_time: str, end_time: str) -> None:
+    def delete(self, datastream_name: str, start_time: str, end_time: str,
+               filetype: int = None) -> None:
         """-------------------------------------------------------------------
         Deletes datastream data in the datastream store in between the 
         specified time range. 
@@ -120,8 +147,117 @@ class DatastreamStorage(abc.ABC):
             end_time (str): The end time or date to stop searching for data
                             (exclusive). Should be like "20210108" to search
                             for data ending before January 8th, 2021.
+            filetype (int):  A file type from the DatastreamStorage.FILE_TYPE
+                             list.  If no type is specified, all files will
+                             be returned.
         -------------------------------------------------------------------"""
         return
+
+
+class DisposableLocalTempFile:
+    """-------------------------------------------------------------------
+    DisposableLocalTempFile is a context manager wrapper class for a temp file on
+    the LOCAL FILESYSTEM.  It will ensure that the file is deleted when
+    it goes out of scope.
+    -------------------------------------------------------------------"""
+    def __init__(self, filepath: str):
+        self.filepath = filepath
+
+    def __enter__(self):
+        return self.filepath
+
+    def __exit__(self, type, value, traceback):
+
+        # We only clean up the file if an exception was not thrown
+        if type is None:
+            if os.path.isfile(self.file_path):
+                os.remove(self.file_path)
+
+            elif os.path.isdir(self.file_path):
+                # remove directory and all its children
+                shutil.rmtree(self.file_path)
+
+
+class DisposableLocalTempFileList (list):
+    """-------------------------------------------------------------------
+    Provides a context manager wrapper class for a list of
+    temp files on the LOCAL FILESYSTEM.  It will ensure that the files
+    are deleted when the list goes out of scope.
+    -------------------------------------------------------------------"""
+
+    def __init__(self, filepath_list: List[str], delete_on_exception=False):
+        """-------------------------------------------------------------------
+        Args:
+            filepath_list (List[str]):   A list of paths to files in temporary
+                                         storage.
+
+            delete_on_exception:        The default behavior is to not remove
+                                        the files on exit if an exception
+                                        occurs.  However, users can override this
+                                        setting to force files to be cleaned up
+                                        no matter if an exception is thrown or
+                                        not.
+        -------------------------------------------------------------------"""
+        self.filepath_list = filepath_list
+        self.delete_on_exception = delete_on_exception
+
+    def __enter__(self):
+        return self.filepath_list
+
+    def __exit__(self, type, value, traceback):
+
+        # We only clean up the files if an exception was not thrown
+        if type is None or self.delete_on_exception:
+            for filepath in self.filepath_list:
+                if os.path.isfile(filepath):
+                    os.remove(filepath)
+
+                elif os.path.isdir(filepath):
+                    # remove directory and all its children
+                    shutil.rmtree(filepath)
+
+
+class DisposableStorageTempFileList (list):
+    """-------------------------------------------------------------------
+    Provides is a context manager wrapper class for a list of
+    temp files on the STORAGE FILESYSTEM.  It will ensure that the files
+    are deleted when the list goes out of scope.
+    -------------------------------------------------------------------"""
+
+    def __init__(self, filepath_list: List[str], storage, delete_on_exception=False):
+        """-------------------------------------------------------------------
+        Args:
+            filepath_list (List[str]):   A list of paths to files in temporary
+                                         storage.
+
+            storage (TemporaryStorage): The temporary storage service used
+                                        to clean up temporary files.
+
+            delete_on_exception:        The default behavior is to not remove
+                                        the files on exit if an exception
+                                        occurs.  However, users can override this
+                                        setting to force files to be cleaned up
+                                        no matter if an exception is thrown or
+                                        not.
+        -------------------------------------------------------------------"""
+        self.filepath_list = filepath_list
+
+        # Make sure that we have passed the right class
+        if isinstance(storage, DatastreamStorage):
+            storage = storage.tmp
+        self.tmp_storage = storage
+        assert isinstance(self.tmp_storage, TemporaryStorage)
+        self.delete_on_exception = delete_on_exception
+
+    def __enter__(self):
+        return self.filepath_list
+
+    def __exit__(self, type, value, traceback):
+
+        # We only clean up the files if an exception was not thrown
+        if type is None or self.delete_on_exception:
+            for filepath in self.filepath_list:
+                self.tmp_storage.delete(filepath)
 
 
 class TemporaryStorage(abc.ABC):
@@ -139,42 +275,97 @@ class TemporaryStorage(abc.ABC):
                                          DatastreamStorage
         -------------------------------------------------------------------"""
         self.datastream_storage = storage
+        self._local_temp_folder = tempfile.mkdtemp()
 
     @property
-    def local_temp_folder(self):
+    def local_temp_folder(self) -> str:
         """-------------------------------------------------------------------
         Default method to get a local temporary folder for use when retrieving
         files from temporary storage.  This method should work for all
         filesystems, but can be overridden if needed by subclasses.
 
         Returns:
-            List[str]:         A list of paths unique to the storage
-                               filesystem where the files were extracted.
+            str:   Path to local temp folder
         -------------------------------------------------------------------"""
-        if self._local_temp_folder is None:
-            tempfile.mkdtemp()
-
         return self._local_temp_folder
 
-    @abc.abstractmethod
-    def unzip(self, file_path: str) -> List:
+    def get_temp_filepath(self, filename: str = None, disposable=True) -> Union[DisposableLocalTempFile, str]:
         """-------------------------------------------------------------------
-        Extract a file into a temp directory in the same filesystem as
-        the storage.  This is for efficient processing when working in a
-        cloud environment.
+        Construct a filepath for a temporary file that will be located in the
+        storage-approved local temp folder.  If disposable=True, it will be
+        wrapped in a context manager so that the temp file will be deleted
+        when it goes out of scope.
+
+        Args:
+            filename (str):   The filename to use for the temp file.  If no
+                              filename is provided, one will be created.
+
+            disposable (bool): If True (default) it will return the path wrapped
+                               in a context manager so it will be automatically
+                               be cleaned up when it goes out of scope.
+
+        Returns:
+            DisposableLocalTempFile | str:   Path to the local file.  If disposable=True,
+                                   it will be wrapped in a context mgr.
+        -------------------------------------------------------------------"""
+        if filename is None:
+            now = datetime.now()
+            filename = now.strftime("%Y-%m-%d.%H%M%S.%f")
+
+        filepath = os.path.join(self.local_temp_folder, filename)
+        if disposable:
+            return DisposableLocalTempFile(filepath)
+        else:
+            return filepath
+
+    def create_temp_dir(self, disposable=False):
+        """-------------------------------------------------------------------
+        Create a new, temporary directory under the local tmp area managed by
+        TemporaryStorage
+        Args:
+            disposable (bool): If True, it will return the path wrapped
+                               in a context manager so it will be automatically
+                               be cleaned up when it goes out of scope.
+
+        Returns:
+            DisposableLocalTempFile | str:   Path to the local dir.  If disposable=True,
+                                   it will be wrapped in a context mgr.
+        -------------------------------------------------------------------"""
+        temp_dir = self.get_temp_filepath(disposable=False)
+
+        # make sure the directory exists
+        os.makedirs(temp_dir, exist_ok=False)
+        if disposable:
+            return DisposableLocalTempFile(temp_dir)
+
+        return temp_dir
+
+    @abc.abstractmethod
+    def extract_files(self, file_path: str) -> DisposableStorageTempFileList:
+        """-------------------------------------------------------------------
+        If provided a path to an archive file, this function will extract the
+        archive into a temp directory IN THE SAME FILESYSTEM AS THE STORAGE.
+        This means, for example that if storage was in an s3 bucket ,then
+        the files would be extracted to a temp dir in that s3 bucket.  This
+        is to prevent local disk limitations when running via Lambda.
+
+        If the file is not an archive, then the same file will be returned.
+
+        This method supports zip, tar, and tar.g file formats.
 
         Args:
             file_path (str):   The path of a file located in the same
                                filesystem as the storage.
 
         Returns:
-            List[str]:         A list of paths unique to the storage
-                               filesystem where the files were extracted.
+            DisposableStorageTempFileList:  A list of paths to the files that were extracted.
+                                  Files will be located in the temp area of the
+                                  storage filesystem.
         -------------------------------------------------------------------"""
         pass
 
     @abc.abstractmethod
-    def fetch(self, file_path: str) -> LocalTempFile:
+    def fetch(self, file_path: str) -> DisposableLocalTempFile:
         """-------------------------------------------------------------------
         Fetch a file from temp storage to a local temp folder
 
@@ -183,12 +374,12 @@ class TemporaryStorage(abc.ABC):
                                filesystem as the storage.
 
         Returns:
-            LocalTempFile:     The local path to the file
+            DisposableLocalTempFile:     The local path to the file
         -------------------------------------------------------------------"""
         pass
 
     @abc.abstractmethod
-    def fetch_previous_file(self, datastream_name: str, start_date: str, start_time: str) -> LocalTempFile:
+    def fetch_previous_file(self, datastream_name: str, start_date: str, start_time: str) -> DisposableLocalTempFile:
         """-------------------------------------------------------------------
         Look in DatastreamStorage for the first file before the given date.
 
@@ -198,9 +389,19 @@ class TemporaryStorage(abc.ABC):
             start_time (str):
 
         Returns:
-            LocalTempFile:          The local path to the file
+            DisposableLocalTempFile:          The local path to the file
         -------------------------------------------------------------------"""
         pass
 
+    @abc.abstractmethod
+    def delete(self, file_path: str) -> None:
+        """-------------------------------------------------------------------
+        Remove a file from storage temp area if the file exists.  If the file
+        does not exists, this method will NOT raise an exception.
 
+        Args:
+            file_path (str):   The path of a file located in the same
+                               filesystem as the storage.
+        -------------------------------------------------------------------"""
+        pass
 
