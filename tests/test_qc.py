@@ -75,7 +75,7 @@ class TestQC(TestCase):
 
     def test_qc_tests(self):
         # First load the config with the qc test definitions
-        config = Config.load(os.path.join(self.basedir, 'data/qc.yml'))
+        config = Config.load(os.path.join(self.basedir, 'data/qc/qc.yml'))
 
         # Now apply the qc tests
         QC.apply_tests(self.ds, config, None)

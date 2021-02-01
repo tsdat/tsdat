@@ -61,7 +61,9 @@ class CheckMissing(QCOperator):
     def run(self, variable_name: str) -> Optional[np.ndarray]:
         """-------------------------------------------------------------------
         Checks if any values are assigned to _FillValue or 'NaN' (for non-time
-        variables) or checks if values are assigned to 'NaT' (for time variables)
+        variables) or checks if values are assigned to 'NaT' (for time variables).
+        Also, for non-time variables, checks if values are above or below
+        valid_range, as this is considered missing as well.
         -------------------------------------------------------------------"""
 
         # If this is a time variable, we check for 'NaT'
@@ -86,6 +88,9 @@ class CheckMissing(QCOperator):
             # NaN
             if self.ds[variable_name].values.dtype.type in (type(0.0), np.float16, np.float32, np.float64):
                 results_array = results_array | np.isnan(self.ds[variable_name].values)
+
+            # TODO: we also need to check if any values are outside valid range
+            # TODO: in the config file, we need a replace with missing handler for this test
 
         return results_array
 

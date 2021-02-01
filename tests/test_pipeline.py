@@ -1,36 +1,55 @@
 import os
 import shutil
 import unittest
-from tsdat.config import Config
-from tsdat.io.storage import FilesystemStorage
-from tsdat.pipeline import IngestPipeline
 
-def copy_raw(raw_path):
-    """-----------------------------------------------------------------------
-    Copies the raw file into its parent's 'data' directory and returns the new
-    path. This is done so that the IngestPipeline can safely move/delete the 
-    file provided to its constructor without harming future test cases.
-    -----------------------------------------------------------------------"""
-    parent_dir, basename = os.path.split(raw_path)
-    new_path = os.path.join(parent_dir, "data", basename)
-    os.makedirs(os.path.join(parent_dir, "data"), exist_ok=True)
-    shutil.copy(raw_path, new_path)
-    return new_path
+from tsdat.config import Config
+from tsdat.io import FilesystemStorage
+from tsdat.pipeline import IngestPipeline
 
 
 class TestIngestPipeline(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.basedir = os.path.abspath(os.path.dirname(__file__))
+        testdir = os.path.abspath(os.path.dirname(__file__))
+        self.basedir = os.path.join(testdir, 'data/pipeline')
+
+        # Root folder of datastream storage
+        self.root = os.path.join(testdir, 'data/storage/root')
+        os.makedirs(self.root, exist_ok=True)
+
+        # Input directory where incoming raw files will be dropped
+        self.raw = os.path.join(testdir, 'data/storage/raw')
+        os.makedirs(self.raw, exist_ok=True)
+
+
+    def tearDown(self) -> None:
+        super().tearDown()
+
+        # Clean up temporary folders
+        shutil.rmtree(self.root)
+        shutil.rmtree(self.raw)
+
+    def get_raw_file(self, raw_filename):
+        """-----------------------------------------------------------------------
+        Copies the raw file into the temporary raw folder representing the pipeline
+        input folder.  We need to do this because the pipeline will remove the
+        processed file from the input folder if it completes with no error.
+        -----------------------------------------------------------------------"""
+        original_raw_file = os.path.join(self.basedir, raw_filename)
+        temp_raw_file = os.path.join(self.raw, raw_filename)
+        shutil.copy(original_raw_file, temp_raw_file)
+        return temp_raw_file
 
     def test_ingest_pipeline(self):
-        raw_file = os.path.join(self.basedir, "data/test1/buoy.z05.00.20200930.000000.temperature.csv")
-        test_data = copy_raw(raw_file)
+        raw_file = self.get_raw_file('buoy.z05.00.20200930.000000.temperature.csv')
+        config_file = os.path.join(self.basedir, 'ingest_pipeline.yml')
 
-        config: Config = Config.load(os.path.join(self.basedir, "data/test1/ingest_pipeline.yml"))
-        storage: FilesystemStorage = FilesystemStorage(root=os.path.join(self.basedir, "data/test1/outputs"))
-        ingest: IngestPipeline = IngestPipeline(config, storage)
-        ingest.run(test_data)
+        storage: FilesystemStorage = FilesystemStorage(self.root)
+        config: Config = Config.load(config_file)
+
+        pipeline: IngestPipeline = IngestPipeline(config, storage)
+        pipeline.run(raw_file)
+
 
 if __name__ == '__main__':
     unittest.main()
