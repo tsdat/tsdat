@@ -27,7 +27,7 @@ class TestStandardize(unittest.TestCase):
         pipeline = IngestPipeline(config=config, storage=None)
 
         # Now standardize our test data
-        self.std_ds = pipeline.standardize(self.raw_ds)
+        self.std_ds = pipeline.standardize_dataset(self.raw_ds, {"buoy.z05.00.20200925.000000.gill.csv": None})
 
     def test_time_conversion(self):
         # Validate time conversion from raw
