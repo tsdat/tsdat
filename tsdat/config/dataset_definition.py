@@ -1,4 +1,5 @@
 import act
+import datetime
 import numpy as np
 import xarray as xr
 from typing import Dict, List, Tuple
@@ -7,38 +8,14 @@ from .attribute_defintion import AttributeDefinition
 from .dimension_definition import DimensionDefinition
 from .variable_definition import VariableDefinition
 
-# TODO: Add required attributes that can be autofilled
-# TODO: Ensure required attributes are present
-# TODO: Sanity checks on coordinate variable definitions
-#       Ex: if dimension has no coordinate variable, then log a warning message
-#       If no input defined, log a message that the variable should be user-filled/ calculated
-#       If no converter...
-#       Etc
 
 class DatasetDefinition:
     def __init__(self, dictionary: Dict):
-        self._parse_required_attributes(dictionary.get(Keys.ATTRIBUTES))
         self.attrs = self._parse_attributes(dictionary)
+        self.attrs = self._add_required_attributes_and_handles(self.attrs, dictionary.get(Keys.ATTRIBUTES))
         self.dims = self._parse_dimensions(dictionary)
         self.vars = self._parse_variables(dictionary, self.dims)
         self.coords, self.vars = self._parse_coordinates(self.vars)
-
-    def _parse_required_attributes(self, dictionary: Dict):
-        """-------------------------------------------------------------------
-        Creates handles for several required attributes that must be set 
-        before runtime.
-
-        Args:
-            dictionary (Dict): The dictionary containing global attributes.
-        -------------------------------------------------------------------"""
-        self.title: str             = dictionary.get("title")
-        self.description: str       = dictionary.get("description")
-        self.conventions: str       = dictionary.get("conventions")
-        self.code_url: str          = dictionary.get("code_url")
-        self.input_files: List[str] = dictionary.get("input_files")
-        self.location_id: str       = dictionary.get("location_id")
-        self.datastream: str        = dictionary.get("datastream")
-        self.data_level: str        = dictionary.get("data_level")
 
     def _parse_attributes(self, dictionary: Dict) -> Dict[str, AttributeDefinition]:
         attributes: Dict[str, AttributeDefinition] = {}
@@ -46,6 +23,31 @@ class DatasetDefinition:
             attributes[attr_name] = AttributeDefinition(attr_name, attr_value)
         return attributes
     
+    def _add_required_attributes_and_handles(self, attrs: Dict[str, AttributeDefinition], dictionary: Dict) -> Dict[str, AttributeDefinition]:
+        """-------------------------------------------------------------------
+        Creates handles for several required attributes that must be set 
+        before runtime.
+
+        Args:
+            dictionary (Dict): The dictionary containing global attributes.
+        -------------------------------------------------------------------"""
+        # Create handles for required attributes. Throw an Error if attribute
+        # is not present
+        self.title: str             = dictionary.get("title")
+        self.description: str       = dictionary.get("description"),
+        self.conventions: str       = dictionary.get("conventions")
+        self.code_url: str          = dictionary.get("code_url") # TODO: Should this be optional?
+        self.location_id: str       = dictionary.get("location_id")
+        self.instrument_id: str     = dictionary.get("instrument_id")
+        self.data_level: str        = dictionary.get("data_level")
+
+        # Generate attributes that can be generated now -- history and datastream
+        # Create handles for each and add to attrs dictionary
+        attrs["history"]    = self._generate_history(dictionary)
+        attrs["datastream"] = self._generate_datastream(dictionary)
+        self.history        = attrs["history"].value
+        self.datastream     = attrs["datastream"].value
+
     def _parse_dimensions(self, dictionary: Dict) -> Dict[str, DimensionDefinition]:
         dimensions: Dict[str, DimensionDefinition] = {}
         for dim_name, dim_dict in dictionary[Keys.DIMENSIONS].items():
@@ -74,15 +76,34 @@ class DatasetDefinition:
         coords = {name: var for name, var in vars.items() if var.is_coordinate()}
         vars = {name: var for name, var in vars.items() if not var.is_coordinate()}
         return coords, vars
+
+    def _generate_datastream(self, dictionary: Dict) -> AttributeDefinition:
+        loc_id      = dictionary.get("location_id")
+        instr_id    = dictionary.get("instrument_id")
+        qualifier   = dictionary.get("qualifier", "")
+        temporal    = dictionary.get("temporal", "")
+        data_level  = dictionary.get("data_level")
+        datastream_name = f"{loc_id}.{instr_id}{qualifier}{temporal}.{data_level}"
+        return AttributeDefinition("datastream", datastream_name)
+
+    def _generate_history(self, dictionary: Dict) -> AttributeDefinition:
+        # Should generate a string like: "Ran by user <USER> on machine <MACHINE> at <DATE>"
+        # TODO: Add user
+        # TODO: Add machine, if possible
+        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return AttributeDefinition("history", f"Ran at {date}")
+    
+    def add_input_files_attr(self, input_files: List[str]):
+        if input_files is None:
+            return
+        _input_files = ", ".join(input_files)
+        self.attrs["input_files"] = AttributeDefinition("input_files", _input_files)
     
     def get_variable_names(self) -> List[str]:
         return list(self.variables.keys())
 
     def get_variable(self, variable_name: str) -> VariableDefinition:
         return self.variables.get(variable_name, None)
-
-    def get_variables(self, variable_names: List[str]) -> List[VariableDefinition]:
-        return [self.get_variable(var_name) for var_name in variable_names]
     
     def get_coordinates(self, variable: VariableDefinition) -> List[VariableDefinition]:
         """-------------------------------------------------------------------
@@ -98,7 +119,7 @@ class DatasetDefinition:
             List[VariableDefinition]:   A list of VariableDefinition 
                                         coordinate variables that dimension
                                         the given VariableDefinition.
-        """
+        -------------------------------------------------------------------"""
         coordinate_names = variable.get_coordinate_names()
         return [self.coords.get(coord_name) for coord_name in coordinate_names]
 
@@ -127,14 +148,15 @@ class DatasetDefinition:
         # initialize the data in the VariableDefinition.
         if variable.is_derived():
             if variable.is_coordinate():
+                # TODO: Warning instead of exception, skip initialization
                 raise Exception("Error: coordinate variable {variable.name} must not be empty")
             shape = self.get_variable_shape(variable)
             _FillValue = variable.get_FillValue()
             dtype = variable.get_data_type()
             variable.data = np.full(shape, _FillValue, dtype=dtype)
         
-        # If variable has input and is in the dataset, perform sanity checks
-        # then convert units and add it to the VariableDefinition
+        # If variable has input and is in the dataset, then convert units and 
+        # add it to the VariableDefinition
         if variable.has_input():
             input_name = variable.get_input_name()
             data = dataset[input_name].values
