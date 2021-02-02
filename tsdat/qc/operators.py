@@ -81,6 +81,10 @@ class CheckMissing(QCOperator):
             # Make sure fill value has same data type as the variable
             fill_value = np.array(fill_value, dtype=self.ds[variable_name].values.dtype.type)
 
+            # First replace any values that are outside valid_range to be fill_value so
+            # it will get flagged as missing
+            self._replace_invalid_values(fill_value, variable_name)
+
             # First check if any values are assigned to _FillValue
             results_array = np.equal(self.ds[variable_name].values, fill_value)
 
@@ -93,6 +97,16 @@ class CheckMissing(QCOperator):
             # TODO: in the config file, we need a replace with missing handler for this test
 
         return results_array
+
+    def _replace_invalid_values(self, fill_value, variable_name: str):
+        valid_min = DSUtil.get_valid_min(self.ds, variable_name)
+        valid_max = DSUtil.get_valid_max(self.ds, variable_name)
+
+        if valid_min is not None and valid_max is not None:
+            values = self.ds[variable_name].values
+            keep_array = np.logical_not( (values < valid_min) | (values > valid_max))
+            replaced_values = np.where(keep_array, values, fill_value)
+            self.ds[variable_name].data = replaced_values
 
 
 class CheckFailMin(QCOperator):

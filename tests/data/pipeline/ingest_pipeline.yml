@@ -2,7 +2,8 @@
 dataset_definition:  # Describes the dataset that will be produced
   attributes:
     title: Buoy Dataset for Buoy \#120
-    description: Example ingest dataset used for demonstration purposes.
+    description: "Example ingest dataset used for demonstration purposes.
+      Split onto two lines"
     conventions: MHKiT-Cloud Data Standards v. 1.0
     doi: 10.21947/1671051
     institution: PNNL
@@ -101,6 +102,10 @@ qc_tests:  # Define QC tests for non-coordinate variables
           - ALL  # keyword to apply test to all variables
         operator:
           classname: tsdat.qc.operators.CheckMissing
+        error_handlers:
+          # Replace any NaNs with _FillValue
+          replace_with_fill_value:
+            classname: tsdat.qc.error_handlers.RemoveFailedValues
 
     fail_min:
         qc_bit: 2

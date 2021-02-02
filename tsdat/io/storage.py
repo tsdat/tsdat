@@ -36,11 +36,11 @@ class DatastreamStorage(abc.ABC):
             datastream_name (str):  The datastream_name as defined by
                                     MHKiT-Cloud Data Standards.
             start_time (str):   The start time or date to start searching for
-                                data (inclusive). Should be like "20210106" to
+                                data (inclusive). Should be like "20210106.000000" to
                                 search for data beginning on or after
                                 January 6th, 2021.
             end_time (str): The end time or date to stop searching for data
-                            (exclusive). Should be like "20210108" to search
+                            (exclusive). Should be like "20210108.000000" to search
                             for data ending before January 8th, 2021.
 
             filetype (int): A file type from the DatastreamStorage.FILE_TYPE
@@ -48,7 +48,7 @@ class DatastreamStorage(abc.ABC):
                             be returned.
 
         Returns:
-            List[str]:  A list of paths in datastream storage
+            List[str]:  A list of paths in datastream storage in ascending order
         -------------------------------------------------------------------"""
         return
 
@@ -169,13 +169,13 @@ class DisposableLocalTempFile:
     def __exit__(self, type, value, traceback):
 
         # We only clean up the file if an exception was not thrown
-        if type is None:
-            if os.path.isfile(self.file_path):
-                os.remove(self.file_path)
+        if type is None and self.filepath is not None:
+            if os.path.isfile(self.filepath):
+                os.remove(self.filepath)
 
-            elif os.path.isdir(self.file_path):
+            elif os.path.isdir(self.filepath):
                 # remove directory and all its children
-                shutil.rmtree(self.file_path)
+                shutil.rmtree(self.filepath)
 
 
 class DisposableLocalTempFileList (list):
@@ -379,13 +379,12 @@ class TemporaryStorage(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def fetch_previous_file(self, datastream_name: str, start_date: str, start_time: str) -> DisposableLocalTempFile:
+    def fetch_previous_file(self, datastream_name: str, start_time) -> DisposableLocalTempFile:
         """-------------------------------------------------------------------
         Look in DatastreamStorage for the first file before the given date.
 
         Args:
             datastream_name (str):
-            start_date (str):
             start_time (str):
 
         Returns:

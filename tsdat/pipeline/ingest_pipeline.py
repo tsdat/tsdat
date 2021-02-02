@@ -98,8 +98,8 @@ class IngestPipeline(Pipeline):
             xr.Dataset: The merged dataset.
         -------------------------------------------------------------------"""
         merged_dataset = xr.Dataset()
-        for ds in dataset_mapping.values:
-            merged_dataset.merge(ds, inplace=True)
+        for ds in dataset_mapping.values():
+            merged_dataset = merged_dataset.merge(ds)
         return merged_dataset
 
     def apply_corrections(self, dataset: xr.Dataset) -> xr.Dataset:
@@ -177,17 +177,15 @@ class IngestPipeline(Pipeline):
             xr.Dataset: The previous dataset from the DatastreamStorage if it
                         exists, else None.
         -------------------------------------------------------------------"""
-        dataset = None
+        prev_dataset = None
         start_date, start_time = DSUtil.get_start_time(dataset)
         datastream_name = DSUtil.get_datastream_name(dataset, self.config)
 
-        with self.storage.tmp.fetch_previous_file(datastream_name, start_date, start_time) as netcdf_file:
-
-            dataset = None
+        with self.storage.tmp.fetch_previous_file(datastream_name, f'{start_date}.{start_time}') as netcdf_file:
             if netcdf_file:
-                dataset = FileHandler.read(netcdf_file, config=self.config)
+                prev_dataset = FileHandler.read(netcdf_file, config=self.config)
 
-        return dataset
+        return prev_dataset
     
     def store_dataset(self, dataset: xr.Dataset) -> None:
         """-------------------------------------------------------------------
@@ -198,5 +196,6 @@ class IngestPipeline(Pipeline):
             dataset (xr.Dataset): The dataset to store.
         -------------------------------------------------------------------"""
         with self.storage.tmp.get_temp_filepath(DSUtil.get_dataset_filename(dataset)) as tmp_path:
-            dataset.to_netcdf(tmp_path)
+            FileHandler.write(dataset, tmp_path)
+            #dataset.to_netcdf(tmp_path)
             self.storage.save(tmp_path)

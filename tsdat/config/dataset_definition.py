@@ -34,7 +34,7 @@ class DatasetDefinition:
         # Create handles for required attributes. Throw an Error if attribute
         # is not present
         self.title: str             = dictionary.get("title")
-        self.description: str       = dictionary.get("description"),
+        self.description: str       = dictionary.get("description")
         self.conventions: str       = dictionary.get("conventions")
         self.code_url: str          = dictionary.get("code_url") # TODO: Should this be optional?
         self.location_id: str       = dictionary.get("location_id")
@@ -47,6 +47,8 @@ class DatasetDefinition:
         attrs["datastream"] = self._generate_datastream(dictionary)
         self.history        = attrs["history"].value
         self.datastream     = attrs["datastream"].value
+
+        return attrs
 
     def _parse_dimensions(self, dictionary: Dict) -> Dict[str, DimensionDefinition]:
         dimensions: Dict[str, DimensionDefinition] = {}
@@ -100,10 +102,13 @@ class DatasetDefinition:
         self.attrs["input_files"] = AttributeDefinition("input_files", _input_files)
     
     def get_variable_names(self) -> List[str]:
-        return list(self.variables.keys())
+        return list(self.vars.keys())
 
     def get_variable(self, variable_name: str) -> VariableDefinition:
-        return self.variables.get(variable_name, None)
+        var = self.vars.get(variable_name, None)
+        if not var:
+            var = self.coords.get(variable_name, None)
+        return var
     
     def get_coordinates(self, variable: VariableDefinition) -> List[VariableDefinition]:
         """-------------------------------------------------------------------

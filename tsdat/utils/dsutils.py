@@ -89,6 +89,22 @@ class DSUtil:
         return fail_min
 
     @staticmethod
+    def get_valid_max(ds: xr.Dataset, variable_name):
+        valid_max = None
+        valid_range = ds[variable_name].attrs.get(ATTS.VALID_RANGE, None)
+        if valid_range is not None:
+            valid_max = valid_range[-1]
+        return valid_max
+
+    @staticmethod
+    def get_valid_min(ds: xr.Dataset, variable_name):
+        valid_min = None
+        valid_range = ds[variable_name].attrs.get(ATTS.VALID_RANGE, None)
+        if valid_range is not None:
+            valid_min = valid_range[0]
+        return valid_min
+
+    @staticmethod
     def get_fill_value(ds: xr.Dataset, variable_name):
         return ds[variable_name].attrs.get(ATTS.FILL_VALUE, None)
 

@@ -35,6 +35,7 @@ class ATTS(object):
     # Symbolic constants for variable attributes
     UNITS = 'units'
     VALID_DELTA = 'valid_delta'
+    VALID_RANGE = 'valid_range'
     FAIL_RANGE = 'fail_range'
     WARN_RANGE = 'warn_range'
     FILL_VALUE = '_FillValue'

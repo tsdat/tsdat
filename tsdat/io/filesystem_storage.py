@@ -1,4 +1,6 @@
 import os
+import bisect
+import datetime
 import shutil
 import tarfile
 import zipfile
@@ -45,8 +47,23 @@ class FilesystemTemporaryStorage(TemporaryStorage):
     def fetch(self, file_path: str) -> DisposableLocalTempFile:
         return DisposableLocalTempFile(file_path)
 
-    def fetch_previous_file(self, datastream_name: str, start_date: str, start_time: str) -> DisposableLocalTempFile:
-        pass
+    def fetch_previous_file(self, datastream_name: str, start_time: str) -> DisposableLocalTempFile:
+        # fetch files one day previous and one day after start date (since find is exclusive)
+        date = datetime.datetime.strptime(start_time, "%Y%m%d.%H%M%S")
+        prev_date = (date - datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
+        next_date = (date + datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
+        files = self.datastream_storage.find(datastream_name, prev_date, next_date)
+
+        previous_filepath = None
+        if files:
+            i = bisect.bisect_left(files, start_time)
+            if i > 0:
+                previous_filepath = files[i-1]
+
+        if previous_filepath:
+            return self.fetch(previous_filepath)
+
+        return DisposableLocalTempFile(None)
 
     def delete(self, file_path: str) -> None:
         if os.path.isfile(file_path):
@@ -74,6 +91,8 @@ class FilesystemStorage(DatastreamStorage):
 
     def find(self, datastream_name: str, start_time: str, end_time: str,
              filetype: int = None) -> List[str]:
+        # TODO: think about refactoring so that you don't need both start and end time
+        # TODO: if times don't include hours/min/sec, then add .000000 to the string
         dir_to_check = DSUtil.get_datastream_directory(datastream_name=datastream_name, root=self._root)
         storage_paths = []
 
@@ -91,7 +110,7 @@ class FilesystemStorage(DatastreamStorage):
             elif filetype == DatastreamStorage.FILE_TYPE.RAW:
                 storage_paths = list(filter(lambda x: '.raw.' in x, storage_paths))
 
-        return storage_paths
+        return sorted(storage_paths)
 
     def fetch(self, datastream_name: str, start_time: str, end_time: str,
               local_path: str = None,

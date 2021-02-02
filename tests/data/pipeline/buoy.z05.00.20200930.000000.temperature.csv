@@ -1,5 +1,5 @@
 DataTimeStamp(DateTime),ValueAverage(Double),ValueMin(Double),ValueMax(Double),ValueSD(Double)
-2020-09-30 00:00:05,16.211,,,
+2020-09-30 00:00:05,16.211,245.1,,
 2020-09-30 00:10:05,15.772,,,
 2020-09-30 00:20:05,15.234,,,
 2020-09-30 00:30:05,15.062,,,

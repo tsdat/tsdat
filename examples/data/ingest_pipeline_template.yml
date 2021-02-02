@@ -24,15 +24,15 @@ dataset_definition:
 
     # A succinct English language description of what is in the dataset.
     # The value would be similar to a publication title.
-    # Example: “Atmospheric Radiation Measurement (ARM) program Best
-    # Estimate cloud and radiation measurements (ARMBECLDRAD)”
+    # Example: "Atmospheric Radiation Measurement (ARM) program Best
+    # Estimate cloud and radiation measurements (ARMBECLDRAD)"
     title: Buoy Dataset for Buoy \#120
 
     # Longer English language description of the data.
-    # Example: “ARM best estimate hourly averaged QC controlled product,
+    # Example: "ARM best estimate hourly averaged QC controlled product,
     # derived from ARM observational Value-Added Product data: ARSCL,
     # MWRRET, QCRAD, TSI, and satellite; see input_files for the names of
-    # original files used in calculation of this product”
+    # original files used in calculation of this product"
     description: Example ingest dataset used for demonstration purposes.
 
     # The version of the standards document this data conforms to.
@@ -66,7 +66,7 @@ dataset_definition:
     # A label for the location where the data were obtained from
     location_id: humboldt_z05
 
-    # A string consisting of any letters, digits, “-“ or “_” that can
+    # A string consisting of any letters, digits, "-" or "_" that can
     # be used to uniquely identify the instrument used to produce
     # the data.  To prevent confusion with the temporal resolution
     # of the instrument, the instrument identifier must not end
@@ -112,7 +112,7 @@ dataset_definition:
     # The date(s) of the last time the instrument(s) was calibrated.
     #last_calibration_date
 
-    # The expected sampling interval of the instrument (e.g., “400 us”)
+    # The expected sampling interval of the instrument (e.g., "400 us")
     #sampling_interval: 10 min
 
   #-----------------------------------------------------------------
@@ -282,17 +282,17 @@ dataset_definition:
         #valid_range: [-50, 50]
 
         # The maximum allowed difference between any two consecutive values of a variable,
-        # values outside of which should be flagged as “Bad”.
+        # values outside of which should be flagged as "Bad".
         # This attribute is used for the valid_delta QC test.  If not specified, this
         # variable will be omitted from the test.
         #valid_delta: 0.25
 
-        # A two-element array of [min, max] outside of which the data should be flagged as “Bad”.
+        # A two-element array of [min, max] outside of which the data should be flagged as "Bad".
         # This attribute is used for the fail_min and fail_max QC tests.
         # If not specified, this variable will be omitted from these tests.
         #fail_range: [0, 40]
 
-        # A two-element array of [min, max] outside of which the data should be flagged as “Indeterminate”.
+        # A two-element array of [min, max] outside of which the data should be flagged as "Indeterminate".
         # This attribute is used for the warn_min and warn_max QC tests.
         # If not specified, this variable will be omitted from these tests.
         #warn_range: [0, 30]
@@ -431,6 +431,11 @@ qc_tests:
     # behavior.
     operator:
       classname: tsdat.qc.operators.CheckMissing
+
+    error_handlers:
+      # Replace any NaNs with _FillValue
+      replace_with_fill_value:
+        classname: tsdat.qc.error_handlers.RemoveFailedValues
 
   fail_min:
     qc_bit: 2

@@ -39,7 +39,6 @@ class Pipeline(abc.ABC):
             definition.extract_data(variable, dataset)
 
         standardized_dataset = xr.Dataset.from_dict(definition.to_dict())
-        self.validate_dataset(standardized_dataset)
 
         return standardized_dataset
     

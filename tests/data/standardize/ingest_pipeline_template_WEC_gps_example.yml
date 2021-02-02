@@ -1,0 +1,300 @@
+
+dataset_definition:
+  attributes:
+    title: Wave Power device GPS position and movement
+    description: "Wave Power WEC device location, acceleration, heave, and tilt
+      as measured by the MODAQ inertial measurment unit (IMU)"
+
+    conventions: MHKiT-Cloud Data Standards v. 1.0
+    institution: Wave Power
+    code_url: https://github.com/clansing/tsdat/releases/tag/1.0
+    location_id: WETS_30m
+    instrument_id: MODAQ_DMS
+    temporal: 0.02s
+    data_level: 00
+    location_meaning: "WEC is located at the Wave Energy Test Site (WETS) off the
+      Marine Corps Base Hawaii (MCBH) in Oahu, Hawaii."
+    instrument_name: Dynamic Motion Sensor (DMS)
+    sampling_interval: 50 Hz
+
+  dimensions:
+    time:
+        length: unlimited
+
+  variables:
+    time:  # Variable name as it will appear in the processed data
+      dims: [time]
+      type: long
+      input:
+        name: TimeStamp_UTC
+        converter:
+          classname: tsdat.utils.converters.StringTimeConverter
+          parameters:
+            timezone: US/Hawaii
+            time_format: "%Y-%m-%d %H:%M:%S"
+
+      attrs:
+        long_name: Time offset from epoch
+        units: seconds since 1970-01-01T00:00:00
+
+    roll: # Variable name as it will appear in the processed data
+      input:
+        name: Roll_degrees
+        units: degrees
+        converter:
+          classname: tsdat.utils.converters.DefaultConverter
+      dims: [time]
+      type: double
+      attrs:
+        long_name: roll of the WEC
+        units: deg
+        valid_range: [-180, 180]
+
+    heave: # Variable name as it will appear in the processed data
+      input:
+        name: Heave_m
+        units: meters
+        converter:
+          classname: tsdat.utils.converters.DefaultConverter
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Heave of the WEC
+        units: m
+
+    surge: # Variable name as it will appear in the processed data
+      input:
+        name: Surge_m
+        units: meters
+        converter:
+          classname: tsdat.utils.converters.DefaultConverter
+
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Surge of the WEC
+        units: m
+
+    sway: # Variable name as it will appear in the processed data
+      input:
+        name: sway_m
+        units: meters
+
+        converter:
+          classname: tsdat.utils.converters.DefaultConverter
+
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Sway of the WEC
+        units: m
+        valid_range: [-180, 180]
+
+    heave_rate: # Variable name as it will appear in the processed data
+
+      input:
+        name: heave_rate_m/s
+        units: meters per second
+        converter:
+          classname: tsdat.utils.converters.DefaultConverter
+
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Heave rate of the WEC
+        units: m/s
+
+    latitude:
+      type: float
+
+      attrs:
+        long_name: North latitude
+        standard_name: latitude
+        comment: Recorded lattitude at the instrument location
+        units: degree_N
+        valid_range: [-90.f, 90.f]
+
+      data: 71.323 #<-----The data field can be used to specify a pre-set value
+
+      longitude:
+        type: float
+        attrs:
+          long_name: East longitude
+          standard_name: longitude
+          comment: Recorded longitude at the instrument location
+          units: degree_E
+          valid_range: [-180.f, 180.f]
+        data: -156.609
+
+    #-----------------------------------------------------------------
+    # Example of a variable that is derived by the processing pipeline
+    #-----------------------------------------------------------------
+    foo:
+      type: float
+
+      #<-----This variable has no input, which means it will be set by
+      # the pipeline and not pulled from the raw data
+
+      dims: [time]
+
+      attrs:
+        long_name: some other property
+        units: kg/m^3
+        comment: Computed from temp_mean point value using some formula...
+        references: [http://sccoos.org/data/autoss/, http://sccoos.org/about/dmac/]
+
+---
+####################################################################
+# PART 2: QC TESTS
+# Define the QC tests that will be applied to variable data.
+####################################################################
+coordinate_variable_qc_tests:
+  #-----------------------------------------------------------------
+  # The following section defines the default qc tests that will be
+  # performed on coordinate variables in a dataset.  Note that by
+  # default, coordinate variable tests will NOT set a QC bit and
+  # will trigger a critical pipeline failure.  This is because
+  # Problems with coordinate variables are considered to cause
+  # the dataset to be unusable and should be manually reviewed.
+  #
+  # However, the user may override the default coordinate variable
+  # tests and error handlers if they feel that data correction is
+  # warranted.
+  #
+  # For a complete list of tests provided by MHKiT-Cloud, please see
+  # the tsdat.qc.operators package.
+  #
+  # Users are also free to add custom tests defined by their own
+  # operator classes.
+  #-----------------------------------------------------------------
+  missing:
+    variables:
+      - ALL  # keyword to apply test to all coordinate variables
+    operator:
+      classname: tsdat.qc.operators.CheckMissing
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+  monotonic:
+    variables:
+      - All  # keyword to apply test to all coordinate variables
+    operator:
+      classname: tsdat.qc.operators.CheckMonotonic
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+qc_tests:
+  #-----------------------------------------------------------------
+  # The following section defines the default qc tests that will be
+  # performed on non-coordinate variables in a dataset.  All
+  # non-coordinate variables that have the appropriate metadata
+  # attributes will be included in the test.
+  #
+  # For a complete list of tests provided by MHKiT-Cloud, please see
+  # the tsdat.qc.operators package.
+  #
+  # Users are also free to add custom tests defined by their own
+  # operator classes.
+  #-----------------------------------------------------------------
+
+  missing:  # the name of the test
+
+    # The bit (1-32) used to record the results of this test (0/1).
+    # A 0 value means the test passed.  A 1 value means the
+    # test failed.
+    qc_bit: 1
+
+    # The description of the QC test performed
+    meaning: "Value is equal to _FillValue or NaN"
+
+    # The assessment of the test.  Must be one of [Bad, Indeterminate]
+    assessment: Bad
+
+    # Which variables to apply the test to
+    variables:
+      - ALL  # keyword to apply test to all non-coordinate variables
+
+    # The class that will implement the test.  Users are free
+    # to override with their own class if they want to change
+    # behavior.
+    operator:
+      classname: tsdat.qc.operators.CheckMissing
+
+  fail_min:
+    qc_bit: 2
+    meaning: "Value is less than the fail_range."
+    assessment: Bad
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckFailMin
+
+  fail_max:
+    qc_bit: 3
+    meaning: "Value is greater than the fail_range."
+    assessment: Bad
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckFailMax
+
+  warn_min:
+    qc_bit: 4
+    meaning: "Value is less than the warn_range."
+    assessment: Indeterminate
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckWarnMin
+
+  warn_max:
+    qc_bit: 5
+    meaning: "Value is greater than the warn_range."
+    assessment: Indeterminate
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckWarnMax
+
+  valid_delta:
+    qc_bit: 6
+    meaning: "Difference between current and previous values exceeds valid_delta."
+    assessment: Indeterminate
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckValidDelta
+      parameters: #<====Parameters can be passed to any operator
+        dim: time # specify the dimension over which to compute the delta
+
+    #-----------------------------------------------------------------
+    # Example of a user-created test that shows how to specify
+    # an error handler.  Error handlers may be optionally added to
+    # any of the tests described above.
+    #-----------------------------------------------------------------
+    temp_test:
+        qc_bit: 7
+        meaning: "Test for some special condition in temperature."
+        assessment: Indeterminate
+        variables:
+          - temp_mean
+        operator:
+          classname: myproject.qc.operators.TestTemp
+
+        #-------------------------------------------------------------
+        # See the tsdat.qc.error_handlers package for a list of
+        # available error handlers.
+        #-------------------------------------------------------------
+        error_handlers:
+
+          # This error handler will notify users via email.  The
+          # datastream name, variable, and failing values will be
+          # included.
+          send_email:
+            classname: tsdat.qc.error_handlers.SendEmailAWS
+            parameters:
+              message: "Test failed..."
+              recipients: [carina.lansing@pnnl.gov, maxwell.levin@pnnl.gov]
+
