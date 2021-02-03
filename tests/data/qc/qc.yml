@@ -1,7 +1,7 @@
 coordinate_variable_qc_tests:
   missing:
     variables:
-      - ALL
+      - ALL  # keyword to apply test to all coordinate variables
     operator:
       classname: tsdat.qc.operators.CheckMissing
     error_handlers:
@@ -10,7 +10,7 @@ coordinate_variable_qc_tests:
 
   monotonic:
     variables:
-      - All
+      - All  # keyword to apply test to all coordinate variables
     operator:
       classname: tsdat.qc.operators.CheckMonotonic
     error_handlers:
@@ -19,65 +19,62 @@ coordinate_variable_qc_tests:
 
 qc_tests:
 
-    missing:
-        qc_bit: 1
-        description: "Value is equal to _FillValue or NaN"
-        assessment: Bad
-        variables:
-          - ALL  # keyword to apply test to all variables
-        operator:
-          classname: tsdat.qc.operators.CheckMissing
+  missing:  # the name of the test
+    qc_bit: 1
+    meaning: "Value is equal to _FillValue or NaN"
+    assessment: Bad
+    variables:
+      - ALL  # keyword to apply test to all non-coordinate variables
+    operator:
+      classname: tsdat.qc.operators.CheckMissing
 
-    fail_min:
-        qc_bit: 2
-        description: "Value is less than the fail_range."
-        assessment: Bad
-        variables:
-          - ALL
-        operator:
-          classname: tsdat.qc.operators.CheckFailMin
+    error_handlers:
+      replace_with_fill_value:
+        classname: tsdat.qc.error_handlers.RemoveFailedValues
 
-    fail_max:
-        qc_bit: 3
-        description: "Value is greater than the fail_range."
-        assessment: Bad
-        variables:
-          - ALL
-        operator:
-          classname: tsdat.qc.operators.CheckFailMax
+  fail_min:
+    qc_bit: 2
+    meaning: "Value is less than the fail_range."
+    assessment: Bad
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckFailMin
 
-    warn_min:
-        qc_bit: 4
-        description: "Value is less than the warn_range."
-        assessment: Indeterminate
-        variables:
-          - ALL
-        operator:
-          classname: tsdat.qc.operators.CheckWarnMin
+  fail_max:
+    qc_bit: 3
+    meaning: "Value is greater than the fail_range."
+    assessment: Bad
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckFailMax
 
-    warn_max:
-        qc_bit: 5
-        description: "Value is greater than the warn_range."
-        assessment: Indeterminate
-        variables:
-          - ALL
-        operator:
-          classname: tsdat.qc.operators.CheckWarnMax
+  warn_min:
+    qc_bit: 4
+    meaning: "Value is less than the warn_range."
+    assessment: Indeterminate
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckWarnMin
 
-    valid_delta:
-        qc_bit: 6
-        description: "Difference between current and previous values exceeds valid_delta."
-        assessment: Indeterminate
-        variables:
-          - ALL
-        operator:
-          classname: tsdat.qc.operators.CheckValidDelta
-          parameters:
-            dim: time
+  warn_max:
+    qc_bit: 5
+    meaning: "Value is greater than the warn_range."
+    assessment: Indeterminate
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckWarnMax
 
-        error_handlers: # Can list multiple error handlers if needed - executed in sequence
-          send_email:
-            classname: tsdat.qc.error_handlers.SendEmailAWS
-            parameters:
-              message:
-              recipients: [carina.lansing@pnnl.gov, maxwell.levin@pnnl.gov]
+  valid_delta:
+    qc_bit: 6
+    meaning: "Difference between current and previous values exceeds valid_delta."
+    assessment: Indeterminate
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckValidDelta
+      parameters: #<====Parameters can be passed to any operator
+        dim: time # specify the dimension over which to compute the delta

@@ -1,9 +1,23 @@
 ####################################################################
-# MHKiT-CLOUD INGEST PIPELINE CONFIGURATION TEMPLATE
+# TSDAT (Time-Series Data) INGEST PIPELINE CONFIGURATION TEMPLATE
 #
 # This file contains an annotated example of how to configure an
-# MHKiT-Cloud data processing pipeline.
+# tsdat data ingest processing pipeline.
 ####################################################################
+
+# Specify the type of pipeline that will be run:  Ingest or VAP
+#
+# Ingests are run against raw data and are used to convert
+# proprietary instrument data files into standardized format, perform
+# quality control checks against the data, and apply corrections as
+# needed.
+#
+# VAPs are used to combine one or more lower-level standardized data
+# files, optionally transform data to new coordinate grids, and/or
+# to apply scientific algorithms to derive new variables that provide
+# additional insights on the data.
+pipeline:
+  type: Ingest
 
 ####################################################################
 # PART 1: DATASET DEFINITION
@@ -383,6 +397,7 @@ coordinate_variable_qc_tests:
     operator:
       classname: tsdat.qc.operators.CheckMissing
     error_handlers:
+      # This error handler will cause the pipeline to fail
       fail_pipeline:
         classname: tsdat.qc.error_handlers.FailPipeline
 
@@ -393,6 +408,7 @@ coordinate_variable_qc_tests:
       classname: tsdat.qc.operators.CheckMonotonic
     error_handlers:
       fail_pipeline:
+        # This error handler will cause the pipeline to fail
         classname: tsdat.qc.error_handlers.FailPipeline
 
 qc_tests:
@@ -432,8 +448,14 @@ qc_tests:
     operator:
       classname: tsdat.qc.operators.CheckMissing
 
+    # Error handlers are optional and run after the test is
+    # performed if any of the values fail the test.  Users
+    # may specify one or more error handlers which will be
+    # executed in sequence.  Users are free to add their
+    # own QCErrorHandler subclass if they want to add custom
+    # behavior.
     error_handlers:
-      # Replace any NaNs with _FillValue
+      # This error handler will replace any NaNs with _FillValue
       replace_with_fill_value:
         classname: tsdat.qc.error_handlers.RemoveFailedValues
 
@@ -487,29 +509,31 @@ qc_tests:
     #-----------------------------------------------------------------
     # Example of a user-created test that shows how to specify
     # an error handler.  Error handlers may be optionally added to
-    # any of the tests described above.
+    # any of the tests described above.  (Note that this example will
+    # not work, it is just provided as an example of adding a
+    # custom QC test.)
     #-----------------------------------------------------------------
-    temp_test:
-        qc_bit: 7
-        meaning: "Test for some special condition in temperature."
-        assessment: Indeterminate
-        variables:
-          - temp_mean
-        operator:
-          classname: myproject.qc.operators.TestTemp
-
-        #-------------------------------------------------------------
-        # See the tsdat.qc.error_handlers package for a list of
-        # available error handlers.
-        #-------------------------------------------------------------
-        error_handlers:
-
-          # This error handler will notify users via email.  The
-          # datastream name, variable, and failing values will be
-          # included.
-          send_email:
-            classname: tsdat.qc.error_handlers.SendEmailAWS
-            parameters:
-              message: "Test failed..."
-              recipients: [carina.lansing@pnnl.gov, maxwell.levin@pnnl.gov]
+#    temp_test:
+#        qc_bit: 7
+#        meaning: "Test for some special condition in temperature."
+#        assessment: Indeterminate
+#        variables:
+#          - temp_mean
+#        operator:
+#          classname: myproject.qc.operators.TestTemp
+#
+#        #-------------------------------------------------------------
+#        # See the tsdat.qc.error_handlers package for a list of
+#        # available error handlers.
+#        #-------------------------------------------------------------
+#        error_handlers:
+#
+#          # This error handler will notify users via email.  The
+#          # datastream name, variable, and failing values will be
+#          # included.
+#          send_email:
+#            classname: tsdat.qc.error_handlers.SendEmailAWS
+#            parameters:
+#              message: "Test failed..."
+#              recipients: [carina.lansing@pnnl.gov, maxwell.levin@pnnl.gov]
 

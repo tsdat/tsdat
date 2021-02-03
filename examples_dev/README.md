@@ -1,10 +1,11 @@
 # Developer Code Examples
 
-This folder contains annotated, interactive Jupyter Notebook examples
-used for better understanding the core libraries that tsdat
-will work with.  Namely **xarray** and **ACT**, but it may
-also include numpy and pandas examples as well.  In addition
-we may add notebooks for working with specific data formats.
-
+This folder provides a sandbox of code snippets and jupyter
+notebooks used by developers to better understand the core
+libraries that tsdat utilizes (namely **xarray** and
+ **ACT**, but also **numpy** and **pandas**).
+ 
 These examples are intended for tsdat developer use only, and may
-be moved into a separate repository at a later date.
+be moved into a separate repository at a later date.  **Use the
+examples folder for complete, annotated examples of using the 
+tsdat pipeline library.**

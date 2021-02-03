@@ -109,9 +109,9 @@ class IngestPipeline(Pipeline):
     def apply_corrections(self, dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
         Pipeline hook that can be used to apply standard corrections for the 
-        instrument/measurement or calibrations. It can also be used to insert 
-        any derived properties into the dataset. This method is called 
-        immediately after the dataset is converted to standard format. 
+        instrument/measurement or calibrations. This method is called
+        immediately after the dataset is converted to standard format and
+        before any QC tests are applied.
 
         If corrections are applied, then the `corrections_applied` attribute
         should be updated on the variable(s) that this method applies
@@ -128,8 +128,10 @@ class IngestPipeline(Pipeline):
     
     def customize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
-        Hook to allow for user customizations to the xarray Dataset before it 
-        is validated and saved to the DatastreamStorage.
+        Hook to allow for user customizations to the standardized dataset such
+        as inserting a derived variable based on other variables in the
+        dataset.  This method is called immediately after the apply_corrections
+        hook and before any QC tests are applied.
 
         Args:
             dataset (xr.Dataset): The dataset to customize.
@@ -141,11 +143,26 @@ class IngestPipeline(Pipeline):
 
     def customize_raw_datasets(self, raw_dataset_mapping: Dict[str, xr.Dataset]) -> Dict[str, xr.Dataset]:
         """-------------------------------------------------------------------
-        Hook to allow for user customizations to the raw xarray Dataset before 
-        it is merged and used to create the standardized dataset.
+        Hook to allow for user customizations to one or more raw xarray Datasets
+        before they merged and used to create the standardized dataset.  The
+        raw_dataset_mapping will contain one entry for each file being used
+        as input to the pipeline.  The keys are the standardized raw file name,
+        and the values are the datasets.
+
+        This method would typically only be used if the user is combining
+        multiple files into a single dataset.  In this case, this method may
+        be used to correct coordinates if they don't match for all the files,
+        or to change variable (column) names if two files have the same
+        name for a variable, but they are two distinct variables.
+
+        This method can also be used to check for unique conditions in the raw
+        data that should cause a pipeline failure if they are not met.
+
+        This method is called before the inputs are merged and converted to
+        standard format as specified by the config file.
 
         Args:
-            raw_dataset_mapping (Dict[str, xr.Dataset])     The raw dataset to 
+            raw_dataset_mapping (Dict[str, xr.Dataset])     The raw datasets to
                                                             customize.
 
         Returns:
@@ -156,8 +173,11 @@ class IngestPipeline(Pipeline):
     def create_and_persist_plots(self, dataset: xr.Dataset) -> None:
         """-------------------------------------------------------------------
         Hook to allow users to create plots from the xarray dataset after 
-        processing and QC has been applied and just before the dataset is 
-        saved to disk. To save on filesystem space, this method should only 
+        processing and QC have been applied and just before the dataset is
+        saved to disk.
+
+        To save on filesystem space (which is limited when running on the
+        cloud via a lambda function), this method should only
         write one plot to local storage at a time. An example of how this 
         could be done is below:
 
