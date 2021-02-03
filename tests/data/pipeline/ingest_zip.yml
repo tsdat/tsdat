@@ -67,6 +67,7 @@ dataset_definition:
         units: mb
       dims: [time]
       type: double
+      # required: true # TODO
       attrs:
         long_name:  Barometric pressure
         units: mb
