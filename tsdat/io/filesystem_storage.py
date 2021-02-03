@@ -20,6 +20,7 @@ class FilesystemTemporaryStorage(TemporaryStorage):
     def extract_files(self, filepath: str) -> DisposableStorageTempFileList:
         extracted_files = []
         delete_on_exception = True
+        is_file = os.path.isfile(filepath)
         is_tar = tarfile.is_tarfile(filepath) # tar or tar.gz
         is_zip = zipfile.is_zipfile(filepath)
 
@@ -35,9 +36,11 @@ class FilesystemTemporaryStorage(TemporaryStorage):
                     zipped.extractall(temp_dir)
 
             for filename in os.listdir(temp_dir):
-                extracted_files.append(os.path.join(temp_dir, filename))
+                filepath = os.path.join(temp_dir, filename)
+                if os.path.isfile(filepath):
+                    extracted_files.append(filepath)
 
-        else:
+        elif is_file:
             # If this is not a zip or tar file, we assume it is a regular file
             extracted_files.append(filepath)
             delete_on_exception = False

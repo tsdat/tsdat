@@ -1,3 +1,6 @@
+pipeline:
+  type: Ingest  # Must be either Ingest or VAP
+
 ####################################################################
 # MHKiT-CLOUD INGEST PIPELINE CONFIGURATION TEMPLATE
 #
@@ -86,7 +89,7 @@ dataset_definition:
     # abbreviations include: ns=nanosecond, us=microsecond,
     # ms=millisecond, s=second, m=minute, h=hour, d=day, mo=month,
     # yr=year.
-    temporal: 0.02ms
+    temporal: 002ms
 
     # The processing level of the data (e.g., 00, b1, c1, etc.)
     # as described in the MHKiT-Cloud Data Standards.
@@ -311,7 +314,7 @@ dataset_definition:
     # is not present in the raw data.
     #-----------------------------------------------------------------
     Volts_b:
-    #---------------------------------------------------------------
+      #---------------------------------------------------------------
       # The input section for each variable is used to specify the
       # mapping between the raw data file and the processed output data
       #---------------------------------------------------------------
@@ -405,7 +408,7 @@ dataset_definition:
         # water, above the surface.
         #sensor_height: 30m
 
-      Volts_c: 
+    Volts_c: 
       #---------------------------------------------------------------
       # The input section for each variable is used to specify the
       # mapping between the raw data file and the processed output data
@@ -500,7 +503,7 @@ dataset_definition:
         # water, above the surface.
         #sensor_height: 30m
 
-      Current_a: 
+    Current_a: 
       #---------------------------------------------------------------
       # The input section for each variable is used to specify the
       # mapping between the raw data file and the processed output data
@@ -593,7 +596,7 @@ dataset_definition:
         # water, above the surface.
         #sensor_height: 30m
 
-      Current_b: 
+    Current_b: 
       #---------------------------------------------------------------
       # The input section for each variable is used to specify the
       # mapping between the raw data file and the processed output data
@@ -686,7 +689,7 @@ dataset_definition:
         # water, above the surface.
         #sensor_height: 30m
 
-      Current_c: 
+    Current_c: 
       #---------------------------------------------------------------
       # The input section for each variable is used to specify the
       # mapping between the raw data file and the processed output data

@@ -1,0 +1,232 @@
+pipeline:
+  type: Ingest  # Can be Ingest or VAP
+
+dataset_definition:
+
+  # Define the global attributes in your output xarray Dataset
+  attributes:
+    title: Buoy Dataset for Buoy #120
+    description: Example ingest dataset.
+    conventions: MHKiT-Cloud Data Standards v. 1.0
+    institution: PNNL
+    code_url: https://github.com/clansing/tsdat/releases/tag/1.0
+    location_id: humboldt_ca
+    instrument_id: buoy_z05
+    location_description: Buoy is located off the coast of Humboldt, CA
+    instrument_name: Example Instrument Name
+    instrument_description: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
+    instrument_manufacturer: Lansing & Levin Precision Manufacturing
+
+  # Define the dimensions/coordinates in your output xarray Dataset
+  dimensions:
+    time:
+        length: unlimited
+
+  # Define the variables in your output xarray Dataset
+  variables:
+    time:
+      input:
+        name: DataTimeStamp
+        converter:
+          classname: tsdat.utils.converters.StringTimeConverter
+          parameters:
+            timezone: US/Pacific
+            time_format: "%Y-%m-%d %H:%M:%S"
+      dims: [time]
+      type: int64
+      attrs:
+        long_name: Time offset from epoch
+        standard_name: time
+        units: seconds since 1970-01-01T00:00:00
+    
+    # gill_horizontal_speed:  
+    #   input: # From gill csv
+    #     name: Horizontal Speed (m/s)
+    #     units: m/s
+    #   dims: [time]
+    #   type: double
+    #   attrs:
+    #     long_name:  Horizontal wind speed
+    #     units: m/s
+    #     _FillValue: -9999
+      
+    # gill_horizontal_direction:  
+    #   input: # From gill csv
+    #     name: Horizontal Direction (deg)
+    #     units: deg
+    #   dims: [time]
+    #   type: double
+    #   attrs:
+    #     long_name:  Horizontal wind direction
+    #     units: deg
+    #     _FillValue: -9999
+    
+    pressure:  
+      input: # From pressure csv
+        name: Barometric Pressure (mb)
+        units: mb
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Barometric pressure
+        units: mb
+        fail_range: [0, 100]
+        _FillValue: -9999
+      
+    relative_humidity:  
+      input: # From rh csv
+        name: Relative Humidity (%)
+        units: '%'
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Relative humidity
+        units: '%'
+        fail_range: [20, 30]
+        _FillValue: -9999
+
+    sea_surface_temperature:  
+      input: # From surfacetemp csv
+        name: Surface Temperature (C)
+        units: degC
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Sea surface temperature
+        units: degC
+        _FillValue: -9999
+
+    air_temperature:  
+      input: # From temperature csv
+        name: Air Temperature (C)
+        units: degC
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Air temperature
+        units: degC
+        _FillValue: -9999
+
+    wind_horizontal_speed:  
+      input: # From wind csv
+        name: Horizontal Speed (m/s)
+        units: m/s
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Horizontal wind speed
+        units: m/s
+        _FillValue: -9999
+      
+    wind_horizontal_direction:  
+      input: # From wind csv
+        name: Horizontal Direction (deg)
+        units: deg
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Horizontal wind direction
+        units: deg
+        _FillValue: -9999
+
+    latitude:  
+      input: # From gps csv
+        name: Latitude
+        units: degree_N
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Latitude
+        units: degree_N
+        _FillValue: -9999
+      
+    longitude:  
+      input: # From gps csv
+        name: Longitude
+        units: degree_E
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Longitude
+        units: degree_E
+        _FillValue: -9999
+
+
+coordinate_variable_qc_tests:
+  missing:
+    variables:
+      - ALL  # keyword to apply test to all coordinate variables
+    operator:
+      classname: tsdat.qc.operators.CheckMissing
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+  monotonic:
+    variables:
+      - All  # keyword to apply test to all coordinate variables
+    operator:
+      classname: tsdat.qc.operators.CheckMonotonic
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+qc_tests:
+  missing:  # the name of the test
+    qc_bit: 1
+    meaning: "Value is equal to _FillValue or NaN"
+    assessment: Bad
+    variables:
+      - ALL  # keyword to apply test to all non-coordinate variables
+    operator:
+      classname: tsdat.qc.operators.CheckMissing
+    error_handlers:
+      replace_with_fill_value:
+        classname: tsdat.qc.error_handlers.RemoveFailedValues
+
+  fail_min:
+    qc_bit: 2
+    meaning: "Value is less than the fail_range."
+    assessment: Bad
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckFailMin
+
+  fail_max:
+    qc_bit: 3
+    meaning: "Value is greater than the fail_range."
+    assessment: Bad
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckFailMax
+
+  warn_min:
+    qc_bit: 4
+    meaning: "Value is less than the warn_range."
+    assessment: Indeterminate
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckWarnMin
+
+  warn_max:
+    qc_bit: 5
+    meaning: "Value is greater than the warn_range."
+    assessment: Indeterminate
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckWarnMax
+
+  valid_delta:
+    qc_bit: 6
+    meaning: "Difference between current and previous values exceeds valid_delta."
+    assessment: Indeterminate
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckValidDelta
+      parameters:
+        dim: time 

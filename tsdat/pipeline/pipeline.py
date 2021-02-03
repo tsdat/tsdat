@@ -15,27 +15,37 @@ class Pipeline(abc.ABC):
     def run(self, filepath: str):
         return
 
-    def standardize_dataset(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
+    def standardize_dataset(self, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         """-------------------------------------------------------------------
         Standardizes the dataset by applying variable name and units 
         conversions as defined in the config. Returns the standardized 
         dataset.
 
         Args:
-            dataset (xr.Dataset):   The raw xarray dataset.
+            raw_mapping (Dict[str, xr.Dataset]):   The raw xarray dataset mapping.
 
         Returns:
             xr.Dataset: The standardized dataset.
         -------------------------------------------------------------------"""
+        def _find_dataset_with_variable(variable_name: str) -> xr.Dataset:
+            for dataset in raw_mapping.values():
+                if variable_name in dataset.variables:
+                    return dataset
+            return None
+
         definition = self.config.dataset_definition
         
         # Add the input_files attribute to global attributes
         definition.add_input_files_attr(list(raw_mapping.keys()))
 
         for coordinate in definition.coords.values():
+            var_name = coordinate.get_input_name() if coordinate.has_input() else coordinate.name
+            dataset = _find_dataset_with_variable(var_name)
             definition.extract_data(coordinate, dataset)
         
         for variable in definition.vars.values():
+            var_name = variable.get_input_name() if variable.has_input() else variable.name
+            dataset = _find_dataset_with_variable(var_name)
             definition.extract_data(variable, dataset)
 
         standardized_dataset = xr.Dataset.from_dict(definition.to_dict())

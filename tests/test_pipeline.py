@@ -40,9 +40,20 @@ class TestIngestPipeline(unittest.TestCase):
         shutil.copy(original_raw_file, temp_raw_file)
         return temp_raw_file
 
-    def test_ingest_pipeline(self):
+    def test_temperature_one_day(self):
         raw_file = self.get_raw_file('buoy.z05.00.20200930.000000.temperature.csv')
-        config_file = os.path.join(self.basedir, 'ingest_pipeline.yml')
+        config_file = os.path.join(self.basedir, 'temperature_one_day.yml')
+
+        storage: FilesystemStorage = FilesystemStorage(self.root)
+        config: Config = Config.load(config_file)
+
+        pipeline: IngestPipeline = IngestPipeline(config, storage)
+        pipeline.run(raw_file)
+
+    def test_ingest_zip(self):
+        # raw_file = self.get_raw_file('buoy.z05.00.20201004.000000.zip')
+        raw_file = self.get_raw_file('buoy.z05.00.20201004.000000_no_gill_waves.zip')
+        config_file = os.path.join(self.basedir, 'ingest_zip.yml')
 
         storage: FilesystemStorage = FilesystemStorage(self.root)
         config: Config = Config.load(config_file)

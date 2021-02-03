@@ -1,5 +1,4 @@
-import zipfile
-import tarfile
+import warnings
 import xarray as xr
 from typing import Dict, List
 from .pipeline import Pipeline
@@ -30,15 +29,15 @@ class IngestPipeline(Pipeline):
             # files to get the timestamp of the first point of data since this is
             # required/recommended by raw file naming conventions.
             raw_dataset_mapping: Dict[str, xr.Dataset] = self.read_and_persist_raw_files(file_paths)
-
-            raw_dataset = self.merge_mappings(raw_dataset_mapping)
+            
+            raw_dataset_mapping: Dict[str, xr.Dataset] = self.customize_raw_datasets(raw_dataset_mapping)
 
             # Process the data
-            dataset = self.standardize_dataset(raw_dataset, raw_dataset_mapping)
+            dataset = self.standardize_dataset(raw_dataset_mapping)
             dataset = self.apply_corrections(dataset)
             dataset = self.customize_dataset(dataset)
 
-            if self.config.dataset_definition.data_level.startswith('b'):
+            if self.config.dataset_definition.get_attr('data_level').startswith('b'):
                 # If there is previous data in Storage, we need
                 # to load up the last file so we can perform
                 # continuity checks such as monontonically increasing
@@ -75,14 +74,19 @@ class IngestPipeline(Pipeline):
             with self.storage.tmp.fetch(file_path) as tmp_path:
                 dataset = FileHandler.read(tmp_path)
 
-                # create the standardized name for raw file
-                new_filename = DSUtil.get_raw_filename(dataset, tmp_path, self.config)
+                # Don't use dataset if no FileHandler is registered for it
+                if dataset is not None:
+                    # create the standardized name for raw file
+                    new_filename = DSUtil.get_raw_filename(dataset, tmp_path, self.config)
 
-                # add the raw dataset to our dictionary
-                raw_dataset_mapping[new_filename] = dataset
+                    # add the raw dataset to our dictionary
+                    raw_dataset_mapping[new_filename] = dataset
 
-                # save the raw data to storage
-                self.storage.save(tmp_path, new_filename)
+                    # save the raw data to storage
+                    self.storage.save(tmp_path, new_filename)
+                
+                else:
+                    warnings.warn(f"Couldn't use extracted raw file: {tmp_path}")
 
         return raw_dataset_mapping
 
@@ -134,6 +138,20 @@ class IngestPipeline(Pipeline):
             xr.Dataset: The customized dataset.
         -------------------------------------------------------------------"""
         return dataset
+
+    def customize_raw_datasets(self, raw_dataset_mapping: Dict[str, xr.Dataset]) -> Dict[str, xr.Dataset]:
+        """-------------------------------------------------------------------
+        Hook to allow for user customizations to the raw xarray Dataset before 
+        it is merged and used to create the standardized dataset.
+
+        Args:
+            raw_dataset_mapping (Dict[str, xr.Dataset])     The raw dataset to 
+                                                            customize.
+
+        Returns:
+            Dict[str, xr.Dataset]: The customized raw dataset.
+        -------------------------------------------------------------------"""
+        return raw_dataset_mapping
 
     def create_and_persist_plots(self, dataset: xr.Dataset) -> None:
         """-------------------------------------------------------------------

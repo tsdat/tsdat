@@ -8,7 +8,7 @@ class QCTestDefinition:
     def __init__(self, name: str, dictionary: Dict):
         assert(dictionary is not None)
         self.name = name
-        self.description = dictionary.get('description', None)
+        self.meaning = dictionary.get('meaning', None)
         self.qc_bit = dictionary.get('qc_bit', None)
         self.assessment = dictionary.get('assessment', None)
         self.variables = dictionary.get('variables', [])

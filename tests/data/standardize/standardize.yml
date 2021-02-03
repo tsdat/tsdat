@@ -1,3 +1,6 @@
+pipeline:
+  type: Ingest  # Can be Ingest or VAP
+
 dataset_definition:
   # Define the global attributes in your output xarray Dataset
   attributes:
@@ -11,8 +14,8 @@ dataset_definition:
     references:
     input_files:
     location_id: humboldt_z05
-    datastream: humboldt_z05.lidar_buoy_10m.b1
-    data_level: b1
+    instrument_id: lidar_buoy
+    # data_level: b1
     location_description: Buoy is located of the coast of Humboldt, CA
     instrument_name: Wind Sentinel
     serial_number: '000011312'

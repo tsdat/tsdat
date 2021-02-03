@@ -59,6 +59,13 @@ class TestStandardize(unittest.TestCase):
         filename = 'ingest_pipeline_template_WEC_gps_example.nc'
         FileHandler.write(dataset, os.path.join(self.temp, filename))
 
+    def test_modaq_powraw_data(self):
+        config = Config.load(os.path.join(self.basedir, 'ingest_pipeline_template_WEC_powraw_example.yml'))
+        dictionary = config.dataset_definition.to_dict()
+        dataset = xr.Dataset.from_dict(dictionary)
+        filename = 'ingest_pipeline_template_WEC_powraw_example.nc'
+        FileHandler.write(dataset, os.path.join(self.temp, filename))
+
     def _check_time_conversion(self, raw_ds, std_ds):
         # Validate time conversion from raw
         time_dt64 = np.array(std_ds["time"].data, dtype='datetime64[s]')

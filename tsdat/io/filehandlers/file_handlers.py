@@ -2,6 +2,7 @@ import os
 import abc
 import yaml
 import functools
+import warnings
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -58,7 +59,9 @@ class FileHandler():
     def _get_handler(filename: str) -> AbstractFileHandler:
         _, ext = os.path.splitext(filename)
         if ext not in FileHandler.FILEHANDLERS:
-            raise KeyError(f"No FileHandler has been registered for extension: {ext}")
+            # raise KeyError(f"No FileHandler has been registered for extension: {ext}")
+            warnings.warn(f"No FileHandler has been registered for extension: {ext}")
+            return None
         return FileHandler.FILEHANDLERS[ext]
 
     @staticmethod
@@ -75,7 +78,8 @@ class FileHandler():
                                         None.
         -------------------------------------------------------------------"""
         handler = FileHandler._get_handler(filename)
-        handler.write(ds, filename, config, **kwargs)
+        if handler:
+            handler.write(ds, filename, config, **kwargs)
 
     @staticmethod
     def read(filename: str, **kwargs) -> xr.Dataset:
@@ -90,7 +94,8 @@ class FileHandler():
             xr.Dataset: A xr.Dataset object
         -------------------------------------------------------------------"""
         handler = FileHandler._get_handler(filename)
-        return handler.read(filename, **kwargs)
+        if handler:
+            return handler.read(filename, **kwargs)
 
 
 def register_filehandler(file_extension: str):

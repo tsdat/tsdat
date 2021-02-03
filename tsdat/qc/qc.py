@@ -120,5 +120,5 @@ class QCChecker:
                     self.ds.qcfilter.add_test(
                         variable_name, index=results_array,
                         test_number=self.test.qc_bit,
-                        test_meaning=self.test.description,
+                        test_meaning=self.test.meaning,
                         test_assessment=self.test.assessment)
