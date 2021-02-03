@@ -39,7 +39,7 @@ dataset_definition:  # Describes the dataset that will be produced
     time:
       input:
         # Name of the variable in the raw data
-        name: DataTimeStamp(DateTime)
+        name: DataTimeStamp
         converter:
           classname: tsdat.utils.converters.StringTimeConverter
           parameters:
@@ -52,31 +52,33 @@ dataset_definition:  # Describes the dataset that will be produced
         standard_name: time
         units: seconds since 1970-01-01T00:00:00
 
-    temp_mean:
+    sea_surface_temperature:
       input:
-        name: ValueAverage(Double)
+        name: Surface Temperature (C)
         units: degC
         converter:
           classname: tsdat.utils.converters.DefaultConverter
       dims: [time]
       type: double
       attrs:
-        long_name: Mean temperature
+        long_name: Sea surface temperature
         comment: Rolling 10-minute average sea surface temperature. Aligned such that the temperature reported at time 'n' represents the average across the interval (n-1, n].
         units: degC
         valid_delta: 3.0
         valid_range: [-50, 150]
         _FillValue: -9999
 
-    temp_min:
+    air_temperature:
       input:
-        name: ValueMin(Double)
+        name: Air Temperature (C)
         units: degC
+        converter:
+          classname: tsdat.utils.converters.DefaultConverter
       dims: [time]
       type: double
       attrs:
-        long_name: Minimum temperature
-        comment: Minimum value used in rolling 10-minute average sea surface temperature.
+        long_name: Air temperature at sea level
+        comment: Rolling 10-minute average air temperature. Aligned such that the temperature reported at time 'n' represents the average across the interval (n-1, n].
         units: degC
         valid_delta: 3.0
         valid_range: [-50, 150]
