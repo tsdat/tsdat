@@ -1,4 +1,5 @@
 pipeline:
+  # TODO: Explain difference between types -- examples
   type: Ingest  # Must be either Ingest or VAP
 
 ####################################################################

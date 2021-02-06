@@ -75,6 +75,7 @@ dataset_definition:
     #---------------------------------------------------------------
     # The following attributes used to create the datastream name
     # datastream_name = (location_id).(instrument_id)(qualifier)(temporal).data_level
+    # data_level will automatically be determined by the pipeline
     #---------------------------------------------------------------
 
     # A label for the location where the data were obtained from
@@ -93,19 +94,10 @@ dataset_definition:
     #qualifier:
 
     # A optional description of the data temporal resolution
-    # (e.g., 30m, 1h, 200ms, 14d).  All temporal resolution
-    # descriptors require a units identifier.  Accepted
-    # abbreviations include: ns=nanosecond, us=microsecond,
-    # ms=millisecond, s=second, m=minute, h=hour, d=day, mo=month,
-    # yr=year.
+    # (e.g., 30m, 1h, 200ms, 14d, 10Hz).  All temporal resolution
+    # descriptors require a units identifier.
     #temporal: 10m
-
-    # The processing level of the data (e.g., 00, b1, c1, etc.)
-    # as described in the MHKiT-Cloud Data Standards.
-    # A two-character descriptor consisting of one lower-case
-    # letter followed by one number
-    data_level: b1
-
+ 
     #---------------------------------------------------------------
 
     # A more detailed description of the site location.
@@ -156,7 +148,7 @@ dataset_definition:
       #---------------------------------------------------------------
       input:
         # Name of the variable in the raw data
-        name: DataTimeStamp(DateTime)
+        name: DataTimeStamp
 
         #-------------------------------------------------------------
         # A converter is used to convert the raw data into standardized
@@ -222,7 +214,7 @@ dataset_definition:
     #-----------------------------------------------------------------
     # Mean temperature variable (non-coordinate variable)
     #-----------------------------------------------------------------
-    temp_mean: # Variable name as it will appear in the processed data
+    sea_surface_temperature: # Variable name as it will appear in the processed data
 
       #---------------------------------------------------------------
       # The input section for each variable is used to specify the
@@ -230,7 +222,7 @@ dataset_definition:
       #---------------------------------------------------------------
       input:
         # Name of the variable in the raw data
-        name: ValueAverage(Double)
+        name: Surface Temperature (C)
 
         # Units of the variable in the raw data
         units: degC
@@ -271,7 +263,7 @@ dataset_definition:
       #-------------------------------------------------------------
       attrs:
         # A minimal description of what the variable represents.
-        long_name: Mean temperature
+        long_name: Mean sea surface temperature
 
         # An optional attribute to provide human-readable context for what this variable
         # represents, how it was measured, or anything else that would be relevant to end-users.
@@ -340,15 +332,15 @@ dataset_definition:
 
       data: 71.323 #<-----The data field can be used to specify a pre-set value
 
-      longitude:
-        type: float
-        attrs:
-          long_name: East longitude
-          standard_name: longitude
-          comment: Recorded longitude at the instrument location
-          units: degree_E
-          valid_range:[-180.f, 180.f]
-        data: -156.609
+    longitude:
+      type: float
+      attrs:
+        long_name: East longitude
+        standard_name: longitude
+        comment: Recorded longitude at the instrument location
+        units: degree_E
+        valid_range:[-180.f, 180.f]
+      data: -156.609
 
     #-----------------------------------------------------------------
     # Example of a variable that is derived by the processing pipeline

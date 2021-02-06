@@ -26,23 +26,16 @@ require libraries that are difficult to set up on windows machines.
 
 https://www.anaconda.com/download/#
 
+## 2) Create Anaconda Environment
 
-## 2) Start the Anaconda Prompt
+```bash
+conda create -n tsdat_env -c conda-forge python=3.8 act-atmos cfunits yamllint
+```
+
+Note that Windows users should open the anaconda prompt and run this there.
 ![image info](./doc/win-anaconda-prompt2.png)
 
-## 3) Create Anaconda Environment
+## 3) OR Activate Existing Anaconda Environment
 ```bash
-conda create -n mhkit_act_env -c conda-forge python=3.8 act-atmos
+conda activate tsdat_env
 ```
-
-## 4) OR Activate Existing Anaconda Environment
-```bash
-conda activate mhkit_act_env
-```
-
-## 5) Add cfunits to the conda env
-From the Anaconda prompt:
-```bash
-conda install -c conda-forge cfunits
-```
-TODO: create our own conda bundle for tsdat
