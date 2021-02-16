@@ -256,6 +256,8 @@ class DatasetDefinition:
         # add it to the VariableDefinition
         elif variable.has_input():
             input_name = variable.get_input_name()
+            if not raw_dataset: 
+                raise DefinitionError(f"Could not find variable {input_name} in the raw dataset.")
             data = raw_dataset[input_name].values
             converted = variable.input.converter.run(data, variable.get_input_units(), variable.get_output_units())
             variable.data = converted
