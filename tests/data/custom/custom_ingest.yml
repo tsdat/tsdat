@@ -1,0 +1,418 @@
+pipeline:
+  type: Ingest
+
+dataset_definition:  # Describes the dataset that will be produced
+  attributes:
+    title: Lidar Buoy Dataset
+    description: "Pacific Northwest National Laboratory (PNNL) manages two 
+    AXYS WindSentinelTM buoys (Buoys #120 and #130) on behalf of the U.S. 
+    Department of Energy (DOE) that collect a comprehensive set of 
+    meteorological and oceanographic (metocean) data to support resource 
+    characterization for wind energy offshore. The buoys have been deployed 
+    off the California coast in partnership with the Bureau of Ocean Energy 
+    Management (BOEM) from September 2020 through October 2021"
+    conventions: MHKiT-Cloud Data Standards v. 1.0
+    doi: 10.21947/1671051
+    institution: PNNL
+    code_url: https://github.com/clansing/tsdat/releases/tag/1.0
+    location_id: humboldt_ca
+    instrument_id: buoy_z05
+    data_level: b1
+    location_meaning: Buoy \#120 is located of the coast of Humboldt, CA
+    instrument_name: WindSentinel
+    instrument_meaning: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
+    instrument_manufacturer: AXYS Technologies Inc.
+    sampling_interval: 10 min
+
+  dimensions:
+    time:
+        length: unlimited
+
+  variables:
+
+    time:
+      input:
+        # Name of the variable in the raw data
+        name: DataTimeStamp
+        converter:
+          classname: tsdat.utils.converters.StringTimeConverter
+          parameters:
+            timezone: US/Pacific
+            time_format: "%Y-%m-%d %H:%M:%S"
+      dims: [time]
+      type: long
+      attrs:
+        long_name: Time offset from epoch
+        standard_name: time
+        units: seconds since 1970-01-01T00:00:00
+    
+    surface_temperature:  
+      input: # From conductivity csv
+        name: Surface Temperature (C)
+        units: degC
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Sea surface temperature
+        units: degC
+        valid_delta: 0.03
+        valid_range: [-10, 50]
+        _FillValue: -9999
+
+    conductivity:  
+      input: # From conductivity csv
+        name: Conductivity (Siemens/m)
+        units: S/m
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Ocean Conductivity
+        units: S/m
+        valid_delta: 0.03
+        fail_range: [0, 5]
+        valid_range: [0, 10]
+        _FillValue: -9999
+    
+    currents_num_bins:  
+      input: # From currents csv
+        name: NumberOfBins
+        units: "1"
+      dims: [time]
+      type: int
+      attrs:
+        long_name: Number of bins
+        units: "1"
+        _FillValue: -9999
+    
+    currents_bin_spacing:  
+      input: # From currents csv
+        name: BinSpacing
+        units: m
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Vertical Spacing Between Bins
+        units: m
+        _FillValue: -9999
+    
+    currents_head_depth:  
+      input: # From currents csv
+        name: HeadDepth
+        units: m
+      dims: [time]
+      type: double
+      attrs:
+        long_name: depth of instrument below ocean surface
+        units: m
+        _FillValue: -9999
+
+    currents_blanking_distance:  
+      input: # From currents csv
+        name: BlankingDistance
+        units: m
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Blanking Distance
+        comment: a “blind zone” where the instruments do not measure anything. Typically less than 1m.
+        units: m
+        _FillValue: -9999
+
+    currents_velocity_1:  
+      input: # From currents csv
+        name: Vel1 (mm/s)
+        units: mm/s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Current velocity in bin 1
+        units: mm/s
+        _FillValue: -9999
+
+    currents_direction_1:  
+      input: # From currents csv
+        name: Dir1 (deg)
+        units: degrees
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Current direction in bin 1
+        units: degrees
+        _FillValue: -9999
+      
+    currents_velocity_2:  
+      input: # From currents csv
+        name: Vel2 (mm/s)
+        units: mm/s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Current velocity in bin 2
+        units: mm/s
+        _FillValue: -9999
+
+    currents_direction_2:  
+      input: # From currents csv
+        name: Dir2 (deg)
+        units: degrees
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Current direction in bin 2
+        units: degrees
+        _FillValue: -9999
+
+    currents_velocity_3:  
+      input: # From currents csv
+        name: Vel3 (mm/s)
+        units: mm/s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Current velocity in bin 3
+        units: mm/s
+        _FillValue: -9999
+
+    currents_direction_3:  
+      input: # From currents csv
+        name: Dir3 (deg)
+        units: degrees
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Current direction in bin 3
+        units: degrees
+        _FillValue: -9999
+
+    currents_velocity_4:  
+      input: # From currents csv
+        name: Vel4 (mm/s)
+        units: mm/s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Current velocity in bin 4
+        units: mm/s
+        _FillValue: -9999
+
+    currents_direction_4:  
+      input: # From currents csv
+        name: Dir4 (deg)
+        units: degrees
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Current direction in bin 4
+        units: degrees
+        _FillValue: -9999
+
+    currents_velocity_5:  
+      input: # From currents csv
+        name: Vel5 (mm/s)
+        units: mm/s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Current velocity in bin 5
+        units: mm/s
+        _FillValue: -9999
+
+    currents_direction_5:  
+      input: # From currents csv
+        name: Dir5 (deg)
+        units: degrees
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Current direction in bin 5
+        units: degrees
+        _FillValue: -9999
+
+    horizontal_wind_speed:  
+      input: # From gill csv
+        name: Horizontal Speed (m/s)
+        units: m/s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Horizontal Wind Speed
+        comment: Surface horizontal wind speed, 2D ultrasonic anemometer
+        units: m/s
+        valid_range: [0, 50]
+        _FillValue: -9999
+
+    horizontal_wind_direction:  
+      input: # From gill csv
+        name: Horizontal Direction (deg)
+        units: degrees
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Horizontal Wind Direction
+        comment: Surface horizontal wind direction, 2D ultrasonic anemometer
+        units: degrees
+        valid_range: [0, 360]
+        _FillValue: -9999
+
+    barometric_pressure:  
+      input: # From pressure csv
+        name: Barometric Pressure (mb)
+        units: mbar
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Atmospheric Pressure
+        units: hPa
+        _FillValue: -9999   
+    
+    relative_humidity:  
+      input: # From rh csv
+        name: Relative Humidity (%)
+        units: "%"
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Relative Humidity
+        units: "%"
+        fail_range: [65, 95]
+        valid_range: [0, 100]
+        _FillValue: -9999 
+
+    # Note that this variable had the same name as Surface Temperature from  
+    # conductivity csv. It has been renamed to prevent a conflict, but the 
+    # user will need to write the customize_raw_dataset() hook to rename the
+    # raw input from "Surface Temperature (C)" to "surfacetemp - Surface 
+    # Temperature (C)" so that the code can still retrieve it properly
+    surfacetemp_surface_temperature:  
+      input: # From surfacetemp csv
+        name: surfacetemp - Surface Temperature (C)
+        units: degC
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Sea Surface Temperature
+        comment: This is from the surfacetemp.csv file.
+        units: degC
+        valid_delta: 0.03
+        valid_range: [-10, 50]
+        _FillValue: -9999 
+    
+    air_temperature:  
+      input: # From temperature csv
+        name: Air Temperature (C)
+        units: degC
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Air Temperature
+        units: degC
+        valid_delta: 0.03
+        valid_range: [-10, 50]
+        _FillValue: -9999
+
+    latitude:  
+      input: # From gps csv
+        name: Latitude
+        units: degree_N
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Latitude
+        units: degree_N
+        _FillValue: -9999
+      
+    longitude:  
+      input: # From gps csv
+        name: Longitude
+        units: degree_E
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Longitude
+        units: degree_E
+        _FillValue: -9999
+
+#-----------------------------------------------------------------
+coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
+
+  missing:
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckMissing
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+  monotonic:
+    variables:
+      - All
+    operator:
+      classname: tsdat.qc.operators.CheckMonotonic
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+#-----------------------------------------------------------------
+
+qc_tests:  # Define QC tests for non-coordinate variables
+
+    missing:
+        qc_bit: 1
+        meaning: "Value is equal to _FillValue or NaN"
+        assessment: Bad
+        variables:
+          - ALL  # keyword to apply test to all variables
+        operator:
+          classname: tsdat.qc.operators.CheckMissing
+        error_handlers:
+          # Replace any NaNs with _FillValue
+          replace_with_fill_value:
+            classname: tsdat.qc.error_handlers.RemoveFailedValues
+
+    fail_min:
+        qc_bit: 2
+        meaning: "Value is less than the fail_range."
+        assessment: Bad
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckFailMin
+
+    fail_max:
+        qc_bit: 3
+        meaning: "Value is greater than the fail_range."
+        assessment: Bad
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckFailMax
+
+    warn_min:
+        qc_bit: 4
+        meaning: "Value is less than the warn_range."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckWarnMin
+
+    warn_max:
+        qc_bit: 5
+        meaning: "Value is greater than the warn_range."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckWarnMax
+
+    valid_delta:
+        qc_bit: 6
+        meaning: "Difference between current and previous values exceeds valid_delta."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckValidDelta
+          parameters:
+            dim: time
