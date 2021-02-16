@@ -122,3 +122,12 @@ class QCChecker:
                         test_number=self.test.qc_bit,
                         test_meaning=self.test.meaning,
                         test_assessment=self.test.assessment)
+            else: 
+                results_array = np.zeros_like(self.ds[variable_name].data) == 1
+
+                if not self.coord:
+                    self.ds.qcfilter.add_test(
+                        variable_name, index=results_array,
+                        test_number=self.test.qc_bit,
+                        test_meaning="N/A",
+                        test_assessment="Indeterminate")
