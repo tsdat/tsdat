@@ -3,6 +3,7 @@ import shutil
 import unittest
 
 import act
+import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 
@@ -45,8 +46,8 @@ class CustomIngestPipeline(IngestPipeline):
 
             # Process the data
             dataset = self.standardize_dataset(raw_dataset_mapping)
-            dataset = self.apply_corrections(dataset)
-            dataset = self.customize_dataset(dataset)
+            dataset = self.apply_corrections(dataset, raw_dataset_mapping)
+            dataset = self.customize_dataset(dataset, raw_dataset_mapping)
 
             if self.config.dataset_definition.get_attr('data_level').startswith('b'):
                 # If there is previous data in Storage, we need
@@ -57,7 +58,6 @@ class CustomIngestPipeline(IngestPipeline):
 
             # Save the final datastream data to storage
             dataset = self.store_and_reopen_dataset(dataset)
-            # self.store_and_reopen_dataset(dataset)
 
             # Hook to generate plots
             # Users should save plots with self.storage.save(paths_to_plots)
@@ -98,10 +98,17 @@ class CustomIngestPipeline(IngestPipeline):
                 new_name = "surfacetemp - Surface Temperature (C)"
                 raw_dataset_mapping[filename] = dataset.rename_vars({old_name: new_name})
 
+            if "gill" in filename:
+                name_mapping = {
+                    "Horizontal Speed (m/s)":       "gill_horizontal_wind_speed",
+                    "Horizontal Direction (deg)":   "gill_horizontal_wind_direction" 
+                }
+                raw_dataset_mapping[filename] = dataset.rename_vars(name_mapping)
+
         # No customization to raw data - return original dataset
         return raw_dataset_mapping
 
-    def apply_corrections(self, dataset: xr.Dataset) -> xr.Dataset:
+    def apply_corrections(self, dataset: xr.Dataset, raw_dataset_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         """-------------------------------------------------------------------
         Pipeline hook that can be used to apply standard corrections for the
         instrument/measurement or calibrations. This method is called
@@ -122,7 +129,7 @@ class CustomIngestPipeline(IngestPipeline):
         # No corrections - return the original dataset
         return dataset
 
-    def customize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
+    def customize_dataset(self, dataset: xr.Dataset, raw_dataset_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         """-------------------------------------------------------------------
         Hook to allow for user customizations to the standardized dataset such
         as inserting a derived variable based on other variables in the
@@ -135,7 +142,23 @@ class CustomIngestPipeline(IngestPipeline):
         Returns:
             xr.Dataset: The customized dataset.
         -------------------------------------------------------------------"""
-        # No customizations - return the original dataset
+        for raw_filename, raw_dataset in raw_dataset_mapping.items():
+            if "currents" in raw_filename:
+                num_bins = 50
+                # Want to add Vel1 (mm/s), Vel2 (mm/s), Vel3 (mm/s), ... to the 
+                # current_velocity variable so that it is two dimensional.
+                vel_names = [f"Vel{i} (mm/s)" for i in range(1, num_bins + 1)]
+                vel_data  = [raw_dataset[name].data for name in vel_names]
+                vel_data  = np.array(vel_data).transpose()
+                dataset["current_velocity"].data = vel_data
+
+                # Want to add Dir1 (deg), Dir2 (deg), Dir3 (deg), ... to the 
+                # current_direction variable so that it is two dimensional.
+                vel_names = [f"Dir{i} (deg)" for i in range(1, num_bins + 1)]
+                vel_data  = [raw_dataset[name].data for name in vel_names]
+                vel_data  = np.array(vel_data).transpose()
+                dataset["current_direction"].data = vel_data
+        
         return dataset
 
     def store_and_reopen_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
@@ -186,7 +209,6 @@ class CustomIngestPipeline(IngestPipeline):
         for variable_name in dataset.data_vars.keys():
             if variable_name.startswith("qc_") or "time" not in dataset[variable_name].dims:
                 continue
-            
             filename = DSUtil.get_plot_filename(dataset, variable_name, "png")
             with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
 
@@ -197,6 +219,18 @@ class CustomIngestPipeline(IngestPipeline):
                 plt.close()
 
                 self.storage.save(tmp_path)
+        
+        # Custom plot for current velocity and direction
+        filename = DSUtil.get_plot_filename(dataset, "current_by_depth", "png")
+        with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
+            fig, axes = plt.subplots(nrows=2, figsize=(15,9))
+            dataset.current_velocity.plot(ax=axes[0], x="time", y="depth", yincrease=False, snap=True)
+            dataset.current_direction.plot(ax=axes[1], x="time", y="depth", yincrease=False, snap=True, cmap="hsv")
+            fig.set_tight_layout(True)
+            fig.savefig(tmp_path)
+            plt.close()
+            self.storage.save(tmp_path)
+
         return
 
 
@@ -232,6 +266,8 @@ class TestCustomIngestPipeline(unittest.TestCase):
         shutil.copy(original_raw_file, temp_raw_file)
         return temp_raw_file
 
+    # TODO: add wind.csv
+    # TODO: test spaces in raw input
     def test_custom_ingest(self):
         raw_file = self.get_raw_file('buoy.z05.00.20201117.000000.zip')
         # raw_file = self.get_raw_file('buoy.z05.00.20201004.000000.zip')
