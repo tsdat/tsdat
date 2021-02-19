@@ -27,6 +27,9 @@ dataset_definition:  # Describes the dataset that will be produced
   dimensions:
     time:
         length: unlimited
+    
+    depth:
+        length: 50
 
   variables:
 
@@ -37,15 +40,23 @@ dataset_definition:  # Describes the dataset that will be produced
         converter:
           classname: tsdat.utils.converters.StringTimeConverter
           parameters:
-            timezone: US/Pacific
+            timezone: UTC
             time_format: "%Y-%m-%d %H:%M:%S"
       dims: [time]
       type: long
       attrs:
-        long_name: Time offset from epoch
+        long_name: Time (UTC)
         standard_name: time
         units: seconds since 1970-01-01T00:00:00
     
+    depth:
+      data: [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 72, 76, 80, 84, 88, 92, 96, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 148, 152, 156, 160, 164, 168, 172, 176, 180, 184, 188, 192, 196, 200]
+      dims: [depth]
+      type: long
+      attrs:
+        long_name: Depth
+        units: m
+
     surface_temperature:  
       input: # From conductivity csv
         name: Surface Temperature (C)
@@ -118,119 +129,34 @@ dataset_definition:  # Describes the dataset that will be produced
         units: m
         _FillValue: -9999
 
-    currents_velocity_1:  
-      input: # From currents csv
-        name: Vel1 (mm/s)
-        units: mm/s
-      dims: [time]
+
+    # This is a "computed" value, which just means that it is not 
+    # automatically pulled in from the input file and needs to be
+    # manually handled in one of the customization hooks.
+    current_velocity:
+      dims: [time, depth]
       type: double
       attrs:
-        long_name: Current velocity in bin 1
+        long_name: Current Velocity
         units: mm/s
+        valid_range: [0, 20000] # TODO
         _FillValue: -9999
 
-    currents_direction_1:  
-      input: # From currents csv
-        name: Dir1 (deg)
-        units: degrees
-      dims: [time]
+    # This is a "computed" value, which just means that it is not 
+    # automatically pulled in from the input file and needs to be
+    # manually handled in one of the customization hooks.
+    current_direction:
+      dims: [time, depth]
       type: double
       attrs:
-        long_name: Current direction in bin 1
+        long_name: Current Direction
         units: degrees
-        _FillValue: -9999
-      
-    currents_velocity_2:  
-      input: # From currents csv
-        name: Vel2 (mm/s)
-        units: mm/s
-      dims: [time]
-      type: double
-      attrs:
-        long_name: Current velocity in bin 2
-        units: mm/s
+        valid_range: [0, 360]
         _FillValue: -9999
 
-    currents_direction_2:  
-      input: # From currents csv
-        name: Dir2 (deg)
-        units: degrees
-      dims: [time]
-      type: double
-      attrs:
-        long_name: Current direction in bin 2
-        units: degrees
-        _FillValue: -9999
-
-    currents_velocity_3:  
-      input: # From currents csv
-        name: Vel3 (mm/s)
-        units: mm/s
-      dims: [time]
-      type: double
-      attrs:
-        long_name: Current velocity in bin 3
-        units: mm/s
-        _FillValue: -9999
-
-    currents_direction_3:  
-      input: # From currents csv
-        name: Dir3 (deg)
-        units: degrees
-      dims: [time]
-      type: double
-      attrs:
-        long_name: Current direction in bin 3
-        units: degrees
-        _FillValue: -9999
-
-    currents_velocity_4:  
-      input: # From currents csv
-        name: Vel4 (mm/s)
-        units: mm/s
-      dims: [time]
-      type: double
-      attrs:
-        long_name: Current velocity in bin 4
-        units: mm/s
-        _FillValue: -9999
-
-    currents_direction_4:  
-      input: # From currents csv
-        name: Dir4 (deg)
-        units: degrees
-      dims: [time]
-      type: double
-      attrs:
-        long_name: Current direction in bin 4
-        units: degrees
-        _FillValue: -9999
-
-    currents_velocity_5:  
-      input: # From currents csv
-        name: Vel5 (mm/s)
-        units: mm/s
-      dims: [time]
-      type: double
-      attrs:
-        long_name: Current velocity in bin 5
-        units: mm/s
-        _FillValue: -9999
-
-    currents_direction_5:  
-      input: # From currents csv
-        name: Dir5 (deg)
-        units: degrees
-      dims: [time]
-      type: double
-      attrs:
-        long_name: Current direction in bin 5
-        units: degrees
-        _FillValue: -9999
-
-    horizontal_wind_speed:  
+    gill_horizontal_wind_speed:  
       input: # From gill csv
-        name: Horizontal Speed (m/s)
+        name: gill_horizontal_wind_speed # Was "Horizontal Speed (m/s)" but needed to be renamed to prevent duplication
         units: m/s
       dims: [time]
       type: double
@@ -241,15 +167,41 @@ dataset_definition:  # Describes the dataset that will be produced
         valid_range: [0, 50]
         _FillValue: -9999
 
-    horizontal_wind_direction:  
+    gill_horizontal_wind_direction:  
       input: # From gill csv
-        name: Horizontal Direction (deg)
+        name: gill_horizontal_wind_direction # Was "Horizontal Direction (deg)" but needed to be renamed to prevent duplication
         units: degrees
       dims: [time]
       type: double
       attrs:
         long_name: Horizontal Wind Direction
         comment: Surface horizontal wind direction, 2D ultrasonic anemometer
+        units: degrees
+        valid_range: [0, 360]
+        _FillValue: -9999
+
+    horizontal_wind_speed:  
+      input: # From wind csv
+        name: Horizontal Speed (m/s)
+        units: m/s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Horizontal Wind Speed
+        comment: Surface wind speed, cup anemometer
+        units: m/s
+        valid_range: [0, 50]
+        _FillValue: -9999
+
+    horizontal_wind_direction:  
+      input: # From wind csv
+        name: Horizontal Direction (deg)
+        units: degrees
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Horizontal Wind Direction
+        comment: Surface wind direction, wind vane
         units: degrees
         valid_range: [0, 360]
         _FillValue: -9999
