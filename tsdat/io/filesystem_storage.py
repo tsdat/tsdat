@@ -6,11 +6,14 @@ import tarfile
 import zipfile
 from typing import List, Union
 
-from tsdat.io import DatastreamStorage, \
-    TemporaryStorage, \
-    DisposableLocalTempFile, \
-    DisposableStorageTempFileList, \
+from tsdat.io import (
+    DatastreamStorage,
+    TemporaryStorage,
+    DisposableLocalTempFile,
+    DisposableStorageTempFileList,
     DisposableLocalTempFileList
+)
+
 
 from tsdat.utils import DSUtil
 
@@ -55,7 +58,7 @@ class FilesystemTemporaryStorage(TemporaryStorage):
         date = datetime.datetime.strptime(start_time, "%Y%m%d.%H%M%S")
         prev_date = (date - datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
         next_date = (date + datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
-        files = self.datastream_storage.find(datastream_name, prev_date, next_date)
+        files = self.datastream_storage.find(datastream_name, prev_date, next_date, filetype=DatastreamStorage.FILE_TYPE.NETCDF)
 
         previous_filepath = None
         if files:
