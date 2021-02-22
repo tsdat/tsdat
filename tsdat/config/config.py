@@ -1,7 +1,8 @@
-from typing import List, Dict
-
 import yaml
 import warnings
+from yamllint import linter
+from yamllint.config import YamlLintConfig
+from typing import List, Dict
 from tsdat.config.attribute_defintion import AttributeDefinition
 from .dataset_definition import DatasetDefinition
 from .keys import Keys
@@ -79,13 +80,11 @@ class Config:
 
     @staticmethod
     def lint_yaml(filename):
-        from yamllint.config import YamlLintConfig
-        from yamllint import linter
         # new-line-at-end-of-file
         conf = YamlLintConfig('{"extends": "relaxed", "rules": {"line-length": "disable", "trailing-spaces": "disable", "empty-lines": "disable"}}')
-        f = open(filename)
-        gen = linter.run(f, conf)
-        errors = [error for error in gen if error.level == "error"]
-        if errors:
-            errors = "\n".join("\t\t" + str(error) for error in errors)
-            raise Exception(f"Syntax errors found in yaml file {filename}: \n{errors}")
+        with open(filename) as file:
+            gen = linter.run(file, conf)
+            errors = [error for error in gen if error.level == "error"]
+            if errors:
+                errors = "\n".join("\t\t" + str(error) for error in errors)
+                raise Exception(f"Syntax errors found in yaml file {filename}: \n{errors}")
