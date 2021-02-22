@@ -16,6 +16,7 @@ class IngestPipeline(Pipeline):
         Runs the Ingest Pipeline from start to finish.
 
         Args:
+        ---
             filepath (str): The path to the file (or archive containing
                             a collection of files) to run the Ingest Pipeline 
                             on.
@@ -34,8 +35,8 @@ class IngestPipeline(Pipeline):
 
             # Process the data
             dataset = self.standardize_dataset(raw_dataset_mapping)
-            dataset = self.apply_corrections(dataset)
-            dataset = self.customize_dataset(dataset)
+            dataset = self.apply_corrections(dataset, raw_dataset_mapping)
+            dataset = self.customize_dataset(dataset, raw_dataset_mapping)
 
             if self.config.dataset_definition.get_attr('data_level').startswith('b'):
                 # If there is previous data in Storage, we need
@@ -58,9 +59,11 @@ class IngestPipeline(Pipeline):
         renamed files.
 
         Args:
+        ---
             file_paths (List[str]): A list of paths to the original raw files.
 
         Returns:
+        ---
             List[str]: A list of paths to the renamed raw files.
         -------------------------------------------------------------------"""
         raw_dataset_mapping = {}
@@ -95,10 +98,12 @@ class IngestPipeline(Pipeline):
         Merges the provided datasets provided and returns the merged result.
 
         Args:
+        ---
             dataset_mapping (Dict[str, xr.Dataset]):    The dataset mappings 
                                                         to merge.
 
         Returns:
+        ---
             xr.Dataset: The merged dataset.
         -------------------------------------------------------------------"""
         merged_dataset = xr.Dataset()
@@ -106,7 +111,7 @@ class IngestPipeline(Pipeline):
             merged_dataset = merged_dataset.merge(ds)
         return merged_dataset
 
-    def apply_corrections(self, dataset: xr.Dataset) -> xr.Dataset:
+    def apply_corrections(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         """-------------------------------------------------------------------
         Pipeline hook that can be used to apply standard corrections for the 
         instrument/measurement or calibrations. This method is called
@@ -118,15 +123,18 @@ class IngestPipeline(Pipeline):
         corrections to.
 
         Args:
+        ---
             dataset (xr.Dataset):   A standardized xarray dataset where the 
                                     variable names correspond with the output 
                                     variable names from the config file.
+            raw_mapping (Dict[str, xr.Dataset]):    The raw dataset mapping.
         Returns:
+        ---
             xr.Dataset: The input xarray dataset with corrections applied.
         -------------------------------------------------------------------"""
         return dataset
     
-    def customize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
+    def customize_dataset(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         """-------------------------------------------------------------------
         Hook to allow for user customizations to the standardized dataset such
         as inserting a derived variable based on other variables in the
@@ -134,9 +142,12 @@ class IngestPipeline(Pipeline):
         hook and before any QC tests are applied.
 
         Args:
+        ---
             dataset (xr.Dataset): The dataset to customize.
+            raw_mapping (Dict[str, xr.Dataset]):    The raw dataset mapping.
 
         Returns:
+        ---
             xr.Dataset: The customized dataset.
         -------------------------------------------------------------------"""
         return dataset
@@ -162,10 +173,12 @@ class IngestPipeline(Pipeline):
         standard format as specified by the config file.
 
         Args:
+        ---
             raw_dataset_mapping (Dict[str, xr.Dataset])     The raw datasets to
                                                             customize.
 
         Returns:
+        ---
             Dict[str, xr.Dataset]: The customized raw dataset.
         -------------------------------------------------------------------"""
         return raw_dataset_mapping
@@ -197,6 +210,7 @@ class IngestPipeline(Pipeline):
         ```
 
         Args:
+        ---
             dataset (xr.Dataset):   The xarray dataset with customizations and 
                                     QC applied. 
         -------------------------------------------------------------------"""
@@ -208,10 +222,12 @@ class IngestPipeline(Pipeline):
         datastream as the provided dataset from the DatastreamStorage.
 
         Args:
+        ---
             dataset (xr.Dataset):   The reference dataset that will be used to
                                     search the DatastreamStore for prior data.
 
         Returns:
+        ---
             xr.Dataset: The previous dataset from the DatastreamStorage if it
                         exists, else None.
         -------------------------------------------------------------------"""
@@ -231,9 +247,11 @@ class IngestPipeline(Pipeline):
         DatastreamStorage object to persist it. 
 
         Args:
+        ---
             dataset (xr.Dataset): The dataset to store.
         
         Returns:
+        ---
             xr.Dataset: The dataset after it has been saved to disk and 
                         reopened.
         -------------------------------------------------------------------"""
