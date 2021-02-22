@@ -51,37 +51,119 @@ dataset_definition:  # Describes the dataset that will be produced
         long_name: Time offset from epoch
         standard_name: time
         units: seconds since 1970-01-01T00:00:00
-
-    sea_surface_temperature:
-      input:
-        name: Surface Temperature (C)
-        units: degC
-        converter:
-          classname: tsdat.utils.converters.DefaultConverter
+    
+    # gill_horizontal_speed:  
+    #   input: # From gill csv
+    #     name: gill_hz_speed # Originally Horizontal Speed (m/s), manually renamed in custom hook
+    #     units: m/s
+    #   dims: [time]
+    #   type: double
+    #   attrs:
+    #     long_name:  Horizontal wind speed
+    #     units: m/s
+    #     _FillValue: -9999
+      
+    # gill_horizontal_direction:  
+    #   input: # From gill csv
+    #     name: gill_hz_direction # Originally Horizontal Direction (deg), manually renamed in custom hook
+    #     units: deg
+    #   dims: [time]
+    #   type: double
+    #   attrs:
+    #     long_name:  Horizontal wind direction
+    #     units: deg
+    #     _FillValue: -9999
+    
+    pressure:  
+      input: # From pressure csv
+        name: Barometric Pressure (mb)
+        units: mbar
+      dims: [time]
+      type: double
+      # required: true # TODO
+      attrs:
+        long_name:  Barometric pressure
+        units: mbar
+        fail_range: [0, 100]
+        _FillValue: -9999
+      
+    relative_humidity:  
+      input: # From rh csv
+        name: Relative Humidity (%)
+        units: '%'
       dims: [time]
       type: double
       attrs:
-        long_name: Sea surface temperature
-        comment: Rolling 10-minute average sea surface temperature. Aligned such that the temperature reported at time 'n' represents the average across the interval (n-1, n].
-        units: degC
-        valid_delta: 3.0
-        valid_range: [-50, 150]
+        long_name:  Relative humidity
+        units: '%'
+        fail_range: [20, 30]
         _FillValue: -9999
 
-    air_temperature:
-      input:
-        name: Air Temperature (C)
+    sea_surface_temperature:  
+      input: # From surfacetemp csv
+        name: Surface Temperature (C)
         units: degC
-        converter:
-          classname: tsdat.utils.converters.DefaultConverter
       dims: [time]
       type: double
       attrs:
-        long_name: Air temperature at sea level
-        comment: Rolling 10-minute average air temperature. Aligned such that the temperature reported at time 'n' represents the average across the interval (n-1, n].
+        long_name:  Sea surface temperature
         units: degC
-        valid_delta: 3.0
-        valid_range: [-50, 150]
+        fail_range: [-30, 40]
+        _FillValue: -9999
+
+    air_temperature:  
+      input: # From temperature csv
+        name: Air Temperature (C)
+        units: degC
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Air temperature
+        units: degC
+        _FillValue: -9999
+
+    wind_horizontal_speed:  
+      input: # From wind csv
+        name: Horizontal Speed (m/s)
+        units: m/s
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Horizontal wind speed
+        units: m/s
+        _FillValue: -9999
+      
+    wind_horizontal_direction:  
+      input: # From wind csv
+        name: Horizontal Direction (deg)
+        units: deg
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Horizontal wind direction
+        units: deg
+        _FillValue: -9999
+
+    latitude:  
+      input: # From gps csv
+        name: Latitude
+        units: degree_N
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Latitude
+        units: degree_N
+        _FillValue: -9999
+      
+    longitude:  
+      input: # From gps csv
+        name: Longitude
+        units: degree_E
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Longitude
+        units: degree_E
         _FillValue: -9999
 
 #-----------------------------------------------------------------

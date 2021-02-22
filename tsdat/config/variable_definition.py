@@ -93,8 +93,8 @@ class VariableDefinition:
         -------------------------------------------------------------------"""
         data_type: str = dictionary.get(VarKeys.TYPE, "")
         mappings = {
-            "string":   np.str,
-            "char":     np.str,
+            "string":   str,
+            "char":     str,
             "byte":     np.int8,
             "ubyte":    np.uint8,
             "short":    np.int16,

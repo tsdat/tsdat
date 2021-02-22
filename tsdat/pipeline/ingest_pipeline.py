@@ -44,12 +44,12 @@ class IngestPipeline(Pipeline):
                 previous_dataset = self.get_previous_dataset(dataset)
                 QC.apply_tests(dataset, self.config, previous_dataset)
 
+            # Save the final datastream data to storage
+            dataset = self.store_and_reopen_dataset(dataset)
+
             # Hook to generate plots
             # Users should save plots with self.storage.save(paths_to_plots)
             self.create_and_persist_plots(dataset)
-
-            # Save the final datastream data to storage
-            self.store_dataset(dataset)
 
     def read_and_persist_raw_files(self, file_paths: List[str]) -> List[str]:
         """-------------------------------------------------------------------
@@ -225,15 +225,21 @@ class IngestPipeline(Pipeline):
 
         return prev_dataset
     
-    def store_dataset(self, dataset: xr.Dataset) -> None:
+    def store_and_reopen_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
         Writes the dataset to a local netcdf file and then uses the 
         DatastreamStorage object to persist it. 
 
         Args:
             dataset (xr.Dataset): The dataset to store.
+        
+        Returns:
+            xr.Dataset: The dataset after it has been saved to disk and 
+                        reopened.
         -------------------------------------------------------------------"""
+        reopened_dataset = None
         with self.storage.tmp.get_temp_filepath(DSUtil.get_dataset_filename(dataset)) as tmp_path:
             FileHandler.write(dataset, tmp_path)
-            #dataset.to_netcdf(tmp_path)
             self.storage.save(tmp_path)
+            reopened_dataset = FileHandler.read(tmp_path)
+        return reopened_dataset
