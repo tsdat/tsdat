@@ -54,7 +54,7 @@ class DatastreamStorage(abc.ABC):
 
     @abc.abstractmethod
     def fetch(self, datastream_name: str, start_time: str, end_time: str,
-              local_path: str = None, filetype: int = None, disposable=True) -> List[str]:
+              local_path: str = None, filetype: int = None) -> List[str]:
         """-------------------------------------------------------------------
         Fetches files from the datastream store using the datastream_name,
         start_time, and end_time to specify the file(s) to retrieve. If the 
@@ -76,13 +76,9 @@ class DatastreamStorage(abc.ABC):
             filetype (int):   A file type from the DatastreamStorage.FILE_TYPE
                               list.  If no type is specified, all files will
                               be returned.
-            disposable (str):   If True, this method will return the results
-                                wrapped in a context manager so that the
-                                fetched files will be automatically deleted
-                                when they go out of scope.
 
         Returns:
-            List[str] | DisposableStorageTempFileList:  A list of paths where
+            DisposableStorageTempFileList:  A list of paths where
                                 the retrieved files were stored in local storage.
         -------------------------------------------------------------------"""
         return
@@ -160,8 +156,9 @@ class DisposableLocalTempFile:
     the LOCAL FILESYSTEM.  It will ensure that the file is deleted when
     it goes out of scope.
     -------------------------------------------------------------------"""
-    def __init__(self, filepath: str):
+    def __init__(self, filepath: str, disposable=True):
         self.filepath = filepath
+        self.disposable = disposable
 
     def __enter__(self):
         return self.filepath
@@ -169,7 +166,7 @@ class DisposableLocalTempFile:
     def __exit__(self, type, value, traceback):
 
         # We only clean up the file if an exception was not thrown
-        if type is None and self.filepath is not None:
+        if type is None and self.filepath is not None and self.disposable:
             if os.path.isfile(self.filepath):
                 os.remove(self.filepath)
 
@@ -185,7 +182,7 @@ class DisposableLocalTempFileList (list):
     are deleted when the list goes out of scope.
     -------------------------------------------------------------------"""
 
-    def __init__(self, filepath_list: List[str], delete_on_exception=False):
+    def __init__(self, filepath_list: List[str], delete_on_exception=False, disposable=True):
         """-------------------------------------------------------------------
         Args:
             filepath_list (List[str]):   A list of paths to files in temporary
@@ -197,24 +194,28 @@ class DisposableLocalTempFileList (list):
                                         setting to force files to be cleaned up
                                         no matter if an exception is thrown or
                                         not.
+            disposable:                 True if this file should be auto-deleted
+                                        when out of scope.
         -------------------------------------------------------------------"""
         self.filepath_list = filepath_list
         self.delete_on_exception = delete_on_exception
+        self.disposable = disposable
 
     def __enter__(self):
         return self.filepath_list
 
     def __exit__(self, type, value, traceback):
 
-        # We only clean up the files if an exception was not thrown
-        if type is None or self.delete_on_exception:
-            for filepath in self.filepath_list:
-                if os.path.isfile(filepath):
-                    os.remove(filepath)
+        if self.disposable:
+            # We only clean up the files if an exception was not thrown
+            if type is None or self.delete_on_exception:
+                for filepath in self.filepath_list:
+                    if os.path.isfile(filepath):
+                        os.remove(filepath)
 
-                elif os.path.isdir(filepath):
-                    # remove directory and all its children
-                    shutil.rmtree(filepath)
+                    elif os.path.isdir(filepath):
+                        # remove directory and all its children
+                        shutil.rmtree(filepath)
 
 
 class DisposableStorageTempFileList (list):
@@ -224,7 +225,7 @@ class DisposableStorageTempFileList (list):
     are deleted when the list goes out of scope.
     -------------------------------------------------------------------"""
 
-    def __init__(self, filepath_list: List[str], storage, delete_on_exception=False):
+    def __init__(self, filepath_list: List[str], storage, delete_on_exception=False, disposable=True):
         """-------------------------------------------------------------------
         Args:
             filepath_list (List[str]):   A list of paths to files in temporary
@@ -239,6 +240,9 @@ class DisposableStorageTempFileList (list):
                                         setting to force files to be cleaned up
                                         no matter if an exception is thrown or
                                         not.
+
+            disposable:                 True if this file should be auto-deleted
+                                        when out of scope.
         -------------------------------------------------------------------"""
         self.filepath_list = filepath_list
 
@@ -248,16 +252,18 @@ class DisposableStorageTempFileList (list):
         self.tmp_storage = storage
         assert isinstance(self.tmp_storage, TemporaryStorage)
         self.delete_on_exception = delete_on_exception
+        self.disposable = disposable
 
     def __enter__(self):
         return self.filepath_list
 
     def __exit__(self, type, value, traceback):
 
-        # We only clean up the files if an exception was not thrown
-        if type is None or self.delete_on_exception:
-            for filepath in self.filepath_list:
-                self.tmp_storage.delete(filepath)
+        if self.disposable:
+            # We only clean up the files if an exception was not thrown
+            if type is None or self.delete_on_exception:
+                for filepath in self.filepath_list:
+                    self.tmp_storage.delete(filepath)
 
 
 class TemporaryStorage(abc.ABC):
@@ -275,7 +281,7 @@ class TemporaryStorage(abc.ABC):
                                          DatastreamStorage
         -------------------------------------------------------------------"""
         self.datastream_storage = storage
-        self._local_temp_folder = tempfile.mkdtemp()
+        self._local_temp_folder = tempfile.mkdtemp(prefix='tsdat-pipeline-')
 
     @property
     def local_temp_folder(self) -> str:
@@ -289,54 +295,42 @@ class TemporaryStorage(abc.ABC):
         -------------------------------------------------------------------"""
         return self._local_temp_folder
 
-    def get_temp_filepath(self, filename: str = None, disposable=True) -> Union[DisposableLocalTempFile, str]:
+    def get_temp_filepath(self, filename: str = None) -> DisposableLocalTempFile:
         """-------------------------------------------------------------------
         Construct a filepath for a temporary file that will be located in the
-        storage-approved local temp folder.  If disposable=True, it will be
-        wrapped in a context manager so that the temp file will be deleted
-        when it goes out of scope.
+        storage-approved local temp folder and will be deleted when it goes
+        out of scope.
 
         Args:
             filename (str):   The filename to use for the temp file.  If no
                               filename is provided, one will be created.
 
-            disposable (bool): If True (default) it will return the path wrapped
-                               in a context manager so it will be automatically
-                               be cleaned up when it goes out of scope.
-
         Returns:
-            DisposableLocalTempFile | str:   Path to the local file.  If disposable=True,
-                                   it will be wrapped in a context mgr.
+            DisposableLocalTempFile:   Path to the local file.  The file will be
+                                       automatically deleted when it goes out
+                                       of scope.
         -------------------------------------------------------------------"""
         if filename is None:
             now = datetime.now()
             filename = now.strftime("%Y-%m-%d.%H%M%S.%f")
 
         filepath = os.path.join(self.local_temp_folder, filename)
-        if disposable:
-            return DisposableLocalTempFile(filepath)
-        else:
-            return filepath
+        return DisposableLocalTempFile(filepath)
 
-    def create_temp_dir(self, disposable=False):
+    def create_temp_dir(self) -> str:
         """-------------------------------------------------------------------
         Create a new, temporary directory under the local tmp area managed by
-        TemporaryStorage
-        Args:
-            disposable (bool): If True, it will return the path wrapped
-                               in a context manager so it will be automatically
-                               be cleaned up when it goes out of scope.
+        TemporaryStorage.
 
         Returns:
-            DisposableLocalTempFile | str:   Path to the local dir.  If disposable=True,
-                                   it will be wrapped in a context mgr.
+            str:   Path to the local dir.
         -------------------------------------------------------------------"""
-        temp_dir = self.get_temp_filepath(disposable=False)
+        now = datetime.now()
+        filename = now.strftime("%Y-%m-%d.%H%M%S.%f")
+        temp_dir = os.path.join(self.local_temp_folder, filename)
 
         # make sure the directory exists
         os.makedirs(temp_dir, exist_ok=False)
-        if disposable:
-            return DisposableLocalTempFile(temp_dir)
 
         return temp_dir
 
@@ -365,16 +359,21 @@ class TemporaryStorage(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def fetch(self, file_path: str) -> DisposableLocalTempFile:
+    def fetch(self, file_path: str, local_dir=None, disposable=True) -> Union[DisposableLocalTempFile, str]:
         """-------------------------------------------------------------------
-        Fetch a file from temp storage to a local temp folder
+        Fetch a file from temp storage to a local temp folder.  If
+        disposable is True, then a DisposableLocalTempFile will be returned
+        so that it can be used with a context manager.
 
         Args:
             file_path (str):   The path of a file located in the same
                                filesystem as the storage.
+            local_dir(str):    The destination folder for the file.  If not
+                               specified, it will be created.
+            disposable (bool):
 
         Returns:
-            DisposableLocalTempFile:     The local path to the file
+            DisposableLocalTempFile | str:   The local path to the file
         -------------------------------------------------------------------"""
         pass
 

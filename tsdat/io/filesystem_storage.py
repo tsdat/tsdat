@@ -47,8 +47,16 @@ class FilesystemTemporaryStorage(TemporaryStorage):
 
         return DisposableStorageTempFileList(extracted_files, self, delete_on_exception=delete_on_exception)
 
-    def fetch(self, file_path: str) -> DisposableLocalTempFile:
-        return DisposableLocalTempFile(file_path)
+    def fetch(self, file_path: str, local_dir=None, disposable=True) -> Union[DisposableLocalTempFile, str]:
+        if not local_dir:
+            local_dir = self.create_temp_dir()
+
+        fetched_file = os.path.join(local_dir, os.path.basename(file_path))
+        shutil.copy(file_path, fetched_file)
+        if disposable:
+            return DisposableLocalTempFile(fetched_file)
+
+        return fetched_file
 
     def fetch_previous_file(self, datastream_name: str, start_time: str) -> DisposableLocalTempFile:
         # fetch files one day previous and one day after start date (since find is exclusive)
@@ -117,8 +125,7 @@ class FilesystemStorage(DatastreamStorage):
 
     def fetch(self, datastream_name: str, start_time: str, end_time: str,
               local_path: str = None,
-              filetype: int = None,
-              disposable=True) -> Union[List[str], DisposableLocalTempFileList]:
+              filetype: int = None) -> DisposableLocalTempFileList:
         fetched_files = []
         datastream_store_files = self.find(datastream_name, start_time, end_time, filetype=filetype)
         local_dir = local_path
@@ -130,14 +137,10 @@ class FilesystemStorage(DatastreamStorage):
             shutil.copy(datastream_file, fetched_file)
             fetched_files.append(fetched_file)
 
-        if disposable:
-            return DisposableLocalTempFileList(fetched_files)
-
-        return fetched_files
+        return DisposableLocalTempFileList(fetched_files)
 
     def save(self, local_path: str, new_filename: str = None) -> None:
-        # TODO: we should perform a REGEX check to make sure that the
-        # filename is valid
+        # TODO: we should perform a REGEX check to make sure that the filename is valid
         filename = os.path.basename(local_path) if not new_filename else new_filename
         datastream_name = DSUtil.get_datastream_name_from_filename(filename)
 

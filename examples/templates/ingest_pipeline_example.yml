@@ -110,7 +110,7 @@ qc_tests:  # Define QC tests for non-coordinate variables
 
     missing:
         qc_bit: 1
-        description: "Value is equal to _FillValue or NaN"
+        meaning: "Value is equal to _FillValue or NaN"
         assessment: Bad
         variables:
           - ALL  # keyword to apply test to all variables
@@ -123,7 +123,7 @@ qc_tests:  # Define QC tests for non-coordinate variables
 
     fail_min:
         qc_bit: 2
-        description: "Value is less than the fail_range."
+        meaning: "Value is less than the fail_range."
         assessment: Bad
         variables:
           - ALL
@@ -132,7 +132,7 @@ qc_tests:  # Define QC tests for non-coordinate variables
 
     fail_max:
         qc_bit: 3
-        description: "Value is greater than the fail_range."
+        meaning: "Value is greater than the fail_range."
         assessment: Bad
         variables:
           - ALL
@@ -141,7 +141,7 @@ qc_tests:  # Define QC tests for non-coordinate variables
 
     warn_min:
         qc_bit: 4
-        description: "Value is less than the warn_range."
+        meaning: "Value is less than the warn_range."
         assessment: Indeterminate
         variables:
           - ALL
@@ -150,7 +150,7 @@ qc_tests:  # Define QC tests for non-coordinate variables
 
     warn_max:
         qc_bit: 5
-        description: "Value is greater than the warn_range."
+        meaning: "Value is greater than the warn_range."
         assessment: Indeterminate
         variables:
           - ALL
@@ -159,7 +159,7 @@ qc_tests:  # Define QC tests for non-coordinate variables
 
     valid_delta:
         qc_bit: 6
-        description: "Difference between current and previous values exceeds valid_delta."
+        meaning: "Difference between current and previous values exceeds valid_delta."
         assessment: Indeterminate
         variables:
           - ALL
