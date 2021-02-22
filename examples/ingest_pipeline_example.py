@@ -1,11 +1,14 @@
 import os
+import act
 import shutil
+import matplotlib.pyplot as plt
 from typing import Dict
 
 import xarray as xr
 from tsdat.config import Config
 from tsdat.io import FilesystemStorage
 from tsdat.pipeline import IngestPipeline
+from tsdat.utils import DSUtil
 
 
 """-----------------------------------------------------------------------
@@ -116,8 +119,21 @@ class CustomIngestPipeline(IngestPipeline):
         Args:
             dataset (xr.Dataset):   The xarray dataset with customizations and
                                     QC applied.
-        -------------------------------------------------------------------"""
-        pass
+        -------------------------------------------------------------------"""        
+        for variable_name in dataset.data_vars.keys():
+            if variable_name.startswith("qc_") or "time" not in dataset[variable_name].dims:
+                continue
+            
+            filename = DSUtil.get_plot_filename(dataset, variable_name, "png")
+            with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
+                display = act.plotting.TimeSeriesDisplay(dataset, subplot_shape=(2,), figsize=(15,9), sharex=True)
+                # ds_ceil_act = act.qc.arm.add_dqr_to_qc(ds_ceil_act, variable=variable)
+                display.plot(variable_name, subplot_index=(0,))
+                display.qc_flag_block_plot(variable_name, subplot_index=(1,))
+                display.fig.savefig(tmp_path)
+                self.storage.save(tmp_path)
+                plt.close()
+        return
 
 
 # Set up references to folders that will be used in this example:
