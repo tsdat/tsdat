@@ -2,7 +2,7 @@ import boto3
 import io
 import os
 import bisect
-from datetime import datetime
+import datetime
 import shutil
 import tarfile
 import zipfile
@@ -79,47 +79,14 @@ class S3Path(str):
     def region_name(self):
         return self._region_name
 
-    def join(self, segments):
-
-        if isinstance(segments, str):
-            segments = [segments]
-
+    def join(self, *args):
         bucket_path = self.bucket_path
-        for segment in segments:
+
+        for segment in args:
             bucket_path = os.path.join(bucket_path, segment)
 
         bucket_path = bucket_path.replace("\\", "/")
         return S3Path(self.bucket_name, bucket_path, self.region_name)
-
-
-def get_s3_client(path: S3Path):
-    # Client is a low level api client
-    client = None
-
-    if path.region_name:
-        # Create a session with region specified
-        session = boto3.Session(region_name=path.region_name)
-        client = session.client('s3')
-
-    else:
-        client = boto3.client('s3') # this will use the default session
-
-    return client
-
-
-def get_s3_resource(path: S3Path):
-    # Resource is a higher level api object
-    resource = None
-
-    if path.region_name:
-        # Create a session with region specified
-        session = boto3.Session(region_name=path.region_name)
-        resource = session.resource('s3')
-
-    else:
-        resource = boto3.resource('s3')  # this will use the default session
-
-    return resource
 
 
 class AwsTemporaryStorage(TemporaryStorage):
@@ -127,7 +94,7 @@ class AwsTemporaryStorage(TemporaryStorage):
     def __init__(self, *args, **kwargs):
         super(AwsTemporaryStorage, self).__init__(*args, **kwargs)
 
-        now = datetime.now()
+        now = datetime.datetime.now()
         self._base_path = self.datastream_storage.temp_path.join(now.strftime("%Y-%m-%d.%H%M%S.%f"))
 
     @property
@@ -148,7 +115,7 @@ class AwsTemporaryStorage(TemporaryStorage):
 
     def extract_tarfile(self, filepath: S3Path) -> List[S3Path]:
         extracted_files = []
-        s3_resource = get_s3_resource(filepath)
+        s3_resource = self.datastream_storage.s3_resource
         tar_obj = s3_resource.Object(bucket_name=filepath.bucket_name, key=filepath.bucket_path)
 
         buffer = io.BytesIO(tar_obj.get()["Body"].read())
@@ -160,13 +127,13 @@ class AwsTemporaryStorage(TemporaryStorage):
 
             if file_obj:  # file_obj will be None if it is a folder
 
-                s3_resource.meta.client.upload_fileobj(
-                    file_obj,
-                    Bucket=dest_path.bucket_name,
-                    Key=f'{dest_path.bucket_path}'
-                )
                 # do not include __MACOSX files
                 if '__MACOSX' not in dest_path:
+                    s3_resource.meta.client.upload_fileobj(
+                        file_obj,
+                        Bucket=dest_path.bucket_name,
+                        Key=f'{dest_path.bucket_path}'
+                    )
                     extracted_files.append(dest_path)
 
         tar.close()
@@ -184,7 +151,7 @@ class AwsTemporaryStorage(TemporaryStorage):
         Returns:
             List[S3Path]: A list of the paths of files that were extracted
         -------------------------------------------------------------------"""
-        s3_resource = get_s3_resource(filepath)
+        s3_resource = self.datastream_storage.s3_resource
         zip_obj = s3_resource.Object(bucket_name=filepath.bucket_name, key=filepath.bucket_path)
         buffer = io.BytesIO(zip_obj.get()["Body"].read())
         extracted_files = []
@@ -194,13 +161,14 @@ class AwsTemporaryStorage(TemporaryStorage):
             dest_path: S3Path = self.base_path.join(filename)
 
             file_info = z.getinfo(filename)
-            s3_resource.meta.client.upload_fileobj(
-                z.open(filename),
-                Bucket=dest_path.bucket_name,
-                Key=f'{dest_path.bucket_path}'
-            )
+
             # do not include __MACOSX files
             if '__MACOSX' not in dest_path:
+                s3_resource.meta.client.upload_fileobj(
+                    z.open(filename),
+                    Bucket=dest_path.bucket_name,
+                    Key=f'{dest_path.bucket_path}'
+                )
                 extracted_files.append(dest_path)
 
         z.close()
@@ -226,7 +194,7 @@ class AwsTemporaryStorage(TemporaryStorage):
         return DisposableStorageTempFileList(extracted_files, self, delete_on_exception=delete_on_exception)
 
     def fetch(self, file_path: S3Path, local_dir=None, disposable=True) -> DisposableLocalTempFile:
-        s3_client = get_s3_client(file_path)
+        s3_client = self.datastream_storage.s3_client
         if not local_dir:
             local_dir = self.create_temp_dir()
 
@@ -243,7 +211,7 @@ class AwsTemporaryStorage(TemporaryStorage):
         date = datetime.datetime.strptime(start_time, "%Y%m%d.%H%M%S")
         prev_date = (date - datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
         next_date = (date + datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
-        files = self.datastream_storage.find(datastream_name, prev_date, next_date)
+        files = self.datastream_storage.find(datastream_name, prev_date, next_date, filetype=DatastreamStorage.FILE_TYPE.NETCDF)
 
         previous_filepath = None
         if files:
@@ -259,7 +227,7 @@ class AwsTemporaryStorage(TemporaryStorage):
     def delete(self, filepath: S3Path) -> None:
         # First delete this resource.
         # (S3 will not crash if the file does not exist.)
-        s3 = get_s3_resource(filepath)
+        s3 = self.datastream_storage.s3_resource
         s3.Object(filepath.bucket_name, filepath.bucket_path).delete()
 
         # Then, delete any children if they exist.
@@ -279,7 +247,7 @@ class AwsTemporaryStorage(TemporaryStorage):
               if ever.
         -----------------------------------------------------------------------"""
         paths = []
-        s3_resource = get_s3_resource(filepath)
+        s3_resource = self.datastream_storage.s3_resource
         bucket = s3_resource.Bucket(filepath.bucket_name)
 
         # Since we are using a delimiter, we must make sure the
@@ -295,7 +263,7 @@ class AwsTemporaryStorage(TemporaryStorage):
 
     def upload(self, local_path: str, s3_path: S3Path):
 
-        s3_client = get_s3_client(s3_path)
+        s3_client = self.datastream_storage.s3_client
 
         with open(local_path, "rb") as f:
             s3_client.upload_fileobj(f, s3_path.bucket_name, s3_path.bucket_path)
@@ -313,6 +281,23 @@ class AwsStorage(DatastreamStorage):
         self._root = S3Path(bucket_name, storage_root_path)
         self._temp_path = S3Path(bucket_name, storage_temp_path)
         self._tmp = AwsTemporaryStorage(self)
+
+        # Init the boto3 session so we can reuse it for all requests.
+        # This will create a default session, which will pull the
+        # region and the credentials from the local configuration.
+        # Note that for now we assume that all buckets will be
+        # in the same region where the lambda function is running.
+        session = boto3.Session()
+        self._s3_client = session.client('s3')
+        self._s3_resource = session.resource('s3')
+
+    @property
+    def s3_resource(self):
+        return self._s3_resource
+
+    @property
+    def s3_client(self):
+        return self._s3_client
 
     @property
     def tmp(self):

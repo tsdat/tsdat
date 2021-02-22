@@ -51,6 +51,9 @@ class IngestPipeline(Pipeline):
             # Users should save plots with self.storage.save(paths_to_plots)
             self.create_and_persist_plots(dataset)
 
+        # Make sure that any temp files are cleaned up
+        self.storage.tmp.clean()
+
     def read_and_persist_raw_files(self, file_paths: List[str]) -> List[str]:
         """-------------------------------------------------------------------
         Renames the provided RAW files according to MHKiT-Cloud Data Standards 
@@ -241,5 +244,6 @@ class IngestPipeline(Pipeline):
         with self.storage.tmp.get_temp_filepath(DSUtil.get_dataset_filename(dataset)) as tmp_path:
             FileHandler.write(dataset, tmp_path)
             self.storage.save(tmp_path)
-            reopened_dataset = FileHandler.read(tmp_path)
+            reopened_dataset = xr.load_dataset(tmp_path)
+
         return reopened_dataset

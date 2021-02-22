@@ -295,7 +295,11 @@ class TemporaryStorage(abc.ABC):
         -------------------------------------------------------------------"""
         return self._local_temp_folder
 
-    def get_temp_filepath(self, filename: str = None) -> DisposableLocalTempFile:
+    def clean(self):
+        # remove any garbage files left in the local temp folder
+        shutil.rmtree(self.local_temp_folder)
+
+    def get_temp_filepath(self, filename: str = None, disposable: bool = True) -> DisposableLocalTempFile:
         """-------------------------------------------------------------------
         Construct a filepath for a temporary file that will be located in the
         storage-approved local temp folder and will be deleted when it goes
@@ -304,6 +308,10 @@ class TemporaryStorage(abc.ABC):
         Args:
             filename (str):   The filename to use for the temp file.  If no
                               filename is provided, one will be created.
+
+            disposable (bool): If true, then wrap in DisposableLocalTempfile so
+                               that the file will be removed when it goes out of
+                               scope
 
         Returns:
             DisposableLocalTempFile:   Path to the local file.  The file will be
@@ -315,7 +323,10 @@ class TemporaryStorage(abc.ABC):
             filename = now.strftime("%Y-%m-%d.%H%M%S.%f")
 
         filepath = os.path.join(self.local_temp_folder, filename)
-        return DisposableLocalTempFile(filepath)
+        if disposable:
+            return DisposableLocalTempFile(filepath)
+        else:
+            return filepath
 
     def create_temp_dir(self) -> str:
         """-------------------------------------------------------------------
