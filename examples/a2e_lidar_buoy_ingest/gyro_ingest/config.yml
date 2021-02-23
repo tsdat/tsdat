@@ -1,0 +1,445 @@
+pipeline:
+  type: Ingest
+
+dataset_definition:  # Describes the dataset that will be produced
+  attributes:
+    title: Lidar Buoy Dataset
+    description: "Pacific Northwest National Laboratory (PNNL) manages two 
+    AXYS WindSentinelTM buoys (Buoys #120 and #130) on behalf of the U.S. 
+    Department of Energy (DOE) that collect a comprehensive set of 
+    meteorological and oceanographic (metocean) data to support resource 
+    characterization for wind energy offshore. The buoys have been deployed 
+    off the California coast in partnership with the Bureau of Ocean Energy 
+    Management (BOEM) from September 2020 through October 2021"
+    conventions: MHKiT-Cloud Data Standards v. 1.0
+    doi: 10.21947/1671051
+    institution: PNNL
+    code_url: https://github.com/clansing/tsdat/releases/tag/1.0
+    location_id: humboldt_ca
+    instrument_id: buoy_z05
+    data_level: b1
+    location_meaning: Buoy \#120 is located of the coast of Humboldt, CA
+    instrument_name: WindSentinel
+    instrument_meaning: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
+    instrument_manufacturer: AXYS Technologies Inc.
+    sampling_interval: 10 min
+
+  dimensions:
+    time:
+        length: unlimited
+    
+    # depth:
+    #     length: 50
+
+  variables:
+
+    time:
+      input:
+        # Name of the variable in the raw data
+        name: WC timestamp
+        converter:
+          classname: tsdat.utils.converters.StringTimeConverter
+          parameters:
+            timezone: UTC
+            time_format: "%Y/%m/%d %H:%M:%S.%f"
+      dims: [time]
+      type: long
+      attrs:
+        long_name: Time (UTC)
+        standard_name: time
+        units: seconds since 1970-01-01T00:00:00
+
+    time_since_reset:
+      input:
+        name: Time since reset (ms)
+        units: ms
+      dims: [time]
+      type: float
+      attrs:
+        units: ms
+        long_name: Time since reset
+    
+    pitch:
+      input: 
+        name: Pitch (rad)
+        units: rad
+      dims: [time]
+      type: float
+      attrs:
+        units: rad
+        long_name: Buoy pitch
+    
+    roll:
+      input: 
+        name: Roll (rad)
+        units: rad
+      dims: [time]
+      type: float
+      attrs:
+        units: rad
+        long_name: Buoy roll
+
+    yaw:
+      input: 
+        name: Yaw (rad)
+        units: rad
+      dims: [time]
+      type: float
+      attrs:
+        units: rad
+        long_name: Buoy yaw
+
+    time_since_reset:
+      input:
+        name: Time since reset (ms)
+        units: ms
+      dims: [time]
+      type: float
+      attrs:
+        units: ms
+
+    pitch:
+      input:
+        name: Pitch (rad)
+        units: rad
+      dims: [time]
+      type: float
+      attrs:
+        units: rad
+
+    roll:
+      input:
+        name: Roll (rad)
+        units: rad
+      dims: [time]
+      type: float
+      attrs:
+        units: rad
+
+    yaw:
+      input:
+        name: Yaw (rad)
+        units: rad
+      dims: [time]
+      type: float
+      attrs:
+        units: rad
+
+    gps_true_heading:
+      input:
+        name: GPS True Heading (deg)
+        units: deg
+      dims: [time]
+      type: float
+      attrs:
+        units: deg
+
+    sbg_latitude:
+      input:
+        name: SBG Latitude (deg)
+        units: deg
+      dims: [time]
+      type: float
+      attrs:
+        units: deg
+
+    sbg_longitude:
+      input:
+        name: SBG Longitude (deg)
+        units: deg
+      dims: [time]
+      type: float
+      attrs:
+        units: deg
+
+    sbg_altitude:
+      input:
+        name: SBG Altitude (m)
+        units: m
+      dims: [time]
+      type: float
+      attrs:
+        units: m
+
+    sbg_vx:
+      input:
+        name: SBG Vx (m/s)
+        units: m/s
+      dims: [time]
+      type: float
+      attrs:
+        units: m/s
+
+    sbg_vy:
+      input:
+        name: SBG Vy (m/s)
+        units: m/s
+      dims: [time]
+      type: float
+      attrs:
+        units: m/s
+
+    sbg_vz:
+      input:
+        name: SBG Vz (m/s)
+        units: m/s
+      dims: [time]
+      type: float
+      attrs:
+        units: m/s
+
+    t:
+      input:
+        name: T (Celsius)
+        units: Celsius
+      dims: [time]
+      type: float
+      attrs:
+        units: Celsius
+
+    device_status:
+      input:
+        name: Device status
+        units: unitless
+      dims: [time]
+      type: float
+      attrs:
+        units: unitless
+
+    gps_horizontal_accuracy:
+      input:
+        name: GPS horizontal accuracy (mm)
+        units: mm
+      dims: [time]
+      type: float
+      attrs:
+        units: mm
+
+    gps_vertical_accuracy:
+      input:
+        name: GPS vertical accuracy (mm)
+        units: mm
+      dims: [time]
+      type: float
+      attrs:
+        units: mm
+
+    gps_velocity_accuracy:
+      input:
+        name: GPS velocity accuracy (cm/s)
+        units: cm/s
+      dims: [time]
+      type: float
+      attrs:
+        units: cm/s
+
+    gps_true_heading_accuracy:
+      input:
+        name: GPS true heading accuracy (deg)
+        units: deg
+      dims: [time]
+      type: float
+      attrs:
+        units: deg
+
+    gps_flag:
+      input:
+        name: GPS Flag
+        units: unitless
+      dims: [time]
+      type: float
+      attrs:
+        units: unitless
+
+    nb_sat:
+      input:
+        name: Nb SAT
+        units: unitless
+      dims: [time]
+      type: float
+      attrs:
+        units: unitless
+
+    sbg_attitude_accuracy:
+      input:
+        name: SBG Attitude accuracy (rad)
+        units: rad
+      dims: [time]
+      type: float
+      attrs:
+        units: rad
+
+    sbg_position_accuracy:
+      input:
+        name: SBG Position accuracy (m)
+        units: m
+      dims: [time]
+      type: float
+      attrs:
+        units: m
+
+    sbg_velocity_accuracy:
+      input:
+        name: SBG Velocity accuracy (m/s)
+        units: m/s
+      dims: [time]
+      type: float
+      attrs:
+        units: m/s
+
+    utc_year:
+      input:
+        name: UTC Year
+        units: unitless
+      dims: [time]
+      type: float
+      attrs:
+        units: unitless
+
+    utc_month:
+      input:
+        name: UTC Month
+        units: unitless
+      dims: [time]
+      type: float
+      attrs:
+        units: unitless
+
+    utc_day:
+      input:
+        name: UTC Day
+        units: unitless
+      dims: [time]
+      type: float
+      attrs:
+        units: unitless
+
+    utc_hours:
+      input:
+        name: UTC Hours
+        units: unitless
+      dims: [time]
+      type: float
+      attrs:
+        units: unitless
+
+    utc_minutes:
+      input:
+        name: UTC Minutes
+        units: unitless
+      dims: [time]
+      type: float
+      attrs:
+        units: unitless
+
+    utc_seconds:
+      input:
+        name: UTC Seconds
+        units: unitless
+      dims: [time]
+      type: float
+      attrs:
+        units: unitless
+
+    utc_microseconds:
+      input:
+        name: UTC Microseconds
+        units: unitless
+      dims: [time]
+      type: float
+      attrs:
+        units: unitless
+
+    yaw_septentrio:
+      input:
+        name: Yaw Septentrio (rad)
+        units: rad
+      dims: [time]
+      type: float
+      attrs:
+        units: rad
+
+#-----------------------------------------------------------------
+coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
+
+  missing:
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckMissing
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+  monotonic:
+    variables:
+      - All
+    operator:
+      classname: tsdat.qc.operators.CheckMonotonic
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+#-----------------------------------------------------------------
+
+qc_tests:  # Define QC tests for non-coordinate variables
+
+    missing:
+        qc_bit: 1
+        meaning: "Value is equal to _FillValue or NaN"
+        assessment: Bad
+        variables:
+          - ALL  # keyword to apply test to all variables
+        operator:
+          classname: tsdat.qc.operators.CheckMissing
+        error_handlers:
+          # Replace any NaNs with _FillValue
+          replace_with_fill_value:
+            classname: tsdat.qc.error_handlers.RemoveFailedValues
+
+    fail_min:
+        qc_bit: 2
+        meaning: "Value is less than the fail_range."
+        assessment: Bad
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckFailMin
+
+    fail_max:
+        qc_bit: 3
+        meaning: "Value is greater than the fail_range."
+        assessment: Bad
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckFailMax
+
+    warn_min:
+        qc_bit: 4
+        meaning: "Value is less than the warn_range."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckWarnMin
+
+    warn_max:
+        qc_bit: 5
+        meaning: "Value is greater than the warn_range."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckWarnMax
+
+    valid_delta:
+        qc_bit: 6
+        meaning: "Difference between current and previous values exceeds valid_delta."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckValidDelta
+          parameters:
+            dim: time
