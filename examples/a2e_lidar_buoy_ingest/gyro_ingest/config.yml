@@ -89,42 +89,6 @@ dataset_definition:  # Describes the dataset that will be produced
         units: rad
         long_name: Buoy yaw
 
-    time_since_reset:
-      input:
-        name: Time since reset (ms)
-        units: ms
-      dims: [time]
-      type: float
-      attrs:
-        units: ms
-
-    pitch:
-      input:
-        name: Pitch (rad)
-        units: rad
-      dims: [time]
-      type: float
-      attrs:
-        units: rad
-
-    roll:
-      input:
-        name: Roll (rad)
-        units: rad
-      dims: [time]
-      type: float
-      attrs:
-        units: rad
-
-    yaw:
-      input:
-        name: Yaw (rad)
-        units: rad
-      dims: [time]
-      type: float
-      attrs:
-        units: rad
-
     gps_true_heading:
       input:
         name: GPS True Heading (deg)
