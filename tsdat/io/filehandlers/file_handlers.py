@@ -12,6 +12,15 @@ from tsdat.utils import DSUtil
 
 
 class AbstractFileHandler(abc.ABC):
+    """-----------------------------------------------------------------------
+    Abstract class to define methods required by all FileHandlers. Classes 
+    derived from AbstractFileHandler must implement the following methods:
+    ```
+    write(ds: xr.Dataset, filename: str, config: Config, **kwargs)
+    read(filename: str, **kwargs) -> xr.Dataset
+    ```
+    -----------------------------------------------------------------------"""
+
     @staticmethod
     @abc.abstractmethod
     def write(ds: xr.Dataset, filename: str, config: Config = None, **kwargs) -> None:
