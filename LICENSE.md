@@ -1,4 +1,4 @@
-Time Series Data Utilities
+**Time Series Data Utilities**
 
 Copyright © 2021, Battelle Memorial Institute
 
