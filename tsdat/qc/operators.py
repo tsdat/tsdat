@@ -91,7 +91,7 @@ class CheckMissing(QCOperator):
             # Then, if the value is numeric, we should also check if any values are assigned to
             # NaN
             if self.ds[variable_name].values.dtype.type in (type(0.0), np.float16, np.float32, np.float64):
-                results_array = results_array | np.isnan(self.ds[variable_name].values)
+                results_array |= np.isnan(self.ds[variable_name].values)
 
             # TODO: we also need to check if any values are outside valid range
             # TODO: in the config file, we need a replace with missing handler for this test
