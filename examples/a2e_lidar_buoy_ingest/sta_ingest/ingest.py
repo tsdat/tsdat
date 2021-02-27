@@ -35,3 +35,8 @@ pipeline = StaPipeline(config, storage)
 # Create the necessary structures and run the ingest
 pipeline.run(raw_file)
 shutil.rmtree(root_dir)
+
+# Process all available data
+# for file in os.listdir(os.path.join(example_dir, "data/input/")):
+#     raw_file = get_raw_file_copy(file)
+#     pipeline.run(raw_file)
