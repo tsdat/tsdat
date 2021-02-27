@@ -5,6 +5,7 @@ import bisect
 import datetime
 import shutil
 import tarfile
+import yaml
 import zipfile
 from typing import List, Union
 
@@ -276,7 +277,24 @@ class AwsStorage(DatastreamStorage):
     parent class for method docstrings.
     -----------------------------------------------------------------------"""
 
-    def __init__(self, bucket_name: str = None, storage_root_path: str = 'storage/root', storage_temp_path: str = 'storage/temp'):
+    def __init__(self, bucket_name: str = None,
+                 storage_root_path: str = 'root',
+                 storage_temp_path: str = 'temp'):
+        """-------------------------------------------------------------------
+        Initialize the storage from the given parameters used to connect
+        to an S3 bucket.
+
+        Args:
+            bucket_name (str):  The name of the s3 bucket where the storage
+                                files will be saved.
+
+            storage_root_path (str): The path in the bucket to the root of the
+                                     storage.
+
+            storage_temp_path (str): The path in the bucket to a temporary
+                                     folder used for writing short-lived temp
+                                     files.
+        -------------------------------------------------------------------"""
         assert bucket_name
         self._root = S3Path(bucket_name, storage_root_path)
         self._temp_path = S3Path(bucket_name, storage_temp_path)
@@ -290,6 +308,23 @@ class AwsStorage(DatastreamStorage):
         session = boto3.Session()
         self._s3_client = session.client('s3')
         self._s3_resource = session.resource('s3')
+
+    @classmethod
+    def from_config(cls, config_file):
+        """-------------------------------------------------------------------
+        Load a yaml config file which provides the storage constructor
+        parameters.
+
+        Args:
+            config_file (str): The path to the config file to load
+
+        Returns:
+            AwsStorage: An AwsStorage instance created from the config file.
+        -------------------------------------------------------------------"""
+        dict = yaml.load(config_file, Loader=yaml.FullLoader)
+        return AwsStorage(bucket_name=dict['bucket_name'],
+                          storage_root_path=dict['storage_root_path'],
+                          storage_temp_path=dict['storage_temp_path'])
 
     @property
     def s3_resource(self):

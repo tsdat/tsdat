@@ -14,12 +14,12 @@ class TestIngestPipeline(unittest.TestCase):
         testdir = os.path.abspath(os.path.dirname(__file__))
         self.basedir = os.path.join(testdir, 'data/pipeline')
 
-        self.storage = AwsStorage(bucket_name='mhk-datalake-test',
-                                  storage_root_path='tsdat/storage/root',
-                                  storage_temp_path='tsdat/storage/temp')
+        self.storage = AwsStorage(bucket_name='tsdat-test',
+                                  storage_root_path='storage/root',
+                                  storage_temp_path='storage/temp')
 
         # Input directory where incoming raw files will be dropped
-        self.raw = S3Path('mhk-datalake-test', 'tsdat/storage/raw')
+        self.raw = S3Path('tsdat-test', 'raw')
 
     def tearDown(self) -> None:
         super().tearDown()
