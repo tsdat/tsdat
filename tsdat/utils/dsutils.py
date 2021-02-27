@@ -56,8 +56,8 @@ class DSUtil:
         Returns:
             str: The datastream name
         -------------------------------------------------------------------"""
-        assert(ds or config)
-        if ds and "datastream" in ds.attrs:
+        assert(ds is not None or config is not None)
+        if ds is not None and "datastream" in ds.attrs:
             return ds.attrs["datastream"]
         elif config :
             return config.dataset_definition.datastream
