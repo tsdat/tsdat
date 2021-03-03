@@ -38,6 +38,6 @@ shutil.rmtree(root_dir)
 # Process all available data
 # for file in sorted(os.listdir(os.path.join(example_dir, "data/input/"))):
 #     # Ignore non-ingest files (Like .DS_Store or other system files)
-#     if file.endswith(".csv"):
+#     if file.endswith(".zip"):
 #         raw_file = get_raw_file_copy(file)
 #         pipeline.run(raw_file)
