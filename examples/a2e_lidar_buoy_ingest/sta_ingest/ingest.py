@@ -37,6 +37,8 @@ pipeline.run(raw_file)
 shutil.rmtree(root_dir)
 
 # Process all available data
-# for file in os.listdir(os.path.join(example_dir, "data/input/")):
-#     raw_file = get_raw_file_copy(file)
-#     pipeline.run(raw_file)
+# for file in sorted(os.listdir(os.path.join(example_dir, "data/input/"))):
+#     # Ignore non-ingest files (Like .DS_Store or other system files)
+#     if file.endswith(".sta"):
+#         raw_file = get_raw_file_copy(file)
+#         pipeline.run(raw_file)
