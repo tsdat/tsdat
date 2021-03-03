@@ -11,6 +11,8 @@ from tsdat.io import FileHandler
 from tsdat.pipeline import IngestPipeline
 from tsdat.utils import DSUtil
 
+plt.style.use("./styling.mplstyle")
+
 
 class StaPipeline(IngestPipeline):
     def customize_dataset(self, dataset: xr.Dataset, raw_dataset_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
@@ -69,78 +71,55 @@ class StaPipeline(IngestPipeline):
             _ = ax.xaxis.set_major_formatter(mpl.dates.DateFormatter(date_format))
             return
         
-        def format_colorbar(cbar, ylabel=""):
-            _ = cb.ax.set_ylabel(ylabel)
-            _ = cb.outline.set_linewidth(1)# Reduce outline width
-            _ = cb.ax.tick_params(size=0)  # Remove major ticks
-            _ = cb.ax.minorticks_off()     # Remove minor ticks
+        def add_colorbar(ax, plot, label):
+            cb = plt.colorbar(plot, ax=ax, pad=0.01)
+            cb.ax.set_ylabel(label, fontsize=12)
+            cb.outline.set_linewidth(1)
+            cb.ax.tick_params(size=0)
+            cb.ax.minorticks_off()
+            return cb
 
         ds = dataset
-
-        # Styling parameters:
-        mpl.rcParams['font.family']         = 'serif'
-        mpl.rcParams['font.size']           = 12
-        mpl.rcParams['legend.frameon']      = True
-        mpl.rcParams['legend.framealpha']   = 1
-        mpl.rcParams['legend.edgecolor']    = 'w'
-        mpl.rcParams['axes.linewidth']      = 2
-
-        mpl.rcParams['xtick.top']           = True
-        mpl.rcParams['xtick.minor.visible'] = True
-        mpl.rcParams['xtick.minor.size']    = 5
-        mpl.rcParams['xtick.major.size']    = 8
-        mpl.rcParams['xtick.minor.width']   = 2
-        mpl.rcParams['xtick.major.width']   = 2
-
-        mpl.rcParams['ytick.right']         = True
-        mpl.rcParams['ytick.minor.visible'] = True
-        mpl.rcParams['ytick.minor.size']    = 5
-        mpl.rcParams['ytick.major.size']    = 8
-        mpl.rcParams['ytick.minor.width']   = 2
-        mpl.rcParams['ytick.major.width']   = 2
 
         
         filename = DSUtil.get_plot_filename(dataset, "wind_speed_and_direction", "png")
         with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
-
-            # Extract the date
-            date = pd.to_datetime(ds.time.data[0])
-
-            # Spacing every 1 m/s for contours
+            
+            # Calculations for contour plots
+            date = pd.to_datetime(ds.time.data[0]).strftime('%d-%b-%Y')
             hi = np.ceil(ds.wind_speed.max().data + 1)
             lo = np.floor(ds.wind_speed.min().data)
             levels = np.arange(lo, hi, 1)
 
-            # Create figure and set title
-            fig, axs = plt.subplots(ncols=1, nrows=2, figsize=(16,8), constrained_layout=True)
-            _ = fig.suptitle(f"Average wind speed and direction at {ds.attrs['location_meaning']} on {date.strftime('%d-%b-%Y')}")
+            # Calculations for quiver plot
+            qv_spacing = int(np.ceil(len(ds.time) / 24))
+            qv_degrees = ds.wind_direction.data[::qv_spacing].transpose()
+            qv_theta = (qv_degrees + 90) * (np.pi/180)
+            X, Y = ds.time.data[::qv_spacing], ds.height.data
+            U, V = np.cos(-qv_theta), np.sin(-qv_theta)
 
-            # Contour Plot + Contour lines
-            csf = ds.wind_speed.plot.contourf(x="time", y="height", ax=axs[0], levels=levels, cmap=cmocean.cm.deep_r, add_colorbar=False)
-            cs  = ds.wind_speed.plot.contour(x="time", y="height", ax=axs[0], levels=levels, colors="lightgray", linewidths=0.5)
-            cb  = plt.colorbar(csf, ax=axs[0], pad=0.01)
-            format_colorbar(cb, ylabel=r"Wind Speed (ms$^{-1}$)")
+            # Colormaps to use
+            wind_cmap = cmocean.cm.deep_r
+            avail_cmap = cmocean.cm.amp_r
+
+            # Create figure and axes objects
+            fig, axs = plt.subplots(nrows=2, figsize=(16,8), constrained_layout=True)
+            fig.suptitle(f"Average wind speed and direction at {ds.attrs['location_meaning']} on {date}")
+
+            # Make top subplot -- contours and quiver plots for wind speed and direction
+            csf = ds.wind_speed.plot.contourf(ax=axs[0], x="time", levels=levels, cmap=wind_cmap, add_colorbar=False)
+            ds.wind_speed.plot.contour(ax=axs[0], x="time", levels=levels, colors="lightgray", linewidths=0.5)
+            axs[0].quiver(X, Y, U, V, width=0.002, scale=60, color="white", zorder=10, label="Wind Direction (degrees)")
+            axs[0].legend(loc="best", facecolor="lightgray").set_zorder(11)
+            cb = add_colorbar(axs[0], csf, r"Wind Speed (ms$^{-1}$)")
             format_time_xticks(axs[0], ds.time)
-            _   = axs[0].set_xlabel("Time (UTC)")
-            _   = axs[0].set_ylabel("Height ASL (m)")
+            axs[0].set_ylabel("Height ASL (m)")
 
-            # Quiver plot
-            spacing = int(round(len(ds.wind_speed) / 24))
-            x, y    = np.meshgrid(ds.time.data[::spacing], np.linspace(40, int(ds.height.max().data), len(ds.height.data)))
-            r       = ds.wind_speed.data[::spacing]
-            o       = (ds.wind_direction.data[::spacing] + 90) * (np.pi/180)
-            u, v    = np.cos(-o), np.sin(-o)
-            qv      = axs[0].quiver(x, y, u, v, width=0.002, scale=60, color="white", zorder=10, label="Wind Direction (degrees)")
-            lgnd    = axs[0].legend(loc="best", facecolor="lightgray")
-            _       = lgnd.set_zorder(11)
-
-            # Data availability plot
-            da = ds.data_availability.plot(ax=axs[1], x="time", y="height", cmap=cmocean.cm.amp_r, add_colorbar=False)
-            cb = plt.colorbar(da, ax=axs[1], pad=0.01)
-            format_colorbar(cb, ylabel="Availability (%)")
+            # Make bottom subplot -- heatmap for data availability
+            da = ds.data_availability.plot(ax=axs[1], x="time", cmap=avail_cmap, add_colorbar=False)
+            add_colorbar(axs[1], da, "Availability (%)")
             format_time_xticks(axs[1], ds.time)
-            _  = axs[1].set_xlabel("Time (UTC)")
-            _  = axs[1].set_ylabel("Height ASL (m)")
+            axs[1].set_ylabel("Height ASL (m)")
 
             # Save the figure
             fig.savefig(tmp_path, dpi=100)
@@ -160,14 +139,14 @@ class StaPipeline(IngestPipeline):
             # Plot the data
             for i, height in enumerate(heights):
                 velocity = ds.wind_speed.sel(height=height)
-                _ = velocity.plot(ax=ax, linewidth=2, c=cmocean.cm.deep_r(i/len(heights)), label=f"{height} m")
+                velocity.plot(ax=ax, linewidth=2, c=wind_cmap(i/len(heights)), label=f"{height} m")
             
             # Add useful information and do some cleaning
             format_time_xticks(ax, ds.time)
-            _ = ax.legend(loc="best", facecolor="white", ncol=len(heights))
-            _ = ax.set_title("") # Remove bogus title created by xarray
-            _ = ax.set_xlabel("Time (UTC)")
-            _ = ax.set_ylabel(r"Wind Speed (ms$^{-1}$)")
+            ax.legend(loc="best", facecolor="white", ncol=len(heights))
+            ax.set_title("") # Remove bogus title created by xarray
+            ax.set_xlabel("Time (UTC)")
+            ax.set_ylabel(r"Wind Speed (ms$^{-1}$)")
 
             # Save the figure
             fig.savefig(tmp_path, dpi=100)
