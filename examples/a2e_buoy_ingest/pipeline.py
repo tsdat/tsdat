@@ -1,12 +1,18 @@
-import act
-import xarray as xr
+import cmocean
 import numpy as np
+import pandas as pd
+import xarray as xr
+import seaborn as sns
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+
 from typing import Dict
 from tsdat.pipeline import IngestPipeline
 from tsdat.utils import DSUtil
 
-class CustomIngestPipeline(IngestPipeline):
+plt.style.use("./styling.mplstyle")
+
+class BuoyIngestPipeline(IngestPipeline):
     """-------------------------------------------------------------------
     This is an example class that extends the default IngestPipeline in
     order to hook in custom behavior such as creating custom plots.
@@ -58,27 +64,6 @@ class CustomIngestPipeline(IngestPipeline):
 
         # No customization to raw data - return original dataset
         return raw_dataset_mapping
-
-    def apply_corrections(self, dataset: xr.Dataset, raw_dataset_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Pipeline hook that can be used to apply standard corrections for the
-        instrument/measurement or calibrations. This method is called
-        immediately after the dataset is converted to standard format and
-        before any QC tests are applied.
-
-        If corrections are applied, then the `corrections_applied` attribute
-        should be updated on the variable(s) that this method applies
-        corrections to.
-
-        Args:
-            dataset (xr.Dataset):   A standardized xarray dataset where the
-                                    variable names correspond with the output
-                                    variable names from the config file.
-        Returns:
-            xr.Dataset: The input xarray dataset with corrections applied.
-        -------------------------------------------------------------------"""
-        # No corrections - return the original dataset
-        return dataset
 
     def customize_dataset(self, dataset: xr.Dataset, raw_dataset_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         """-------------------------------------------------------------------
@@ -142,30 +127,96 @@ class CustomIngestPipeline(IngestPipeline):
             dataset (xr.Dataset):   The xarray dataset with customizations and
                                     QC applied.
         -------------------------------------------------------------------"""
-        for variable_name in dataset.data_vars.keys():
-            if variable_name.startswith("qc_") or "time" not in dataset[variable_name].dims:
-                continue
-            filename = DSUtil.get_plot_filename(dataset, variable_name, "png")
-            with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
 
-                display = act.plotting.TimeSeriesDisplay(dataset, subplot_shape=(2,), figsize=(15,9), sharex=True)
-                display.plot(variable_name, subplot_index=(0,))
-                display.qc_flag_block_plot(variable_name, subplot_index=(1,))
-                display.fig.savefig(tmp_path)
-                plt.close()
-
-                self.storage.save(tmp_path)
+        def format_time_xticks(ax, /, *, start=4, stop=21, step=4, date_format="%H-%M"):
+            ax.xaxis.set_major_locator(mpl.dates.HourLocator(byhour=range(start, stop, step)))
+            ax.xaxis.set_major_formatter(mpl.dates.DateFormatter(date_format))
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=0)
         
-        # Custom plot for current velocity and direction
-        filename = DSUtil.get_plot_filename(dataset, "current_by_depth", "png")
+        def double_plot(ax, twin, /, *, data, colors, var_labels=["",""], ax_labels=["",""], **kwargs):
+            def _add_lineplot(_ax, _data, _c, _label, _ax_label, _spine):
+                _line = _data.plot(ax=_ax, c=_c, label=_label, linewidth=2, **kwargs)
+                _ax.tick_params(axis="y", which="both", colors=_c)
+                _ax.set_ylabel(_ax_label, color=_c)
+                _ax.spines[_spine].set_color(_c)
+            _add_lineplot(ax, data[0], colors[0], var_labels[0], ax_labels[0], "left")
+            _add_lineplot(twin, data[1], colors[1], var_labels[1], ax_labels[1], "right")
+            twin.spines["left"].set_color(colors[0])  # twin overwrites ax, so set color here
+            lines = ax.lines + twin.lines
+            labels = [line.get_label() for line in lines]
+            twin.legend(lines, labels, ncol=len(labels), loc=1)
+
+        # Useful variables
+        ds = dataset
+        date = pd.to_datetime(ds.time.data[0]).strftime('%d-%b-%Y')
+        cmap = sns.color_palette("viridis", as_cmap=True)
+        colors = [cmap(0.00), cmap(0.60)]
+
+        # Create the first plot -- Surface Met Parameters
+        filename = DSUtil.get_plot_filename(dataset, "surface_met_parameters", "png")
         with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
-            fig, axes = plt.subplots(nrows=2, figsize=(15,9))
-            dataset.current_velocity.plot(ax=axes[0], x="time", y="depth", yincrease=False, snap=True)
-            dataset.current_direction.plot(ax=axes[1], x="time", y="depth", yincrease=False, snap=True, cmap="hsv")
-            fig.set_tight_layout(True)
-            fig.savefig(tmp_path)
-            plt.close()
+
+            # Define data and metadata
+            data = [
+                [ds.wind_speed, ds.wind_direction], 
+                [ds.pressure, ds.rh], 
+                [ds.air_temperature, ds.CTD_SST]]
+            var_labels = [
+                [r"$\overline{\mathrm{U}}$ Cup", r"$\overline{\mathrm{\theta}}$ Cup"],
+                ["Pressure", "Relative Humidity"],
+                ["Air Temperature", "Sea Surface Temperature"]]
+            ax_labels = [
+                [r"$\overline{\mathrm{U}}$ (ms$^{-1}$)", r"$\bar{\mathrm{\theta}}$ (degrees)"],
+                [r"$\overline{\mathrm{P}}$ (bar)", r"$\overline{\mathrm{RH}}$ (%)"],
+                [r"$\overline{\mathrm{T}}_{air}$ ($\degree$C)", r"$\overline{\mathrm{SST}}$ ($\degree$C)"]]
+
+            # Create figure and axes objects
+            fig, axs = plt.subplots(nrows=3, figsize=(14, 8), constrained_layout=True)
+            twins = [ax.twinx() for ax in axs]
+            fig.suptitle(f"Surface Met Parameters at {ds.attrs['location_meaning']} on {date}")
+
+            # Create the plots
+            gill_data = [ds.gill_wind_speed, ds.gill_wind_direction]
+            gill_labels = [r"$\overline{\mathrm{U}}$ Gill", r"$\overline{\mathrm{\theta}}$ Gill"]
+            double_plot(axs[0], twins[0], data=gill_data, colors=colors, var_labels=gill_labels, linestyle="--")
+            for i in range(3):
+                double_plot(axs[i], twins[i], data=data[i], colors=colors, var_labels=var_labels[i], ax_labels=ax_labels[i])
+                axs[i].grid(which="both", color='lightgray', linewidth=0.5)
+                format_time_xticks(axs[i])
+            
+            # Save and close the figure
+            fig.savefig(tmp_path, dpi=100)
             self.storage.save(tmp_path)
+            plt.close()
+
+        # Create the second plot -- Conductivity and Sea Surface Temperature
+        filename = DSUtil.get_plot_filename(dataset, "conductivity", "png")
+        with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
+            data = [ds.conductivity, ds.CTD_SST]
+            var_labels = [r"Conductivity (S m$^{-1}$)", r"$\overline{\mathrm{SST}}$ ($\degree$C)"]
+            ax_labels = [r"Conductivity (S m$^{-1}$)", r"$\overline{\mathrm{SST}}$ ($\degree$C)"]
+
+            fig, ax = plt.subplots(figsize=(14, 8), constrained_layout=True)
+
+            double_plot(ax, ax.twinx(), data=data, colors=colors, var_labels=var_labels, ax_labels=ax_labels)
+            ax.grid(which="both", color='lightgray', linewidth=0.5)
+            format_time_xticks(ax)
+
+            # Save and close the figure
+            fig.savefig(tmp_path, dpi=100)
+            self.storage.save(tmp_path)
+            plt.close()
+
+        # # Custom plot for current velocity and direction
+        # filename = DSUtil.get_plot_filename(dataset, "current_by_depth", "png")
+        # with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
+        #     fig, axes = plt.subplots(nrows=2, figsize=(15,9))
+        #     dataset.current_velocity.plot(ax=axes[0], x="time", y="depth", yincrease=False, snap=True)
+        #     dataset.current_direction.plot(ax=axes[1], x="time", y="depth", yincrease=False, snap=True, cmap="hsv")
+        #     fig.set_tight_layout(True)
+        #     fig.savefig(tmp_path)
+        #     plt.close()
+        #     self.storage.save(tmp_path)
 
         return
 

@@ -3,7 +3,7 @@ pipeline:
 
 dataset_definition:  # Describes the dataset that will be produced
   attributes:
-    title: Lidar Buoy Dataset
+    title: Buoy Dataset
     description: "Pacific Northwest National Laboratory (PNNL) manages two 
     AXYS WindSentinelTM buoys (Buoys #120 and #130) on behalf of the U.S. 
     Department of Energy (DOE) that collect a comprehensive set of 
@@ -15,10 +15,10 @@ dataset_definition:  # Describes the dataset that will be produced
     doi: 10.21947/1671051
     institution: PNNL
     code_url: https://github.com/clansing/tsdat/releases/tag/1.0
-    location_id: humboldt_ca
-    instrument_id: buoy_z05
+    location_id: morro_bay_ca
+    instrument_id: buoy_z06
     data_level: b1
-    location_meaning: Buoy \#120 is located of the coast of Humboldt, CA
+    location_meaning: Morro Bay
     instrument_name: WindSentinel
     instrument_meaning: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
     instrument_manufacturer: AXYS Technologies Inc.
@@ -57,7 +57,7 @@ dataset_definition:  # Describes the dataset that will be produced
         long_name: Depth
         units: m
 
-    surface_temperature:  
+    CTD_SST:  
       input: # From conductivity csv
         name: Surface Temperature (C)
         units: degC
@@ -66,9 +66,7 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name:  Sea surface temperature
         units: degC
-        valid_delta: 0.03
-        valid_range: [-10, 50]
-        _FillValue: -9999
+        fail_range: [-5, 45]
 
     conductivity:  
       input: # From conductivity csv
@@ -79,21 +77,17 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name:  Ocean Conductivity
         units: S/m
-        valid_delta: 0.03
-        fail_range: [0, 5]
-        valid_range: [0, 10]
-        _FillValue: -9999
+        fail_range: [0, 7]
     
-    currents_num_bins:  
-      input: # From currents csv
-        name: NumberOfBins
-        units: "1"
-      dims: [time]
-      type: int
-      attrs:
-        long_name: Number of bins
-        units: "1"
-        _FillValue: -9999
+    # currents_num_bins:  
+    #   input: # From currents csv
+    #     name: NumberOfBins
+    #     units: "1"
+    #   dims: [time]
+    #   type: int
+    #   attrs:
+    #     long_name: Number of bins
+    #     units: "1"
     
     currents_bin_spacing:  
       input: # From currents csv
@@ -104,7 +98,6 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name: Vertical Spacing Between Bins
         units: m
-        _FillValue: -9999
     
     currents_head_depth:  
       input: # From currents csv
@@ -115,7 +108,6 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name: depth of instrument below ocean surface
         units: m
-        _FillValue: -9999
 
     currents_blanking_distance:  
       input: # From currents csv
@@ -127,8 +119,6 @@ dataset_definition:  # Describes the dataset that will be produced
         long_name: Blanking Distance
         comment: a “blind zone” where the instruments do not measure anything. Typically less than 1m.
         units: m
-        _FillValue: -9999
-
 
     # This is a "computed" value, which just means that it is not 
     # automatically pulled in from the input file and needs to be
@@ -139,8 +129,7 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name: Current Velocity
         units: mm/s
-        valid_range: [0, 20000] # TODO
-        _FillValue: -9999
+        fail_range: [0, 5000]
 
     # This is a "computed" value, which just means that it is not 
     # automatically pulled in from the input file and needs to be
@@ -151,10 +140,9 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name: Current Direction
         units: degrees
-        valid_range: [0, 360]
-        _FillValue: -9999
+        fail_range: [0, 360]
 
-    gill_horizontal_wind_speed:  
+    gill_wind_speed:  
       input: # From gill csv
         name: gill_horizontal_wind_speed # Was "Horizontal Speed (m/s)" but needed to be renamed to prevent duplication
         units: m/s
@@ -164,10 +152,9 @@ dataset_definition:  # Describes the dataset that will be produced
         long_name: Horizontal Wind Speed
         comment: Surface horizontal wind speed, 2D ultrasonic anemometer
         units: m/s
-        valid_range: [0, 50]
-        _FillValue: -9999
+        fail_range: [0, 50]
 
-    gill_horizontal_wind_direction:  
+    gill_wind_direction:  
       input: # From gill csv
         name: gill_horizontal_wind_direction # Was "Horizontal Direction (deg)" but needed to be renamed to prevent duplication
         units: degrees
@@ -177,10 +164,9 @@ dataset_definition:  # Describes the dataset that will be produced
         long_name: Horizontal Wind Direction
         comment: Surface horizontal wind direction, 2D ultrasonic anemometer
         units: degrees
-        valid_range: [0, 360]
-        _FillValue: -9999
+        fail_range: [0, 360]
 
-    horizontal_wind_speed:  
+    wind_speed:  
       input: # From wind csv
         name: Horizontal Speed (m/s)
         units: m/s
@@ -190,10 +176,9 @@ dataset_definition:  # Describes the dataset that will be produced
         long_name: Horizontal Wind Speed
         comment: Surface wind speed, cup anemometer
         units: m/s
-        valid_range: [0, 50]
-        _FillValue: -9999
+        fail_range: [0, 50]
 
-    horizontal_wind_direction:  
+    wind_direction:  
       input: # From wind csv
         name: Horizontal Direction (deg)
         units: degrees
@@ -203,10 +188,9 @@ dataset_definition:  # Describes the dataset that will be produced
         long_name: Horizontal Wind Direction
         comment: Surface wind direction, wind vane
         units: degrees
-        valid_range: [0, 360]
-        _FillValue: -9999
+        fail_range: [0, 360]
 
-    barometric_pressure:  
+    pressure:  
       input: # From pressure csv
         name: Barometric Pressure (mb)
         units: mbar
@@ -215,9 +199,9 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name: Atmospheric Pressure
         units: hPa
-        _FillValue: -9999   
+        fail_range: [500, 1100]
     
-    relative_humidity:  
+    rh:  
       input: # From rh csv
         name: Relative Humidity (%)
         units: "%"
@@ -226,16 +210,14 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name: Relative Humidity
         units: "%"
-        fail_range: [65, 95]
-        valid_range: [0, 100]
-        _FillValue: -9999 
+        fail_range: [0, 100]
 
     # Note that this variable had the same name as Surface Temperature from  
     # conductivity csv. It has been renamed to prevent a conflict, but the 
     # user will need to write the customize_raw_dataset() hook to rename the
     # raw input from "Surface Temperature (C)" to "surfacetemp - Surface 
     # Temperature (C)" so that the code can still retrieve it properly
-    surfacetemp_surface_temperature:  
+    YSI_SST:  
       input: # From surfacetemp csv
         name: surfacetemp - Surface Temperature (C)
         units: degC
@@ -245,9 +227,7 @@ dataset_definition:  # Describes the dataset that will be produced
         long_name: Sea Surface Temperature
         comment: This is from the surfacetemp.csv file.
         units: degC
-        valid_delta: 0.03
-        valid_range: [-10, 50]
-        _FillValue: -9999 
+        fail_range: [-5, 50]
     
     air_temperature:  
       input: # From temperature csv
@@ -258,9 +238,7 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name: Air Temperature
         units: degC
-        valid_delta: 0.03
-        valid_range: [-10, 50]
-        _FillValue: -9999
+        fail_range: [-40, 60]
 
     latitude:  
       input: # From gps csv
@@ -271,7 +249,6 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name:  Latitude
         units: degree_N
-        _FillValue: -9999
       
     longitude:  
       input: # From gps csv
@@ -282,7 +259,6 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name:  Longitude
         units: degree_E
-        _FillValue: -9999
 
 #-----------------------------------------------------------------
 coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
@@ -330,6 +306,9 @@ qc_tests:  # Define QC tests for non-coordinate variables
           - ALL
         operator:
           classname: tsdat.qc.operators.CheckFailMin
+        error_handlers:
+          replace_with_fill_value:
+            classname: tsdat.qc.error_handlers.RemoveFailedValues
 
     fail_max:
         qc_bit: 3
@@ -339,32 +318,6 @@ qc_tests:  # Define QC tests for non-coordinate variables
           - ALL
         operator:
           classname: tsdat.qc.operators.CheckFailMax
-
-    warn_min:
-        qc_bit: 4
-        meaning: "Value is less than the warn_range."
-        assessment: Indeterminate
-        variables:
-          - ALL
-        operator:
-          classname: tsdat.qc.operators.CheckWarnMin
-
-    warn_max:
-        qc_bit: 5
-        meaning: "Value is greater than the warn_range."
-        assessment: Indeterminate
-        variables:
-          - ALL
-        operator:
-          classname: tsdat.qc.operators.CheckWarnMax
-
-    valid_delta:
-        qc_bit: 6
-        meaning: "Difference between current and previous values exceeds valid_delta."
-        assessment: Indeterminate
-        variables:
-          - ALL
-        operator:
-          classname: tsdat.qc.operators.CheckValidDelta
-          parameters:
-            dim: time
+        error_handlers:
+          replace_with_fill_value:
+            classname: tsdat.qc.error_handlers.RemoveFailedValues

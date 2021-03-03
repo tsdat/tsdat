@@ -1,0 +1,21 @@
+font.family         : serif
+font.size           : 12
+axes.linewidth      : 2
+
+legend.frameon      : True
+legend.framealpha   : 1
+legend.edgecolor    : w
+
+xtick.top           : True
+xtick.minor.visible : True
+xtick.minor.size    : 5
+xtick.major.size    : 8
+xtick.minor.width   : 2
+xtick.major.width   : 2
+
+ytick.right         : True
+ytick.minor.visible : True
+ytick.minor.size    : 5
+ytick.major.size    : 8
+ytick.minor.width   : 2
+ytick.major.width   : 2
