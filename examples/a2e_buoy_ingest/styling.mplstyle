@@ -1,6 +1,12 @@
 font.family         : serif
 font.size           : 12
+
+lines.linewidth     : 2
 axes.linewidth      : 2
+#axes.grid           : True
+#axes.grid.which     : both
+#grid.linewidth      : 0.5
+#grid.color          : lightgrey
 
 legend.frameon      : True
 legend.framealpha   : 1

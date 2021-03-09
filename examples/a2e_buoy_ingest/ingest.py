@@ -8,6 +8,10 @@ from pipeline import BuoyIngestPipeline
 example_dir = os.path.abspath(os.path.dirname(__file__))
 raw_dir = os.path.join(example_dir, 'storage/input')
 root_dir = os.path.join(example_dir, 'storage/root')
+try:
+    shutil.rmtree(root_dir)
+except:
+    pass
 os.makedirs(root_dir, exist_ok=True)
 
 def get_raw_file_copy(raw_filename, data_input="data/input"):
@@ -22,7 +26,7 @@ def get_raw_file_copy(raw_filename, data_input="data/input"):
     return pipeline_input_file
 
 # Paths to the raw and config files used for this ingest
-raw_file = get_raw_file_copy('buoy.z06.00.20201201.000000.zip')
+# raw_file = get_raw_file_copy('buoy.z06.00.20201201.000000.zip')
 config_file = os.path.join(example_dir, 'config.yml')
 
 # Create necessary structures
@@ -30,14 +34,12 @@ storage = FilesystemStorage(root_dir)
 config = Config.load(config_file)
 pipeline = BuoyIngestPipeline(config, storage)
 
-# Run the ingest and remove the output if successful
-# Create the necessary structures and run the ingest
-pipeline.run(raw_file)
-shutil.rmtree(root_dir)
+# Run the ingest
+# pipeline.run(raw_file)
 
-# Process all available data
-# for file in sorted(os.listdir(os.path.join(example_dir, "data/input/"))):
-#     # Ignore non-ingest files (Like .DS_Store or other system files)
-#     if file.endswith(".zip"):
-#         raw_file = get_raw_file_copy(file)
-#         pipeline.run(raw_file)
+for file in sorted(os.listdir(os.path.join(example_dir, "data/input/"))):
+    # Ignore non-ingest files (Like .DS_Store or other system files)
+    if file.endswith(".zip"):
+        print(f"Processing the following file: {file}")
+        raw_file = get_raw_file_copy(file)
+        pipeline.run(raw_file)
