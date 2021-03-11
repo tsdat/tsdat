@@ -1,3 +1,4 @@
+import os
 import cmocean
 import numpy as np
 import xarray as xr
@@ -11,7 +12,9 @@ from tsdat.io import FileHandler
 from tsdat.pipeline import IngestPipeline
 from tsdat.utils import DSUtil
 
-plt.style.use("./styling.mplstyle")
+example_dir = os.path.abspath(os.path.dirname(__file__))
+style_file = os.path.join(example_dir, "styling.mplstyle")
+plt.style.use(style_file)
 
 
 class StaPipeline(IngestPipeline):
@@ -110,7 +113,6 @@ class StaPipeline(IngestPipeline):
             csf = ds.wind_speed.plot.contourf(ax=axs[0], x="time", levels=levels, cmap=wind_cmap, add_colorbar=False)
             ds.wind_speed.plot.contour(ax=axs[0], x="time", levels=levels, colors="lightgray", linewidths=0.5)
             axs[0].quiver(X, Y, U, V, width=0.002, scale=60, color="white", zorder=10, label="Wind Direction (degrees)")
-            axs[0].legend(loc="best", facecolor="lightgray").set_zorder(11)
             cb = add_colorbar(axs[0], csf, r"Wind Speed (ms$^{-1}$)")
             format_time_xticks(axs[0], ds.time)
             axs[0].set_ylabel("Height ASL (m)")
@@ -152,7 +154,6 @@ class StaPipeline(IngestPipeline):
             fig.savefig(tmp_path, dpi=100)
             self.storage.save(tmp_path)
             plt.close()
-
 
         return
 
