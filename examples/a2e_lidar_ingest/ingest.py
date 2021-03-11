@@ -33,12 +33,12 @@ pipeline = StaPipeline(config, storage)
 
 # Run the ingest and remove the output if successful
 # Create the necessary structures and run the ingest
-pipeline.run(raw_file)
-shutil.rmtree(root_dir)
+# pipeline.run(raw_file)
+# shutil.rmtree(root_dir)
 
 # Process all available data
-# for file in sorted(os.listdir(os.path.join(example_dir, "data/input/"))):
-#     # Ignore non-ingest files (Like .DS_Store or other system files)
-#     if file.endswith(".sta"):
-#         raw_file = get_raw_file_copy(file)
-#         pipeline.run(raw_file)
+for file in sorted(os.listdir(os.path.join(example_dir, "data/input/"))):
+    # Ignore non-ingest files (Like .DS_Store or other system files)
+    if file.endswith(".sta"):
+        raw_file = get_raw_file_copy(file)
+        pipeline.run(raw_file)
