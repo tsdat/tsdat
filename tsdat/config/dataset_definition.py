@@ -225,6 +225,31 @@ class DatasetDefinition:
         shape = tuple([coord.get_shape()[0] for coord in coordinates])
         return shape
 
+    def get_static_variables(self) -> List[VariableDefinition]:
+        """-------------------------------------------------------------------
+        Returns a list of static VariableDefinitions. A VariableDefinition is 
+        "static" if it has "data" section in the config file. For example, 
+        "depth" as defined below is a static variable:
+        
+        ```
+        depth:
+          data: [4, 8, 12]
+          dims: [depth]
+          type: long
+          attrs:
+            long_name: Depth
+            units: m
+        ```
+
+        Returns:
+        ---
+            List[VariableDefinition]:   The list of VariableDefintions.
+        -------------------------------------------------------------------"""
+        static_coords = filter(lambda c: hasattr(c, "data"), self.coords.values())
+        static_variables = filter(lambda v: hasattr(v, "data"), self.vars.values())
+        return list(static_coords) + list(static_variables)
+
+
     def extract_data(self, variable: VariableDefinition, raw_dataset: xr.Dataset) -> None:
         """-------------------------------------------------------------------
         Adds data from the xarray dataset to the given VariableDefinition. It 
