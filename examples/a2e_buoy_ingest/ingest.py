@@ -26,7 +26,7 @@ def get_raw_file_copy(raw_filename, data_input="data/input"):
     return pipeline_input_file
 
 # Paths to the raw and config files used for this ingest
-# raw_file = get_raw_file_copy('buoy.z06.00.20201201.000000.zip')
+raw_file = get_raw_file_copy('buoy.z06.00.20201201.000000.zip')
 config_file = os.path.join(example_dir, 'config.yml')
 
 # Create necessary structures
@@ -35,11 +35,11 @@ config = Config.load(config_file)
 pipeline = BuoyIngestPipeline(config, storage)
 
 # Run the ingest
-# pipeline.run(raw_file)
+pipeline.run(raw_file)
 
-for file in sorted(os.listdir(os.path.join(example_dir, "data/input/"))):
-    # Ignore non-ingest files (Like .DS_Store or other system files)
-    if file.endswith(".zip"):
-        print(f"Processing the following file: {file}")
-        raw_file = get_raw_file_copy(file)
-        pipeline.run(raw_file)
+# for file in sorted(os.listdir(os.path.join(example_dir, "data/input/"))):
+#     # Ignore non-ingest files (Like .DS_Store or other system files)
+#     if file.endswith(".zip"):
+#         print(f"Processing the following file: {file}")
+#         raw_file = get_raw_file_copy(file)
+#         pipeline.run(raw_file)
