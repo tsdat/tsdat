@@ -244,7 +244,7 @@ class CheckMonotonic(QCOperator):
             previous_row = None
 
             # Load the previous row from the other dataset
-            if self.previous_data is not None:
+            if self.previous_data is not None and dim == "time":
                 previous_variable_data = self.previous_data.get(variable_name, None)
                 if previous_variable_data is not None:
                     # convert to np array
