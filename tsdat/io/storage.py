@@ -8,6 +8,12 @@ from typing import List, Union
 
 class DatastreamStorage(abc.ABC):
 
+    # TODO: we need a way to take the output file handlers that are
+    # registered in the config file and dynamically add them to a
+    # dict of filters so that users can specify a file type key, and
+    # then be able to correctly filter data files in storage that
+    # map to that type.  Plot and raw types should be automatically
+    # added to the dictionary.
     class FILE_TYPE():
         NETCDF = 1
         PLOTS = 2

@@ -1,0 +1,33 @@
+
+storage:
+  classname:  tsdat.io.AWSStorage
+  parameters:
+    aws_region: us-west-2
+    bucket_name: mhk-datalake-test
+    storage_root_path: tsdat/storage/root
+    storage_temp_path: tsdat/storage/temp
+
+  file_handlers:
+    input:
+      wind_handler:
+        file_pattern: '*wind*.csv'
+        classname: tsdat.io.filehandlers.CsvHandler
+        parameters: #<====Parameters can be passed to any handler
+          start_line: 4
+
+      waves_handler:
+        file_pattern: '*waves*.csv'
+        classname: tsdat.io.filehandlers.CsvHandler
+        parameters: #<====Parameters can be passed to any handler
+          start_line: 8
+
+    output:  # for now, you have to use one of our handlers
+      netcdf_handler:
+        key: netcdf
+        file_pattern: '*.nc'
+        classname: tsdat.io.filehandlers.NetCDFHandler
+
+      parquet_handler:
+        key: parquet
+        file_pattern: '*.parquet'
+        classname: tsdat.io.filehandlers.ParquetHandler

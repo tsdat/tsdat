@@ -10,6 +10,7 @@ from typing import List, Dict
 from tsdat.config import Config
 from tsdat.utils import DSUtil
 
+# TODO: add a file handler for parquet format
 
 class AbstractFileHandler(abc.ABC):
     """-----------------------------------------------------------------------
@@ -22,7 +23,6 @@ class AbstractFileHandler(abc.ABC):
     -----------------------------------------------------------------------"""
 
     @staticmethod
-    @abc.abstractmethod
     def write(ds: xr.Dataset, filename: str, config: Config = None, **kwargs) -> None:
         """-------------------------------------------------------------------
         Classes derived from the FileHandler class must implement this method.
@@ -41,7 +41,6 @@ class AbstractFileHandler(abc.ABC):
         pass
     
     @staticmethod
-    @abc.abstractmethod
     def read(filename: str, **kwargs) -> xr.Dataset:
         """-------------------------------------------------------------------
         Classes derived from the FileHandler class must implement this method.
@@ -107,6 +106,11 @@ class FileHandler():
             return handler.read(filename, **kwargs)
 
 
+# TODO: register by regex instead of file extension
+# TODO: Make this a static class function and have the decorator wrapper
+# call it.
+# Then users can call this independently to use a file handler or the
+# storage can use it to register all handlers defined in their config
 def register_filehandler(file_extension: str):
     """-----------------------------------------------------------------------
     Python decorator to register a class in the FILEHANDLERS dictionary. This
