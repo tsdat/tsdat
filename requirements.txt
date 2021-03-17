@@ -4,5 +4,7 @@ numpy
 pandas>=1.0.0
 pyyaml
 xarray
-
-
+yamllint
+boto3
+cmocean
+seaborn
