@@ -45,8 +45,8 @@ class VariableDefinition:
     def __init__(self, name: str, dictionary: Dict, available_dimensions: Dict[str, DimensionDefinition]):
         self.name: str = name
         self.input = self._parse_input(dictionary)
-        self.attrs = self._parse_attributes(dictionary)
         self.dims = self._parse_dimensions(dictionary, available_dimensions)
+        self.attrs = self._parse_attributes(dictionary)
         self.type = self._parse_data_type(dictionary)
 
         for key in dictionary:
@@ -65,7 +65,8 @@ class VariableDefinition:
         attributes: Dict[str, AttributeDefinition] = {}
         for attr_name, attr_value in dictionary.get(VarKeys.ATTRS, {}).items():
             attributes[attr_name] = AttributeDefinition(attr_name, attr_value)
-        attributes = self.add_fillvalue_if_none(attributes)
+        if not self.is_coordinate():
+            attributes = self.add_fillvalue_if_none(attributes)
         return attributes
 
     def _parse_dimensions(self, dictionary: Dict, available_dimensions: Dict[str, DimensionDefinition]) -> Dict[str, DimensionDefinition]:
@@ -93,7 +94,7 @@ class VariableDefinition:
         -------------------------------------------------------------------"""
         data_type: str = dictionary.get(VarKeys.TYPE, "")
         mappings = {
-            "string":   str,
+            "str":      str,
             "char":     str,
             "byte":     np.int8,
             "ubyte":    np.uint8,
