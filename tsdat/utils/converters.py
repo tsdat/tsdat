@@ -89,7 +89,7 @@ class TimestampTimeConverter(Converter):
                            timestamp will be based off the unix epoch start.
     -------------------------------------------------------------------"""
     def __init__(self, parameters={}):
-        super(Converter, self).__init__(parameters=parameters)
+        super().__init__(parameters=parameters)
         self.unit = self.parameters.get('unit', None)
         assert self.unit
 
