@@ -55,7 +55,7 @@ class WaveIngestPipeline(IngestPipeline):
         def format_time_xticks(ax, /, *, start=4, stop=21, step=4, date_format="%H-%M"):
             ax.xaxis.set_major_locator(mpl.dates.HourLocator(byhour=range(start, stop, step)))
             ax.xaxis.set_major_formatter(mpl.dates.DateFormatter(date_format))
-            plt.setp(ax.xaxis.get_majorticklabels(), rotation=0)
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=0, ha='center')
         
         # Useful variables
         ds = dataset
@@ -71,11 +71,11 @@ class WaveIngestPipeline(IngestPipeline):
 
             # Plot wave heights
             cmap = cmocean.cm.amp_r
-            ds.average_wave_height.plot(ax=axs[0], c=cmap(0.15), linewidth=2, label=r"H$_{avg}$")
-            ds.significant_wave_height.plot(ax=axs[0], c=cmap(0.4), linewidth=2, label=r"H$_{sig}$")
-            ds.max_wave_height.plot(ax=axs[0], c=cmap(0.65), linewidth=2, label=r"H$_{max}$")
+            ds.average_wave_height.plot(ax=axs[0], c=cmap(0.10), linewidth=2, label=r"H$_{avg}$")
+            ds.significant_wave_height.plot(ax=axs[0], c=cmap(0.5), linewidth=2, label=r"H$_{sig}$")
+            ds.max_wave_height.plot(ax=axs[0], c=cmap(0.85), linewidth=2, label=r"H$_{max}$")
             axs[0].set_ylabel("Wave Height (m)")
-            axs[0].legend(loc=1, ncol=3)
+            axs[0].legend(bbox_to_anchor=(1,-0.10), ncol=3)
 
             # Plot wave periods
             cmap = cmocean.cm.dense
@@ -83,13 +83,13 @@ class WaveIngestPipeline(IngestPipeline):
             ds.significant_wave_period.plot(ax=axs[1], c=cmap(0.5), linewidth=2, label=r"T$_{sig}$")
             ds.mean_wave_period.plot(ax=axs[1], c=cmap(0.8), linewidth=2, label=r"$\overline{T}_{mean}$")
             axs[1].set_ylabel("Wave Period (s)")
-            axs[1].legend(loc=1, ncol=3)
+            axs[1].legend(bbox_to_anchor=(1,-0.10), ncol=3)
 
-            # Plot mean period and direction
+            # Plot mean direction
             cmap = cmocean.cm.haline
             ds.mean_wave_direction.plot(ax=axs[2], c=cmap(0.4), linewidth=2, label=r"$\overline{\phi}_{mean}$")
             axs[2].set_ylabel(r"Wave $\overline{\phi}$ (deg)")
-            axs[2].legend(loc=1)
+            axs[2].legend(bbox_to_anchor=(1,-0.10))
 
             # Set xlabels and ticks
             for i in range(3):
@@ -97,7 +97,7 @@ class WaveIngestPipeline(IngestPipeline):
                 format_time_xticks(axs[i])
             
             # Save figure
-            fig.savefig(tmp_path)
+            fig.savefig(tmp_path, dpi=100)
             self.storage.save(tmp_path)
             plt.close()
 

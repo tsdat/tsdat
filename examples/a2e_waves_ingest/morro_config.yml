@@ -1,0 +1,434 @@
+pipeline:
+  type: Ingest
+
+dataset_definition:  # Describes the dataset that will be produced
+  attributes:
+    title: Waves Buoy Dataset
+    description: "Pacific Northwest National Laboratory (PNNL) manages two 
+    AXYS WindSentinelTM buoys (Buoys #120 and #130) on behalf of the U.S. 
+    Department of Energy (DOE) that collect a comprehensive set of 
+    meteorological and oceanographic (metocean) data to support resource 
+    characterization for wind energy offshore. The buoys have been deployed 
+    off the California coast in partnership with the Bureau of Ocean Energy 
+    Management (BOEM) from September 2020 through October 2021"
+    conventions: MHKiT-Cloud Data Standards v. 1.0
+    doi: 10.21947/1671051
+    institution: PNNL
+    code_url: https://github.com/clansing/tsdat/releases/tag/1.0
+    location_id: morro_bay
+    instrument_id: buoy_z06_waves
+    data_level: b1
+    location_meaning: Morro Bay
+    instrument_name: WindSentinel
+    instrument_meaning: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
+    instrument_manufacturer: AXYS Technologies Inc.
+    sampling_interval: 20 min
+
+  dimensions:
+    time:
+        length: unlimited
+
+  variables:
+
+    time:
+      input:
+        # Name of the variable in the raw data
+        name: DataTimeStamp
+        converter:
+          classname: tsdat.utils.converters.StringTimeConverter
+          parameters:
+            timezone: UTC
+            time_format: "%Y-%m-%d %H:%M:%S"
+      dims: [time]
+      type: long
+      attrs:
+        long_name: Time offset from epoch
+        standard_name: time
+        units: seconds since 1970-01-01T00:00:00
+
+    wave_type:  
+      input: # From waves csv
+        name: WaveType
+        units: "1"
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Wave Type
+        units: "1"
+        comment: "User-programmable classification of different wave types. Wave types are not defined for this deployment"
+        _FillValue: -9999
+
+    num_zero_crossings:  
+      input: # From waves csv
+        name: ZCN
+        units: "1"
+      dims: [time]
+      type: int
+      attrs:
+        long_name: Number of Zero Crossings
+        units: "1"
+        _FillValue: -9999
+
+    average_wave_height:  
+      input: # From waves csv
+        name: Havg
+        units: m
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Average Wave Height
+        units: m
+        valid_delta: 0.03
+        valid_range: [0, 10]
+        _FillValue: -9999
+
+    average_wave_period:  
+      input: # From waves csv
+        name: Tavg
+        units: s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Average Wave Period
+        units: s
+        valid_delta: 0.03
+        valid_range: [0, 30]
+        _FillValue: -9999
+
+    mean_wave_period:  
+      input: # From waves csv
+        name: MeanPeriod
+        units: s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Average Wave Period from Spectral Moments
+        comment: Wave period, average calculated from the spectral moments
+        units: s
+        valid_delta: 5
+        valid_range: [0, 30]
+        _FillValue: -9999
+
+    mean_wave_direction:  
+      input: # From waves csv
+        name: MeanDirection
+        units: degrees
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Mean Wave Direction
+        units: degrees
+        valid_delta: 15
+        valid_range: [0, 360]
+        _FillValue: -9999
+
+    mean_wave_spread:  
+      input: # From waves csv
+        name: MeanSpread
+        units: degrees
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Mean Wave Spread
+        units: degrees
+        valid_delta: 15
+        valid_range: [0, 360]
+        _FillValue: -9999
+
+    max_wave_height:  
+      input: # From waves csv
+        name: Hmax
+        units: m
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Maximum Wave Height
+        units: m
+        valid_delta: 0.03
+        valid_range: [0, 10]
+        _FillValue: -9999
+
+    max_wave_period:  
+      input: # From waves csv
+        name: Tmax
+        units: s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Maximum Wave Period
+        units: s
+        valid_delta: 0.03
+        valid_range: [0, 30]
+        _FillValue: -9999
+
+    significant_wave_height:  
+      input: # From waves csv
+        name: Hsig
+        units: m
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Significant Wave Height
+        comment: Wave height, significant, average of highest 1/3rd of waves.
+        units: m
+        valid_delta: 0.03
+        valid_range: [0, 10]
+        _FillValue: -9999
+
+    significant_wave_period:  
+      input: # From waves csv
+        name: Tsig
+        units: s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Significant Wave Period
+        comment: Wave period, significant, average of highest 1/3rd of waves.
+        units: s
+        valid_delta: 0.03
+        valid_range: [0, 30]
+        _FillValue: -9999
+
+    significant_10_wave_height:  
+      input: # From waves csv
+        name: H110
+        units: m
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Significant Wave Height
+        comment: Wave height, significant, average of highest 1/10th of waves.
+        units: m
+        valid_delta: 0.03
+        valid_range: [0, 10]
+        _FillValue: -9999
+
+    significant_10_wave_period:  
+      input: # From waves csv
+        name: T110
+        units: s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Significant Wave Period
+        comment: Wave period, significant, average of highest 1/10th of waves.
+        units: s
+        valid_delta: 0.03
+        valid_range: [0, 30]
+        _FillValue: -9999
+
+    max_wave_crest:  
+      input: # From waves csv
+        name: MaxCrest
+        units: m
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Maximum wave height above mean water level
+        units: m
+        valid_delta: 1
+        valid_range: [0, 30]
+        _FillValue: -9999
+
+    wave_peak_period:  
+      input: # From waves csv
+        name: PeakPeriod
+        units: s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Wave Peak Period
+        comment: Wave period, peak period associated with maximum energy value wave spectrum
+        units: s
+        valid_delta: 10
+        valid_range: [0, 60]
+        _FillValue: -9999
+
+    wave_peak_direction:  
+      input: # From waves csv
+        name: PeakDirection
+        units: degrees
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Wave Peak Direction
+        comment: Wave direction corresponding to peak wave period
+        units: degrees
+        valid_delta: 15
+        valid_range: [0, 360]
+        _FillValue: -9999
+
+    wave_peak_spread:  
+      input: # From waves csv
+        name: PeakSpread
+        units: degrees
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Wave Peak Spread
+        comment: Wave spread corresponding to peak wave period
+        units: degrees
+        valid_delta: 15
+        valid_range: [0, 360]
+        _FillValue: -9999
+
+    wave_read_peak_period:  
+      input: # From waves csv
+        name: TP5
+        units: s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Wave Peak Period (Read)
+        comment: Wave period, peak period computed by the Read method
+        units: s
+        valid_delta: 5
+        valid_range: [0, 60]
+        _FillValue: -9999
+
+    wave_spectral_max_height:  
+      input: # From waves csv
+        name: HM0
+        units: m
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Maximum Wave Height
+        comment: Wave height, significant, estimated from the spectral moment
+        units: m
+        valid_delta: 3
+        valid_range: [0, 30]
+        _FillValue: -9999
+
+    wave_spectral_peak_period:  
+      input: # From waves csv
+        name: Te
+        units: s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Wave Peak Period
+        comment: Wave energy period, calculated from the spectral moments
+        units: s
+        valid_delta: 10
+        valid_range: [0, 60]
+        _FillValue: -9999
+
+    wave_duration:  
+      input: # From waves csv
+        name: DurationMs
+        units: s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Wave Duration
+        units: s
+        valid_delta: 100
+        valid_range: [0, 60000]
+        _FillValue: -9999
+
+    F1:  
+      input: # From waves csv
+        name: F1
+        units: "1"
+      dims: [time]
+      type: double
+      attrs:
+        long_name: F1
+        units: "1"
+        _FillValue: -9999
+
+    F2:  
+      input: # From waves csv
+        name: F1
+        units: "1"
+      dims: [time]
+      type: double
+      attrs:
+        long_name: F1
+        units: "1"
+        _FillValue: -9999
+
+#-----------------------------------------------------------------
+coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
+
+  missing:
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckMissing
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+  monotonic:
+    variables:
+      - All
+    operator:
+      classname: tsdat.qc.operators.CheckMonotonic
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+#-----------------------------------------------------------------
+qc_tests:  # Define QC tests for non-coordinate variables
+
+    missing:
+        qc_bit: 1
+        meaning: "Value is equal to _FillValue or NaN"
+        assessment: Bad
+        variables:
+          - ALL  # keyword to apply test to all variables
+        operator:
+          classname: tsdat.qc.operators.CheckMissing
+        error_handlers:
+          # Replace any NaNs with _FillValue
+          replace_with_fill_value:
+            classname: tsdat.qc.error_handlers.RemoveFailedValues
+
+    fail_min:
+        qc_bit: 2
+        meaning: "Value is less than the fail_range."
+        assessment: Bad
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckFailMin
+
+    fail_max:
+        qc_bit: 3
+        meaning: "Value is greater than the fail_range."
+        assessment: Bad
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckFailMax
+
+    warn_min:
+        qc_bit: 4
+        meaning: "Value is less than the warn_range."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckWarnMin
+
+    warn_max:
+        qc_bit: 5
+        meaning: "Value is greater than the warn_range."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckWarnMax
+
+    valid_delta:
+        qc_bit: 6
+        meaning: "Difference between current and previous values exceeds valid_delta."
+        assessment: Indeterminate
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckValidDelta
+          parameters:
+            dim: time

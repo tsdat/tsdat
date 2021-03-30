@@ -3,26 +3,21 @@ pipeline:
 
 dataset_definition:  # Describes the dataset that will be produced
   attributes:
-    title: Buoy Dataset
-    description: "Pacific Northwest National Laboratory (PNNL) manages two 
-    AXYS WindSentinelTM buoys (Buoys #120 and #130) on behalf of the U.S. 
-    Department of Energy (DOE) that collect a comprehensive set of 
-    meteorological and oceanographic (metocean) data to support resource 
-    characterization for wind energy offshore. The buoys have been deployed 
-    off the California coast in partnership with the Bureau of Ocean Energy 
-    Management (BOEM) from September 2020 through October 2021"
-    conventions: MHKiT-Cloud Data Standards v. 1.0
-    doi: 10.21947/1671051
-    institution: PNNL
-    code_url: https://github.com/clansing/tsdat/releases/tag/1.0
-    location_id: morro_bay_ca
-    instrument_id: buoy_z06
-    data_level: b1
-    location_meaning: Morro Bay
-    instrument_name: WindSentinel
-    instrument_meaning: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
-    instrument_manufacturer: AXYS Technologies Inc.
-    sampling_interval: 10 min
+    code_url: "https://github.com/clansing/tsdat/releases/tag/1.0"
+    conventions: "ME Data Pipeline Standards v1.0"
+    data_level: "b1"
+    description: "Pacific Northwest National Laboratory (PNNL) manages this AXYS WindSentinelTM buoy (Buoy #130) on 
+    behalf of the U.S. Department of Energy (DOE) that collect a comprehensive set of meteorological and oceanographic
+    (metocean) data to support resource characterization for wind energy offshore. The buoy collects in-situ sea 
+    surface temperature, salinity, ocean currents, and wave data as well as near-surface air temperature, humidity, and
+    horizontal wind speed and direction."
+    instrument_id: "buoy_z06"
+    instrument_manufacturer: "AXYS Technologies Inc."
+    instrument_meaning: "Self-powered floating buoy hosting a suite of meteorological and marine instruments."
+    instrument_name: "WindSentinel"
+    location_id: "morro"
+    location_meaning: "Morro Bay"
+    title: "Surface Meteorological Measurements and Ocean Current Measurements from Buoy #130 at Morro Bay, CA"
 
   dimensions:
     time:
@@ -35,7 +30,6 @@ dataset_definition:  # Describes the dataset that will be produced
 
     time:
       input:
-        # Name of the variable in the raw data
         name: DataTimeStamp
         converter:
           classname: tsdat.utils.converters.StringTimeConverter
@@ -66,9 +60,9 @@ dataset_definition:  # Describes the dataset that will be produced
         file_pattern: "conductivity"
         name: Surface Temperature (C)
         units: degC
+        # required: true  # TODO: Add this optional attribute to indicate that this variable must be retrieved
       dims: [time]
       type: double
-      required: true  # TODO: Add this optional attribute to indicate that this variable must be retrieved
       attrs:
         long_name: Sea surface temperature
         units: degC
@@ -85,16 +79,6 @@ dataset_definition:  # Describes the dataset that will be produced
         long_name:  Ocean Conductivity
         units: S/m
         fail_range: [0, 7]
-    
-    # currents_num_bins:  
-    #   input: # From currents csv
-    #     name: NumberOfBins
-    #     units: "1"
-    #   dims: [time]
-    #   type: int
-    #   attrs:
-    #     long_name: Number of bins
-    #     units: "1"
     
     currents_bin_spacing:  
       input: # From currents csv
@@ -133,14 +117,14 @@ dataset_definition:  # Describes the dataset that will be produced
     # This is a computed value, but the computation is now done in
     # a hook prior to dataset standardization, so it is considered
     # to have input.
-    current_velocity:
+    current_speed:
       input:
-        name: current_velocity
+        name: current_speed
         file_pattern: "currents"
       dims: [time, depth]
       type: double
       attrs:
-        long_name: Current Velocity
+        long_name: Current Speed
         units: mm/s
         fail_range: [0, 10000]
 
@@ -276,6 +260,18 @@ dataset_definition:  # Describes the dataset that will be produced
         long_name:  Longitude
         units: degree_E
 
+  
+  # TODO: Implement this in dataset definition
+  # variable_defaults:
+  #   input:
+  #     converter:
+  #       classname: tsdat.utils.converters.DefaultConverter
+  #       # parameters:
+  #   dims: [time]
+  #   type: float
+  #   attrs:
+  #     _FillValue: -9999
+    
 #-----------------------------------------------------------------
 coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
 
@@ -302,6 +298,7 @@ coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
 qc_tests:  # Define QC tests for non-coordinate variables
 
     missing:
+        # test_number: 1 # TODO: Convert this to test number instead of qc_bit
         qc_bit: 1
         meaning: "Value is equal to _FillValue or NaN"
         assessment: Bad

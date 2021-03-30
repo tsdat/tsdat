@@ -4,13 +4,13 @@ pipeline:
 dataset_definition:  # Describes the dataset that will be produced
   attributes:
     title: Lidar Ingest for .sta file
-    description: Example ingest of data from a buoy stationed at Morro Bay, California.
+    description: Example ingest of data from a buoy stationed off the coast of Humboldt, California.
     conventions: MHKiT-Cloud Data Standards v. 1.0
     institution: PNNL
     code_url: https://github.com/clansing/tsdat/releases/tag/1.0
-    location_meaning: Morro Bay
-    location_id: morro_bay_ca
-    instrument_id: lidar_buoy_z06
+    location_meaning: Humboldt, CA
+    location_id: humboldt
+    instrument_id: lidar_buoy_z05
     data_level: b1
 
   dimensions:
@@ -65,6 +65,16 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name: Availability
         units: "%"
+
+    pressure:
+      input: 
+        name: Pressure (hPa)
+        units: hPa
+      dims: [time]
+      type: float
+      attrs:
+        long_name: Pressure
+        units: hPa
     
 #-----------------------------------------------------------------
 coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
@@ -89,6 +99,7 @@ coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
 
 #-----------------------------------------------------------------
 qc_tests:  # Define QC tests for non-coordinate variables
+# quality_tests: # TODO
 
     missing:
         qc_bit: 1
@@ -102,3 +113,28 @@ qc_tests:  # Define QC tests for non-coordinate variables
           # Replace any NaNs with _FillValue
           replace_with_fill_value:
             classname: tsdat.qc.error_handlers.RemoveFailedValues
+
+    # # missing:
+    # despike:
+    #     # qc_bit: 1
+    #     # meaning: "Value is equal to _FillValue or NaN"
+    #     meaning: "Spikes above a specified threshold were removed according to Lansing et al 2021"
+    #     # assessment: Bad
+    #     variables:
+    #       - ALL  # keyword to apply test to all variables
+    #     operator:
+    #       classname: tsdat.qc.operators.Despike
+    #     # error_handlers:
+    #     #   # Replace any NaNs with _FillValue
+    #     #   replace_with_fill_value:
+    #     #     classname: tsdat.qc.error_handlers.RemoveFailedValues        
+
+    # despike:
+    #     test_num: 1
+    #     meaning: "Value was above spiking theshold"
+    #     correction: "Spikes above a specified threshold were removed according to Lansing et al 2021"
+    #     assessment: Indeterminate
+    #     variables:
+    #       - ALL
+    #     operator:
+    #       classname: tsdat.qc.operators.Despike

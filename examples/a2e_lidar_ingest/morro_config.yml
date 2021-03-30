@@ -1,0 +1,140 @@
+pipeline:
+  type: Ingest
+
+dataset_definition:  # Describes the dataset that will be produced
+  attributes:
+    title: Lidar Ingest for .sta file
+    description: Example ingest of data from a buoy stationed at Morro Bay, California.
+    conventions: MHKiT-Cloud Data Standards v. 1.0
+    institution: PNNL
+    code_url: https://github.com/clansing/tsdat/releases/tag/1.0
+    location_meaning: Morro Bay
+    location_id: morro
+    instrument_id: lidar_buoy_z06
+    data_level: b1
+
+  dimensions:
+    time:
+        length: unlimited
+    
+    height:
+        length: 12
+
+  variables:
+
+    time:
+      input:
+        name: Timestamp (end of interval)
+        converter:
+          classname: tsdat.utils.converters.StringTimeConverter
+          parameters:
+            timezone: UTC
+            time_format: "%Y/%m/%d %H:%M"
+      dims: [time]
+      type: long
+      attrs:
+        long_name: Time (UTC)
+        standard_name: time
+        units: seconds since 1970-01-01T00:00:00
+
+    height:
+      data: [40, 60, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240]
+      dims: [height]
+      type: int
+      attrs:
+        long_name: Height ASL
+        units: m
+    
+    wind_speed:
+      dims: [time, height]
+      type: float
+      attrs:
+        long_name: Wind Speed
+        units: m/s
+      
+    wind_direction:
+      dims: [time, height]
+      type: float
+      attrs:
+        long_name: Wind Direction
+        units: degrees
+    
+    data_availability:
+      dims: [time, height]
+      type: float
+      attrs:
+        long_name: Availability
+        units: "%"
+
+    pressure:
+      input: 
+        name: Pressure (hPa)
+        units: hPa
+      dims: [time]
+      type: float
+      attrs:
+        long_name: Pressure
+        units: hPa
+    
+#-----------------------------------------------------------------
+coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
+
+  missing:
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckMissing
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+  monotonic:
+    variables:
+      - time
+    operator:
+      classname: tsdat.qc.operators.CheckMonotonic
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+#-----------------------------------------------------------------
+qc_tests:  # Define QC tests for non-coordinate variables
+# quality_tests: # TODO
+
+    missing:
+        qc_bit: 1
+        meaning: "Value is equal to _FillValue or NaN"
+        assessment: Bad
+        variables:
+          - ALL  # keyword to apply test to all variables
+        operator:
+          classname: tsdat.qc.operators.CheckMissing
+        error_handlers:
+          # Replace any NaNs with _FillValue
+          replace_with_fill_value:
+            classname: tsdat.qc.error_handlers.RemoveFailedValues
+
+    # # missing:
+    # despike:
+    #     # qc_bit: 1
+    #     # meaning: "Value is equal to _FillValue or NaN"
+    #     meaning: "Spikes above a specified threshold were removed according to Lansing et al 2021"
+    #     # assessment: Bad
+    #     variables:
+    #       - ALL  # keyword to apply test to all variables
+    #     operator:
+    #       classname: tsdat.qc.operators.Despike
+    #     # error_handlers:
+    #     #   # Replace any NaNs with _FillValue
+    #     #   replace_with_fill_value:
+    #     #     classname: tsdat.qc.error_handlers.RemoveFailedValues        
+
+    # despike:
+    #     test_num: 1
+    #     meaning: "Value was above spiking theshold"
+    #     correction: "Spikes above a specified threshold were removed according to Lansing et al 2021"
+    #     assessment: Indeterminate
+    #     variables:
+    #       - ALL
+    #     operator:
+    #       classname: tsdat.qc.operators.Despike

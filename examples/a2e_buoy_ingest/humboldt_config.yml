@@ -1,0 +1,336 @@
+pipeline:
+  type: Ingest
+
+dataset_definition:  # Describes the dataset that will be produced
+  attributes:
+    code_url: "https://github.com/clansing/tsdat/releases/tag/1.0"
+    conventions: "ME Data Pipeline Standards v1.0"
+    data_level: "b1"
+    description: "Pacific Northwest National Laboratory (PNNL) manages this AXYS WindSentinelTM buoy (Buoy #120) on 
+    behalf of the U.S. Department of Energy (DOE) that collect a comprehensive set of meteorological and oceanographic
+    (metocean) data to support resource characterization for wind energy offshore. The buoy collects in-situ sea 
+    surface temperature, salinity, ocean currents, and wave data as well as near-surface air temperature, humidity, and
+    horizontal wind speed and direction."
+    instrument_id: "buoy_z05"
+    instrument_manufacturer: "AXYS Technologies Inc."
+    instrument_meaning: "Self-powered floating buoy hosting a suite of meteorological and marine instruments."
+    instrument_name: "WindSentinel"
+    location_id: "humboldt"
+    location_meaning: "Humboldt, CA"
+    title: "Surface Meteorological Measurements and Ocean Current Measurements from Buoy #130 at Humboldt, CA"
+
+  dimensions:
+    time:
+        length: unlimited
+    
+    depth:
+        length: 50
+
+  variables:
+
+    time:
+      input:
+        name: DataTimeStamp
+        converter:
+          classname: tsdat.utils.converters.StringTimeConverter
+          parameters:
+            timezone: UTC
+            time_format: "%Y-%m-%d %H:%M:%S"
+      dims: [time]
+      type: long
+      attrs:
+        long_name: Time (UTC)
+        standard_name: time
+        units: seconds since 1970-01-01T00:00:00
+    
+    # Coordinate variable added in customize_raw_datasets hook
+    depth:
+      input:
+        name: depth
+        file_pattern: "currents"
+        units: m
+      dims: [depth]
+      type: long
+      attrs:
+        long_name: Depth
+        units: m
+
+    CTD_SST:  
+      input: # From conductivity csv
+        file_pattern: "conductivity"
+        name: Surface Temperature (C)
+        units: degC
+        # required: true  # TODO: Add this optional attribute to indicate that this variable must be retrieved
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Sea surface temperature
+        units: degC
+        fail_range: [-5, 45]
+
+    conductivity:  
+      input: # From conductivity csv
+        file_pattern: "conductivity"
+        name: Conductivity (Siemens/m)
+        units: S/m
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Ocean Conductivity
+        units: S/m
+        fail_range: [0, 7]
+    
+    currents_bin_spacing:  
+      input: # From currents csv
+        file_pattern: "currents"
+        name: BinSpacing
+        units: m
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Vertical Spacing Between Bins
+        units: m
+    
+    currents_head_depth:  
+      input: # From currents csv
+        file_pattern: "currents"
+        name: HeadDepth
+        units: m
+      dims: [time]
+      type: double
+      attrs:
+        long_name: depth of instrument below ocean surface
+        units: m
+
+    currents_blanking_distance:  
+      input: # From currents csv
+        file_pattern: "currents"
+        name: BlankingDistance
+        units: m
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Blanking Distance
+        comment: a “blind zone” where the instruments do not measure anything. Typically less than 1m.
+        units: m
+
+    # This is a computed value, but the computation is now done in
+    # a hook prior to dataset standardization, so it is considered
+    # to have input.
+    current_speed:
+      input:
+        name: current_speed
+        file_pattern: "currents"
+      dims: [time, depth]
+      type: double
+      attrs:
+        long_name: Current Speed
+        units: mm/s
+        fail_range: [0, 10000]
+
+    # This is a computed value, but the computation is now done in
+    # a hook prior to dataset standardization, so it is considered
+    # to have input.
+    current_direction:
+      input:
+        name: current_direction
+        file_pattern: "currents"
+      dims: [time, depth]
+      type: double
+      attrs:
+        long_name: Current Direction
+        units: degrees
+        fail_range: [0, 360]
+
+    gill_wind_speed:  
+      input: # From gill csv
+        name: gill_horizontal_wind_speed # Was "Horizontal Speed (m/s)" but needed to be renamed to prevent duplication
+        units: m/s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Horizontal Wind Speed
+        comment: Surface horizontal wind speed, 2D ultrasonic anemometer
+        units: m/s
+        fail_range: [0, 50]
+
+    gill_wind_direction:  
+      input: # From gill csv
+        name: gill_horizontal_wind_direction # Was "Horizontal Direction (deg)" but needed to be renamed to prevent duplication
+        units: degrees
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Horizontal Wind Direction
+        comment: Surface horizontal wind direction, 2D ultrasonic anemometer
+        units: degrees
+        fail_range: [0, 360]
+
+    wind_speed:  
+      input: # From wind csv
+        name: Horizontal Speed (m/s)
+        units: m/s
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Horizontal Wind Speed
+        comment: Surface wind speed, cup anemometer
+        units: m/s
+        fail_range: [0, 50]
+
+    wind_direction:  
+      input: # From wind csv
+        name: Horizontal Direction (deg)
+        units: degrees
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Horizontal Wind Direction
+        comment: Surface wind direction, wind vane
+        units: degrees
+        fail_range: [0, 360]
+
+    pressure:  
+      input: # From pressure csv
+        name: Barometric Pressure (mb)
+        units: mbar
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Atmospheric Pressure
+        units: hPa
+        fail_range: [500, 1100]
+    
+    rh:  
+      input: # From rh csv
+        name: Relative Humidity (%)
+        units: "%"
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Relative Humidity
+        units: "%"
+        fail_range: [0, 100]
+
+    # Note that this variable had the same name as Surface Temperature from  
+    # conductivity csv. It has been renamed to prevent a conflict, but the 
+    # user will need to write the customize_raw_dataset() hook to rename the
+    # raw input from "Surface Temperature (C)" to "surfacetemp - Surface 
+    # Temperature (C)" so that the code can still retrieve it properly
+    YSI_SST:  
+      input: # From surfacetemp csv
+        name: surfacetemp - Surface Temperature (C)
+        units: degC
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Sea Surface Temperature
+        comment: This is from the surfacetemp.csv file.
+        units: degC
+        fail_range: [-5, 50]
+    
+    air_temperature:  
+      input: # From temperature csv
+        name: Air Temperature (C)
+        units: degC
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Air Temperature
+        units: degC
+        fail_range: [-40, 60]
+
+    latitude:  
+      input: # From gps csv
+        name: Latitude
+        units: degree_N
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Latitude
+        units: degree_N
+      
+    longitude:  
+      input: # From gps csv
+        name: Longitude
+        units: degree_E
+      dims: [time]
+      type: double
+      attrs:
+        long_name:  Longitude
+        units: degree_E
+
+  
+  # TODO: Implement this in dataset definition
+  # variable_defaults:
+  #   input:
+  #     converter:
+  #       classname: tsdat.utils.converters.DefaultConverter
+  #       # parameters:
+  #   dims: [time]
+  #   type: float
+  #   attrs:
+  #     _FillValue: -9999
+    
+#-----------------------------------------------------------------
+coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
+
+  missing:
+    variables:
+      - ALL
+    operator:
+      classname: tsdat.qc.operators.CheckMissing
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+  monotonic:
+    variables:
+      - All
+    operator:
+      classname: tsdat.qc.operators.CheckMonotonic
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+#-----------------------------------------------------------------
+
+qc_tests:  # Define QC tests for non-coordinate variables
+
+    missing:
+        # test_number: 1 # TODO: Convert this to test number instead of qc_bit
+        qc_bit: 1
+        meaning: "Value is equal to _FillValue or NaN"
+        assessment: Bad
+        variables:
+          - ALL  # keyword to apply test to all variables
+        operator:
+          classname: tsdat.qc.operators.CheckMissing
+        error_handlers:
+          # Replace any NaNs with _FillValue
+          replace_with_fill_value:
+            classname: tsdat.qc.error_handlers.RemoveFailedValues
+
+    fail_min:
+        qc_bit: 2
+        meaning: "Value is less than the fail_range."
+        assessment: Bad
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckFailMin
+        error_handlers:
+          replace_with_fill_value:
+            classname: tsdat.qc.error_handlers.RemoveFailedValues
+
+    fail_max:
+        qc_bit: 3
+        meaning: "Value is greater than the fail_range."
+        assessment: Bad
+        variables:
+          - ALL
+        operator:
+          classname: tsdat.qc.operators.CheckFailMax
+        error_handlers:
+          replace_with_fill_value:
+            classname: tsdat.qc.error_handlers.RemoveFailedValues

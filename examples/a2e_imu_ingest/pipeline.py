@@ -63,7 +63,7 @@ class ImuIngestPipeline(IngestPipeline):
         filename = DSUtil.get_plot_filename(dataset, "buoy_motion_histogram", "png")
         with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
 
-            fig, ax = plt.subplots(figsize=(10,6), constrained_layout=True)
+            fig, ax = plt.subplots(figsize=(14,8), constrained_layout=True)
 
             # Create plot labels including mean roll/pitch
             mean_roll, mean_pitch = ds["roll"].mean().data, ds["pitch"].mean().data
@@ -79,7 +79,7 @@ class ImuIngestPipeline(IngestPipeline):
             ax.set_xlabel("Buoy Motion (deg)")
             ax.set_ylabel("Frequency")
             ax.set_title("")
-            ax.legend()
+            ax.legend(ncol=2, bbox_to_anchor=(1, -0.04))
 
             # Save the figure
             fig.savefig(tmp_path, dpi=100)

@@ -1,0 +1,231 @@
+pipeline:
+  type: Ingest
+
+dataset_definition:
+  attributes:
+    title: "IMU Buoy Dataset"
+    description: "Euler angles, accelerometer, magnetometer and Gyroscope data"
+    conventions: MHKiT-Cloud Data Standards v. 1.0
+    doi: 10.21947/1671051
+    institution: PNNL
+    code_url: https://github.com/clansing/tsdat/releases/tag/1.0
+    location_id: humboldt
+    instrument_id: buoy_z06_imu
+    data_level: b1
+    location_meaning: Humboldt
+    instrument_name: GX5-45 IMU
+    instrument_meaning: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
+    instrument_manufacturer: AXYS Technologies Inc.
+    sampling_interval: 20 min
+
+  dimensions:
+    time:
+      length: unlimited
+
+    space:
+      length: 3    
+
+  variables:
+
+    time:
+      input:
+        name: time
+      dims: [time]
+      type: long
+      attrs:
+        long_name: Time offset from epoch
+        standard_name: time
+        units: seconds since 1980-01-06T00:00:00
+
+    space:
+      input:
+        name: space
+      dims: [space]
+      type: str
+      attrs:
+        long_name: Spatial Components
+        units: "1"
+
+    # rot:
+    #   input:
+    #     name: rot
+    #   dims: [rot]
+    #   type: str
+    #   attrs:
+    #     long_name: Rotational Components
+    #     units: "1"
+
+    # rpy:  
+    #   input: 
+    #     name: rpy
+    #   dims: [time, rot]
+    #   type: double
+    #   attrs:
+    #     long_name: Roll, Pitch, and Yaw
+    #     units: degrees
+
+    roll:  
+      input: 
+        name: roll
+        units: radians
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Roll
+        definition: "The roll angle measures the side to side motion of the 
+        buoy between the starboard and port side. The roll angle is measured 
+        in degrees around the longitudinal axis of buoy that runs fore and 
+        aft. A roll angle of 0º means that the buoy is flat with respect to 
+        the earth in the side to side direction. Buoy rotation towards the 
+        starboard (right) side is a positive roll angle."
+        instrument: "MicroStrain, 3DM GX3 25 (Instrument # NA)"
+        units: degrees
+
+    pitch:  
+      input: 
+        name: pitch
+        units: radians
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Pitch
+        definition: "The pitch angle measures the front to back motion of the 
+        buoy fore and aft. The pitch angle is measured in degrees around the 
+        lateral axis of buoy that runs from port to starboard. A pitch angle 
+        of 0º means that the buoy is flat with respect to the earth in the 
+        fore to aft direction. Buoy rotation towards the fore (front) is a 
+        positive pitch angle."
+        instrument: "MicroStrain, 3DM GX3 25 (Instrument # NA)"
+        units: degrees
+
+    yaw:  
+      input: 
+        name: yaw
+        units: radians
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Yaw
+        units: degrees
+
+    gyro:  
+      input: 
+        name: gyro
+        units: radians
+      dims: [time, space]
+      type: double
+      attrs:
+        long_name: Gyrometer
+        units: degrees
+
+    accel:  
+      input: 
+        name: accel
+      dims: [time, space]
+      type: double
+      attrs:
+        long_name: Acceleration
+        units: m/s^2
+
+    mag:  
+      input: 
+        name: mag
+      dims: [time, space]
+      type: double
+      attrs:
+        long_name: Magnetic field strength 
+        units: gauss
+    
+    pres:  
+      input: 
+        name: pres
+      dims: [time]
+      type: double
+      attrs:
+        long_name: Pressure
+        units: hPa
+    
+      
+#-----------------------------------------------------------------
+coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
+
+  missing:
+    variables:
+      - time
+    operator:
+      classname: tsdat.qc.operators.CheckMissing
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+  monotonic:
+    variables:
+      - time
+    operator:
+      classname: tsdat.qc.operators.CheckMonotonic
+    error_handlers:
+      fail_pipeline:
+        classname: tsdat.qc.error_handlers.FailPipeline
+
+#-----------------------------------------------------------------
+qc_tests:  # Define QC tests for non-coordinate variables
+
+    missing:
+        qc_bit: 1
+        meaning: "Value is equal to _FillValue or NaN"
+        assessment: Bad
+        variables:
+          - ALL  # keyword to apply test to all variables
+        operator:
+          classname: tsdat.qc.operators.CheckMissing
+        error_handlers:
+          # Replace any NaNs with _FillValue
+          replace_with_fill_value:
+            classname: tsdat.qc.error_handlers.RemoveFailedValues
+
+    # fail_min:
+    #     qc_bit: 2
+    #     meaning: "Value is less than the fail_range."
+    #     assessment: Bad
+    #     variables:
+    #       - ALL
+    #     operator:
+    #       classname: tsdat.qc.operators.CheckFailMin
+
+    # fail_max:
+    #     qc_bit: 3
+    #     meaning: "Value is greater than the fail_range."
+    #     assessment: Bad
+    #     variables:
+    #       - ALL
+    #     operator:
+    #       classname: tsdat.qc.operators.CheckFailMax
+
+    # warn_min:
+    #     qc_bit: 4
+    #     meaning: "Value is less than the warn_range."
+    #     assessment: Indeterminate
+    #     variables:
+    #       - ALL
+    #     operator:
+    #       classname: tsdat.qc.operators.CheckWarnMin
+
+    # warn_max:
+    #     qc_bit: 5
+    #     meaning: "Value is greater than the warn_range."
+    #     assessment: Indeterminate
+    #     variables:
+    #       - ALL
+    #     operator:
+    #       classname: tsdat.qc.operators.CheckWarnMax
+
+    # valid_delta:
+    #     qc_bit: 6
+    #     meaning: "Difference between current and previous values exceeds valid_delta."
+    #     assessment: Indeterminate
+    #     variables:
+    #       - ALL
+    #     operator:
+    #       classname: tsdat.qc.operators.CheckValidDelta
+    #       parameters:
+    #         dim: time

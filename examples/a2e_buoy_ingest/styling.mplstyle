@@ -8,9 +8,9 @@ axes.linewidth      : 2
 #grid.linewidth      : 0.5
 #grid.color          : lightgrey
 
-legend.frameon      : True
-legend.framealpha   : 1
-legend.edgecolor    : w
+legend.frameon      : False
+legend.framealpha   : 0
+#legend.edgecolor    : w
 
 xtick.top           : True
 xtick.minor.visible : True
