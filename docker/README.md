@@ -2,7 +2,7 @@
 This folder contains the dockerfile definition and build script for an AWS-Lambda
 base image for TSDAT.  
 
-It is currently underdevelopment using a miniconda and a multistage docker build to
+It is currently under development using a miniconda and a multistage docker build to
 add the required python libraries to the public.ecr.aws/lambda/python:3.8 base image.
 ** It does not work yet. **
 

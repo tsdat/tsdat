@@ -10,6 +10,6 @@
 #               docker login registry.gitlab.com
 #
 ###################################################################
-docker build -t registry.gitlab.com/gov-doe-arm/mplcmask .
+docker build -f ./Dockerfile -t registry.gitlab.com/gov-doe-arm/mplcmask ../../
 
 docker push registry.gitlab.com/gov-doe-arm/mplcmask
