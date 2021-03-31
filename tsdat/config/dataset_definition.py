@@ -124,7 +124,6 @@ class DatasetDefinition:
         # TODO: Check Variable attributes -- _FillValue defined only on non-coordinate variables,
         # warning if no long_name provided, units recognized by our units library, etc
 
-
     def _error_check_time_definition(self):
         # Ensure that time is in the dataset definition as a dimension and a coordinate variable
         assert "time" in self.dims,     DefinitionError("'time' must be defined as a dimension.")
@@ -218,11 +217,6 @@ class DatasetDefinition:
         coordinate_names = variable.get_coordinate_names()
         return [self.coords.get(coord_name) for coord_name in coordinate_names]
 
-    def get_variable_shape(self, variable: VariableDefinition) -> Tuple[int]:
-        coordinates = self.get_coordinates(variable)
-        shape = tuple([coord.get_shape()[0] for coord in coordinates])
-        return shape
-
     def get_static_variables(self) -> List[VariableDefinition]:
         """-------------------------------------------------------------------
         Returns a list of static VariableDefinitions. A VariableDefinition is 
@@ -246,70 +240,3 @@ class DatasetDefinition:
         static_coords = filter(lambda c: hasattr(c, "data"), self.coords.values())
         static_variables = filter(lambda v: hasattr(v, "data"), self.vars.values())
         return list(static_coords) + list(static_variables)
-
-
-    def extract_data(self, variable: VariableDefinition, raw_dataset: xr.Dataset) -> None:
-        """-------------------------------------------------------------------
-        Adds data from the xarray dataset to the given VariableDefinition. It 
-        can convert units and use _FillValue to initilize variables not taken 
-        from the dataset.
-
-        Args:
-            variable (VariableDefinition): The VariableDefinition to update.
-            raw_dataset (xr.Dataset): The dataset to draw data from.
-        -------------------------------------------------------------------"""
-        # If variable is predefined, it should already have the appropriate 
-        # represention in the definition; do nothing.
-        if variable.is_predefined():
-            dtype = variable.get_data_type()
-            variable.data = np.array(variable.data, dtype=dtype)
-        
-        # If variable has no input, retrieve its _FillValue and shape, then 
-        # initialize the data in the VariableDefinition.
-        elif variable.is_derived():
-            if variable.is_coordinate():
-                # TODO: Warning instead of exception, skip initialization
-                raise Exception("Error: coordinate variable {variable.name} must not be empty")
-            shape = self.get_variable_shape(variable)
-            _FillValue = variable.get_FillValue()
-            dtype = variable.get_data_type()
-            variable.data = np.full(shape, _FillValue, dtype=dtype)
-        
-        # If variable has input and is in the dataset, then convert units and 
-        # add it to the VariableDefinition
-        elif variable.has_input():
-            input_name = variable.get_input_name()
-            if not raw_dataset: 
-                raise DefinitionError(f"Could not find variable {input_name} in the raw dataset.")
-            data = raw_dataset[input_name].values
-            converted = variable.input.converter.run(data, variable.get_input_units(), variable.get_output_units())
-            variable.data = converted
-
-    def to_dict(self) -> Dict:
-        """-------------------------------------------------------------------
-        Returns a dictionary that can be used to instantiate an xarray dataset 
-        with no data.
-
-        Returns a dictionary like:
-        ```
-        {
-            "coords": {"time": {"dims": ["time"], "data": [], "attrs": {"units": "seconds since 1970-01-01T00:00:00"}}},
-            "attrs": {"title": "Ocean Temperature and Salinity"},
-            "dims": "time",
-            "data_vars": {
-                "temperature": {"dims": ["time"], "data": [], "attrs": {"units": "degC"}},
-                "salinity": {"dims": ["time"], "data": [], "attrs": {"units": "kg/m^3"}},
-            },
-        }
-        ```
-
-        Returns:
-            Dict: A dictionary representing the structure of the dataset.
-        -------------------------------------------------------------------"""
-        dictionary = {
-            "coords":       {coord_name: coord.to_dict() for coord_name, coord in self.coords.items()},
-            "attrs":        self.attrs,
-            "dims":         list(self.dims.keys()),
-            "data_vars":    {var_name: var.to_dict() for var_name, var in self.vars.items()}
-        }
-        return dictionary
