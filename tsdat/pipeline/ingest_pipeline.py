@@ -38,12 +38,12 @@ class IngestPipeline(Pipeline):
             dataset = self.apply_corrections(dataset, raw_dataset_mapping)
             dataset = self.customize_dataset(dataset, raw_dataset_mapping)
 
-            if self.config.dataset_definition.get_attr('data_level').startswith('b'):
-                # If there is previous data in Storage, we need
-                # to load up the last file so we can perform
-                # continuity checks such as monontonically increasing
-                previous_dataset = self.get_previous_dataset(dataset)
-                QC.apply_tests(dataset, self.config, previous_dataset)
+            # Apply quality control / quality assurance to the dataset. Note
+            # that the previous dataset is retrieved so quality checks can 
+            # perform continuity checks such as strictly increasing coordinate
+            # values or valid_delta for the first point in the file. 
+            previous_dataset = self.get_previous_dataset(dataset)
+            QC.apply_tests(dataset, self.config, previous_dataset)
 
             # Save the final datastream data to storage
             dataset = self.store_and_reopen_dataset(dataset)
