@@ -41,6 +41,7 @@ dataset_definition:  # Describes the dataset that will be produced
     time:
       input:
         name: DataTimeStamp
+        required: True
         converter:
           classname: tsdat.utils.converters.StringTimeConverter
           parameters:
@@ -57,8 +58,8 @@ dataset_definition:  # Describes the dataset that will be produced
     depth:
       input:
         name: depth
+        required: True
         file_pattern: "currents"
-        units: m
       dims: [depth]
       type: long
       attrs:
@@ -69,8 +70,7 @@ dataset_definition:  # Describes the dataset that will be produced
       input: # From conductivity csv
         file_pattern: "conductivity"
         name: Surface Temperature (C)
-        units: degC
-        # required: true  # TODO: Add this optional attribute to indicate that this variable must be retrieved
+        required: True
       attrs:
         long_name: Sea surface temperature
         units: degC
@@ -80,7 +80,7 @@ dataset_definition:  # Describes the dataset that will be produced
       input: # From conductivity csv
         file_pattern: "conductivity"
         name: Conductivity (Siemens/m)
-        units: S/m
+        required: True
       attrs:
         long_name:  Ocean Conductivity
         units: S/m
@@ -90,7 +90,6 @@ dataset_definition:  # Describes the dataset that will be produced
       input: # From currents csv
         file_pattern: "currents"
         name: BinSpacing
-        units: m
       attrs:
         long_name: Vertical Spacing Between Bins
         units: m
@@ -99,7 +98,6 @@ dataset_definition:  # Describes the dataset that will be produced
       input: # From currents csv
         file_pattern: "currents"
         name: HeadDepth
-        units: m
       attrs:
         long_name: depth of instrument below ocean surface
         units: m
@@ -108,7 +106,6 @@ dataset_definition:  # Describes the dataset that will be produced
       input: # From currents csv
         file_pattern: "currents"
         name: BlankingDistance
-        units: m
       attrs:
         long_name: Blanking Distance
         comment: a “blind zone” where the instruments do not measure anything. Typically less than 1m.
@@ -119,8 +116,9 @@ dataset_definition:  # Describes the dataset that will be produced
     # to have input.
     current_speed:
       input:
-        name: current_speed
         file_pattern: "currents"
+        name: current_speed
+        required: True
       dims: [time, depth]
       attrs:
         long_name: Current Speed
@@ -132,8 +130,9 @@ dataset_definition:  # Describes the dataset that will be produced
     # to have input.
     current_direction:
       input:
-        name: current_direction
         file_pattern: "currents"
+        name: current_direction
+        required: True
       dims: [time, depth]
       attrs:
         long_name: Current Direction
@@ -143,7 +142,6 @@ dataset_definition:  # Describes the dataset that will be produced
     gill_wind_speed:  
       input: # From gill csv
         name: gill_horizontal_wind_speed # Was "Horizontal Speed (m/s)" but needed to be renamed to prevent duplication
-        units: m/s
       attrs:
         long_name: Horizontal Wind Speed
         comment: Surface horizontal wind speed, 2D ultrasonic anemometer
@@ -153,7 +151,6 @@ dataset_definition:  # Describes the dataset that will be produced
     gill_wind_direction:  
       input: # From gill csv
         name: gill_horizontal_wind_direction # Was "Horizontal Direction (deg)" but needed to be renamed to prevent duplication
-        units: degrees
       attrs:
         long_name: Horizontal Wind Direction
         comment: Surface horizontal wind direction, 2D ultrasonic anemometer
@@ -163,7 +160,6 @@ dataset_definition:  # Describes the dataset that will be produced
     wind_speed:  
       input: # From wind csv
         name: Horizontal Speed (m/s)
-        units: m/s
       attrs:
         long_name: Horizontal Wind Speed
         comment: Surface wind speed, cup anemometer
@@ -173,7 +169,6 @@ dataset_definition:  # Describes the dataset that will be produced
     wind_direction:  
       input: # From wind csv
         name: Horizontal Direction (deg)
-        units: degrees
       attrs:
         long_name: Horizontal Wind Direction
         comment: Surface wind direction, wind vane
@@ -192,7 +187,6 @@ dataset_definition:  # Describes the dataset that will be produced
     rh:  
       input: # From rh csv
         name: Relative Humidity (%)
-        units: "%"
       attrs:
         long_name: Relative Humidity
         units: "%"
@@ -206,7 +200,6 @@ dataset_definition:  # Describes the dataset that will be produced
     YSI_SST:  
       input: # From surfacetemp csv
         name: surfacetemp - Surface Temperature (C)
-        units: degC
       attrs:
         long_name: Sea Surface Temperature
         comment: This is from the surfacetemp.csv file.
@@ -216,7 +209,6 @@ dataset_definition:  # Describes the dataset that will be produced
     air_temperature:  
       input: # From temperature csv
         name: Air Temperature (C)
-        units: degC
       attrs:
         long_name: Air Temperature
         units: degC
@@ -225,7 +217,6 @@ dataset_definition:  # Describes the dataset that will be produced
     latitude:  
       input: # From gps csv
         name: Latitude
-        units: degree_N
       attrs:
         long_name:  Latitude
         units: degree_N
@@ -233,11 +224,10 @@ dataset_definition:  # Describes the dataset that will be produced
     longitude:  
       input: # From gps csv
         name: Longitude
-        units: degree_E
       attrs:
         long_name:  Longitude
         units: degree_E
-    
+
 #-----------------------------------------------------------------
 coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
 

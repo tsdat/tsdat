@@ -45,9 +45,9 @@ class Pipeline(abc.ABC):
         # Check required variables are in merged dataset
         self.check_required_variables(merged_dataset, definition)
 
-        # Ensure all variables are initialized. Computed variables,
-        # variables that are set statically, and variables that weren't 
-        # retrieved should be initialized
+        # Ensure all variables are initialized. Computed variables, variables
+        # that are set statically, and variables that weren't retrieved should
+        # be initialized.
         merged_dataset = self.add_static_variables(merged_dataset, definition) 
         merged_dataset = self.add_missing_variables(merged_dataset, definition)
 
@@ -172,9 +172,27 @@ class Pipeline(abc.ABC):
         return xr.Dataset.from_dict(reduced_dict)
 
     def check_required_variables(self, dataset: xr.Dataset, dod: DatasetDefinition):
-        # TODO: Throw an error if a required variable was not retrieved in the
-        # merged dataset.
-        pass
+        """-------------------------------------------------------------------
+        Function to throw an error if a required variable could not be 
+        retrieved.
+
+        Args:
+        ---
+            dataset (xr.Dataset): The dataset to check.
+            dod (DatasetDefinition): The DatasetDefinition used to specify 
+                                        required variables.
+
+        Raises:
+        ---
+            Exception: Raises an exception to indicate the variable could not 
+                        be retrieved.
+        -------------------------------------------------------------------"""
+        for variable in dod.coords.values():
+            if variable.is_required() and variable.name not in dataset.variables:
+                raise Exception(f"Required coordinate variable '{variable.name}' could not be retrieved.")
+        for variable in dod.vars.values():
+            if variable.is_required() and variable.name not in dataset.variables:
+                raise Exception(f"Required variable '{variable.name}' could not be retrieved.")
 
     def add_static_variables(self, dataset: xr.Dataset, dod: DatasetDefinition) -> xr.Dataset:
         """-------------------------------------------------------------------

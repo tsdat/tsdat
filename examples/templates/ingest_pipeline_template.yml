@@ -129,6 +129,42 @@ dataset_definition:
     # TODO: provide a link to the documentation online
     time:
         length: unlimited
+  
+  #-----------------------------------------------------------------
+  # Variable Defaults
+  # 
+  # Variable defaults can be used to specify a default dimension(s), 
+  # data type, or variable attributes. This can be used to reduce the 
+  # number of properties that a variable needs to define in this 
+  # config file, which can be useful for vaps or ingests with many
+  # variables.
+  # 
+  # Once a default property has been defined, (e.g. 'type: float64') 
+  # that property becomes optional for all variables (e.g. No variables
+  # need to have a 'type' property). 
+  # 
+  # This section is entirely optional, so it is commented out.
+  #-----------------------------------------------------------------
+  # variable_defaults:
+    
+    # The name(s) of the dimension(s) that dimension this data by 
+    # default. For time-series tabular data, the following is a 'good'
+    # default to use:
+    # dims: [time]
+    
+    # The data type to use by default. The data type must be one of:
+    # int8 (or byte), uint8 (or ubyte), int16 (or short), uint16 (or ushort), 
+    # int32 (or int), uint32 (or uint), int64 (or long), uint64 (or ulong), 
+    # float32 (or float), float64 (or double), char, str
+    # type: float64
+    
+    # Any attributes that should be defined by default 
+    # attrs:
+
+      # Default _FillValue to use for missing data. Recommended to use
+      # -9999 because it is the default _FillValue according to CF
+      # conventions for netCDF data.
+      # _FillValue: -9999
 
   #-----------------------------------------------------------------
   # Variables
@@ -176,10 +212,11 @@ dataset_definition:
       # have a single dimension that exactly matches the variable name
       dims: [time]
 
-      # The data type of the variable.  Can be one of:
-      # [byte, ubyte, char, short, ushort, int32 (or int), uint32 (or uint),
-      # int64 (or long), uint64 (or ulong), float, double, string]
-      type: long
+      # The data type of the variable.  Must be one of:
+      # int8 (or byte), uint8 (or ubyte), int16 (or short), uint16 (or ushort), 
+      # int32 (or int), uint32 (or uint), int64 (or long), uint64 (or ulong), 
+      # float32 (or float), float64 (or double), char, str
+      type: int64
 
       #-------------------------------------------------------------
       # The attrs section define the attributes (metadata) that will

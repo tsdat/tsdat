@@ -18,6 +18,7 @@ class VarInputKeys:
     TIME_FORMAT = 'time_format'
     TIMEZONE = 'timezone'
     UNITS = 'units'
+    REQUIRED = 'required'
 
 
 class VarInput:    
@@ -37,6 +38,9 @@ class VarInput:
         for key in dictionary:
             if not hasattr(self, key):
                 setattr(self, key, dictionary[key])
+    
+    def is_required(self) -> bool:
+        return getattr(self, VarInputKeys.REQUIRED, False) == True
 
 
 class VariableDefinition:
@@ -203,6 +207,18 @@ class VariableDefinition:
                     otherwise.
         -------------------------------------------------------------------"""
         return self.has_input() and hasattr(self.input, "converter")
+
+    def is_required(self) -> bool:
+        """-------------------------------------------------------------------
+        Returns True if the variable has the 'required' property defined and 
+        the 'required' property evaluates to True. A required variable is a 
+        variable which much be retrieved in the input dataset. If a required
+        variable is not in the input dataset, the process should crash.
+
+        Returns:
+            bool: True if the Variable is required, False otherwise.
+        -------------------------------------------------------------------"""
+        return self.has_input() and self.input.is_required()
 
     def has_input(self) -> bool:
         """-------------------------------------------------------------------
