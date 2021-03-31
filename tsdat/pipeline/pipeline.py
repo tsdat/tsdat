@@ -254,16 +254,16 @@ class Pipeline(abc.ABC):
             else:
                 UserWarning(f"Warning: Object {str(obj)} has no 'attrs' attribute.")
 
-        for att in dod.attrs.values():
-            _set_attr(dataset, att.name, att.value)
+        for att_name, att_value in dod.attrs.items():
+            _set_attr(dataset, att_name, att_value)
 
         for coord, coord_def in dod.coords.items():
-            for att in coord_def.attrs.values():
-                _set_attr(dataset[coord], att.name, att.value)
+            for att_name, att_value in coord_def.attrs.items():
+                _set_attr(dataset[coord], att_name, att_value)
 
         for var, var_def in dod.vars.items():
-            for att in var_def.attrs.values():
-                _set_attr(dataset[var], att.name, att.value)
+            for att_name, att_value in var_def.attrs.items():
+                _set_attr(dataset[var], att_name, att_value)
         
         dataset.attrs["input_files"] = list(raw_mapping.keys())
         return dataset

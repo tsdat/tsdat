@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Any, Dict, List, Tuple
-from .attribute_defintion import AttributeDefinition
 from .dimension_definition import DimensionDefinition
 from .utils import instantiate_handler
 from tsdat.utils.converters import Converter
@@ -26,7 +25,10 @@ class VarInput:
     Class to explicitly encode fields set by the variable's input source 
     defined by the yaml file.
     -----------------------------------------------------------------------"""
-    def __init__(self, dictionary: Dict):
+    def __init__(self, dictionary: Dict, input_defaults: Dict = None):
+        if input_defaults:
+            pass # TODO
+
         self.name: str = dictionary.get(VarInputKeys.NAME)
         default_converter = {
             'classname': 'tsdat.utils.converters.DefaultConverter'
@@ -42,12 +44,12 @@ class VariableDefinition:
     Class to encode variable definitions from the config file. Also provides
     a few utility methods.
     -----------------------------------------------------------------------"""
-    def __init__(self, name: str, dictionary: Dict, available_dimensions: Dict[str, DimensionDefinition]):
+    def __init__(self, name: str, dictionary: Dict, available_dimensions: Dict[str, DimensionDefinition], defaults: Dict = {}):
         self.name: str = name
         self.input = self._parse_input(dictionary)
-        self.dims = self._parse_dimensions(dictionary, available_dimensions)
-        self.attrs = self._parse_attributes(dictionary)
-        self.type = self._parse_data_type(dictionary)
+        self.dims = self._parse_dimensions(dictionary, available_dimensions, defaults)
+        self.attrs = self._parse_attributes(dictionary, defaults)
+        self.type = self._parse_data_type(dictionary, defaults)
 
         for key in dictionary:
             if not hasattr(self, key):
@@ -55,30 +57,36 @@ class VariableDefinition:
 
         self._predefined = hasattr(self, "data")
     
-    def _parse_input(self, dictionary: Dict) -> VarInput:
+    def _parse_input(self, dictionary: Dict, defaults: Dict = {}) -> VarInput:
         input_source = dictionary.get(VarKeys.INPUT, None)
         if not input_source:
             return None
-        return VarInput(input_source)
+        return VarInput(input_source, defaults.get(VarKeys.INPUT, None))
     
-    def _parse_attributes(self, dictionary: Dict) -> Dict[str, AttributeDefinition]:
-        attributes: Dict[str, AttributeDefinition] = {}
-        for attr_name, attr_value in dictionary.get(VarKeys.ATTRS, {}).items():
-            attributes[attr_name] = AttributeDefinition(attr_name, attr_value)
+    def _parse_attributes(self, dictionary: Dict, defaults: Dict = {}) -> Dict[str, Any]:
+        # Initialize attributes dictionary. Defaults used only for non-coordinate variables
+        attributes: Dict[str, Any] = {}
         if not self.is_coordinate():
             attributes = self.add_fillvalue_if_none(attributes)
+            attributes.update(defaults.get(VarKeys.ATTRS, {}))
+        
+        # Add attributes from the variable's definition and return. This overwrites 
+        # any conflicting attributes with the values from dictionary
+        attributes.update(dictionary.get(VarKeys.ATTRS, {}))
         return attributes
-
-    def _parse_dimensions(self, dictionary: Dict, available_dimensions: Dict[str, DimensionDefinition]) -> Dict[str, DimensionDefinition]:
-        requested_dimensions: List[str] = dictionary.get(VarKeys.DIMS, [])
+        
+    def _parse_dimensions(self, dictionary: Dict, available_dimensions: Dict[str, DimensionDefinition], defaults: Dict = {}) -> Dict[str, DimensionDefinition]:
+        default_dims: List[str] = defaults.get(VarKeys.DIMS, [])
+        requested_dimensions: List[str] = dictionary.get(VarKeys.DIMS, default_dims)
         parsed_dimensions: Dict[str, DimensionDefinition] = {}
-        for dim_name in requested_dimensions:
-            if dim_name not in available_dimensions:
-                raise KeyError(f"'{dim_name}' is not a recognized dimension. Available dimensions include: {', '.join(list(available_dimensions.keys()))}")
-            parsed_dimensions[dim_name] = available_dimensions[dim_name]
+        for dim in requested_dimensions:
+            if dim not in available_dimensions:
+                message = f"Dimension '{dim}' for variable '{self.name}' has not been defined in the config file."
+                raise KeyError(message)
+            parsed_dimensions[dim] = available_dimensions[dim]
         return parsed_dimensions
 
-    def _parse_data_type(self, dictionary: Dict) -> object:
+    def _parse_data_type(self, dictionary: Dict, defaults: Dict = {}) -> object:
         """-------------------------------------------------------------------
         Parses the data_type string and returns the appropriate numpy data 
         type (i.e. "float" -> np.float). 
@@ -92,14 +100,19 @@ class VariableDefinition:
                     is not in the MHKiT-Cloud Data Standards list of data 
                     types.
         -------------------------------------------------------------------"""
-        data_type: str = dictionary.get(VarKeys.TYPE, "")
+        default_data_type = defaults.get(VarKeys.TYPE, None)
+        data_type: str = dictionary.get(VarKeys.TYPE, default_data_type)
         mappings = {
             "str":      str,
             "char":     str,
             "byte":     np.int8,
+            "int8":     np.int8,
             "ubyte":    np.uint8,
+            "uint8":    np.uint8,
             "short":    np.int16,
+            "int16":    np.int16,
             "ushort":   np.uint16,
+            "uint16":   np.uint16,
             "int":      np.int32,
             "uint":     np.int32,
             "int32":    np.int32,
@@ -109,34 +122,32 @@ class VariableDefinition:
             "long":     np.int64,
             "ulong":    np.uint64,
             "float":    np.float32,
-            "double":   np.float64
+            "float32":  np.float32,
+            "double":   np.float64,
+            "float64":  np.float64
         }
         if data_type not in mappings:
-            error_message = f"'{data_type}' is not a standard data type. Data type must be one of: \n{', '.join(list(mappings.keys()))}"
-            raise KeyError(error_message)
+            message = f"Invalid data type on variable {self.name}: '{data_type}'. "
+            message += f"Data type must be one of: \n{', '.join(list(mappings.keys()))}"
+            raise KeyError(message)
         return mappings[data_type]
 
-    def add_fillvalue_if_none(self, attributes: Dict[str, AttributeDefinition]) -> Dict[str, AttributeDefinition]:
+    def add_fillvalue_if_none(self, attributes: Dict[str, Any]) -> Dict[str, Any]:
         """-------------------------------------------------------------------
         Adds the _FillValue attribute to the provided attributes dictionary if
         the _FillValue attribute has not already been defined and returns the 
         modified attributes dictionary.
 
         Args:
-            attributes (Dict[str, AttributeDefinition]):    The dictionary 
-                                                            containing user- 
-                                                            defined variable
-                                                            attributes.
+            attributes (Dict[str, Any]):    The dictionary containing user- 
+                                            defined variable attributes.
 
         Returns:
-            Dict[str, AttributeDefinition]: The dictionary containing user-
-                                            defined variable attributes. Is
-                                            guaranteed to have a _FillValue 
-                                            attribute.
+            Dict[str, Any]: The dictionary containing user-defined variable 
+                            attributes. Is guaranteed to have a _FillValue 
+                            attribute.
         -------------------------------------------------------------------"""
-        current_attr = attributes.get("_FillValue", None)
-        if current_attr is None or current_attr.value is None:
-            current_attr = AttributeDefinition("_FillValue", -9999)
+        current_attr = attributes.get("_FillValue", -9999)
         attributes["_FillValue"] = current_attr
         return attributes
 
@@ -236,7 +247,7 @@ class VariableDefinition:
         Returns:
             str: The units of the output variable data.
         -------------------------------------------------------------------"""
-        return getattr(self.attrs.get("units", None), "value", None)
+        return self.attrs.get("units", None)
 
     def get_coordinate_names(self) -> List[str]:
         """-------------------------------------------------------------------
@@ -311,7 +322,7 @@ class VariableDefinition:
         dictionary = {
             "dims":     [name for name, dim in self.dims.items()],
             "data":     self.data if hasattr(self, "data") else [],
-            "attrs":    {attr_name: attr.value for attr_name, attr in self.attrs.items()}
+            "attrs":    self.attrs
         }
         return dictionary
         

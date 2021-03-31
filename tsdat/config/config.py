@@ -3,7 +3,6 @@ import warnings
 from yamllint import linter
 from yamllint.config import YamlLintConfig
 from typing import List, Dict
-from tsdat.config.attribute_defintion import AttributeDefinition
 from .dataset_definition import DatasetDefinition
 from .keys import Keys
 from .qctest_definition import QCTestDefinition
@@ -19,7 +18,6 @@ class Config:
     """
 
     def __init__(self, dictionary: Dict):
-        self.dictionary = dictionary
         pipeline_dict = dictionary.get(Keys.PIPELINE)
         dataset_dict = dictionary.get(Keys.DATASET_DEFINITION)
         qc_tests_dict = dictionary.get(Keys.QC_TESTS, None)
