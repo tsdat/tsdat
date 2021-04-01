@@ -9,7 +9,7 @@ dataset_definition:  # Describes the dataset that will be produced
     doi: 10.21947/1671051
     institution: PNNL
     code_url: https://github.com/clansing/tsdat/releases/tag/1.0
-    location_id: morro_bay
+    location_id: morro
     instrument_id: buoy_z06_imu
     data_level: b1
     location_meaning: Morro Bay
