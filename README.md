@@ -6,36 +6,49 @@ standardize, apply Q/C checks, correct, and transform datastreams
 as a whole, reducing the amount of coding required for data
 processing.
 
-# Installation
-This library depends on the ARM ACT library which will be used
-for plotting and data standardization.  You can install it via
-pip, but it has problems on Windows because some of the 
-dependencies require C code to be built.  It's way easier to 
-install the environment via Anaconda, which is described below.
-If you do not want to use Anaconda, you can install the tsdat
-requirements via:
+# Getting Started
+
+## Installation
+You can install tsdat and its dependencies using pip
+
+```bash
+pip3 install tsdat
+```
+
+## Documentation
+For help using tsdat, please see our documentation at
+https://tsdat.readthedocs.io/
+
+# Installation from Source
+If you will be developing/contributing to the tsdat code base,
+first clone the repository from 
+
+```bash
+git clone https://github.com/tsdat/tsdat.git
+```
+
+You can install the tsdat  requirements via:
 
 ```bash
 pip3 install -r requirements.txt
 ```
 
-## 1) Install Anaconda
-We recommend using Anaconda to install the required Python environment.
-because some of our plotting dependencies
-require libraries that are difficult to set up on windows machines.
+## Releasing to pypi
+TODO: to be replaced by CICD build instead of manual process.
 
-https://www.anaconda.com/download/#
-
-## 2) Create Anaconda Environment
-
+### Prereq: Make sure that you have twine installed
 ```bash
-conda create -n tsdat_env -c conda-forge python=3.8 act-atmos cfunits yamllint
+pip install twine
 ```
 
-Note that Windows users should open the anaconda prompt and run this there.
-![image info](./doc/win-anaconda-prompt2.png)
+### 1) Update the version number in setup.py
 
-## 3) OR Activate Existing Anaconda Environment
+### 2) Then deploy the new release.
+
 ```bash
-conda activate tsdat_env
+cd tsdat
+python setup.py sdist bdist_wheel
+twine upload dist/*
+```
+
 ```

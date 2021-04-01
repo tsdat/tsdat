@@ -3,3 +3,7 @@
 .history/
 .vscode/
 *.pyc
+
+build/
+dist/
+tsdat.egg-info/
