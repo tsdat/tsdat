@@ -12,7 +12,7 @@ dataset_definition:
     location_id: humboldt
     instrument_id: buoy_z06_imu
     data_level: b1
-    location_meaning: Humboldt
+    location_meaning: Humboldt, CA
     instrument_name: GX5-45 IMU
     instrument_meaning: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
     instrument_manufacturer: AXYS Technologies Inc.
