@@ -14,7 +14,7 @@ dataset_definition:
     references:
     input_files:
     location_id: humboldt_z05
-    instrument_id: lidar_buoy
+    dataset_name: lidar_buoy
     # data_level: b1
     location_description: Buoy is located of the coast of Humboldt, CA
     instrument_name: Wind Sentinel

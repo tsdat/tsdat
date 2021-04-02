@@ -3,7 +3,7 @@ pipeline:
   input_data_level: "00"
 
   location_id: "morro"
-  instrument_id: "buoy_z06"
+  dataset_name: "buoy_z06"
   qualifier: "lidar"
   temporal: "10m"
   output_data_level: "a1"

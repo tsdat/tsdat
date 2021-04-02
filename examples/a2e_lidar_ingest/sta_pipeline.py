@@ -19,9 +19,10 @@ plt.style.use(style_file)
 class StaPipeline(IngestPipeline):
 
     def apply_corrections(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
-        if "morro" in dataset.attrs["datastream"]:
+        if "morro" in dataset.attrs["datastream_name"]:
             dataset["wind_direction"].data = (dataset["wind_direction"].data + 180) % 360
             dataset["wind_direction"].attrs["corrections_applied"] = "Applied +180 degree calibration factor."
+            pass
         return dataset
 
     def customize_dataset(self, dataset: xr.Dataset, raw_dataset_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
@@ -94,7 +95,7 @@ class StaPipeline(IngestPipeline):
 
             # Create the figure and axes objects
             fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(14,8), constrained_layout=True)
-            fig.suptitle(f"Wind Speed Slices at {ds.attrs['location_meaning']} on {date}")
+            fig.suptitle(f"Wind Speed Time Series at {ds.attrs['location_meaning']} on {date}")
 
             # Select heights to plot
             heights = [40, 90, 140, 200]

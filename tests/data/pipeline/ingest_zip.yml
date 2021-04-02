@@ -11,7 +11,7 @@ dataset_definition:
     institution: PNNL
     code_url: https://github.com/clansing/tsdat/releases/tag/1.0
     location_id: humboldt_ca
-    instrument_id: buoy_z05
+    dataset_name: buoy_z05
     location_description: Buoy is located off the coast of Humboldt, CA
     instrument_name: Example Instrument Name
     instrument_description: Self-powered floating buoy hosting a suite of meteorological and marine instruments.

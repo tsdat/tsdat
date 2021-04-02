@@ -37,7 +37,7 @@ pipeline:
   # the data.  To prevent confusion with the temporal resolution
   # of the instrument, the instrument identifier must not end
   # with a number.
-  instrument_id: buoy
+  dataset_name: buoy
 
   # An optional qualifier that distinguishes these data from other
   # data sets produced by the same instrument.  The qualifier
@@ -104,7 +104,7 @@ dataset_definition:
 
     #---------------------------------------------------------------
     # The following attributes used to create the datastream name
-    # datastream_name = (location_id).(instrument_id)(qualifier)(temporal).data_level
+    # datastream_name = (location_id).(dataset_name)(qualifier)(temporal).data_level
     # data_level will automatically be determined by the pipeline
     #---------------------------------------------------------------
 

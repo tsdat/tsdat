@@ -16,7 +16,7 @@ dataset_definition:  # Describes the dataset that will be produced
     institution: PNNL
     code_url: https://github.com/clansing/tsdat/releases/tag/1.0
     location_id: humboldt_ca
-    instrument_id: buoy_z05
+    dataset_name: buoy_z05
     data_level: b1
     location_meaning: Buoy \#120 is located of the coast of Humboldt, CA
     instrument_name: WindSentinel

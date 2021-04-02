@@ -4,7 +4,7 @@ pipeline:
 
   # File naming components
   location_id: "humboldt"
-  instrument_id: "buoy_z05"
+  dataset_name: "buoy_z05"
   qualifier: ""
   temporal: "10m"
   output_data_level: "a1"
