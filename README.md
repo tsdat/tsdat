@@ -19,6 +19,10 @@ pip3 install tsdat
 For help using tsdat, please see our documentation at
 https://tsdat.readthedocs.io/
 
+# Docker
+Please see https://hub.docker.com/orgs/tsdat for the list of available 
+tsdat docker images.
+
 # Installation from Source
 If you will be developing/contributing to the tsdat code base,
 first clone the repository from 
