@@ -239,17 +239,17 @@ class BuoyIngestPipeline(IngestPipeline):
         with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
 
             # Reduce dimensionality of dataset for plotting
-            ds: xr.Dataset = ds.resample(time="1H").nearest()
-            ds: xr.Dataset = ds.reindex({"depth": ds.depth.data[::2]})
+            ds_1H: xr.Dataset = ds.reindex({"depth": ds.depth.data[::2]})
+            ds_1H: xr.Dataset = ds_1H.resample(time="1H").nearest()
 
             # Calculations for contour plots
             levels = 30
 
             # Calculations for quiver plot
             qv_slice = slice(1, -1)  # Skip first and last to prevent weird overlap with axes borders
-            qv_degrees = ds.current_direction.data[qv_slice, qv_slice].transpose()
+            qv_degrees = ds_1H.current_direction.data[qv_slice, qv_slice].transpose()
             qv_theta = (qv_degrees + 90) * (np.pi/180)
-            X, Y = ds.time.data[qv_slice], ds.depth.data[qv_slice]
+            X, Y = ds_1H.time.data[qv_slice], ds_1H.depth.data[qv_slice]
             U, V = np.cos(-qv_theta), np.sin(-qv_theta)
 
             # Create figure and axes objects
