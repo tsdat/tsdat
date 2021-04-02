@@ -246,7 +246,7 @@ class BuoyIngestPipeline(IngestPipeline):
             levels = 30
 
             # Calculations for quiver plot
-            qv_slice = slice(1, -1)  # Skip first and last to prevent weird overlap with axes borders
+            qv_slice = slice(1, None)  # Skip first to prevent weird overlap with axes borders
             qv_degrees = ds_1H.current_direction.data[qv_slice, qv_slice].transpose()
             qv_theta = (qv_degrees + 90) * (np.pi/180)
             X, Y = ds_1H.time.data[qv_slice], ds_1H.depth.data[qv_slice]
@@ -258,7 +258,7 @@ class BuoyIngestPipeline(IngestPipeline):
 
             # Make the plots
             csf = ds.current_speed.plot.contourf(ax=ax, x="time", yincrease=False, levels=levels, cmap=cmocean.cm.deep_r, add_colorbar=False)
-            ds.current_speed.plot.contour(ax=ax, x="time", yincrease=False, levels=levels, colors="lightgray", linewidths=0.5)
+            # ds.current_speed.plot.contour(ax=ax, x="time", yincrease=False, levels=levels, colors="lightgray", linewidths=0.5)
             ax.quiver(X, Y, U, V, width=0.002, scale=60, color="white", pivot='middle', zorder=10)
             add_colorbar(ax, csf, r"Current Speed (mm s$^{-1}$)")
             

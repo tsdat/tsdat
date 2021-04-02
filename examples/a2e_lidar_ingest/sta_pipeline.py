@@ -102,7 +102,7 @@ class StaPipeline(IngestPipeline):
             levels = 30
 
             # Calculations for quiver plot
-            qv_slice = slice(1, -1)  # Skip first and last to prevent weird overlap with axes borders
+            qv_slice = slice(1, None)  # Skip first to prevent weird overlap with axes borders
             qv_degrees = ds_1H.wind_direction.data[qv_slice].transpose()
             qv_theta = (qv_degrees + 90) * (np.pi/180)
             X, Y = ds_1H.time.data[qv_slice], ds_1H.height.data
@@ -114,7 +114,7 @@ class StaPipeline(IngestPipeline):
 
             # Make top subplot -- contours and quiver plots for wind speed and direction
             csf = ds.wind_speed.plot.contourf(ax=axs[0], x="time", levels=levels, cmap=wind_cmap, add_colorbar=False)
-            ds.wind_speed.plot.contour(ax=axs[0], x="time", levels=levels, colors="lightgray", linewidths=0.5)
+            # ds.wind_speed.plot.contour(ax=axs[0], x="time", levels=levels, colors="lightgray", linewidths=0.5)
             axs[0].quiver(X, Y, U, V, width=0.002, scale=60, color="white", pivot='middle', zorder=10)
             add_colorbar(axs[0], csf, r"Wind Speed (ms$^{-1}$)")
 
