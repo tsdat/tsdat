@@ -2,7 +2,7 @@ pipeline:
   type: Ingest
   input_data_level: "00"
   
-  location_id: "mor.ro"
+  location_id: "morro"
   instrument_id: "buoy"
   qualifier: "z06"
   temporal: "10m"
