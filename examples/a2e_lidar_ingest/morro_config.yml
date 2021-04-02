@@ -1,5 +1,12 @@
 pipeline:
   type: Ingest
+  input_data_level: "00"
+
+  location_id: "morro"
+  instrument_id: "buoy"
+  qualifier: "z06_lidar"
+  temporal: "10m"
+  output_data_level: "a1"
 
 dataset_definition:  # Describes the dataset that will be produced
   attributes:
@@ -9,9 +16,6 @@ dataset_definition:  # Describes the dataset that will be produced
     institution: PNNL
     code_url: https://github.com/clansing/tsdat/releases/tag/1.0
     location_meaning: Morro Bay
-    location_id: morro
-    instrument_id: lidar_buoy_z06
-    data_level: b1
 
   dimensions:
     time:

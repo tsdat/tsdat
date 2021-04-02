@@ -147,11 +147,11 @@ class Pipeline(abc.ABC):
             return None
 
         # Get the coordinate definitions of the given variables
-        coord_names: List[str] = []
+        dims: List[str] = []
         for var_definition in variable_definitions:
-            coord_names.extend(var_definition.get_coordinate_names())
-        coord_names: List[str] = list(dict.fromkeys(coord_names))
-        coord_definitions = [definition.get_variable(coord_name) for coord_name in coord_names]
+            dims.extend(var_definition.get_coordinate_names())
+        dims: List[str] = list(dict.fromkeys(dims))
+        coord_definitions = [definition.get_variable(coord_name) for coord_name in dims]
 
         coords = {}
         for coordinate in coord_definitions:
@@ -165,7 +165,7 @@ class Pipeline(abc.ABC):
 
         reduced_dict = {
             "attrs":        raw_dataset.attrs,
-            "dims":         coord_names,
+            "dims":         dims,
             "coords":       coords,
             "data_vars":    data_vars
         }
@@ -285,16 +285,3 @@ class Pipeline(abc.ABC):
         
         dataset.attrs["input_files"] = list(raw_mapping.keys())
         return dataset
-
-
-    def validate(self, dataset: xr.Dataset):
-        """-------------------------------------------------------------------
-        Confirms that the dataset conforms with MHKiT-Cloud data standards. 
-        Raises an error if the dataset is improperly formatted. This method 
-        should be overridden if different standards or validation checks 
-        should be applied.
-
-        Args:
-            dataset (xr.Dataset): The dataset to validate.
-        -------------------------------------------------------------------"""
-        pass

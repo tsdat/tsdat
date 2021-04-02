@@ -1,5 +1,12 @@
 pipeline:
   type: Ingest
+  input_data_level: "00"
+
+  location_id: "humboldt"
+  instrument_id: "buoy"
+  qualifier: "z05_waves"
+  temporal: "20m"
+  output_data_level: "a1"
 
 dataset_definition:  # Describes the dataset that will be produced
   attributes:
@@ -15,14 +22,10 @@ dataset_definition:  # Describes the dataset that will be produced
     doi: 10.21947/1671051
     institution: PNNL
     code_url: https://github.com/clansing/tsdat/releases/tag/1.0
-    location_id: humboldt
-    instrument_id: buoy_z06_waves
-    data_level: b1
     location_meaning: Humboldt, CA
     instrument_name: WindSentinel
     instrument_meaning: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
     instrument_manufacturer: AXYS Technologies Inc.
-    sampling_interval: 20 min
 
   dimensions:
     time:

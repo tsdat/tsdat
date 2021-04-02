@@ -352,8 +352,7 @@ class DSUtil:
             str: The standardized filename of the raw file.
         -------------------------------------------------------------------"""
         original_filename = os.path.basename(old_filename)
-        b_datastream_name = DSUtil.get_datastream_name(config=config)
-        raw_datastream_name = b_datastream_name[:-2] + "00"
+        raw_datastream_name = config.pipeline_definition.input_datastream_name
         time_var = config.dataset_definition.get_variable('time')
         start_date, start_time = DSUtil.get_raw_start_time(raw_dataset, time_var)
         return f"{raw_datastream_name}.{start_date}.{start_time}.raw.{original_filename}"
@@ -400,7 +399,7 @@ class DSUtil:
         return datastream_name
 
     @staticmethod
-    def get_datastream_directory(datastream_name: str, root: str = None) -> str:
+    def get_datastream_directory(datastream_name: str, root: str = "") -> str:
         """-------------------------------------------------------------------
         Given the datastream_name and an optional root, returns the path to
         where the datastream should be located. Does NOT create the directory
@@ -417,8 +416,7 @@ class DSUtil:
                     located.
         -------------------------------------------------------------------"""
         location_id = datastream_name.split(".")[0]
-        _root = "" if not root else root
-        return os.path.join(_root, location_id, datastream_name)
+        return os.path.join(root, location_id, datastream_name)
 
     @staticmethod
     def is_image(filename: str) -> bool:

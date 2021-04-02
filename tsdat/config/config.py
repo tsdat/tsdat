@@ -3,8 +3,9 @@ import warnings
 from yamllint import linter
 from yamllint.config import YamlLintConfig
 from typing import List, Dict
-from .dataset_definition import DatasetDefinition
 from .keys import Keys
+from .pipeline_definition import PipelineDefinition
+from .dataset_definition import DatasetDefinition
 from .qctest_definition import QCTestDefinition
 
 
@@ -23,8 +24,8 @@ class Config:
         qc_tests_dict = dictionary.get(Keys.QC_TESTS, None)
         qc_tests_coord_dict = dictionary.get(Keys.QC_TESTS_COORD, None)
 
-        self.pipeline = self._parse_pipeline(pipeline_dict)
-        self.dataset_definition = DatasetDefinition(dataset_dict, self.pipeline.get("type"))
+        self.pipeline_definition = PipelineDefinition(pipeline_dict)
+        self.dataset_definition = DatasetDefinition(dataset_dict, self.pipeline_definition.output_datastream_name)
 
         if qc_tests_dict is not None:
             self.qc_tests = self._parse_qc_tests(qc_tests_dict)

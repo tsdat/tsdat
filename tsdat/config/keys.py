@@ -9,4 +9,3 @@ class Keys:
     DIMENSIONS = 'dimensions'
     VARIABLES = 'variables'
     ALL = 'ALL'
-    

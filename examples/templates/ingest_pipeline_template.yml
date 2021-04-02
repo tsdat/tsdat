@@ -19,6 +19,36 @@
 pipeline:
   type: Ingest
 
+  # Used to specify the level of data that this pipeline will use as
+  # input. For ingests, this will be used as the data level for raw data.
+  # If type: Ingest is specified, this defaults to "00"
+  # input_data_level: "00"
+  
+  # Used to specify the level of data that this pipeline will produce.
+  # It is recommended that ingests use "a1" and VAPs should use "b1", 
+  # but this is not enforced.
+  output_data_level: "a1"
+
+  # A label for the location where the data were obtained from
+  location_id: humboldt_z05
+
+  # A string consisting of any letters, digits, "-" or "_" that can
+  # be used to uniquely identify the instrument used to produce
+  # the data.  To prevent confusion with the temporal resolution
+  # of the instrument, the instrument identifier must not end
+  # with a number.
+  instrument_id: buoy
+
+  # An optional qualifier that distinguishes these data from other
+  # data sets produced by the same instrument.  The qualifier
+  # must not end with a number.
+  #qualifier: lidar
+
+  # A optional description of the data temporal resolution
+  # (e.g., 30m, 1h, 200ms, 14d, 10Hz).  All temporal resolution
+  # descriptors require a units identifier.
+  #temporal: 10m
+
 ####################################################################
 # PART 1: DATASET DEFINITION
 # Define dimensions, variables, and metadata that will be included
@@ -78,25 +108,6 @@ dataset_definition:
     # data_level will automatically be determined by the pipeline
     #---------------------------------------------------------------
 
-    # A label for the location where the data were obtained from
-    location_id: humboldt_z05
-
-    # A string consisting of any letters, digits, "-" or "_" that can
-    # be used to uniquely identify the instrument used to produce
-    # the data.  To prevent confusion with the temporal resolution
-    # of the instrument, the instrument identifier must not end
-    # with a number.
-    instrument_id: lidar_buoy
-
-    # An optional qualifier that distinguishes these data from other
-    # data sets produced by the same instrument.  The qualifier
-    # must not end with a number.
-    #qualifier:
-
-    # A optional description of the data temporal resolution
-    # (e.g., 30m, 1h, 200ms, 14d, 10Hz).  All temporal resolution
-    # descriptors require a units identifier.
-    #temporal: 10m
  
     #---------------------------------------------------------------
 
@@ -185,7 +196,7 @@ dataset_definition:
       input:
         # Name of the variable in the raw data
         name: DataTimeStamp
-
+        
         #-------------------------------------------------------------
         # A converter is used to convert the raw data into standardized
         # values.
@@ -263,6 +274,17 @@ dataset_definition:
 
         # Units of the variable in the raw data
         units: degC
+
+        # If this is specified, the pipeline will attempt to match the file pattern
+        # to an input filename. This is useful for cases where a variable has the 
+        # same name in multiple input files, but it should only be retrieved from
+        # one file.
+        # file_pattern: "buoy"
+
+        # Specify this to indicate that the variable must be retrieved. If this is
+        # set to True and the variable is not found in the input file the pipeline
+        # will crash. If this is set to False, the pipeline will continue.
+        # required: True
 
         #-------------------------------------------------------------
         # A converter is used to convert the raw data into standardized

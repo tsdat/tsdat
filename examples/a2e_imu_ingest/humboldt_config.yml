@@ -1,5 +1,12 @@
 pipeline:
   type: Ingest
+  input_data_level: "00"
+
+  location_id: "humboldt"
+  instrument_id: "buoy"
+  qualifier: "z05_imu"
+  temporal:
+  output_data_level: "a1"
 
 dataset_definition:
   attributes:
@@ -9,14 +16,10 @@ dataset_definition:
     doi: 10.21947/1671051
     institution: PNNL
     code_url: https://github.com/clansing/tsdat/releases/tag/1.0
-    location_id: humboldt
-    instrument_id: buoy_z06_imu
-    data_level: b1
-    location_meaning: Humboldt
+    location_meaning: Humboldt, CA
     instrument_name: GX5-45 IMU
     instrument_meaning: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
     instrument_manufacturer: AXYS Technologies Inc.
-    sampling_interval: 20 min
 
   dimensions:
     time:
