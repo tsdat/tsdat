@@ -19,8 +19,8 @@ plt.style.use(style_file)
 class StaPipeline(IngestPipeline):
 
     def apply_corrections(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
-        if dataset.attrs["location_id"] == "morro":
-            dataset["wind_direction"].data = (dataset["wind_direction"].data + 180) % 360  # TODO: Double check this
+        if "morro" in dataset.attrs["datastream"]:
+            dataset["wind_direction"].data = (dataset["wind_direction"].data + 180) % 360
             dataset["wind_direction"].attrs["corrections_applied"] = "Applied +180 degree calibration factor."
         return dataset
 

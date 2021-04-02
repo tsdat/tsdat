@@ -3,9 +3,9 @@ pipeline:
   input_data_level: "00"
 
   location_id: "humboldt"
-  instrument_id: "buoy"
-  qualifier: "z05_imu"
-  temporal:
+  instrument_id: "buoy_z05"
+  qualifier: "imu"
+  # temporal:
   output_data_level: "a1"
 
 dataset_definition:

@@ -157,6 +157,41 @@ dataset_definition:
   # This section is entirely optional, so it is commented out.
   #-----------------------------------------------------------------
   # variable_defaults:
+
+    # Optionally specify defaults for variable inputs. These defaults will
+    # only be applied to variables that have an 'input' property. This
+    # is to allow for variables that are created on the fly, but defined in
+    # the config file.
+    # input:
+
+      # If this is specified, the pipeline will attempt to match the file pattern
+      # to an input filename. This is useful for cases where a variable has the 
+      # same name in multiple input files, but it should only be retrieved from
+      # one file.
+      # file_pattern: "buoy"
+
+      # Specify this to indicate that the variable must be retrieved. If this is
+      # set to True and the variable is not found in the input file the pipeline
+      # will crash. If this is set to False, the pipeline will continue.
+      # required: True
+
+      # Defaults for the converter used to translate input numpy arrays to
+      # numpy arrays used for calculations
+      # converter:
+        
+        # Specify the classname of the converter to use as a default. The
+        # tsdat.utils.converters.DefaultConverter class is used if this is
+        # not specified here or at the variable-level.
+        # classname: tsdat.utils.converters.DefaultConverter
+
+        # If the default converter always requires specific parameters, these
+        # can be defined here. Note that these parameters are not tied to the
+        # classname specified above and will be passed to all converters defined
+        # here.
+        # parameters:
+
+          # Example of parameter format:
+          # param_name: param_value          
     
     # The name(s) of the dimension(s) that dimension this data by 
     # default. For time-series tabular data, the following is a 'good'
@@ -274,17 +309,6 @@ dataset_definition:
 
         # Units of the variable in the raw data
         units: degC
-
-        # If this is specified, the pipeline will attempt to match the file pattern
-        # to an input filename. This is useful for cases where a variable has the 
-        # same name in multiple input files, but it should only be retrieved from
-        # one file.
-        # file_pattern: "buoy"
-
-        # Specify this to indicate that the variable must be retrieved. If this is
-        # set to True and the variable is not found in the input file the pipeline
-        # will crash. If this is set to False, the pipeline will continue.
-        # required: True
 
         #-------------------------------------------------------------
         # A converter is used to convert the raw data into standardized

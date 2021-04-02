@@ -4,8 +4,8 @@ pipeline:
 
   # File naming components
   location_id: "humboldt"
-  instrument_id: "buoy"
-  qualifier: "z05"
+  instrument_id: "buoy_z05"
+  qualifier: ""
   temporal: "10m"
   output_data_level: "a1"
   
@@ -33,10 +33,11 @@ dataset_definition:  # Describes the dataset that will be produced
         length: 50
 
   variable_defaults:
-    # input:  # TODO: Only apply this if the variable has an inputs section
-    #   converter:
-    #     classname: tsdat.utils.converters.DefaultConverter
-    #     # parameters:
+    input:
+      required: True
+      converter:
+        classname: tsdat.utils.converters.DefaultConverter
+        # parameters:
     dims: [time]
     type: float
     attrs:

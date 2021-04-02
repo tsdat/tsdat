@@ -3,9 +3,9 @@ pipeline:
   input_data_level: "00"
 
   location_id: "morro"
-  instrument_id: "buoy"
-  qualifier: "z06_imu"
-  temporal: 
+  instrument_id: "buoy_z06"
+  qualifier: "imu"
+  # temporal: 
   output_data_level: "a1"
 
 dataset_definition:  # Describes the dataset that will be produced

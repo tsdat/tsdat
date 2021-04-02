@@ -3,8 +3,8 @@ pipeline:
   input_data_level: "00"
 
   location_id: "humboldt"
-  instrument_id: "buoy"
-  qualifier: "z05_waves"
+  instrument_id: "buoy_z05"
+  qualifier: "waves"
   temporal: "20m"
   output_data_level: "a1"
 
