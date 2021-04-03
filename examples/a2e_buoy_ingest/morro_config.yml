@@ -4,9 +4,9 @@ pipeline:
   
   location_id: "morro"
   dataset_name: "buoy_z06"
-  qualifier: ""
+  # qualifier: ""
   temporal: "10m"
-  output_data_level: "a1"
+  data_level: "a1"
 
 dataset_definition:  # Describes the dataset that will be produced
   attributes:

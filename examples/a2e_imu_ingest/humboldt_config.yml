@@ -1,12 +1,11 @@
 pipeline:
   type: Ingest
-  input_data_level: "00"
 
   location_id: "humboldt"
   dataset_name: "buoy_z05"
   qualifier: "imu"
   # temporal:
-  output_data_level: "a1"
+  data_level: "a1"
 
 dataset_definition:
   attributes:

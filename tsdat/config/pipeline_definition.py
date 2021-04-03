@@ -5,7 +5,7 @@ from tsdat.exceptions import DefinitionError
 class PipelineKeys:
     TYPE = 'type'
     INPUT_DATA_LEVEL = 'input_data_level'
-    OUTPUT_DATA_LEVEL = 'output_data_level'
+    OUTPUT_DATA_LEVEL = 'data_level'
     
     LOCATION_ID = 'location_id'
     DATASET_NAME = 'dataset_name'
