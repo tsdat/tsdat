@@ -25,7 +25,7 @@ class BuoyIngestPipeline(IngestPipeline):
     corrections, or create custom plots, they should follow this example
     to extend the IngestPipeline class.
     -------------------------------------------------------------------"""
-    def customize_raw_datasets(self, raw_dataset_mapping: Dict[str, xr.Dataset]) -> Dict[str, xr.Dataset]:
+    def hook_customize_raw_datasets(self, raw_dataset_mapping: Dict[str, xr.Dataset]) -> Dict[str, xr.Dataset]:
         """-------------------------------------------------------------------
         Hook to allow for user customizations to one or more raw xarray Datasets
         before they merged and used to create the standardized dataset.  The
@@ -102,7 +102,7 @@ class BuoyIngestPipeline(IngestPipeline):
         # No customization to raw data - return original dataset
         return raw_dataset_mapping
 
-    def create_and_persist_plots(self, dataset: xr.Dataset) -> None:
+    def hook_generate_and_persist_plots(self, dataset: xr.Dataset) -> None:
         """-------------------------------------------------------------------
         Hook to allow users to create plots from the xarray dataset after
         processing and QC have been applied and just before the dataset is

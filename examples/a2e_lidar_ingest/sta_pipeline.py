@@ -18,7 +18,7 @@ plt.style.use(style_file)
 
 class StaPipeline(IngestPipeline):
 
-    def apply_corrections(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
+    def hook_apply_corrections(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         
         # Compress row of variables in input into variables dimensioned by time and height
         for raw_filename, raw_dataset in raw_mapping.items():
@@ -42,7 +42,7 @@ class StaPipeline(IngestPipeline):
         return dataset
 
     
-    def create_and_persist_plots(self, dataset: xr.Dataset):
+    def hook_generate_and_persist_plots(self, dataset: xr.Dataset):
 
         def format_time_xticks(ax, /, *, start=4, stop=21, step=4, date_format="%H-%M"):
             ax.xaxis.set_major_locator(mpl.dates.HourLocator(byhour=range(start, stop, step)))
