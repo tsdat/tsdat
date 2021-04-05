@@ -1,8 +1,8 @@
-import importlib
-from typing import List, Dict
 
 import numpy as np
 import xarray as xr
+
+from typing import List
 
 from tsdat.config import Config, QualityTestDefinition
 from tsdat.constants import VARS
@@ -17,7 +17,7 @@ class QC(object):
     -------------------------------------------------------------------"""
 
     @staticmethod
-    def apply_tests(ds: xr.Dataset, config: Config, previous_data: xr.Dataset):
+    def apply_tests(ds: xr.Dataset, config: Config, previous_data: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
         Applies the QC tests defined in the given Config to this dataset.
         QC results will be embedded in the dataset.  QC metadata will be
@@ -36,6 +36,10 @@ class QC(object):
         Raises:
             QCError:  A QCError indicates that a fatal error has occurred.
 
+        Returns:
+            (xr.Dataset): The dataset after quality tests and handlers have
+            been applied.
+
         -------------------------------------------------------------------"""
 
         # First run the coordinate variable tests, in order
@@ -43,14 +47,16 @@ class QC(object):
 
         for qc_test in qc_tests:
             qc_checker = QCChecker(ds, config, qc_test, previous_data, coord=True)
-            qc_checker.run()
+            ds = qc_checker.run()
 
         # Then run the other variable qc tests, in order
         qc_tests: List[QualityTestDefinition] = config.get_qc_tests()
 
         for qc_test in qc_tests:
             qc_checker = QCChecker(ds, config, qc_test, previous_data)
-            qc_checker.run()
+            ds = qc_checker.run()
+
+        return ds
 
 
 class QCChecker:
@@ -84,7 +90,7 @@ class QCChecker:
         operator = instantiate_handler(ds, previous_data, test, handler_desc=test.operator)
 
         # Get the error handlers (optional)
-        error_handlers = instantiate_handler(ds, previous_data, test, handler_desc=test.error_handlers)
+        error_handlers = test.error_handlers
 
         self.ds = ds
         self.variable_names = variable_names
@@ -94,12 +100,16 @@ class QCChecker:
         self.previous_data = previous_data
         self.coord = coord
 
-    def run(self):
+    def run(self) -> xr.Dataset:
         """-------------------------------------------------------------------
         Runs the QC test for each specified variable
 
         Raises:
             QCError:  A QCError indicates that a fatal error has occurred.
+
+        Returns:
+            (xr.Dataset): The dataset after the quality operator and its 
+            quality handlers have been run.
         -------------------------------------------------------------------"""
         for variable_name in self.variable_names:
 
@@ -109,11 +119,7 @@ class QCChecker:
             # If results_array is None, then we just skip this test
             if results_array is not None:
 
-                # If any values fail, then call any defined error handlers
-                if np.sum(results_array) > 0 and self.error_handlers is not None:
-                    for error_handler in self.error_handlers:
-                        error_handler.run(variable_name, results_array)
-
+                # TODO: Only record qc if a qc bit has been defined
                 # If this is not a coordinate variable, then record
                 # the test results in a qc_ companion variable
                 if not self.coord:
@@ -122,6 +128,16 @@ class QCChecker:
                         test_number=self.test.qc_bit,
                         test_meaning=self.test.meaning,
                         test_assessment=self.test.assessment)
+
+                # If any values fail, then call any defined error handlers
+                if np.sum(results_array) > 0 and self.error_handlers is not None:
+                    for handler_name in self.error_handlers.keys():
+                        handler_desc = {handler_name: self.error_handlers.get(handler_name)}
+                        error_handler = instantiate_handler(self.ds, self.previous_data, self.test, handler_desc=handler_desc)[0]
+                        error_handler.run(variable_name, results_array)
+                        self.ds: xr.Dataset = error_handler.ds
+                    self.operator.ds = self.ds
+
             else: 
                 results_array = np.zeros_like(self.ds[variable_name].data) == 1
 
@@ -131,3 +147,5 @@ class QCChecker:
                         test_number=self.test.qc_bit,
                         test_meaning="N/A",
                         test_assessment="Indeterminate")
+
+        return self.ds

@@ -36,7 +36,7 @@ class IngestPipeline(Pipeline):
 
             # Apply quality control / quality assurance to the dataset.
             previous_dataset = self.get_previous_dataset(dataset)
-            QC.apply_tests(dataset, self.config, previous_dataset)
+            dataset = QC.apply_tests(dataset, self.config, previous_dataset)
 
             # Apply any final touches to the dataset and persist the dataset
             dataset = self.hook_finalize_dataset(dataset)

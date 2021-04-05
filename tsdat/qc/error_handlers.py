@@ -77,4 +77,3 @@ class FailPipeline(QualityHandler):
         # If we deem this error handler not useful, we should remove it.
         message = f"QC test {self.test.name} failed for variable {variable_name}"
         raise QCError(message)
-
