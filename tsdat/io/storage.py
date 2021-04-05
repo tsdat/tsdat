@@ -1,23 +1,77 @@
 import abc
 import os
+import re
 import shutil
 import tempfile
+import xarray as xr
+import yaml
 from datetime import datetime
-from typing import List, Union
+from typing import List, Union, Any
+
+from tsdat.config.utils import instantiate_handler
+from tsdat.io import FileHandler
+from tsdat.utils import DSUtil
 
 
 class DatastreamStorage(abc.ABC):
 
-    # TODO: we need a way to take the output file handlers that are
-    # registered in the config file and dynamically add them to a
-    # dict of filters so that users can specify a file type key, and
-    # then be able to correctly filter data files in storage that
-    # map to that type.  Plot and raw types should be automatically
-    # added to the dictionary.
-    class FILE_TYPE():
-        NETCDF = 1
-        PLOTS = 2
-        RAW = 3
+    default_file_type = None
+
+    file_filters = {
+        'plots': lambda x: DSUtil.is_image(x.__str__()),
+        'raw': lambda x: '.raw.' in x.__str__()
+    }
+
+    output_file_extensions = {
+        'netcdf': '.nc'
+    }
+
+    @staticmethod
+    def from_config(storage_config_file: str):
+        """-------------------------------------------------------------------
+        Load a yaml config file which provides the storage constructor
+        parameters.
+
+        Args:
+            storage_config_file (str): The path to the config file to load
+
+        Returns:
+            DatastreamStorage: An subclass instance created from the config file.
+        -------------------------------------------------------------------"""
+        storage_dict = yaml.load(storage_config_file, Loader=yaml.FullLoader).get('storage', {})
+        storage = instantiate_handler(storage_dict)
+
+        # Now we need to register all the file handlers
+        input_handlers = storage_dict.get('file_handlers',{}).get('input', {})
+        for handler_dict in input_handlers.values():
+            handler = instantiate_handler(handler_dict)
+            FileHandler.register_file_handler(handler_dict['file_pattern'], handler)
+
+        output_handlers = storage_dict.get('file_handlers', {}).get('output', {})
+        for handler_dict in output_handlers.values():
+            # First register the writers
+            handler = instantiate_handler(handler_dict)
+            FileHandler.register_file_handler(handler_dict['file_pattern'], handler)
+
+            # Now register the file patterns for finding files in the store
+            file_extension = handler_dict['file_extension']
+            file_pattern = f"*.{file_extension}"
+            regex = re.compile(file_pattern)
+            filter_func = lambda x: regex.match(x.__str__())
+            filter_key = handler_dict['key']
+            DatastreamStorage.file_filters[filter_key] = filter_func
+            DatastreamStorage.output_file_extensions[filter_key] = file_extension
+
+            if DatastreamStorage.default_file_type is None:
+                # Use the first output type registered as the default type
+                DatastreamStorage.default_file_type = filter_key
+
+        return storage
+
+    def __init__(self, parameters={}):
+        self.parameters = parameters
+        retain_input_files = parameters.get('retain_input_files', False)
+        self.remove_input_files = not retain_input_files
 
     @property
     def tmp(self):
@@ -31,7 +85,7 @@ class DatastreamStorage(abc.ABC):
 
     @abc.abstractmethod
     def find(self, datastream_name: str, start_time: str, end_time: str,
-             filetype: int = None) -> List[str]:
+             filetype: str = None) -> List[str]:
         """-------------------------------------------------------------------
         Finds all files of the given type from the datastream store with the
         given datastream_name and timestamps from start_time (inclusive) up to
@@ -49,9 +103,8 @@ class DatastreamStorage(abc.ABC):
                             (exclusive). Should be like "20210108.000000" to search
                             for data ending before January 8th, 2021.
 
-            filetype (int): A file type from the DatastreamStorage.FILE_TYPE
-                            list.  If no type is specified, all files will
-                            be returned.
+            filetype (str): A file type from the DatastreamStorage.file_filters keys
+                            If no type is specified, all files will be returned.
 
         Returns:
             List[str]:  A list of paths in datastream storage in ascending order
@@ -88,27 +141,52 @@ class DatastreamStorage(abc.ABC):
                                 the retrieved files were stored in local storage.
         -------------------------------------------------------------------"""
         return
-    
-    @abc.abstractmethod
-    def save(self, local_path: str, new_filename: str = None) -> None:
+
+    def save(self, dataset_or_path: Union[str, xr.Dataset], new_filename: str = None) -> List[Any]:
+
         """-------------------------------------------------------------------
         Saves a local file to the datastream store.
 
         Args:
-            local_path (str):   The local path to the file to save. The file 
-                                should be named according to MHKiT-Cloud 
-                                naming conventions so that this method can
-                                automatically parse the datastream, date,
-                                and time from the file name.
-            new_filename (str): If provided, the new filename to save as. 
-                                Must also follow MHKIT-Cloud naming 
-                                conventions.
+            dataset_or_path (str):   The dataset or local path to the file
+                                to save.  The file should be named according
+                                to MHKiT-Cloud naming conventions so that this
+                                method canautomatically parse the datastream,
+                                date, and time from the file name.
+            new_filename (str): If provided, the new filename to save as.
+                                This parameter should ONLY be provided if using
+                                a local path for dataset_or_path.  Must also
+                                follow MHKIT-Cloud naming conventions.
+
+        Returns:
+            List[Any]:          A list of paths where the saved files were stored
+                                in storage.
         -------------------------------------------------------------------"""
+        saved_paths = []
+
+        if isinstance(dataset_or_path, xr.Dataset):
+            dataset = dataset_or_path
+
+            # Save file for every registered output file type
+            for file_extension in DatastreamStorage.output_file_extensions.values():
+                dataset_filename = DSUtil.get_dataset_filename(dataset, file_extension=file_extension)
+                with self.tmp.get_temp_filepath(dataset_filename) as tmp_path:
+                    FileHandler.write(dataset, tmp_path)
+                    saved_paths.append(self.save_local_path(tmp_path, new_filename))
+
+        else:
+            local_path = dataset_or_path
+            saved_paths.append(self.save_local_path(local_path, new_filename))
+
+        return saved_paths
+
+    @abc.abstractmethod
+    def save_local_path(self, local_path: str, new_filename: str = None) -> Any:
         return
 
     @abc.abstractmethod
     def exists(self, datastream_name: str, start_time: str, end_time: str,
-               filetype: int = None) -> bool:
+               filetype: str = None) -> bool:
         """-------------------------------------------------------------------
         Checks if any data exists in the datastream store for the provided
         datastream and time range.
@@ -123,9 +201,8 @@ class DatastreamStorage(abc.ABC):
             end_time (str): The end time or date to stop searching for data
                             (exclusive). Should be like "20210108" to search
                             for data ending before January 8th, 2021.
-            filetype (int):  A file type from the DatastreamStorage.FILE_TYPE
-                             list.  If no type is specified, all files will
-                             be returned.
+            filetype (str):  A file type from the DatastreamStorage.file_filters
+                             keys.  If none specified, all files will be checked.
 
         Returns:
             bool: True if data exists, False otherwise.
@@ -134,7 +211,7 @@ class DatastreamStorage(abc.ABC):
 
     @abc.abstractmethod
     def delete(self, datastream_name: str, start_time: str, end_time: str,
-               filetype: int = None) -> None:
+               filetype: str = None) -> None:
         """-------------------------------------------------------------------
         Deletes datastream data in the datastream store in between the 
         specified time range. 
@@ -149,9 +226,9 @@ class DatastreamStorage(abc.ABC):
             end_time (str): The end time or date to stop searching for data
                             (exclusive). Should be like "20210108" to search
                             for data ending before January 8th, 2021.
-            filetype (int):  A file type from the DatastreamStorage.FILE_TYPE
-                             list.  If no type is specified, all files will
-                             be returned.
+            filetype (str):  A file type from the DatastreamStorage.file_filters
+                             keys.  If no type is specified, all files will
+                             be deleted.
         -------------------------------------------------------------------"""
         return
 
@@ -231,7 +308,8 @@ class DisposableStorageTempFileList (list):
     are deleted when the list goes out of scope.
     -------------------------------------------------------------------"""
 
-    def __init__(self, filepath_list: List[str], storage, delete_on_exception=False, disposable=True):
+    def __init__(self, filepath_list: List[str], storage, delete_on_exception=False, disposable=True,
+                 parent_zip=None):
         """-------------------------------------------------------------------
         Args:
             filepath_list (List[str]):   A list of paths to files in temporary
@@ -259,6 +337,7 @@ class DisposableStorageTempFileList (list):
         assert isinstance(self.tmp_storage, TemporaryStorage)
         self.delete_on_exception = delete_on_exception
         self.disposable = disposable
+        self.parent_zip = parent_zip
 
     def __enter__(self):
         return self.filepath_list
@@ -268,8 +347,23 @@ class DisposableStorageTempFileList (list):
         if self.disposable:
             # We only clean up the files if an exception was not thrown
             if type is None or self.delete_on_exception:
+                # Clean up the list of files.  These are located in the
+                # storage temp dir.
                 for filepath in self.filepath_list:
                     self.tmp_storage.delete(filepath)
+
+                # If there is a parent zip file where these files were
+                # extracted from, clean that file up too.
+                # TODO: this assumes that the input storage is the same
+                # as the output storage.  So if the storage is on S3,
+                # then the input zip is also on S3.  We will have to
+                # fix this for mixed-mode storage (e.g., input is on
+                # local filesystem, but output is on S3)
+                if self.parent_zip:
+                    self.tmp_storage.delete(self.parent_zip)
+
+
+
 
 
 class TemporaryStorage(abc.ABC):

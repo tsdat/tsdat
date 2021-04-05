@@ -1,20 +1,21 @@
-import os
 import bisect
-import datetime
-import shutil
 import tarfile
 import zipfile
-from typing import List, Union
+
+import datetime
+import os
+import shutil
+import xarray as xr
+from typing import List, Union, Any
 
 from tsdat.io import (
     DatastreamStorage,
     TemporaryStorage,
     DisposableLocalTempFile,
     DisposableStorageTempFileList,
-    DisposableLocalTempFileList
+    DisposableLocalTempFileList,
+    FileHandler
 )
-
-
 from tsdat.utils import DSUtil
 
 
@@ -26,8 +27,11 @@ class FilesystemTemporaryStorage(TemporaryStorage):
         is_file = os.path.isfile(filepath)
         is_tar = tarfile.is_tarfile(filepath) # tar or tar.gz
         is_zip = zipfile.is_zipfile(filepath)
+        zip_file = None
 
         if is_tar or is_zip:
+            zip_file = filepath
+
             # Extract into a temporary folder in the target_dir
             temp_dir = self.create_temp_dir()
 
@@ -48,7 +52,8 @@ class FilesystemTemporaryStorage(TemporaryStorage):
             extracted_files.append(filepath)
             delete_on_exception = False
 
-        return DisposableStorageTempFileList(extracted_files, self, delete_on_exception=delete_on_exception)
+        return DisposableStorageTempFileList(extracted_files, self, delete_on_exception=delete_on_exception,
+                                             parent_zip=zip_file, disposable=self.datastream_storage.remove_input_files)
 
     def fetch(self, file_path: str, local_dir=None, disposable=True) -> Union[DisposableLocalTempFile, str]:
         if not local_dir:
@@ -66,7 +71,7 @@ class FilesystemTemporaryStorage(TemporaryStorage):
         date = datetime.datetime.strptime(start_time, "%Y%m%d.%H%M%S")
         prev_date = (date - datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
         next_date = (date + datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
-        files = self.datastream_storage.find(datastream_name, prev_date, next_date, filetype=DatastreamStorage.FILE_TYPE.NETCDF)
+        files = self.datastream_storage.find(datastream_name, prev_date, next_date, filetype=DatastreamStorage.default_file_type)
 
         previous_filepath = None
         if files:
@@ -95,8 +100,17 @@ class FilesystemStorage(DatastreamStorage):
     parent class for method docstrings.
     -----------------------------------------------------------------------"""
 
-    def __init__(self, root: str = ""):
-        self._root = root
+    def __init__(self, parameters={}):
+        """-------------------------------------------------------------------
+        Initialize the storage from the given parameters.
+
+        Params:
+            root  (str):  The root path where output data will be stored.
+        -------------------------------------------------------------------"""
+        super().__init__(parameters=parameters)
+
+        self._root = self.parameters.get('root')
+        assert self._root
         self._tmp = FilesystemTemporaryStorage(self)
 
     @property
@@ -104,7 +118,7 @@ class FilesystemStorage(DatastreamStorage):
         return self._tmp
 
     def find(self, datastream_name: str, start_time: str, end_time: str,
-             filetype: int = None) -> List[str]:
+             filetype: str = None) -> List[str]:
         # TODO: think about refactoring so that you don't need both start and end time
         # TODO: if times don't include hours/min/sec, then add .000000 to the string
         dir_to_check = DSUtil.get_datastream_directory(datastream_name=datastream_name, root=self._root)
@@ -115,14 +129,9 @@ class FilesystemStorage(DatastreamStorage):
                 if start_time <= DSUtil.get_date_from_filename(file) < end_time:
                     storage_paths.append(os.path.join(dir_to_check, file))
 
-            if filetype == DatastreamStorage.FILE_TYPE.NETCDF:
-                storage_paths = list(filter(lambda x: x.endswith('.nc'), storage_paths))
-
-            elif filetype == DatastreamStorage.FILE_TYPE.PLOTS:
-                storage_paths = list(filter(lambda x: DSUtil.is_image(x), storage_paths))
-
-            elif filetype == DatastreamStorage.FILE_TYPE.RAW:
-                storage_paths = list(filter(lambda x: '.raw.' in x, storage_paths))
+            if filetype is not None:
+                filter_func = DatastreamStorage.file_filters[filetype]
+                storage_paths = list(filter(filter_func, storage_paths))
 
         return sorted(storage_paths)
 
@@ -142,7 +151,7 @@ class FilesystemStorage(DatastreamStorage):
 
         return DisposableLocalTempFileList(fetched_files)
 
-    def save(self, local_path: str, new_filename: str = None) -> None:
+    def save_local_path(self, local_path: str, new_filename: str = None) -> Any:
         # TODO: we should perform a REGEX check to make sure that the filename is valid
         filename = os.path.basename(local_path) if not new_filename else new_filename
         datastream_name = DSUtil.get_datastream_name_from_filename(filename)
@@ -152,6 +161,7 @@ class FilesystemStorage(DatastreamStorage):
         dest_path = os.path.join(dest_dir, filename)
 
         shutil.copy(local_path, dest_path)
+        return dest_path
 
     def exists(self, datastream_name: str, start_time: str, end_time: str, filetype: int = None) -> bool:
         datastream_store_files = self.find(datastream_name, start_time, end_time, filetype=filetype)

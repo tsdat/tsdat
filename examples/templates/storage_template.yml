@@ -2,6 +2,7 @@
 storage:
   classname:  tsdat.io.AWSStorage
   parameters:
+    retain_input_files: True
     aws_region: us-west-2
     bucket_name: mhk-datalake-test
     storage_root_path: tsdat/storage/root
@@ -24,10 +25,10 @@ storage:
     output:  # for now, you have to use one of our handlers
       netcdf_handler:
         key: netcdf
-        file_pattern: '*.nc'
+        file_extension: '.nc'
         classname: tsdat.io.filehandlers.NetCDFHandler
 
       parquet_handler:
         key: parquet
-        file_pattern: '*.parquet'
+        file_extension: '.parquet'
         classname: tsdat.io.filehandlers.ParquetHandler

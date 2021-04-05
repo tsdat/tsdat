@@ -2,7 +2,7 @@ import abc
 import re
 import numpy as np
 import xarray as xr
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from tsdat.config import (
     Config,
@@ -14,9 +14,18 @@ from tsdat.io.storage import DatastreamStorage
 
 class Pipeline(abc.ABC):
 
-    def __init__(self, config: Config = None, storage: DatastreamStorage = None) -> None:
-        self.storage = storage
+    def __init__(self, pipeline_config: Union[str, Config], storage_config: Union[str, DatastreamStorage]) -> None:
+        # We can pass either a Config object or the path to a config file
+        config = pipeline_config
+        if isinstance(pipeline_config, str):
+            config = Config.load(pipeline_config)
         self.config = config
+
+        # We can pass either a DatastreamStorage object or the path to a config file
+        storage = storage_config
+        if isinstance(storage_config, str):
+            storage = DatastreamStorage.from_config(storage_config)
+        self.storage = storage
 
     @abc.abstractmethod
     def run(self, filepath: str):

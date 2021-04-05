@@ -264,8 +264,8 @@ class IngestPipeline(Pipeline):
         # parameter.  If a dataset is passed, then move the below code to
         # storage to save the dataset for all registered outputs.
         # If a file path is passed, then just perform the storage save is it is now.
-        #self.storage.save(dataset)
-        #self.storage.save(tmp_path)
+        self.storage.save(dataset)
+
 
         with self.storage.tmp.get_temp_filepath(DSUtil.get_dataset_filename(dataset)) as tmp_path:
             FileHandler.write(dataset, tmp_path)

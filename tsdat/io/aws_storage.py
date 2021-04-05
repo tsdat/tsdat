@@ -1,22 +1,20 @@
+import bisect
+import tarfile
+import zipfile
+
 import boto3
+import datetime
 import io
 import os
-import bisect
-import datetime
-import shutil
-import tarfile
-import yaml
-import zipfile
-from typing import List, Union
+import xarray as xr
+from typing import List, Union, Any
 
 from tsdat.io import DatastreamStorage, \
     TemporaryStorage, \
     DisposableLocalTempFile, \
     DisposableStorageTempFileList, \
     DisposableLocalTempFileList
-
 from tsdat.utils import DSUtil
-
 
 SEPARATOR = '$$$'
 
@@ -40,6 +38,9 @@ class S3Path(str):
         # Make sure that bucket path does not start with a slash!
 
         self._bucket_path = bucket_path
+
+    def __str__(self):
+        return self.bucket_path
 
     def __new__(cls, bucket_name: str, bucket_path: str, region_name: str = None):
         """-------------------------------------------------------------------
@@ -180,8 +181,10 @@ class AwsTemporaryStorage(TemporaryStorage):
         delete_on_exception = True
         is_tar = self.is_tarfile(filepath)  # .tar or .tar.gz
         is_zip = self.is_zipfile(filepath)  # .zip
+        zip_file = None
 
         if is_tar or is_zip:
+            zip_file = filepath
             if is_tar:
                 extracted_files = self.extract_tarfile(filepath)
             else:
@@ -192,7 +195,8 @@ class AwsTemporaryStorage(TemporaryStorage):
             extracted_files.append(filepath)
             delete_on_exception = False
 
-        return DisposableStorageTempFileList(extracted_files, self, delete_on_exception=delete_on_exception)
+        return DisposableStorageTempFileList(extracted_files, self, delete_on_exception=delete_on_exception,
+                                             parent_zip=zip_file, disposable=self.datastream_storage.remove_input_files)
 
     def fetch(self, file_path: S3Path, local_dir=None, disposable=True) -> DisposableLocalTempFile:
         s3_client = self.datastream_storage.s3_client
@@ -212,7 +216,7 @@ class AwsTemporaryStorage(TemporaryStorage):
         date = datetime.datetime.strptime(start_time, "%Y%m%d.%H%M%S")
         prev_date = (date - datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
         next_date = (date + datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
-        files = self.datastream_storage.find(datastream_name, prev_date, next_date, filetype=DatastreamStorage.FILE_TYPE.NETCDF)
+        files = self.datastream_storage.find(datastream_name, prev_date, next_date, filetype=DatastreamStorage.default_file_type)
 
         previous_filepath = None
         if files:
@@ -273,18 +277,17 @@ class AwsTemporaryStorage(TemporaryStorage):
 class AwsStorage(DatastreamStorage):
 
     """-----------------------------------------------------------------------
-    DatastreamStorage subclass for an AWS S3-based filesystem.  See
+    datastreamstorage subclass for an aws s3-based filesystem.  see
     parent class for method docstrings.
     -----------------------------------------------------------------------"""
 
-    def __init__(self, bucket_name: str = None,
-                 storage_root_path: str = 'root',
-                 storage_temp_path: str = 'temp'):
+    def __init__(self, parameters={}):
         """-------------------------------------------------------------------
         Initialize the storage from the given parameters used to connect
         to an S3 bucket.
 
-        Args:
+        Params:
+            aws_region  (str):  The region where the s3 bucket is located.
             bucket_name (str):  The name of the s3 bucket where the storage
                                 files will be saved.
 
@@ -295,7 +298,15 @@ class AwsStorage(DatastreamStorage):
                                      folder used for writing short-lived temp
                                      files.
         -------------------------------------------------------------------"""
+        super().__init__(parameters=parameters)
+        bucket_name = self.parameters.get('bucket_name')
+        storage_root_path = self.parameters.get('storage_root_path')
+        storage_temp_path = self.parameters.get('storage_temp_path')
+
         assert bucket_name
+        assert storage_root_path
+        assert storage_temp_path
+
         self._root = S3Path(bucket_name, storage_root_path)
         self._temp_path = S3Path(bucket_name, storage_temp_path)
         self._tmp = AwsTemporaryStorage(self)
@@ -308,23 +319,6 @@ class AwsStorage(DatastreamStorage):
         session = boto3.Session()
         self._s3_client = session.client('s3')
         self._s3_resource = session.resource('s3')
-
-    @classmethod
-    def from_config(cls, config_file):
-        """-------------------------------------------------------------------
-        Load a yaml config file which provides the storage constructor
-        parameters.
-
-        Args:
-            config_file (str): The path to the config file to load
-
-        Returns:
-            AwsStorage: An AwsStorage instance created from the config file.
-        -------------------------------------------------------------------"""
-        dict = yaml.load(config_file, Loader=yaml.FullLoader)
-        return AwsStorage(bucket_name=dict['bucket_name'],
-                          storage_root_path=dict['storage_root_path'],
-                          storage_temp_path=dict['storage_temp_path'])
 
     @property
     def s3_resource(self):
@@ -347,7 +341,7 @@ class AwsStorage(DatastreamStorage):
         return self._temp_path
 
     def find(self, datastream_name: str, start_time: str, end_time: str,
-             filetype: int = None) -> List[S3Path]:
+             filetype: str = None) -> List[S3Path]:
         # TODO: think about refactoring so that you don't need both start and end time
         # TODO: if times don't include hours/min/sec, then add .000000 to the string
         subpath = DSUtil.get_datastream_directory(datastream_name=datastream_name)
@@ -358,14 +352,9 @@ class AwsStorage(DatastreamStorage):
             if start_time <= DSUtil.get_date_from_filename(file.bucket_path) < end_time:
                 storage_paths.append(file)
 
-        if filetype == DatastreamStorage.FILE_TYPE.NETCDF:
-            storage_paths = list(filter(lambda x: x.bucket_path.endswith('.nc'), storage_paths))
-
-        elif filetype == DatastreamStorage.FILE_TYPE.PLOTS:
-            storage_paths = list(filter(lambda x: DSUtil.is_image(x.bucket_path), storage_paths))
-
-        elif filetype == DatastreamStorage.FILE_TYPE.RAW:
-            storage_paths = list(filter(lambda x: '.raw.' in x.bucket_path, storage_paths))
+        if filetype is not None:
+            filter_func = DatastreamStorage.file_filters[filetype]
+            storage_paths = list(filter(filter_func, storage_paths))
 
         return sorted(storage_paths)
 
@@ -384,7 +373,7 @@ class AwsStorage(DatastreamStorage):
 
         return DisposableLocalTempFileList(fetched_files)
 
-    def save(self, local_path: str, new_filename: str = None) -> None:
+    def save_local_path(self, local_path: str, new_filename: str = None):
         # TODO: we should perform a REGEX check to make sure that the filename is valid
         filename = os.path.basename(local_path) if not new_filename else new_filename
         datastream_name = DSUtil.get_datastream_name_from_filename(filename)
@@ -393,6 +382,7 @@ class AwsStorage(DatastreamStorage):
         s3_path = self.root.join(subpath, filename)
 
         self.tmp.upload(local_path, s3_path)
+        return s3_path
 
     def exists(self, datastream_name: str, start_time: str, end_time: str, filetype: int = None) -> bool:
         datastream_store_files = self.find(datastream_name, start_time, end_time, filetype=filetype)

@@ -312,7 +312,7 @@ class DSUtil:
         return f"{datastream_name}.{date}.{time}.{plot_description}.{extension}"
 
     @staticmethod
-    def get_dataset_filename(dataset: xr.Dataset) -> str:
+    def get_dataset_filename(dataset: xr.Dataset, file_extension=".nc") -> str:
         """-------------------------------------------------------------------
         Given an xarray dataset this function will return the base filename of
         the dataset according to MHkiT-Cloud data standards. The base filename
@@ -323,13 +323,14 @@ class DSUtil:
         Args:
             dataset (xr.Dataset):   The dataset whose filename should be
                                     generated.
+            file_extension (str):   The file extension to use.  Defaults to .nc
 
         Returns:
             str: The base filename of the dataset.
         -------------------------------------------------------------------"""
         datastream_name = DSUtil.get_datastream_name(dataset)
         start_date, start_time = DSUtil.get_start_time(dataset)
-        return f"{datastream_name}.{start_date}.{start_time}.nc"
+        return f"{datastream_name}.{start_date}.{start_time}.{file_extension}"
 
     @staticmethod
     def get_raw_filename(raw_dataset: xr.Dataset, old_filename: str, config) -> str:

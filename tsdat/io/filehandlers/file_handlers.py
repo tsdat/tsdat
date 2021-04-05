@@ -1,14 +1,14 @@
-import os
-import abc
-import yaml
-import functools
 import warnings
-import numpy as np
-import pandas as pd
+
+import abc
+import functools
+import os
+import re
 import xarray as xr
 from typing import List, Dict
+
 from tsdat.config import Config
-from tsdat.utils import DSUtil
+
 
 # TODO: add a file handler for parquet format
 
@@ -21,6 +21,9 @@ class AbstractFileHandler(abc.ABC):
     read(filename: str, **kwargs) -> xr.Dataset
     ```
     -----------------------------------------------------------------------"""
+
+    def __init__(self, parameters={}):
+        self.parameters = parameters
 
     @staticmethod
     def write(ds: xr.Dataset, filename: str, config: Config = None, **kwargs) -> None:
@@ -56,7 +59,7 @@ class AbstractFileHandler(abc.ABC):
         pass
 
 
-class FileHandler():
+class FileHandler:
     """-----------------------------------------------------------------------
     Class to provided methods to read and write files with a variety of 
     extensions.
@@ -65,12 +68,20 @@ class FileHandler():
     
     @staticmethod
     def _get_handler(filename: str) -> AbstractFileHandler:
-        _, ext = os.path.splitext(filename)
-        if ext not in FileHandler.FILEHANDLERS:
-            # raise KeyError(f"No FileHandler has been registered for extension: {ext}")
-            warnings.warn(f"No FileHandler has been registered for extension: {ext}")
-            return None
-        return FileHandler.FILEHANDLERS[ext]
+        handler = None
+
+        # Iterate through the file handlers, applying their
+        # regex to see if the filename is a match.
+        for pattern in FileHandler.FILEHANDLERS.keys():
+            regex = re.compile(pattern)
+            if regex.match(filename):
+                handler = FileHandler.FILEHANDLERS[pattern]
+                break
+
+        if handler is None:
+            warnings.warn(f"No FileHandler found for file: {filename}")
+
+        return handler
 
     @staticmethod
     def write(ds: xr.Dataset, filename: str, config: Config = None, **kwargs) -> None:
@@ -105,21 +116,29 @@ class FileHandler():
         if handler:
             return handler.read(filename, **kwargs)
 
+    @staticmethod
+    def register_file_handler(patterns: str, handler: AbstractFileHandler):
+        if isinstance(patterns, List):
+            for pattern in patterns:
+                FileHandler.FILEHANDLERS[pattern] = handler
+        else:
+            FileHandler.FILEHANDLERS[patterns] = handler
 
-# TODO: register by regex instead of file extension
-# TODO: Make this a static class function and have the decorator wrapper
-# call it.
-# Then users can call this independently to use a file handler or the
-# storage can use it to register all handlers defined in their config
-def register_filehandler(file_extension: str):
+
+def register_filehandler(pattern: str):
     """-----------------------------------------------------------------------
     Python decorator to register a class in the FILEHANDLERS dictionary. This
     dictionary will be used by the MHKiT-Cloud pipeline to read and write raw,
     intermediate, and processed data.
 
+    This decorator can be used to work with a specific file handler without
+    having to specify a config file.  This is useful when using the file handler
+    for analysis or for tests.  For pipelines, handlers should always be
+    specified via the storage config file.
+
     Example Usage:
     ```
-    @register_filehandler([".nc", ".cdf"])
+    @register_filehandler(["*.nc", "*.cdf"])
     class NetCdfHandler(AbstractFileHandler):
         def write(self, dataset, filename):
             pass
@@ -128,15 +147,11 @@ def register_filehandler(file_extension: str):
     ```
 
     Args:
-        file_extension (str | List):    The file extension(s) that this 
-                                        FileHandler should be registered for.
+        pattern (str | List):    The regex file name pattern that this
+                                 FileHandler should be registered for.
     -----------------------------------------------------------------------"""
     def decorator_register(cls):
-        if isinstance(file_extension, List):
-            for ext in file_extension:
-                FileHandler.FILEHANDLERS[ext] = cls
-        else:
-            FileHandler.FILEHANDLERS[file_extension] = cls
+        FileHandler.register_file_handler(pattern, cls)
         @functools.wraps(cls)
         def wrapper_register(*args, **kwargs):
             return cls(*args, **kwargs)
