@@ -48,24 +48,6 @@ dataset_definition:
         long_name: Spatial Components
         units: "1"
 
-    # rot:
-    #   input:
-    #     name: rot
-    #   dims: [rot]
-    #   type: str
-    #   attrs:
-    #     long_name: Rotational Components
-    #     units: "1"
-
-    # rpy:  
-    #   input: 
-    #     name: rpy
-    #   dims: [time, rot]
-    #   type: double
-    #   attrs:
-    #     long_name: Roll, Pitch, and Yaw
-    #     units: degrees
-
     roll:  
       input: 
         name: roll
@@ -170,7 +152,7 @@ coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
         classname: tsdat.qc.error_handlers.FailPipeline
 
 #-----------------------------------------------------------------
-qc_tests:  # Define QC tests for non-coordinate variables
+quality_tests:  # Define QC tests for non-coordinate variables
 
     missing:
         qc_bit: 1

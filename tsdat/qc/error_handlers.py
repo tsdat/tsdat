@@ -4,17 +4,17 @@ from typing import Dict
 import numpy as np
 import xarray as xr
 
-from tsdat.config import QCTestDefinition
+from tsdat.config import QualityTestDefinition
 from tsdat.exceptions import QCError
 from tsdat.utils import DSUtil
 
 
-class QCErrorHandler(abc.ABC):
+class QualityHandler(abc.ABC):
     """-------------------------------------------------------------------
     Class containing code to be executed if a particular qc test fails.
     -------------------------------------------------------------------"""
 
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition, parameters={}):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters={}):
         """-------------------------------------------------------------------
         Args:
             ds (xr.Dataset): The dataset the operator will be applied to
@@ -42,7 +42,7 @@ class QCErrorHandler(abc.ABC):
         pass
 
 
-class RemoveFailedValues(QCErrorHandler):
+class RemoveFailedValues(QualityHandler):
     """-------------------------------------------------------------------
     Replace all the failed values with _FillValue
     -------------------------------------------------------------------"""
@@ -56,7 +56,7 @@ class RemoveFailedValues(QCErrorHandler):
         self.ds[variable_name].data = replaced_values
 
 
-class SendEmailAWS(QCErrorHandler):
+class SendEmailAWS(QualityHandler):
     """-------------------------------------------------------------------
     Send an email to the recipients using AWS services.
     -------------------------------------------------------------------"""
@@ -66,7 +66,7 @@ class SendEmailAWS(QCErrorHandler):
         pass
 
 
-class FailPipeline(QCErrorHandler):
+class FailPipeline(QualityHandler):
     """-------------------------------------------------------------------
     Throw an exception, halting the pipeline & indicating a critical error
     -------------------------------------------------------------------"""

@@ -1,6 +1,6 @@
-from .config import Config, Keys
+from .config import Config
 from .dimension_definition import DimensionDefinition
 from .pipeline_definition import PipelineDefinition
 from .variable_definition import VariableDefinition
 from .dataset_definition import DatasetDefinition
-from .qctest_definition import QCTestDefinition
+from .quality_test_definition import QualityTestDefinition

@@ -6,7 +6,7 @@ from typing import List, Dict
 from .keys import Keys
 from .pipeline_definition import PipelineDefinition
 from .dataset_definition import DatasetDefinition
-from .qctest_definition import QCTestDefinition
+from .qctest_definition import QualityTestDefinition
 
 
 # TODO: add api method to download yaml templates or put them all
@@ -71,9 +71,9 @@ class Config:
         return dictionary
 
     def _parse_qc_tests(self, dictionary):
-        qc_tests: Dict[str, QCTestDefinition] = {}
+        qc_tests: Dict[str, QualityTestDefinition] = {}
         for test_name, test_dict in dictionary.items():
-            qc_tests[test_name] = QCTestDefinition(test_name, test_dict)
+            qc_tests[test_name] = QualityTestDefinition(test_name, test_dict)
 
         return qc_tests
 

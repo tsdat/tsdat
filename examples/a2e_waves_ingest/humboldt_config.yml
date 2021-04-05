@@ -373,7 +373,7 @@ coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
         classname: tsdat.qc.error_handlers.FailPipeline
 
 #-----------------------------------------------------------------
-qc_tests:  # Define QC tests for non-coordinate variables
+quality_tests:  # Define QC tests for non-coordinate variables
 
     missing:
         qc_bit: 1

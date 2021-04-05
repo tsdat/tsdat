@@ -4,7 +4,7 @@ from typing import List, Dict
 import numpy as np
 import xarray as xr
 
-from tsdat.config import Config, QCTestDefinition
+from tsdat.config import Config, QualityTestDefinition
 from tsdat.constants import VARS
 from tsdat.utils import DSUtil
 from tsdat.config.utils import instantiate_handler
@@ -39,14 +39,14 @@ class QC(object):
         -------------------------------------------------------------------"""
 
         # First run the coordinate variable tests, in order
-        qc_tests: List[QCTestDefinition] = config.get_qc_tests_coord()
+        qc_tests: List[QualityTestDefinition] = config.get_qc_tests_coord()
 
         for qc_test in qc_tests:
             qc_checker = QCChecker(ds, config, qc_test, previous_data, coord=True)
             qc_checker.run()
 
         # Then run the other variable qc tests, in order
-        qc_tests: List[QCTestDefinition] = config.get_qc_tests()
+        qc_tests: List[QualityTestDefinition] = config.get_qc_tests()
 
         for qc_test in qc_tests:
             qc_checker = QCChecker(ds, config, qc_test, previous_data)
@@ -59,7 +59,7 @@ class QCChecker:
     -------------------------------------------------------------------"""
     def __init__(self, ds: xr.Dataset,
                  config: Config,
-                 test: QCTestDefinition,
+                 test: QualityTestDefinition,
                  previous_data: xr.Dataset,
                  coord: bool = False):
 
@@ -90,7 +90,7 @@ class QCChecker:
         self.variable_names = variable_names
         self.operator = operator
         self.error_handlers = error_handlers
-        self.test: QCTestDefinition = test
+        self.test: QualityTestDefinition = test
         self.previous_data = previous_data
         self.coord = coord
 

@@ -473,7 +473,7 @@ coordinate_variable_qc_tests:
         # This error handler will cause the pipeline to fail
         classname: "tsdat.qc.error_handlers.FailPipeline"
 
-qc_tests:
+quality_tests:
   #-----------------------------------------------------------------
   # The following section defines the default qc tests that will be
   # performed on non-coordinate variables in a dataset.  All

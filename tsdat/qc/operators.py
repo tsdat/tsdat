@@ -4,17 +4,17 @@ from typing import Dict, Optional
 import numpy as np
 import xarray as xr
 
-from tsdat.config import QCTestDefinition
+from tsdat.config import QualityTestDefinition
 from tsdat.constants import ATTS
 from tsdat.utils import DSUtil
 
 
-class QCOperator(abc.ABC):
+class QualityOperator(abc.ABC):
     """-------------------------------------------------------------------
     Class containing the code to perform a single QC test on a Dataset
     variable.
     -------------------------------------------------------------------"""
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QCTestDefinition, parameters={}):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters={}):
         """-------------------------------------------------------------------
         Args:
             ds (xr.Dataset): The dataset the operator will be applied to
@@ -56,7 +56,7 @@ class QCOperator(abc.ABC):
         pass
 
 
-class CheckMissing(QCOperator):
+class CheckMissing(QualityOperator):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
         """-------------------------------------------------------------------
@@ -109,7 +109,7 @@ class CheckMissing(QCOperator):
             self.ds[variable_name].data = replaced_values
 
 
-class CheckFailMin(QCOperator):
+class CheckFailMin(QualityOperator):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
         fail_min = DSUtil.get_fail_min(self.ds, variable_name)
@@ -122,7 +122,7 @@ class CheckFailMin(QCOperator):
         return results_array
 
 
-class CheckFailMax(QCOperator):
+class CheckFailMax(QualityOperator):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
         fail_max = DSUtil.get_fail_max(self.ds, variable_name)
@@ -135,7 +135,7 @@ class CheckFailMax(QCOperator):
         return results_array
 
 
-class CheckWarnMin(QCOperator):
+class CheckWarnMin(QualityOperator):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
         warn_min = DSUtil.get_warn_min(self.ds, variable_name)
@@ -148,7 +148,7 @@ class CheckWarnMin(QCOperator):
         return results_array
 
 
-class CheckWarnMax(QCOperator):
+class CheckWarnMax(QualityOperator):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
         warn_max = DSUtil.get_warn_max(self.ds, variable_name)
@@ -161,7 +161,7 @@ class CheckWarnMax(QCOperator):
         return results_array
 
 
-class CheckValidDelta(QCOperator):
+class CheckValidDelta(QualityOperator):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
 
@@ -220,7 +220,7 @@ class CheckValidDelta(QCOperator):
         return results_array
 
 
-class CheckMonotonic(QCOperator):
+class CheckMonotonic(QualityOperator):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
 
