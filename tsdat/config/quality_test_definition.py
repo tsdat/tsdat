@@ -4,12 +4,12 @@ class QCTestKeys:
 
     MEANING = 'meaning'
     CORRECTION = 'correction'
-    QC_BIT = 'qc_bit'
+    QC_BIT = 'bit'
     ASSESSMENT = 'assessment'
     VARIABLES = 'variables'
     EXCLUDE = 'exclude'
-    OPERATOR = 'operator'
-    ERROR_HANDLERS = 'error_handlers'
+    OPERATOR = 'checker'
+    ERROR_HANDLERS = 'handlers'
 
 
 class QualityTestDefinition:

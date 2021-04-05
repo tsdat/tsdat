@@ -240,58 +240,57 @@ coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
   missing:
     variables:
       - ALL
-    operator:
+    checker:
       classname: tsdat.qc.operators.CheckMissing
-    error_handlers:
+    handlers:
       fail_pipeline:
         classname: tsdat.qc.error_handlers.FailPipeline
 
   monotonic:
     variables:
       - ALL
-    operator:
+    checker:
       classname: tsdat.qc.operators.CheckMonotonic
-    error_handlers:
+    handlers:
       fail_pipeline:
         classname: tsdat.qc.error_handlers.FailPipeline
 
 #-----------------------------------------------------------------
 
-quality_tests:  # Define QC tests for non-coordinate variables
+quality_management:
 
-    missing:
-        qc_bit: 1
-        meaning: "Value is equal to _FillValue or NaN"
-        assessment: Bad
-        variables:
-          - ALL
-        operator:
-          classname: tsdat.qc.operators.CheckMissing
-        error_handlers:
-          # Replace any NaNs with _FillValue
-          replace_with_fill_value:
-            classname: tsdat.qc.error_handlers.RemoveFailedValues
+  missing:
+    bit: 1
+    meaning: "Value is equal to _FillValue or NaN"
+    assessment: Bad
+    variables:
+      - ALL
+    checker:
+      classname: tsdat.qc.operators.CheckMissing
+    handlers:
+      replace_with_fill_value:
+        classname: tsdat.qc.error_handlers.RemoveFailedValues
 
-    fail_min:
-        qc_bit: 2
-        meaning: "Value is less than the fail_range."
-        assessment: Bad
-        variables:
-          - ALL
-        operator:
-          classname: tsdat.qc.operators.CheckFailMin
-        error_handlers:
-          replace_with_fill_value:
-            classname: tsdat.qc.error_handlers.RemoveFailedValues
+  fail_min:
+    bit: 2
+    meaning: "Value is less than the fail_range."
+    assessment: Bad
+    variables:
+      - ALL
+    checker:
+      classname: tsdat.qc.operators.CheckFailMin
+    handlers:
+      replace_with_fill_value:
+        classname: tsdat.qc.error_handlers.RemoveFailedValues
 
-    fail_max:
-        qc_bit: 3
-        meaning: "Value is greater than the fail_range."
-        assessment: Bad
-        variables:
-          - ALL
-        operator:
-          classname: tsdat.qc.operators.CheckFailMax
-        error_handlers:
-          replace_with_fill_value:
-            classname: tsdat.qc.error_handlers.RemoveFailedValues
+  fail_max:
+    bit: 3
+    meaning: "Value is greater than the fail_range."
+    assessment: Bad
+    variables:
+      - ALL
+    checker:
+      classname: tsdat.qc.operators.CheckFailMax
+    handlers:
+      replace_with_fill_value:
+        classname: tsdat.qc.error_handlers.RemoveFailedValues

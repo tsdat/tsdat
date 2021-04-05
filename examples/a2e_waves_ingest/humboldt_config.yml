@@ -357,80 +357,79 @@ coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
   missing:
     variables:
       - ALL
-    operator:
+    checker:
       classname: tsdat.qc.operators.CheckMissing
-    error_handlers:
+    handlers:
       fail_pipeline:
         classname: tsdat.qc.error_handlers.FailPipeline
 
   monotonic:
     variables:
       - All
-    operator:
+    checker:
       classname: tsdat.qc.operators.CheckMonotonic
-    error_handlers:
+    handlers:
       fail_pipeline:
         classname: tsdat.qc.error_handlers.FailPipeline
 
 #-----------------------------------------------------------------
-quality_tests:  # Define QC tests for non-coordinate variables
+quality_management:  # Define QC tests for non-coordinate variables
 
     missing:
-        qc_bit: 1
+        bit: 1
         meaning: "Value is equal to _FillValue or NaN"
         assessment: Bad
         variables:
-          - ALL  # keyword to apply test to all variables
-        operator:
+          - ALL
+        checker:
           classname: tsdat.qc.operators.CheckMissing
-        error_handlers:
-          # Replace any NaNs with _FillValue
+        handlers:
           replace_with_fill_value:
             classname: tsdat.qc.error_handlers.RemoveFailedValues
 
     fail_min:
-        qc_bit: 2
+        bit: 2
         meaning: "Value is less than the fail_range."
         assessment: Bad
         variables:
           - ALL
-        operator:
+        checker:
           classname: tsdat.qc.operators.CheckFailMin
 
     fail_max:
-        qc_bit: 3
+        bit: 3
         meaning: "Value is greater than the fail_range."
         assessment: Bad
         variables:
           - ALL
-        operator:
+        checker:
           classname: tsdat.qc.operators.CheckFailMax
 
     warn_min:
-        qc_bit: 4
+        bit: 4
         meaning: "Value is less than the warn_range."
         assessment: Indeterminate
         variables:
           - ALL
-        operator:
+        checker:
           classname: tsdat.qc.operators.CheckWarnMin
 
     warn_max:
-        qc_bit: 5
+        bit: 5
         meaning: "Value is greater than the warn_range."
         assessment: Indeterminate
         variables:
           - ALL
-        operator:
+        checker:
           classname: tsdat.qc.operators.CheckWarnMax
 
     valid_delta:
-        qc_bit: 6
+        bit: 6
         meaning: "Difference between current and previous values exceeds valid_delta."
         assessment: Indeterminate
         variables:
           - ALL
-        operator:
+        checker:
           classname: tsdat.qc.operators.CheckValidDelta
           parameters:
             dim: time
