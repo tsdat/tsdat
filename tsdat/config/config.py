@@ -1,12 +1,11 @@
 import yaml
-import warnings
 from yamllint import linter
 from yamllint.config import YamlLintConfig
 from typing import List, Dict
 from .keys import Keys
 from .pipeline_definition import PipelineDefinition
 from .dataset_definition import DatasetDefinition
-from .qctest_definition import QualityTestDefinition
+from .quality_test_definition import QualityTestDefinition
 
 
 # TODO: add api method to download yaml templates or put them all

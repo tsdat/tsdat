@@ -1,4 +1,5 @@
 import abc
+import datetime
 import numpy as np
 import xarray as xr
 from typing import Any, Dict
@@ -171,6 +172,10 @@ class Pipeline(abc.ABC):
                 _set_attr(dataset[var], att_name, att_value)
         
         dataset.attrs["input_files"] = list(raw_mapping.keys())
+        
+        history = f"Ran at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        dataset.attrs["history"] = history
+
         return dataset
 
     def get_previous_dataset(self, dataset: xr.Dataset) -> xr.Dataset:

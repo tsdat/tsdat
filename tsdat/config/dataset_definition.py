@@ -56,13 +56,6 @@ class DatasetDefinition:
         vars = {name: var for name, var in vars.items() if not var.is_coordinate()}
         return coords, vars
 
-    def _generate_history(self, dictionary: Dict) -> str:
-        # Should generate a string like: "Ran by user <USER> on machine <MACHINE> at <DATE>"
-        # TODO: Add user
-        # TODO: Add machine, if possible
-        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        return f"Ran at {date}"
-    
     def _validate_dataset_definition(self):
         """-------------------------------------------------------------------
         Performs sanity checks on the dataset definition after it has been 
