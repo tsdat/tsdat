@@ -177,7 +177,7 @@ quality_management:
     meaning: "Value is equal to _FillValue or NaN"
     assessment: Bad
     variables:
-      - ALL
+      - DATA_VARS
     checker:
       classname: tsdat.qc.operators.CheckMissing
     handlers:

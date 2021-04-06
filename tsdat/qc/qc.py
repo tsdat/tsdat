@@ -74,12 +74,23 @@ class QCChecker:
 
         # Convert the list to upper case in case the user made a typo in the yaml
         variable_names_upper = [x.upper() for x in variable_names]
+        
+        # Add variables where a keyword was used
+        if VARS.COORDS in variable_names_upper:
+            variable_names.remove(VARS.COORDS)
+            variable_names.extend(DSUtil.get_coordinate_variable_names(ds))
 
+        if VARS.DATA_VARS in variable_names_upper:
+            variable_names.remove(VARS.DATA_VARS)
+            variable_names.extend(DSUtil.get_non_qc_variable_names(ds))
+        
         if VARS.ALL in variable_names_upper:
-            if coord:
-                variable_names = DSUtil.get_coordinate_variable_names(ds)
-            else:
-                variable_names = DSUtil.get_non_qc_variable_names(ds)
+            variable_names.remove(VARS.ALL)
+            variable_names.extend(DSUtil.get_coordinate_variable_names(ds))
+            variable_names.extend(DSUtil.get_non_qc_variable_names(ds))
+        
+        # Remove any duplicates while preserving insertion order
+        variable_names = list(dict.fromkeys(variable_names))
 
         # Exclude any excludes
         excludes = test.exclude

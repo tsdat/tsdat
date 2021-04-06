@@ -4,6 +4,8 @@ import xarray as xr
 
 class VARS(object):
     ALL = 'ALL'
+    COORDS = 'COORDS'
+    DATA_VARS = 'DATA_VARS'
 
 
 class ATTS(object):

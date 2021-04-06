@@ -451,24 +451,24 @@ coordinate_variable_qc_tests:
   # the tsdat.qc.operators package.
   #
   # Users are also free to add custom tests defined by their own
-  # operator classes.
+  # checker classes.
   #-----------------------------------------------------------------
   missing:
     variables:
-      - ALL  # keyword to apply test to all coordinate variables
-    operator:
+      - COORDS  # keyword to apply test to all coordinate variables
+    checker:
       classname: "tsdat.qc.operators.CheckMissing"
-    error_handlers:
+    handlers:
       # This error handler will cause the pipeline to fail
       fail_pipeline:
         classname: "tsdat.qc.error_handlers.FailPipeline"
 
   monotonic:
     variables:
-      - All  # keyword to apply test to all coordinate variables
-    operator:
+      - COORDS  # keyword to apply test to all coordinate variables
+    checker:
       classname: "tsdat.qc.operators.CheckMonotonic"
-    error_handlers:
+    handlers:
       fail_pipeline:
         # This error handler will cause the pipeline to fail
         classname: "tsdat.qc.error_handlers.FailPipeline"
@@ -484,7 +484,7 @@ quality_tests:
   # the tsdat.qc.operators package.
   #
   # Users are also free to add custom tests defined by their own
-  # operator classes.
+  # checker classes.
   #-----------------------------------------------------------------
 
   missing:  # the name of the test
@@ -492,7 +492,7 @@ quality_tests:
     # The bit (1-32) used to record the results of this test (0/1).
     # A 0 value means the test passed.  A 1 value means the
     # test failed.
-    qc_bit: 1
+    bit: 1
 
     # The description of the QC test performed
     meaning: "Value is equal to _FillValue or NaN"
@@ -502,12 +502,12 @@ quality_tests:
 
     # Which variables to apply the test to
     variables:
-      - ALL  # keyword to apply test to all non-coordinate variables
+      - DATA_VARS  # keyword to apply test to all non-coordinate variables
 
     # The class that will implement the test.  Users are free
     # to override with their own class if they want to change
     # behavior.
-    operator:
+    checker:
       classname: "tsdat.qc.operators.CheckMissing"
 
     # Error handlers are optional and run after the test is
@@ -516,56 +516,56 @@ quality_tests:
     # executed in sequence.  Users are free to add their
     # own QCErrorHandler subclass if they want to add custom
     # behavior.
-    error_handlers:
+    handlers:
       # This error handler will replace any NaNs with _FillValue
       replace_with_fill_value:
         classname: "tsdat.qc.error_handlers.RemoveFailedValues"
 
   fail_min:
-    qc_bit: 2
+    bit: 2
     meaning: "Value is less than the fail_range."
     assessment: "Bad"
     variables:
-      - ALL
-    operator:
+      - DATA_VARS
+    checker:
       classname: "tsdat.qc.operators.CheckFailMin"
 
   fail_max:
-    qc_bit: 3
+    bit: 3
     meaning: "Value is greater than the fail_range."
     assessment: "Bad"
     variables:
-      - ALL
-    operator:
+      - DATA_VARS
+    checker:
       classname: "tsdat.qc.operators.CheckFailMax"
 
   warn_min:
-    qc_bit: 4
+    bit: 4
     meaning: "Value is less than the warn_range."
     assessment: "Indeterminate"
     variables:
-      - ALL
-    operator:
+      - DATA_VARS
+    checker:
       classname: "tsdat.qc.operators.CheckWarnMin"
 
   warn_max:
-    qc_bit: 5
+    bit: 5
     meaning: "Value is greater than the warn_range."
     assessment: "Indeterminate"
     variables:
-      - ALL
-    operator:
+      - DATA_VARS
+    checker:
       classname: "tsdat.qc.operators.CheckWarnMax"
 
   valid_delta:
-    qc_bit: 6
+    bit: 6
     meaning: "Difference between current and previous values exceeds valid_delta."
     assessment: "Indeterminate"
     variables:
-      - ALL
-    operator:
+      - DATA_VARS
+    checker:
       classname: "tsdat.qc.operators.CheckValidDelta"
-      parameters: #<====Parameters can be passed to any operator
+      parameters: #<====Parameters can be passed to any checker
         dim: time # specify the dimension over which to compute the delta
 
     #-----------------------------------------------------------------
@@ -575,27 +575,26 @@ quality_tests:
     # not work, it is just provided as an example of adding a
     # custom QC test.)
     #-----------------------------------------------------------------
-#    temp_test:
-#        qc_bit: 7
-#        meaning: "Test for some special condition in temperature."
-#        assessment: "Indeterminate"
-#        variables:
-#          - temp_mean
-#        operator:
-#          classname: "myproject.qc.operators.TestTemp"
-#
-#        #-------------------------------------------------------------
-#        # See the tsdat.qc.error_handlers package for a list of
-#        # available error handlers.
-#        #-------------------------------------------------------------
-#        error_handlers:
-#
-#          # This error handler will notify users via email.  The
-#          # datastream name, variable, and failing values will be
-#          # included.
-#          send_email:
-#            classname: "tsdat.qc.error_handlers.SendEmailAWS"
-#            parameters:
-#              message: "Test failed..."
-#              recipients: ["carina.lansing@pnnl.gov", "maxwell.levin@pnnl.gov"]
+    # temp_test:
+    #   bit: 7
+    #   meaning: "Test for some special condition in temperature."
+    #   assessment: "Indeterminate"
+    #   variables:
+    #     - temp_mean
+    #   checker:
+    #     classname: "myproject.qc.operators.TestTemp"
 
+    #   #-------------------------------------------------------------
+    #   # See the tsdat.qc.error_handlers package for a list of
+    #   # available error handlers.
+    #   #-------------------------------------------------------------
+    #   handlers:
+
+    #     # This error handler will notify users via email.  The
+    #     # datastream name, variable, and failing values will be
+    #     # included.
+    #     send_email:
+    #       classname: "tsdat.qc.error_handlers.SendEmailAWS"
+    #       parameters:
+    #         message: "Test failed..."
+    #         recipients: ["carina.lansing@pnnl.gov", "maxwell.levin@pnnl.gov"]

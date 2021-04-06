@@ -356,7 +356,7 @@ coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
 
   missing:
     variables:
-      - ALL
+      - COORDS
     checker:
       classname: tsdat.qc.operators.CheckMissing
     handlers:
@@ -365,7 +365,7 @@ coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
 
   monotonic:
     variables:
-      - All
+      - COORDS
     checker:
       classname: tsdat.qc.operators.CheckMonotonic
     handlers:
@@ -380,7 +380,7 @@ quality_management:  # Define QC tests for non-coordinate variables
         meaning: "Value is equal to _FillValue or NaN"
         assessment: Bad
         variables:
-          - ALL
+          - DATA_VARS
         checker:
           classname: tsdat.qc.operators.CheckMissing
         handlers:
@@ -392,7 +392,7 @@ quality_management:  # Define QC tests for non-coordinate variables
         meaning: "Value is less than the fail_range."
         assessment: Bad
         variables:
-          - ALL
+          - DATA_VARS
         checker:
           classname: tsdat.qc.operators.CheckFailMin
 
@@ -401,7 +401,7 @@ quality_management:  # Define QC tests for non-coordinate variables
         meaning: "Value is greater than the fail_range."
         assessment: Bad
         variables:
-          - ALL
+          - DATA_VARS
         checker:
           classname: tsdat.qc.operators.CheckFailMax
 
@@ -410,7 +410,7 @@ quality_management:  # Define QC tests for non-coordinate variables
         meaning: "Value is less than the warn_range."
         assessment: Indeterminate
         variables:
-          - ALL
+          - DATA_VARS
         checker:
           classname: tsdat.qc.operators.CheckWarnMin
 
@@ -419,7 +419,7 @@ quality_management:  # Define QC tests for non-coordinate variables
         meaning: "Value is greater than the warn_range."
         assessment: Indeterminate
         variables:
-          - ALL
+          - DATA_VARS
         checker:
           classname: tsdat.qc.operators.CheckWarnMax
 
@@ -428,7 +428,7 @@ quality_management:  # Define QC tests for non-coordinate variables
         meaning: "Difference between current and previous values exceeds valid_delta."
         assessment: Indeterminate
         variables:
-          - ALL
+          - DATA_VARS
         checker:
           classname: tsdat.qc.operators.CheckValidDelta
           parameters:

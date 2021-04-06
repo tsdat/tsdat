@@ -269,7 +269,7 @@ coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
 
   missing:
     variables:
-      - ALL
+      - COORDS
     checker:
       classname: tsdat.qc.operators.CheckMissing
     handlers:
@@ -278,7 +278,7 @@ coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
 
   monotonic:
     variables:
-      - All
+      - COORDS
     checker:
       classname: tsdat.qc.operators.CheckMonotonic
     handlers:
@@ -294,7 +294,7 @@ quality_management:
     meaning: "Value is equal to _FillValue or NaN"
     assessment: Bad
     variables:
-      - ALL  # keyword to apply test to all variables
+      - DATA_VARS
     checker:
       classname: tsdat.qc.operators.CheckMissing
     handlers:
@@ -307,7 +307,7 @@ quality_management:
     meaning: "Value is less than the fail_range."
     assessment: Bad
     variables:
-      - ALL
+      - DATA_VARS
     checker:
       classname: tsdat.qc.operators.CheckFailMin
     handlers:
@@ -319,7 +319,7 @@ quality_management:
     meaning: "Value is greater than the fail_range."
     assessment: Bad
     variables:
-      - ALL
+      - DATA_VARS
     checker:
       classname: tsdat.qc.operators.CheckFailMax
     handlers:
