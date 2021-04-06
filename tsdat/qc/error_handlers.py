@@ -1,4 +1,7 @@
 import abc
+
+from xarray.core.utils import get_temp_dimname
+from tsdat.exceptions.exceptions import DefinitionError
 from typing import Dict
 
 import numpy as np
@@ -7,6 +10,12 @@ import xarray as xr
 from tsdat.config import QualityTestDefinition
 from tsdat.exceptions import QCError
 from tsdat.utils import DSUtil
+
+class QCParamKeys:
+    QC_BIT = 'bit'
+    ASSESSMENT = 'assessment'
+    TEST_MEANING = 'meaning'
+    CORRECTION = 'correction'
 
 
 class QualityHandler(abc.ABC):
@@ -42,18 +51,30 @@ class QualityHandler(abc.ABC):
         pass
 
 
+class RecordQualityResults(QualityHandler):
+    """-----------------------------------------------------------------------
+    Record the results of the qc test in an ancillary qc variable.
+    -----------------------------------------------------------------------"""
+    def run(self, variable_name: str, results_array: np.ndarray):
+        self.ds.qcfilter.add_test(
+            variable_name, index=results_array,
+            test_number=self.params.get(QCParamKeys.QC_BIT),
+            test_meaning=self.params.get(QCParamKeys.TEST_MEANING),
+            test_assessment=self.params.get(QCParamKeys.ASSESSMENT))
+
+
 class RemoveFailedValues(QualityHandler):
     """-------------------------------------------------------------------
     Replace all the failed values with _FillValue
     -------------------------------------------------------------------"""
     def run(self, variable_name: str, results_array: np.ndarray):
-        fill_value = DSUtil.get_fill_value(self.ds, variable_name)
+        if results_array.any():
+            fill_value = DSUtil.get_fill_value(self.ds, variable_name)
+            keep_array = np.logical_not(results_array)
 
-        keep_array = np.logical_not(results_array)
-
-        var_values = self.ds[variable_name].data
-        replaced_values = np.where(keep_array, var_values, fill_value)
-        self.ds[variable_name].data = replaced_values
+            var_values = self.ds[variable_name].data
+            replaced_values = np.where(keep_array, var_values, fill_value)
+            self.ds[variable_name].data = replaced_values
 
 
 class SendEmailAWS(QualityHandler):
@@ -75,5 +96,6 @@ class FailPipeline(QualityHandler):
         # or by the operator itself.  The operator would know more information,
         # so would be able to print out a more useful error message.
         # If we deem this error handler not useful, we should remove it.
-        message = f"QC test {self.test.name} failed for variable {variable_name}"
-        raise QCError(message)
+        if results_array.any():
+            message = f"QC test {self.test.name} failed for variable {variable_name}"
+            raise QCError(message)

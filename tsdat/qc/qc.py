@@ -126,37 +126,16 @@ class QCChecker:
 
             # Apply the operator
             results_array: np.ndarray = self.operator.run(variable_name)
+            if results_array is None:
+                results_array = np.zeros_like(self.ds[variable_name].data, dtype='bool')
 
-            # If results_array is None, then we just skip this test
-            if results_array is not None:
-
-                # TODO: Only record qc if a qc bit has been defined
-                # If this is not a coordinate variable, then record
-                # the test results in a qc_ companion variable
-                if not self.coord:
-                    self.ds.qcfilter.add_test(
-                        variable_name, index=results_array,
-                        test_number=self.test.qc_bit,
-                        test_meaning=self.test.meaning,
-                        test_assessment=self.test.assessment)
-
-                # If any values fail, then call any defined error handlers
-                if np.sum(results_array) > 0 and self.error_handlers is not None:
-                    for handler_name in self.error_handlers.keys():
-                        handler_desc = {handler_name: self.error_handlers.get(handler_name)}
-                        error_handler = instantiate_handler(self.ds, self.previous_data, self.test, handler_desc=handler_desc)[0]
-                        error_handler.run(variable_name, results_array)
-                        self.ds: xr.Dataset = error_handler.ds
-                    self.operator.ds = self.ds
-
-            else: 
-                results_array = np.zeros_like(self.ds[variable_name].data) == 1
-
-                if not self.coord:
-                    self.ds.qcfilter.add_test(
-                        variable_name, index=results_array,
-                        test_number=self.test.qc_bit,
-                        test_meaning="N/A",
-                        test_assessment="Indeterminate")
+            # Apply the error handlers
+            if self.error_handlers is not None:
+                for handler_name in self.error_handlers.keys():
+                    handler_desc = {handler_name: self.error_handlers.get(handler_name)}
+                    error_handler = instantiate_handler(self.ds, self.previous_data, self.test, handler_desc=handler_desc)[0]
+                    error_handler.run(variable_name, results_array)
+                    self.ds: xr.Dataset = error_handler.ds
+                self.operator.ds = self.ds
 
         return self.ds
