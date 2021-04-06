@@ -308,8 +308,7 @@ class DisposableStorageTempFileList (list):
     are deleted when the list goes out of scope.
     -------------------------------------------------------------------"""
 
-    def __init__(self, filepath_list: List[str], storage, delete_on_exception=False, disposable=True,
-                 parent_zip=None):
+    def __init__(self, filepath_list: List[str], storage, disposable_files=[]):
         """-------------------------------------------------------------------
         Args:
             filepath_list (List[str]):   A list of paths to files in temporary
@@ -318,15 +317,8 @@ class DisposableStorageTempFileList (list):
             storage (TemporaryStorage): The temporary storage service used
                                         to clean up temporary files.
 
-            delete_on_exception:        The default behavior is to not remove
-                                        the files on exit if an exception
-                                        occurs.  However, users can override this
-                                        setting to force files to be cleaned up
-                                        no matter if an exception is thrown or
-                                        not.
-
-            disposable:                 True if this file should be auto-deleted
-                                        when out of scope.
+            disposable_files:           List of files that should be removed
+                                        when this list goes out of scope.
         -------------------------------------------------------------------"""
         self.filepath_list = filepath_list
 
@@ -335,35 +327,29 @@ class DisposableStorageTempFileList (list):
             storage = storage.tmp
         self.tmp_storage = storage
         assert isinstance(self.tmp_storage, TemporaryStorage)
-        self.delete_on_exception = delete_on_exception
-        self.disposable = disposable
-        self.parent_zip = parent_zip
+        self.disposable_files = disposable_files
 
     def __enter__(self):
         return self.filepath_list
 
     def __exit__(self, type, value, traceback):
 
-        if self.disposable:
-            # We only clean up the files if an exception was not thrown
-            if type is None or self.delete_on_exception:
-                # Clean up the list of files.  These are located in the
-                # storage temp dir.
-                for filepath in self.filepath_list:
-                    self.tmp_storage.delete(filepath)
+        # We only clean up the files if an exception was not thrown
+        if type is None:
 
-                # If there is a parent zip file where these files were
-                # extracted from, clean that file up too.
-                # TODO: this assumes that the input storage is the same
-                # as the output storage.  So if the storage is on S3,
-                # then the input zip is also on S3.  We will have to
-                # fix this for mixed-mode storage (e.g., input is on
-                # local filesystem, but output is on S3)
-                if self.parent_zip:
-                    self.tmp_storage.delete(self.parent_zip)
-
-
-
+            # Clean up the list of files that should be removed.
+            # Note that some of these files may be in temp storage
+            # if they were extracted from a zip.  Others may be
+            # in the input folder, which you may or may not want to
+            # clean up automatically.
+            #
+            # TODO: this assumes that the input storage is the same
+            # as the output storage.  So if the storage is on S3,
+            # then the input file is also on S3.  We will have to
+            # fix this for mixed-mode storage (e.g., input is on
+            # local filesystem, but output is on S3)
+            for filepath in self.disposable_files:
+                self.tmp_storage.delete(filepath)
 
 
 class TemporaryStorage(abc.ABC):
@@ -446,7 +432,7 @@ class TemporaryStorage(abc.ABC):
         return temp_dir
 
     @abc.abstractmethod
-    def extract_files(self, file_path: str) -> DisposableStorageTempFileList:
+    def extract_files(self, file_path: Union[str, List[str]]) -> DisposableStorageTempFileList:
         """-------------------------------------------------------------------
         If provided a path to an archive file, this function will extract the
         archive into a temp directory IN THE SAME FILESYSTEM AS THE STORAGE.
@@ -459,8 +445,9 @@ class TemporaryStorage(abc.ABC):
         This method supports zip, tar, and tar.g file formats.
 
         Args:
-            file_path (str):   The path of a file located in the same
-                               filesystem as the storage.
+            file_path (Union[str, List[str]]):   The path of a file or a list
+                                  of files that should be processed together,
+                                  located in the same filesystem as the storage.
 
         Returns:
             DisposableStorageTempFileList:  A list of paths to the files that were extracted.

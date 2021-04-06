@@ -28,7 +28,7 @@ class Pipeline(abc.ABC):
         self.storage = storage
 
     @abc.abstractmethod
-    def run(self, filepath: str):
+    def run(self, filepath: Union[str, List[str]]):
         return
 
     def standardize_dataset(self, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:

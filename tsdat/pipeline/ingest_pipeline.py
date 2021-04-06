@@ -1,6 +1,6 @@
 import warnings
 import xarray as xr
-from typing import Dict, List
+from typing import Dict, List, Union
 from .pipeline import Pipeline
 from tsdat.io.filehandlers import FileHandler
 from tsdat.qc import QC
@@ -9,9 +9,9 @@ from tsdat.utils import DSUtil
 from .pipeline import Pipeline
 
 
-class IngestPipeline(Pipeline):       
+class IngestPipeline(Pipeline):
 
-    def run(self, filepath: str) -> None:
+    def run(self, filepath: Union[str, List[str]]) -> None:
         """-------------------------------------------------------------------
         Runs the Ingest Pipeline from start to finish.
 

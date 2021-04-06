@@ -8,6 +8,10 @@ from tsdat.pipeline import IngestPipeline
 
 
 class TestIngestPipeline(unittest.TestCase):
+    """-------------------------------------------------------------------
+    Test the full pipeline using the custom examples from the pipeline
+    folder
+    -------------------------------------------------------------------"""
 
     def setUp(self) -> None:
         testdir = os.path.abspath(os.path.dirname(__file__))

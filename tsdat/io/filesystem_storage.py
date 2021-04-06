@@ -21,39 +21,47 @@ from tsdat.utils import DSUtil
 
 class FilesystemTemporaryStorage(TemporaryStorage):
 
-    def extract_files(self, filepath: str) -> DisposableStorageTempFileList:
+    def extract_files(self, list_or_filepath: Union[str, List[str]]) -> DisposableStorageTempFileList:
         extracted_files = []
-        delete_on_exception = True
-        is_file = os.path.isfile(filepath)
-        is_tar = tarfile.is_tarfile(filepath) # tar or tar.gz
-        is_zip = zipfile.is_zipfile(filepath)
-        zip_file = None
+        disposable_files = []
 
-        if is_tar or is_zip:
-            zip_file = filepath
+        files = list_or_filepath
+        if isinstance(list_or_filepath, str):
+            files = [list_or_filepath]
 
-            # Extract into a temporary folder in the target_dir
-            temp_dir = self.create_temp_dir()
+        for filepath in files:
+            is_file = os.path.isfile(filepath)
+            is_tar = tarfile.is_tarfile(filepath) # tar or tar.gz
+            is_zip = zipfile.is_zipfile(filepath)
 
-            if is_tar:
-                with tarfile.open(filepath) as tar:
-                    tar.extractall(path=temp_dir)
-            else:
-                with zipfile.ZipFile(filepath, 'r') as zipped:
-                    zipped.extractall(temp_dir)
+            if is_tar or is_zip:
+                # only dispose of the parent zip if set by storage policy
+                if self.datastream_storage.remove_input_files:
+                    disposable_files.append(filepath)
 
-            for filename in os.listdir(temp_dir):
-                filepath = os.path.join(temp_dir, filename)
-                if os.path.isfile(filepath):
-                    extracted_files.append(filepath)
+                # Extract into a temporary folder in the target_dir
+                temp_dir = self.create_temp_dir()
 
-        elif is_file:
-            # If this is not a zip or tar file, we assume it is a regular file
-            extracted_files.append(filepath)
-            delete_on_exception = False
+                if is_tar:
+                    with tarfile.open(filepath) as tar:
+                        tar.extractall(path=temp_dir)
+                else:
+                    with zipfile.ZipFile(filepath, 'r') as zipped:
+                        zipped.extractall(temp_dir)
 
-        return DisposableStorageTempFileList(extracted_files, self, delete_on_exception=delete_on_exception,
-                                             parent_zip=zip_file, disposable=self.datastream_storage.remove_input_files)
+                for filename in os.listdir(temp_dir):
+                    filepath = os.path.join(temp_dir, filename)
+                    if os.path.isfile(filepath):
+                        extracted_files.append(filepath)
+
+            elif is_file:
+                # Only dispose of regular input files if set by storage policy.
+                if self.datastream_storage.remove_input_files:
+                    disposable_files.append(filepath)
+
+                extracted_files.append(filepath)
+
+        return DisposableStorageTempFileList(extracted_files, self, disposable_files=disposable_files)
 
     def fetch(self, file_path: str, local_dir=None, disposable=True) -> Union[DisposableLocalTempFile, str]:
         if not local_dir:

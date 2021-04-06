@@ -176,27 +176,42 @@ class AwsTemporaryStorage(TemporaryStorage):
         z.close()
         return extracted_files
 
-    def extract_files(self, filepath: S3Path) -> DisposableStorageTempFileList:
+    def extract_files(self, list_or_filepath: Union[S3Path, List[S3Path]]) -> DisposableStorageTempFileList:
+
         extracted_files = []
-        delete_on_exception = True
-        is_tar = self.is_tarfile(filepath)  # .tar or .tar.gz
-        is_zip = self.is_zipfile(filepath)  # .zip
-        zip_file = None
+        disposable_files = []
 
-        if is_tar or is_zip:
-            zip_file = filepath
-            if is_tar:
-                extracted_files = self.extract_tarfile(filepath)
+        files = list_or_filepath
+        if isinstance(list_or_filepath, S3Path):
+            files = [list_or_filepath]
+
+        for filepath in files:
+            is_tar = self.is_tarfile(filepath)  # .tar or .tar.gz
+            is_zip = self.is_zipfile(filepath)  # .zip
+
+            if is_tar or is_zip:
+                # only dispose of the parent zip if set by storage policy
+                if self.datastream_storage.remove_input_files:
+                    disposable_files.append(filepath)
+
+                if is_tar:
+                    tmp_extracted_files = self.extract_tarfile(filepath)
+                else:
+                    tmp_extracted_files = self.extract_zipfile(filepath)
+
+                # Add all the files that were extracted to the zip to the
+                # list of returned files and mark them for auto-disposal
+                extracted_files.extend(tmp_extracted_files)
+                disposable_files.extend(tmp_extracted_files)
+
             else:
-                extracted_files = self.extract_zipfile(filepath)
+                # Only dispose of regular input files if set by storage policy.
+                if self.datastream_storage.remove_input_files:
+                    disposable_files.append(filepath)
 
-        else:
-            # If this is not a zip or tar file, we assume it is a regular file
-            extracted_files.append(filepath)
-            delete_on_exception = False
+                extracted_files.append(filepath)
 
-        return DisposableStorageTempFileList(extracted_files, self, delete_on_exception=delete_on_exception,
-                                             parent_zip=zip_file, disposable=self.datastream_storage.remove_input_files)
+        return DisposableStorageTempFileList(extracted_files, self, disposable_files=disposable_files)
 
     def fetch(self, file_path: S3Path, local_dir=None, disposable=True) -> DisposableLocalTempFile:
         s3_client = self.datastream_storage.s3_client
