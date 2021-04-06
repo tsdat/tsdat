@@ -47,9 +47,6 @@ class IngestPipeline(Pipeline):
             # Hook to generate custom plots
             self.hook_generate_and_persist_plots(dataset)
 
-        # Make sure that any temp files are cleaned up
-        self.storage.tmp.clean()
-
     def hook_apply_corrections(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         """-------------------------------------------------------------------
         Pipeline hook that can be used to apply standard corrections for the 

@@ -330,7 +330,7 @@ class DSUtil:
         -------------------------------------------------------------------"""
         datastream_name = DSUtil.get_datastream_name(dataset)
         start_date, start_time = DSUtil.get_start_time(dataset)
-        return f"{datastream_name}.{start_date}.{start_time}.{file_extension}"
+        return f"{datastream_name}.{start_date}.{start_time}{file_extension}"
 
     @staticmethod
     def get_raw_filename(raw_dataset: xr.Dataset, old_filename: str, config) -> str:

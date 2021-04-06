@@ -1,11 +1,15 @@
 import os
 import shutil
+import sys
 import unittest
 
-from tsdat.config import Config
-from tsdat.io import FilesystemStorage
-from tsdat.pipeline import IngestPipeline
+# Add the examples directory to the pythonpath
+test_dir = os.path.dirname(os.path.realpath(__file__))
+project_dir = os.path.dirname(test_dir)
+examples_dir = os.path.join(project_dir, 'examples')
+sys.path.append(examples_dir)
 
+from a2e_buoy_ingest.runner import run_pipeline as run_buoy_ingest
 
 class TestIngestPipeline(unittest.TestCase):
     """-------------------------------------------------------------------
@@ -13,68 +17,15 @@ class TestIngestPipeline(unittest.TestCase):
     folder
     -------------------------------------------------------------------"""
 
-    def setUp(self) -> None:
-        testdir = os.path.abspath(os.path.dirname(__file__))
-        self.basedir = os.path.join(testdir, 'data/pipeline')
-
-        # Root folder of datastream storage
-        self.root = os.path.join(testdir, 'data/storage/root')
-        os.makedirs(self.root, exist_ok=True)
-
-        # Input directory where incoming raw files will be dropped
-        self.raw = os.path.join(testdir, 'data/storage/raw')
-        os.makedirs(self.raw, exist_ok=True)
-
-
     def tearDown(self) -> None:
         super().tearDown()
 
-        # Clean up temporary folders
-        shutil.rmtree(self.root)
-        shutil.rmtree(self.raw)
+        # Clean up storage folders
+        shutil.rmtree(os.path.join(examples_dir, 'a2e_buoy_ingest/storage'))
 
-    def get_raw_file(self, raw_filename):
-        """-----------------------------------------------------------------------
-        Copies the raw file into the temporary raw folder representing the pipeline
-        input folder.  We need to do this because the pipeline will remove the
-        processed file from the input folder if it completes with no error.
-        -----------------------------------------------------------------------"""
-        original_raw_file = os.path.join(self.basedir, raw_filename)
-        temp_raw_file = os.path.join(self.raw, raw_filename)
-        shutil.copy(original_raw_file, temp_raw_file)
-        return temp_raw_file
+    def test_a2e_buoy_ingest(self):
+        run_buoy_ingest()
 
-    def test_temperature_one_day(self):
-        raw_file = self.get_raw_file('buoy.z05.00.20200930.000000.temperature.csv')
-        config_file = os.path.join(self.basedir, 'temperature_one_day.yml')
-
-        storage: FilesystemStorage = FilesystemStorage(self.root)
-        config: Config = Config.load(config_file)
-
-        pipeline: IngestPipeline = IngestPipeline(config, storage)
-        pipeline.run(raw_file)
-
-    def test_ingest_zip(self):
-        # raw_file = self.get_raw_file('buoy.z05.00.20201004.000000.zip')
-        raw_file = self.get_raw_file('buoy.z05.00.20201004.000000_no_gill_waves.zip')
-        config_file = os.path.join(self.basedir, 'ingest_zip.yml')
-
-        storage: FilesystemStorage = FilesystemStorage(self.root)
-        config: Config = Config.load(config_file)
-
-        pipeline: IngestPipeline = IngestPipeline(config, storage)
-        pipeline.run(raw_file)
-
-    def test_ingest_tar(self):
-
-        raw_file = self.get_raw_file('buoy.z05.00.20201004.000000_no_gill_waves.tar.gz')
-        config_file = os.path.join(self.basedir, 'ingest_zip.yml')
-
-        storage: FilesystemStorage = FilesystemStorage(self.root)
-        config: Config = Config.load(config_file)
-
-        pipeline: IngestPipeline = IngestPipeline(config, storage)
-        pipeline.run(raw_file)
 
 if __name__ == '__main__':
     unittest.main()

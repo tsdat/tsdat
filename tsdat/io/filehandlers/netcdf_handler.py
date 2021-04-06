@@ -3,10 +3,8 @@ import xarray as xr
 from tsdat.config import Config
 
 from .file_handlers import AbstractFileHandler
-from .file_handlers import register_filehandler
 
 
-@register_filehandler([".nc", ".cdf"])
 class NetCdfHandler(AbstractFileHandler):
     @staticmethod
     def write(ds: xr.Dataset, filename: str, config: Config = None, **kwargs) -> None:
@@ -26,8 +24,6 @@ class NetCdfHandler(AbstractFileHandler):
 
     @staticmethod
     def read(filename: str, config: Config = None, **kwargs) -> xr.Dataset:
-        # TODO: need to have xr.Dataset close the file automatically if user
-        #  uses "with" - add a resource manager api
-        # ds_disk = xr.open_dataset(filename)
-        # TODO: Use config?
-        return xr.open_dataset(filename)
+        # We are using xr.load_dataset because it will load the whole file
+        # into memory and close the underlying file handle.
+        return xr.load_dataset(filename)

@@ -1,4 +1,5 @@
 import abc
+import atexit
 import os
 import re
 import shutil
@@ -13,17 +14,24 @@ from tsdat.io import FileHandler
 from tsdat.utils import DSUtil
 
 
+def _is_image(x):
+    return True if DSUtil.is_image(x.__str__()) else False
+
+
+def _is_raw(x):
+    return True if '.raw.' in x.__str__() else False
+
+
 class DatastreamStorage(abc.ABC):
 
     default_file_type = None
 
     file_filters = {
-        'plots': lambda x: DSUtil.is_image(x.__str__()),
-        'raw': lambda x: '.raw.' in x.__str__()
+        'plots': _is_image,
+        'raw': _is_raw
     }
 
     output_file_extensions = {
-        'netcdf': '.nc'
     }
 
     @staticmethod
@@ -38,33 +46,50 @@ class DatastreamStorage(abc.ABC):
         Returns:
             DatastreamStorage: An subclass instance created from the config file.
         -------------------------------------------------------------------"""
-        storage_dict = yaml.load(storage_config_file, Loader=yaml.FullLoader).get('storage', {})
-        storage = instantiate_handler(storage_dict)
+        # Load the config file
+        with open(storage_config_file, 'r') as file:
+            storage_dict = yaml.load(file, Loader=yaml.FullLoader).get('storage', {})
+
+        # Now we have to substitute any special variables in the storage parameters
+        config_folder = os.path.dirname(storage_config_file)
+        if 'parameters' in storage_dict:
+            for key, value in storage_dict['parameters'].items():
+                if isinstance (value, str) and '$CONFIG_DIR' in value:
+                    new_value = value.replace('$CONFIG_DIR', config_folder)
+                    storage_dict['parameters'][key] = new_value
+
+        # Now instantiate the storage
+        storage = instantiate_handler(handler_desc=storage_dict)
 
         # Now we need to register all the file handlers
+        # First do the inputs
         input_handlers = storage_dict.get('file_handlers',{}).get('input', {})
         for handler_dict in input_handlers.values():
-            handler = instantiate_handler(handler_dict)
+            handler = instantiate_handler(handler_desc=handler_dict)
             FileHandler.register_file_handler(handler_dict['file_pattern'], handler)
 
+        # Now the outputs
         output_handlers = storage_dict.get('file_handlers', {}).get('output', {})
-        for handler_dict in output_handlers.values():
+        for key, handler_dict in output_handlers.items():
+            file_extension = handler_dict['file_extension']
+            file_pattern = f".*\\{file_extension}"
+
             # First register the writers
-            handler = instantiate_handler(handler_dict)
-            FileHandler.register_file_handler(handler_dict['file_pattern'], handler)
+            handler = instantiate_handler(handler_desc=handler_dict)
+            FileHandler.register_file_handler(file_pattern, handler)
 
             # Now register the file patterns for finding files in the store
-            file_extension = handler_dict['file_extension']
-            file_pattern = f"*.{file_extension}"
             regex = re.compile(file_pattern)
-            filter_func = lambda x: regex.match(x.__str__())
-            filter_key = handler_dict['key']
-            DatastreamStorage.file_filters[filter_key] = filter_func
-            DatastreamStorage.output_file_extensions[filter_key] = file_extension
+
+            def filter_func(x):
+                return True if regex.match(x.__str__()) else False
+
+            DatastreamStorage.file_filters[key] = filter_func
+            DatastreamStorage.output_file_extensions[key] = file_extension
 
             if DatastreamStorage.default_file_type is None:
                 # Use the first output type registered as the default type
-                DatastreamStorage.default_file_type = filter_key
+                DatastreamStorage.default_file_type = key
 
         return storage
 
@@ -72,6 +97,10 @@ class DatastreamStorage(abc.ABC):
         self.parameters = parameters
         retain_input_files = parameters.get('retain_input_files', False)
         self.remove_input_files = not retain_input_files
+
+        # When this class is garbage collected, then make sure to
+        # clean out the temp folders for any extraneous files
+        atexit.register(self.tmp.clean())
 
     @property
     def tmp(self):
@@ -382,8 +411,19 @@ class TemporaryStorage(abc.ABC):
         return self._local_temp_folder
 
     def clean(self):
+        """-------------------------------------------------------------------
+        Clean any extraneous files from the temp working dirs.  Temp files
+        could be in two places:
+           1) the local temp folder - used when fetching files from the store
+           2) the storage temp folder - used when extracting zip files in
+              some stores (e.g., AWS)
+
+        This method removes the local temp folder.  Child classes can
+        extend this method to clean up their respective storage temp folders.
+        -------------------------------------------------------------------"""
         # remove any garbage files left in the local temp folder
         shutil.rmtree(self.local_temp_folder)
+
 
     def get_temp_filepath(self, filename: str = None, disposable: bool = True) -> DisposableLocalTempFile:
         """-------------------------------------------------------------------

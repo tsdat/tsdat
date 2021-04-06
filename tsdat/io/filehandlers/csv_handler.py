@@ -5,9 +5,8 @@ import xarray as xr
 from tsdat.config import Config
 from tsdat.utils import DSUtil
 from .file_handlers import AbstractFileHandler
-from .file_handlers import register_filehandler
 
-@register_filehandler(".csv")
+
 class CsvHandler(AbstractFileHandler):
 
     @staticmethod

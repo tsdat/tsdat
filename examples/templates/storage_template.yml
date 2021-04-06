@@ -10,25 +10,23 @@ storage:
 
   file_handlers:
     input:
-      wind_handler:
-        file_pattern: '*wind*.csv'
+      wind_csv:
+        file_pattern: '.*wind.*\.csv'  # <====You have to use a valid Python regex pattern
         classname: tsdat.io.filehandlers.CsvHandler
         parameters: #<====Parameters can be passed to any handler
           start_line: 4
 
-      waves_handler:
-        file_pattern: '*waves*.csv'
+      waves_csv:
+        file_pattern: '.*waves.*\.csv'  # <====You have to use a valid Python regex pattern
         classname: tsdat.io.filehandlers.CsvHandler
         parameters: #<====Parameters can be passed to any handler
           start_line: 8
 
     output:  # for now, you have to use one of our handlers
-      netcdf_handler:
-        key: netcdf
+      netcdf:
         file_extension: '.nc'
-        classname: tsdat.io.filehandlers.NetCDFHandler
+        classname: tsdat.io.filehandlers.NetCdfHandler
 
-      parquet_handler:
-        key: parquet
+      parquet:
         file_extension: '.parquet'
         classname: tsdat.io.filehandlers.ParquetHandler

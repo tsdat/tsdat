@@ -1,5 +1,6 @@
 import bisect
 import tarfile
+import pathlib
 import zipfile
 
 import datetime
@@ -117,8 +118,12 @@ class FilesystemStorage(DatastreamStorage):
         -------------------------------------------------------------------"""
         super().__init__(parameters=parameters)
 
-        self._root = self.parameters.get('root')
+        self._root = parameters.get('root_dir')
         assert self._root
+
+        # Make sure that the root folder exists
+        pathlib.Path(self._root).mkdir(parents=True, exist_ok=True)
+
         self._tmp = FilesystemTemporaryStorage(self)
 
     @property
