@@ -21,7 +21,7 @@ class ImuIngestPipeline(IngestPipeline):
     corrections, or create custom plots, they should follow this example
     to extend the IngestPipeline class.
     -------------------------------------------------------------------"""    
-    def create_and_persist_plots(self, dataset: xr.Dataset) -> None:
+    def hook_generate_and_persist_plots(self, dataset: xr.Dataset) -> None:
         """-------------------------------------------------------------------
         Hook to allow users to create plots from the xarray dataset after
         processing and QC have been applied and just before the dataset is

@@ -1,12 +1,11 @@
 pipeline:
   type: Ingest
-  input_data_level: "00"
 
   location_id: "humboldt"
-  instrument_id: "buoy"
-  qualifier: "z05_imu"
-  temporal:
-  output_data_level: "a1"
+  dataset_name: "buoy_z05"
+  qualifier: "imu"
+  # temporal:
+  data_level: "a1"
 
 dataset_definition:
   attributes:
@@ -48,24 +47,6 @@ dataset_definition:
       attrs:
         long_name: Spatial Components
         units: "1"
-
-    # rot:
-    #   input:
-    #     name: rot
-    #   dims: [rot]
-    #   type: str
-    #   attrs:
-    #     long_name: Rotational Components
-    #     units: "1"
-
-    # rpy:  
-    #   input: 
-    #     name: rpy
-    #   dims: [time, rot]
-    #   type: double
-    #   attrs:
-    #     long_name: Roll, Pitch, and Yaw
-    #     units: degrees
 
     roll:  
       input: 
@@ -171,7 +152,7 @@ coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
         classname: tsdat.qc.error_handlers.FailPipeline
 
 #-----------------------------------------------------------------
-qc_tests:  # Define QC tests for non-coordinate variables
+quality_tests:  # Define QC tests for non-coordinate variables
 
     missing:
         qc_bit: 1

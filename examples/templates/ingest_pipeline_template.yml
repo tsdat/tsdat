@@ -17,7 +17,7 @@
 # to apply scientific algorithms to derive new variables that provide
 # additional insights on the data.
 pipeline:
-  type: Ingest
+  type: "Ingest"
 
   # Used to specify the level of data that this pipeline will use as
   # input. For ingests, this will be used as the data level for raw data.
@@ -27,27 +27,27 @@ pipeline:
   # Used to specify the level of data that this pipeline will produce.
   # It is recommended that ingests use "a1" and VAPs should use "b1", 
   # but this is not enforced.
-  output_data_level: "a1"
+  data_level: "a1"
 
   # A label for the location where the data were obtained from
-  location_id: humboldt_z05
+  location_id: "humboldt_z05"
 
   # A string consisting of any letters, digits, "-" or "_" that can
   # be used to uniquely identify the instrument used to produce
   # the data.  To prevent confusion with the temporal resolution
   # of the instrument, the instrument identifier must not end
   # with a number.
-  instrument_id: buoy
+  dataset_name: "buoy"
 
   # An optional qualifier that distinguishes these data from other
   # data sets produced by the same instrument.  The qualifier
   # must not end with a number.
-  #qualifier: lidar
+  #qualifier: "lidar"
 
   # A optional description of the data temporal resolution
   # (e.g., 30m, 1h, 200ms, 14d, 10Hz).  All temporal resolution
   # descriptors require a units identifier.
-  #temporal: 10m
+  #temporal: "10m"
 
 ####################################################################
 # PART 1: DATASET DEFINITION
@@ -70,24 +70,27 @@ dataset_definition:
     # The value would be similar to a publication title.
     # Example: "Atmospheric Radiation Measurement (ARM) program Best
     # Estimate cloud and radiation measurements (ARMBECLDRAD)"
-    title: Buoy Dataset for Buoy \#120
+    # This attribute is highly recommended but is not required.
+    title: "Buoy Dataset for Buoy #120"
 
     # Longer English language description of the data.
     # Example: "ARM best estimate hourly averaged QC controlled product,
     # derived from ARM observational Value-Added Product data: ARSCL,
     # MWRRET, QCRAD, TSI, and satellite; see input_files for the names of
     # original files used in calculation of this product"
-    description: Example ingest dataset used for demonstration purposes.
+    # This attribute is highly recommended but is not required.
+    description: "Example ingest dataset used for demonstration purposes."
 
     # The version of the standards document this data conforms to.
-    conventions: MHKiT-Cloud Data Standards v. 1.0
+    # This attribute is highly recommended but is not required.
+    conventions: "ME Data Pipeline Standards: Version 1.0"
 
     # If an optional Digital Object Identifier (DOI) has been obtained
     # for the data, it may be included here.
-    #doi: 10.21947/1671051
+    #doi: "10.21947/1671051"
 
     # The institution who produced the data
-    #institution: PNNL
+    #institution: "PNNL"
 
     # Include the url to the specific tagged release of the code
     # used for this pipeline invocation.
@@ -95,42 +98,32 @@ dataset_definition:
     # Note that MHKiT-Cloud will automatically create a new code
     # release whenever the pipeline is deployed to production and
     # record this attribute automatically.
-    code_url: https://github.com/clansing/tsdat/releases/tag/1.0
+    code_url: "https://github.com/clansing/tsdat/releases/tag/1.0"
 
     # Published or web-based references that describe the methods
     # algorithms, or third party libraries used to process the data.
-    # Example: https://github.com/MHKiT-Software/MHKiT-Python
-    #references:
-
-    #---------------------------------------------------------------
-    # The following attributes used to create the datastream name
-    # datastream_name = (location_id).(instrument_id)(qualifier)(temporal).data_level
-    # data_level will automatically be determined by the pipeline
-    #---------------------------------------------------------------
-
- 
-    #---------------------------------------------------------------
+    #references: "https://github.com/MHKiT-Software/MHKiT-Python"
 
     # A more detailed description of the site location.
-    #location_meaning: Buoy is located of the coast of Humboldt, CA
+    #location_meaning: "Buoy is located of the coast of Humboldt, CA"
 
     # Name of instrument(s) used to collect data.
-    #instrument_name: Wind Sentinel
+    #instrument_name: "Wind Sentinel"
 
     # Serial number of instrument(s) used to collect data.
-    #serial_number: '000011312'
+    #serial_number: "000011312"
 
     # Description of instrument(s) used to collect data.
-    #instrument_meaning: Self-powered floating buoy hosting a suite of meteorological and marine instruments.
+    #instrument_meaning: "Self-powered floating buoy hosting a suite of meteorological and marine instruments."
 
     # Manufacturer of instrument(s) used to collect data.
-    #instrument_manufacturer: AXYS Technologies Inc.
+    #instrument_manufacturer: "AXYS Technologies Inc."
 
     # The date(s) of the last time the instrument(s) was calibrated.
-    #last_calibration_date
+    #last_calibration_date: "2020-10-01"
 
     # The expected sampling interval of the instrument (e.g., "400 us")
-    #sampling_interval: 10 min
+    #sampling_interval: "10 min"
 
   #-----------------------------------------------------------------
   # Dimensions (shape)
@@ -139,7 +132,7 @@ dataset_definition:
     # All time series data must have a "time" dimension
     # TODO: provide a link to the documentation online
     time:
-        length: unlimited
+        length: "unlimited"
   
   #-----------------------------------------------------------------
   # Variable Defaults
@@ -157,6 +150,50 @@ dataset_definition:
   # This section is entirely optional, so it is commented out.
   #-----------------------------------------------------------------
   # variable_defaults:
+
+    # Optionally specify defaults for variable inputs. These defaults will
+    # only be applied to variables that have an 'input' property. This
+    # is to allow for variables that are created on the fly, but defined in
+    # the config file.
+    # input:
+
+      # If this is specified, the pipeline will attempt to match the file pattern
+      # to an input filename. This is useful for cases where a variable has the 
+      # same name in multiple input files, but it should only be retrieved from
+      # one file.
+      # file_pattern: "buoy"
+
+      # Specify this to indicate that the variable must be retrieved. If this is
+      # set to True and the variable is not found in the input file the pipeline
+      # will crash. If this is set to False, the pipeline will continue.
+      # required: True
+
+      # Defaults for the converter used to translate input numpy arrays to
+      # numpy arrays used for calculations
+      # converter:
+        
+        #-------------------------------------------------------------
+        # Specify the classname of the converter to use as a default. 
+        # A converter is used to convert the raw data into standardized
+        # values.
+        #
+        # Use the DefaultConverter for all non-time variables that
+        # use units supported by udunits2.
+        # https://www.unidata.ucar.edu/software/udunits/udunits-2.2.28/udunits2.html#Database
+        #
+        # If your raw data has units that are not supported by udunits2,
+        # you can specify your own Converter class.
+        #-------------------------------------------------------------
+        # classname: "tsdat.utils.converters.DefaultConverter"
+
+        # If the default converter always requires specific parameters, these
+        # can be defined here. Note that these parameters are not tied to the
+        # classname specified above and will be passed to all converters defined
+        # here.
+        # parameters:
+
+          # Example of parameter format:
+          # param_name: param_value          
     
     # The name(s) of the dimension(s) that dimension this data by 
     # default. For time-series tabular data, the following is a 'good'
@@ -195,7 +232,7 @@ dataset_definition:
       #---------------------------------------------------------------
       input:
         # Name of the variable in the raw data
-        name: DataTimeStamp
+        name: "DataTimeStamp"
         
         #-------------------------------------------------------------
         # A converter is used to convert the raw data into standardized
@@ -204,11 +241,11 @@ dataset_definition:
         # Use the StringTimeConverter if your raw data provides time
         # as a formatted string.
         converter:
-          classname: tsdat.utils.converters.StringTimeConverter
+          classname: "tsdat.utils.converters.StringTimeConverter"
           parameters:
             # A list of timezones can be found here:
             # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-            timezone: US/Pacific
+            timezone: "US/Pacific"
             time_format: "%Y-%m-%d %H:%M:%S"
 
         # Use the TimestampTimeConverter if your raw data provides time
@@ -244,7 +281,7 @@ dataset_definition:
       attrs:
 
         # A minimal description of what the variable represents.
-        long_name: Time offset from epoch
+        long_name: "Time offset from epoch"
 
         # A string exactly matching a value in from the CF or MRE
         # Standard Name table, if a match exists
@@ -257,7 +294,7 @@ dataset_definition:
         # Note:  CF Standards require this exact format for time.
         # UTC is strongly recommended.
         # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#time-coordinate
-        units: seconds since 1970-01-01T00:00:00
+        units: "seconds since 1970-01-01T00:00:00"
 
     #-----------------------------------------------------------------
     # Mean temperature variable (non-coordinate variable)
@@ -270,35 +307,10 @@ dataset_definition:
       #---------------------------------------------------------------
       input:
         # Name of the variable in the raw data
-        name: Surface Temperature (C)
+        name: "Surface Temperature (C)"
 
         # Units of the variable in the raw data
-        units: degC
-
-        # If this is specified, the pipeline will attempt to match the file pattern
-        # to an input filename. This is useful for cases where a variable has the 
-        # same name in multiple input files, but it should only be retrieved from
-        # one file.
-        # file_pattern: "buoy"
-
-        # Specify this to indicate that the variable must be retrieved. If this is
-        # set to True and the variable is not found in the input file the pipeline
-        # will crash. If this is set to False, the pipeline will continue.
-        # required: True
-
-        #-------------------------------------------------------------
-        # A converter is used to convert the raw data into standardized
-        # values.
-        #
-        # Use the DefaultConverter for all non-time variables that
-        # use units supported by udunits2.
-        # https://www.unidata.ucar.edu/software/udunits/udunits-2.2.28/udunits2.html#Database
-        #
-        # If your raw data has units that are not supported by udunits2,
-        # you can specify your own Converter class.
-        #-------------------------------------------------------------
-        converter:
-          classname: tsdat.utils.converters.DefaultConverter
+        units: "degC"
 
       # The shape of this variable
       dims: [time]
@@ -322,7 +334,7 @@ dataset_definition:
       #-------------------------------------------------------------
       attrs:
         # A minimal description of what the variable represents.
-        long_name: Mean sea surface temperature
+        long_name: "Mean sea surface temperature"
 
         # An optional attribute to provide human-readable context for what this variable
         # represents, how it was measured, or anything else that would be relevant to end-users.
@@ -331,7 +343,7 @@ dataset_definition:
         # A CFUnits-compatible string indicating the units the data
         # are measured in.
         # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#units
-        units: degC
+        units: "degC"
 
         # The value used to initialize the variable’s data. Defaults to -9999.
         # Coordinate variables must not use this attribute.
@@ -367,13 +379,14 @@ dataset_definition:
 
         # The height of the instrument above ground level (AGL), or in the case of above
         # water, above the surface.
-        #sensor_height: 30m
+        #sensor_height: "30m"
 
     #-----------------------------------------------------------------
     # Example of a variables that hold a single scalar value that
     # is not present in the raw data.
     #-----------------------------------------------------------------
     latitude:
+      data: 71.323 #<-----The data field can be used to specify a pre-set value
       type: float
 
       #<-----This variable has no input, which means it will be set by
@@ -383,23 +396,21 @@ dataset_definition:
       # a scalar value
 
       attrs:
-        long_name: North latitude
-        standard_name: latitude
-        comment: Recorded lattitude at the instrument location
-        units: degree_N
-        valid_range:[-90.f, 90.f]
-
-      data: 71.323 #<-----The data field can be used to specify a pre-set value
+        long_name: "North latitude"
+        standard_name: "latitude"
+        comment: "Recorded lattitude at the instrument location"
+        units: "degree_N"
+        valid_range: [-90.f, 90.f]
 
     longitude:
+      data: -156.609
       type: float
       attrs:
-        long_name: East longitude
-        standard_name: longitude
-        comment: Recorded longitude at the instrument location
-        units: degree_E
-        valid_range:[-180.f, 180.f]
-      data: -156.609
+        long_name: "East longitude"
+        standard_name: "longitude"
+        comment: "Recorded longitude at the instrument location"
+        units: "degree_E"
+        valid_range: [-180.f, 180.f]
 
     #-----------------------------------------------------------------
     # Example of a variable that is derived by the processing pipeline
@@ -413,10 +424,10 @@ dataset_definition:
       dims: [time]
 
       attrs:
-        long_name: some other property
-        units: kg/m^3
-        comment: Computed from temp_mean point value using some formula...
-        references: [http://sccoos.org/data/autoss/, http://sccoos.org/about/dmac/]
+        long_name: "some other property"
+        units: "kg/m^3"
+        comment: "Computed from temp_mean point value using some formula..."
+        references: ["http://sccoos.org/data/autoss/", "http://sccoos.org/about/dmac/"]
 
 ---
 ####################################################################
@@ -446,23 +457,23 @@ coordinate_variable_qc_tests:
     variables:
       - ALL  # keyword to apply test to all coordinate variables
     operator:
-      classname: tsdat.qc.operators.CheckMissing
+      classname: "tsdat.qc.operators.CheckMissing"
     error_handlers:
       # This error handler will cause the pipeline to fail
       fail_pipeline:
-        classname: tsdat.qc.error_handlers.FailPipeline
+        classname: "tsdat.qc.error_handlers.FailPipeline"
 
   monotonic:
     variables:
       - All  # keyword to apply test to all coordinate variables
     operator:
-      classname: tsdat.qc.operators.CheckMonotonic
+      classname: "tsdat.qc.operators.CheckMonotonic"
     error_handlers:
       fail_pipeline:
         # This error handler will cause the pipeline to fail
-        classname: tsdat.qc.error_handlers.FailPipeline
+        classname: "tsdat.qc.error_handlers.FailPipeline"
 
-qc_tests:
+quality_tests:
   #-----------------------------------------------------------------
   # The following section defines the default qc tests that will be
   # performed on non-coordinate variables in a dataset.  All
@@ -487,7 +498,7 @@ qc_tests:
     meaning: "Value is equal to _FillValue or NaN"
 
     # The assessment of the test.  Must be one of [Bad, Indeterminate]
-    assessment: Bad
+    assessment: "Bad"
 
     # Which variables to apply the test to
     variables:
@@ -497,7 +508,7 @@ qc_tests:
     # to override with their own class if they want to change
     # behavior.
     operator:
-      classname: tsdat.qc.operators.CheckMissing
+      classname: "tsdat.qc.operators.CheckMissing"
 
     # Error handlers are optional and run after the test is
     # performed if any of the values fail the test.  Users
@@ -508,52 +519,52 @@ qc_tests:
     error_handlers:
       # This error handler will replace any NaNs with _FillValue
       replace_with_fill_value:
-        classname: tsdat.qc.error_handlers.RemoveFailedValues
+        classname: "tsdat.qc.error_handlers.RemoveFailedValues"
 
   fail_min:
     qc_bit: 2
     meaning: "Value is less than the fail_range."
-    assessment: Bad
+    assessment: "Bad"
     variables:
       - ALL
     operator:
-      classname: tsdat.qc.operators.CheckFailMin
+      classname: "tsdat.qc.operators.CheckFailMin"
 
   fail_max:
     qc_bit: 3
     meaning: "Value is greater than the fail_range."
-    assessment: Bad
+    assessment: "Bad"
     variables:
       - ALL
     operator:
-      classname: tsdat.qc.operators.CheckFailMax
+      classname: "tsdat.qc.operators.CheckFailMax"
 
   warn_min:
     qc_bit: 4
     meaning: "Value is less than the warn_range."
-    assessment: Indeterminate
+    assessment: "Indeterminate"
     variables:
       - ALL
     operator:
-      classname: tsdat.qc.operators.CheckWarnMin
+      classname: "tsdat.qc.operators.CheckWarnMin"
 
   warn_max:
     qc_bit: 5
     meaning: "Value is greater than the warn_range."
-    assessment: Indeterminate
+    assessment: "Indeterminate"
     variables:
       - ALL
     operator:
-      classname: tsdat.qc.operators.CheckWarnMax
+      classname: "tsdat.qc.operators.CheckWarnMax"
 
   valid_delta:
     qc_bit: 6
     meaning: "Difference between current and previous values exceeds valid_delta."
-    assessment: Indeterminate
+    assessment: "Indeterminate"
     variables:
       - ALL
     operator:
-      classname: tsdat.qc.operators.CheckValidDelta
+      classname: "tsdat.qc.operators.CheckValidDelta"
       parameters: #<====Parameters can be passed to any operator
         dim: time # specify the dimension over which to compute the delta
 
@@ -567,11 +578,11 @@ qc_tests:
 #    temp_test:
 #        qc_bit: 7
 #        meaning: "Test for some special condition in temperature."
-#        assessment: Indeterminate
+#        assessment: "Indeterminate"
 #        variables:
 #          - temp_mean
 #        operator:
-#          classname: myproject.qc.operators.TestTemp
+#          classname: "myproject.qc.operators.TestTemp"
 #
 #        #-------------------------------------------------------------
 #        # See the tsdat.qc.error_handlers package for a list of
@@ -583,8 +594,8 @@ qc_tests:
 #          # datastream name, variable, and failing values will be
 #          # included.
 #          send_email:
-#            classname: tsdat.qc.error_handlers.SendEmailAWS
+#            classname: "tsdat.qc.error_handlers.SendEmailAWS"
 #            parameters:
 #              message: "Test failed..."
-#              recipients: [carina.lansing@pnnl.gov, maxwell.levin@pnnl.gov]
+#              recipients: ["carina.lansing@pnnl.gov", "maxwell.levin@pnnl.gov"]
 

@@ -22,7 +22,7 @@ class ATTS(object):
     REFERENCES = 'references'
     INPUT_FILES = 'input_files'
     LOCATION_ID = 'location_id'
-    DATASTREAM = 'datastream'
+    DATASTREAM = 'datastream_name'
     DATA_LEVEL = 'data_level'
     LOCATION_DESCRPTION = 'location_description'
     INSTRUMENT_NAME = 'instrument_name'

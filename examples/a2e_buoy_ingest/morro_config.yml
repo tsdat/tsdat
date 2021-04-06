@@ -2,11 +2,11 @@ pipeline:
   type: Ingest
   input_data_level: "00"
   
-  location_id: "mor.ro"
-  instrument_id: "buoy"
-  qualifier: "z06"
+  location_id: "morro"
+  dataset_name: "buoy_z06"
+  # qualifier: ""
   temporal: "10m"
-  output_data_level: "a1"
+  data_level: "a1"
 
 dataset_definition:  # Describes the dataset that will be produced
   attributes:
@@ -299,10 +299,9 @@ coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
 
 #-----------------------------------------------------------------
 
-qc_tests:  # Define QC tests for non-coordinate variables
+quality_tests:  # Define QC tests for non-coordinate variables
 
     missing:
-        # test_number: 1 # TODO: Convert this to test number instead of qc_bit
         qc_bit: 1
         meaning: "Value is equal to _FillValue or NaN"
         assessment: Bad

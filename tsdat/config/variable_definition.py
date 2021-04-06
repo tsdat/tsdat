@@ -15,10 +15,14 @@ class VarKeys:
 class VarInputKeys:
     NAME = 'name'
     CONVERTER = 'converter'
-    TIME_FORMAT = 'time_format'
-    TIMEZONE = 'timezone'
+    # TIME_FORMAT = 'time_format'
+    # TIMEZONE = 'timezone'
     UNITS = 'units'
     REQUIRED = 'required'
+
+class ConverterKeys:
+    CLASSNAME = 'classname'
+    PARAMETERS = 'parameters'
 
 
 class VarInput:    
@@ -26,18 +30,37 @@ class VarInput:
     Class to explicitly encode fields set by the variable's input source 
     defined by the yaml file.
     -----------------------------------------------------------------------"""
-    def __init__(self, dictionary: Dict, input_defaults: Dict = None):
-        if input_defaults:
-            pass # TODO
-
+    def __init__(self, dictionary: Dict, defaults: Dict = {}):
+        
+        # Name will always come from input dictionary and is required
         self.name: str = dictionary.get(VarInputKeys.NAME)
-        default_converter = {
-            'classname': 'tsdat.utils.converters.DefaultConverter'
-        }
-        self.converter: Converter = instantiate_handler(handler_desc=dictionary.get(VarInputKeys.CONVERTER, default_converter))
+        
+        # Set the converter defaults if no converter is provided
+        classname = "tsdat.utils.converters.DefaultConverter"
+        parameters = {}
+
+        # Update classname and add parameters from defaults
+        _default_converter = defaults.get(VarInputKeys.CONVERTER, {})
+        classname = _default_converter.get(ConverterKeys.CLASSNAME, classname)
+        parameters.update(_default_converter.get(ConverterKeys.PARAMETERS, {}))
+
+        # Update classname and add parameters from dictionary input
+        _provided_converter = dictionary.get(VarInputKeys.CONVERTER, {})
+        classname = _provided_converter.get(ConverterKeys.CLASSNAME, classname)
+        parameters.update(_provided_converter.get(ConverterKeys.PARAMETERS, {}))
+        
+        # Instantiate the converter
+        converter = {ConverterKeys.CLASSNAME: classname, ConverterKeys.PARAMETERS: parameters}
+        self.converter: Converter = instantiate_handler(handler_desc=converter)
+
+        # Add any other input properties to the variable input
         for key in dictionary:
             if not hasattr(self, key):
                 setattr(self, key, dictionary[key])
+        
+        for key in defaults:
+            if not hasattr(self, key):
+                setattr(self, key, defaults[key])
     
     def is_required(self) -> bool:
         return getattr(self, VarInputKeys.REQUIRED, False) == True
@@ -50,7 +73,7 @@ class VariableDefinition:
     -----------------------------------------------------------------------"""
     def __init__(self, name: str, dictionary: Dict, available_dimensions: Dict[str, DimensionDefinition], defaults: Dict = {}):
         self.name: str = name
-        self.input = self._parse_input(dictionary)
+        self.input = self._parse_input(dictionary, defaults)
         self.dims = self._parse_dimensions(dictionary, available_dimensions, defaults)
         self.attrs = self._parse_attributes(dictionary, defaults)
         self.type = self._parse_data_type(dictionary, defaults)
@@ -65,7 +88,7 @@ class VariableDefinition:
         input_source = dictionary.get(VarKeys.INPUT, None)
         if not input_source:
             return None
-        return VarInput(input_source, defaults.get(VarKeys.INPUT, None))
+        return VarInput(input_source, defaults.get(VarKeys.INPUT, {}))
     
     def _parse_attributes(self, dictionary: Dict, defaults: Dict = {}) -> Dict[str, Any]:
         # Initialize attributes dictionary. Defaults used only for non-coordinate variables

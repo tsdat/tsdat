@@ -57,10 +57,10 @@ class DSUtil:
             str: The datastream name
         -------------------------------------------------------------------"""
         assert(ds is not None or config is not None)
-        if ds is not None and "datastream" in ds.attrs:
-            return ds.attrs["datastream"]
+        if ds is not None and "datastream_name" in ds.attrs:
+            return ds.attrs["datastream_name"]
         elif config :
-            return config.dataset_definition.datastream
+            return config.dataset_definition.datastream_name
         return None
 
     @staticmethod

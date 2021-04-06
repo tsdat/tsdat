@@ -1,3 +1,4 @@
+import re
 import warnings
 import xarray as xr
 from typing import Dict, List, Union
@@ -5,7 +6,7 @@ from .pipeline import Pipeline
 from tsdat.io.filehandlers import FileHandler
 from tsdat.qc import QC
 from tsdat.utils import DSUtil
-
+from tsdat.config import DatasetDefinition, VariableDefinition
 from .pipeline import Pipeline
 
 
@@ -25,96 +26,31 @@ class IngestPipeline(Pipeline):
         with self.storage.tmp.extract_files(filepath) as file_paths:
 
             # Open each raw file into a Dataset, standardize the raw file names and store.
-            # Use storage and FileHandler to access and read the file.
-            # Involves opening the raw
-            # files to get the timestamp of the first point of data since this is
-            # required/recommended by raw file naming conventions.
             raw_dataset_mapping: Dict[str, xr.Dataset] = self.read_and_persist_raw_files(file_paths)
-            
-            raw_dataset_mapping: Dict[str, xr.Dataset] = self.customize_raw_datasets(raw_dataset_mapping)
 
-            # Process the data
+            # Customize the raw data before it is used as input for standardization
+            raw_dataset_mapping: Dict[str, xr.Dataset] = self.hook_customize_raw_datasets(raw_dataset_mapping)
+
+            # Standardize the dataset and apply corrections / customizations
             dataset = self.standardize_dataset(raw_dataset_mapping)
-            dataset = self.apply_corrections(dataset, raw_dataset_mapping)
-            dataset = self.customize_dataset(dataset, raw_dataset_mapping)
+            dataset = self.hook_apply_corrections(dataset, raw_dataset_mapping)
+            dataset = self.hook_customize_dataset(dataset, raw_dataset_mapping)
 
-            # Apply quality control / quality assurance to the dataset. Note
-            # that the previous dataset is retrieved so quality checks can 
-            # perform continuity checks such as strictly increasing coordinate
-            # values or valid_delta for the first point in the file. 
+            # Apply quality control / quality assurance to the dataset.
             previous_dataset = self.get_previous_dataset(dataset)
-            QC.apply_tests(dataset, self.config, previous_dataset)
+            dataset = QC.apply_tests(dataset, self.config, previous_dataset)
 
-            # Save the final datastream data to storage
+            # Apply any final touches to the dataset and persist the dataset
+            dataset = self.hook_finalize_dataset(dataset)
             dataset = self.store_and_reopen_dataset(dataset)
 
-            # Hook to generate plots
-            # Users should save plots with self.storage.save(paths_to_plots)
-            self.create_and_persist_plots(dataset)
+            # Hook to generate custom plots
+            self.hook_generate_and_persist_plots(dataset)
 
         # Make sure that any temp files are cleaned up
         self.storage.tmp.clean()
 
-    def read_and_persist_raw_files(self, file_paths: List[str]) -> List[str]:
-        """-------------------------------------------------------------------
-        Renames the provided RAW files according to MHKiT-Cloud Data Standards 
-        naming conventions for RAW data and returns a list of filepaths to the 
-        renamed files.
-
-        Args:
-        ---
-            file_paths (List[str]): A list of paths to the original raw files.
-
-        Returns:
-        ---
-            List[str]: A list of paths to the renamed raw files.
-        -------------------------------------------------------------------"""
-        raw_dataset_mapping = {}
-
-        if isinstance(file_paths, str):
-            file_paths = [file_paths]
-
-        for file_path in file_paths:
-
-            # read the raw file into a dataset
-            with self.storage.tmp.fetch(file_path) as tmp_path:
-                dataset = FileHandler.read(tmp_path)
-
-                # Don't use dataset if no FileHandler is registered for it
-                if dataset is not None:
-                    # create the standardized name for raw file
-                    new_filename = DSUtil.get_raw_filename(dataset, tmp_path, self.config)
-
-                    # add the raw dataset to our dictionary
-                    raw_dataset_mapping[new_filename] = dataset
-
-                    # save the raw data to storage
-                    self.storage.save(tmp_path, new_filename)
-                
-                else:
-                    warnings.warn(f"Couldn't use extracted raw file: {tmp_path}")
-
-        return raw_dataset_mapping
-
-    def merge_mappings(self, dataset_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Merges the provided datasets provided and returns the merged result.
-
-        Args:
-        ---
-            dataset_mapping (Dict[str, xr.Dataset]):    The dataset mappings 
-                                                        to merge.
-
-        Returns:
-        ---
-            xr.Dataset: The merged dataset.
-        -------------------------------------------------------------------"""
-        merged_dataset = xr.Dataset()
-        for ds in dataset_mapping.values():
-            merged_dataset = merged_dataset.merge(ds)
-        return merged_dataset
-
-    def apply_corrections(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
+    def hook_apply_corrections(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         """-------------------------------------------------------------------
         Pipeline hook that can be used to apply standard corrections for the 
         instrument/measurement or calibrations. This method is called
@@ -137,7 +73,7 @@ class IngestPipeline(Pipeline):
         -------------------------------------------------------------------"""
         return dataset
     
-    def customize_dataset(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
+    def hook_customize_dataset(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         """-------------------------------------------------------------------
         Hook to allow for user customizations to the standardized dataset such
         as inserting a derived variable based on other variables in the
@@ -155,7 +91,7 @@ class IngestPipeline(Pipeline):
         -------------------------------------------------------------------"""
         return dataset
 
-    def customize_raw_datasets(self, raw_dataset_mapping: Dict[str, xr.Dataset]) -> Dict[str, xr.Dataset]:
+    def hook_customize_raw_datasets(self, raw_dataset_mapping: Dict[str, xr.Dataset]) -> Dict[str, xr.Dataset]:
         """-------------------------------------------------------------------
         Hook to allow for user customizations to one or more raw xarray Datasets
         before they merged and used to create the standardized dataset.  The
@@ -186,7 +122,20 @@ class IngestPipeline(Pipeline):
         -------------------------------------------------------------------"""
         return raw_dataset_mapping
 
-    def create_and_persist_plots(self, dataset: xr.Dataset) -> None:
+    def hook_finalize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
+        """-------------------------------------------------------------------
+        Hook to apply any final customizations to the dataset before it is
+        saved. This hook is called after quality tests have been applied.
+
+        Args:
+            dataset (xr.Dataset): The dataset to finalize.
+
+        Returns:
+            xr.Dataset: The finalized dataset to save.
+        -------------------------------------------------------------------"""
+        return dataset
+
+    def hook_generate_and_persist_plots(self, dataset: xr.Dataset) -> None:
         """-------------------------------------------------------------------
         Hook to allow users to create plots from the xarray dataset after 
         processing and QC have been applied and just before the dataset is
@@ -218,58 +167,177 @@ class IngestPipeline(Pipeline):
                                     QC applied. 
         -------------------------------------------------------------------"""
         pass
-        
-    def get_previous_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
+
+    def merge_mappings(self, dataset_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         """-------------------------------------------------------------------
-        Utility method to retrieve the previous set of data for the same 
-        datastream as the provided dataset from the DatastreamStorage.
+        Merges the provided datasets provided and returns the merged result.
 
         Args:
         ---
-            dataset (xr.Dataset):   The reference dataset that will be used to
-                                    search the DatastreamStore for prior data.
+            dataset_mapping (Dict[str, xr.Dataset]):    The dataset mappings
+                                                        to merge.
 
         Returns:
         ---
-            xr.Dataset: The previous dataset from the DatastreamStorage if it
-                        exists, else None.
+            xr.Dataset: The merged dataset.
         -------------------------------------------------------------------"""
-        prev_dataset = None
-        start_date, start_time = DSUtil.get_start_time(dataset)
-        datastream_name = DSUtil.get_datastream_name(dataset, self.config)
+        merged_dataset = xr.Dataset()
+        for ds in dataset_mapping.values():
+            merged_dataset = merged_dataset.merge(ds)
+        return merged_dataset
 
-        with self.storage.tmp.fetch_previous_file(datastream_name, f'{start_date}.{start_time}') as netcdf_file:
-            if netcdf_file:
-                prev_dataset = FileHandler.read(netcdf_file, config=self.config)
-
-        return prev_dataset
-    
-    def store_and_reopen_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
+    def read_and_persist_raw_files(self, file_paths: List[str]) -> List[str]:
         """-------------------------------------------------------------------
-        Writes the dataset to a local netcdf file and then uses the 
-        DatastreamStorage object to persist it. 
+        Renames the provided RAW files according to MHKiT-Cloud Data Standards
+        naming conventions for RAW data and returns a list of filepaths to the
+        renamed files.
 
         Args:
         ---
-            dataset (xr.Dataset): The dataset to store.
+            file_paths (List[str]): A list of paths to the original raw files.
+
+        Returns:
+        ---
+            List[str]: A list of paths to the renamed raw files.
+        -------------------------------------------------------------------"""
+        raw_dataset_mapping = {}
+
+        if isinstance(file_paths, str):
+            file_paths = [file_paths]
+
+        for file_path in file_paths:
+
+            # read the raw file into a dataset
+            with self.storage.tmp.fetch(file_path) as tmp_path:
+                dataset = FileHandler.read(tmp_path)
+
+                # Don't use dataset if no FileHandler is registered for it
+                if dataset is not None:
+                    # create the standardized name for raw file
+                    new_filename = DSUtil.get_raw_filename(dataset, tmp_path, self.config)
+
+                    # add the raw dataset to our dictionary
+                    raw_dataset_mapping[new_filename] = dataset
+
+                    # save the raw data to storage
+                    self.storage.save(tmp_path, new_filename)
+
+                else:
+                    warnings.warn(f"Couldn't use extracted raw file: {tmp_path}")
+
+        return raw_dataset_mapping
+
+    def reduce_raw_datasets(self, raw_mapping: Dict[str, xr.Dataset], definition: DatasetDefinition) -> List[xr.Dataset]:
+        """-------------------------------------------------------------------
+        Removes unused variables from each raw dataset in the raw mapping and
+        performs input to output naming and unit conversions as defined in the
+        dataset definition.
+
+        Args:
+        ---
+            raw_mapping (Dict[str, xr.Dataset]):    The raw xarray dataset mapping.
+            definition (DatasetDefinition): The DatasetDefinition used to
+                                            select the variables to keep.
+
+        Returns:
+        ---
+            List[xr.Dataset]:   A list of reduced datasets.
+        -------------------------------------------------------------------"""
+
+        def _find_files_with_variable(variable: VariableDefinition) -> List[xr.Dataset]:
+            files = []
+            variable_name = variable.get_input_name()
+            for filename, dataset in raw_mapping.items():
+                if variable_name in dataset.variables:
+                    files.append(filename)
+            return files
+
+        def _find_files_with_regex(variable: VariableDefinition) -> List[xr.Dataset]:
+            regex = re.compile(variable.input.file_pattern)
+            return list(filter(regex.search, raw_mapping.keys()))
+
+        # Determine which datasets will be used to retrieve variables
+        retrieval_rules: Dict[str, List[VariableDefinition]] = {}
+        for variable in definition.vars.values():
+
+            if variable.has_input():
+                search_func = _find_files_with_variable
+
+                if hasattr(variable.input, "file_pattern"):
+                    search_func = _find_files_with_regex
+
+                filenames = search_func(variable)
+                for filename in filenames:
+                    file_rules = retrieval_rules.get(filename, [])
+                    retrieval_rules[filename] = file_rules + [variable]
+
+        # Build the list of reduced datasets
+        reduced_datasets: List[xr.Dataset] = []
+        for filename, variable_definitions in retrieval_rules.items():
+            raw_dataset = raw_mapping[filename]
+            reduced_dataset = self.reduce_raw_dataset(raw_dataset, variable_definitions, definition)
+            reduced_datasets.append(reduced_dataset)
+
+        return reduced_datasets
+
+    def reduce_raw_dataset(self, raw_dataset: xr.Dataset, variable_definitions: List[VariableDefinition], definition: DatasetDefinition) -> xr.Dataset:
+        """-------------------------------------------------------------------
+        Removes unused variables from the raw dataset provided and keeps only
+        the variables and coordinates pertaining to the provided variable
+        definitions. Also performs input to output naming and unit conversions
+        as defined in the dataset definition.
+
+        Args:
+        ---
+            raw_mapping (Dict[str, xr.Dataset]):    The raw xarray dataset mapping.
+            variable_definitions (List[VariableDefinition]):    List of variables to keep.
+            definition (DatasetDefinition): The DatasetDefinition used to select the variables to keep.
         
         Returns:
         ---
-            xr.Dataset: The dataset after it has been saved to disk and 
-                        reopened.
+            xr.Dataset: The reduced dataset.
         -------------------------------------------------------------------"""
-        reopened_dataset = None
+        def _retrieve_and_convert(variable: VariableDefinition) -> Dict:
+            var_name = variable.get_input_name()
+            if var_name in raw_dataset.variables:
+                data_array = raw_dataset[var_name]
 
-        # TODO: modify storage.save so it can take a dataset or a file path as
-        # parameter.  If a dataset is passed, then move the below code to
-        # storage to save the dataset for all registered outputs.
-        # If a file path is passed, then just perform the storage save is it is now.
-        self.storage.save(dataset)
+                # Input to output unit conversion
+                data = data_array.values
+                in_units = variable.get_input_units()
+                out_units = variable.get_output_units()
+                data = variable.input.converter.run(data, in_units, out_units)
 
+                # Consolidate retrieved data
+                dictionary = {
+                    "attrs":    data_array.attrs,
+                    "dims":     list(variable.dims.keys()),
+                    "data":     data
+                }
+                return dictionary
+            return None
 
-        with self.storage.tmp.get_temp_filepath(DSUtil.get_dataset_filename(dataset)) as tmp_path:
-            FileHandler.write(dataset, tmp_path)
-            self.storage.save(tmp_path)
-            reopened_dataset = xr.load_dataset(tmp_path)
+        # Get the coordinate definitions of the given variables
+        dims: List[str] = []
+        for var_definition in variable_definitions:
+            dims.extend(var_definition.get_coordinate_names())
+        dims: List[str] = list(dict.fromkeys(dims))
+        coord_definitions = [definition.get_variable(coord_name) for coord_name in dims]
 
-        return reopened_dataset
+        coords = {}
+        for coordinate in coord_definitions:
+            coords[coordinate.name] = _retrieve_and_convert(coordinate)
+
+        data_vars = {}
+        for variable in variable_definitions:
+            data_var = _retrieve_and_convert(variable)
+            if data_var:
+                data_vars[variable.name] = data_var
+
+        reduced_dict = {
+            "attrs":        raw_dataset.attrs,
+            "dims":         dims,
+            "coords":       coords,
+            "data_vars":    data_vars
+        }
+        return xr.Dataset.from_dict(reduced_dict)

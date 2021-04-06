@@ -5,10 +5,10 @@ from tsdat.exceptions import DefinitionError
 class PipelineKeys:
     TYPE = 'type'
     INPUT_DATA_LEVEL = 'input_data_level'
-    OUTPUT_DATA_LEVEL = 'output_data_level'
+    OUTPUT_DATA_LEVEL = 'data_level'
     
     LOCATION_ID = 'location_id'
-    INSTRUMENT_ID = 'instrument_id'
+    DATASET_NAME = 'dataset_name'
     QUALIFIER = 'qualifier'
     TEMPORAL = 'temporal'
 
@@ -37,14 +37,14 @@ class PipelineDefinition:
 
         # Parse file naming components
         self.location_id = dictionary.get(PipelineKeys.LOCATION_ID)
-        self.instrument_id = dictionary.get(PipelineKeys.INSTRUMENT_ID)
+        self.dataset_name = dictionary.get(PipelineKeys.DATASET_NAME)
         self.qualifier = dictionary.get(PipelineKeys.QUALIFIER, "")
         self.temporal = dictionary.get(PipelineKeys.TEMPORAL, "")
         
         self.check_file_name_components()
 
         # Parse datastream_name
-        base_datastream_name = f"{self.location_id}.{self.instrument_id}"
+        base_datastream_name = f"{self.location_id}.{self.dataset_name}"
         if self.qualifier:
             base_datastream_name += f"-{self.qualifier}"
         if self.temporal:
@@ -54,7 +54,7 @@ class PipelineDefinition:
 
     def check_file_name_components(self):
         illegal_characters = [".", "-", " "]
-        components_to_check = [self.location_id, self.instrument_id, self.qualifier, self.temporal]
+        components_to_check = [self.location_id, self.dataset_name, self.qualifier, self.temporal]
         valid = lambda component: sum([bad_char in component for bad_char in illegal_characters]) == 0
         bad_components = [component for component in components_to_check if not valid(component)]
         if bad_components:
