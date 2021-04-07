@@ -6,9 +6,10 @@ from .pipeline import WaveIngestPipeline
 
 def run_pipeline():
 
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    config_dir = os.path.join(dir_path, "config")
-    data_dir = os.path.join(dir_path, "data")
+    pipeline_dir = os.path.dirname(os.path.realpath(__file__))
+    example_dir = os.path.dirname(pipeline_dir)
+    config_dir = os.path.join(example_dir, "config")
+    data_dir = os.path.join(example_dir, "data")
 
     # Load the storage
     storage_config = os.path.join(config_dir, 'storage_config.yml')

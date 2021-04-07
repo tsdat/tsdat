@@ -9,7 +9,7 @@ storage:
     input:
       imu:
         file_pattern: '.*\.sta'
-        classname: a2e_lidar_ingest.sta_filehandler.StaFileHandler
+        classname: pipeline.sta_filehandler.StaFileHandler
 
     output:
       netcdf:
