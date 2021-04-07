@@ -68,8 +68,12 @@ class StringTimeConverter(Converter):
         datetime_index = pd.to_datetime(data, format=self.format)
 
         if self.timezone:
-            # This adds a timezone for the data
+            # This adds a timezone for the data, then convert to UTC,
+            # then remove the timezone so numpy won't throw a
+            # deprecated error.
             datetime_index = datetime_index.tz_localize(self.timezone)
+            datetime_index = datetime_index.tz_convert('UTC')
+            datetime_index = datetime_index.tz_localize(None)
 
         # This will convert original data into UTC, correcting for
         # the timezone
