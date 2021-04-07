@@ -25,8 +25,7 @@ class AbstractFileHandler(abc.ABC):
     def __init__(self, parameters={}):
         self.parameters = parameters
 
-    @staticmethod
-    def write(ds: xr.Dataset, filename: str, config: Config = None, **kwargs) -> None:
+    def write(self, ds: xr.Dataset, filename: str, config: Config = None, **kwargs) -> None:
         """-------------------------------------------------------------------
         Classes derived from the FileHandler class must implement this method.
 
@@ -42,9 +41,8 @@ class AbstractFileHandler(abc.ABC):
         #TODO: we can derive file name from the dataset - just need to specify the destination folder
         # Return the path to the local file that was saved
         pass
-    
-    @staticmethod
-    def read(filename: str, **kwargs) -> xr.Dataset:
+
+    def read(self, filename: str, **kwargs) -> xr.Dataset:
         """-------------------------------------------------------------------
         Classes derived from the FileHandler class must implement this method.
         

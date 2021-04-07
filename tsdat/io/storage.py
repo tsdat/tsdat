@@ -1,5 +1,4 @@
 import abc
-import atexit
 import os
 import re
 import shutil
@@ -97,10 +96,6 @@ class DatastreamStorage(abc.ABC):
         self.parameters = parameters
         retain_input_files = parameters.get('retain_input_files', False)
         self.remove_input_files = not retain_input_files
-
-        # When this class is garbage collected, then make sure to
-        # clean out the temp folders for any extraneous files
-        atexit.register(self.tmp.clean())
 
     @property
     def tmp(self):

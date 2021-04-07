@@ -6,8 +6,8 @@ from .file_handlers import AbstractFileHandler
 
 
 class NetCdfHandler(AbstractFileHandler):
-    @staticmethod
-    def write(ds: xr.Dataset, filename: str, config: Config = None, **kwargs) -> None:
+
+    def write(self, ds: xr.Dataset, filename: str, config: Config = None, **kwargs) -> None:
         # We have to make sure that time variables do not have units set as attrs,
         # and instead have units set on the encoding or else xarray will crash
         # when trying to save:
@@ -22,8 +22,7 @@ class NetCdfHandler(AbstractFileHandler):
 
         ds.to_netcdf(filename, format='NETCDF4')
 
-    @staticmethod
-    def read(filename: str, config: Config = None, **kwargs) -> xr.Dataset:
+    def read(self, filename: str, config: Config = None, **kwargs) -> xr.Dataset:
         # We are using xr.load_dataset because it will load the whole file
         # into memory and close the underlying file handle.
         return xr.load_dataset(filename)

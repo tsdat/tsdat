@@ -100,8 +100,17 @@ class AwsTemporaryStorage(TemporaryStorage):
         self._base_path = self.datastream_storage.temp_path.join(now.strftime("%Y-%m-%d.%H%M%S.%f"))
 
     @property
-    def base_path(self):
+    def base_path(self) -> S3Path:
         return self._base_path
+
+    def clean(self):
+        super().clean()
+
+        # Make sure all files under our temp folder are removed
+        s3 = self.datastream_storage.s3_resource
+        bucket = s3.Bucket(self.base_path.bucket_name)
+        objects = bucket.objects.filter(Prefix=self.base_path.bucket_path)
+        objects.delete()
 
     def is_tarfile(self, filepath):
         # We have to check based on filename not based upon opening the file,

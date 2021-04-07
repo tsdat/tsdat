@@ -1,3 +1,4 @@
+import atexit
 import bisect
 import tarfile
 import pathlib
@@ -125,6 +126,10 @@ class FilesystemStorage(DatastreamStorage):
         pathlib.Path(self._root).mkdir(parents=True, exist_ok=True)
 
         self._tmp = FilesystemTemporaryStorage(self)
+
+        # When this class is garbage collected, then make sure to
+        # clean out the temp folders for any extraneous files
+        atexit.register(self.tmp.clean)
 
     @property
     def tmp(self):

@@ -1,10 +1,7 @@
+import matplotlib.pyplot as plt
 import os
-import cmocean
 import pandas as pd
 import xarray as xr
-import seaborn as sns
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 
 from tsdat.pipeline import IngestPipeline
 from tsdat.utils import DSUtil

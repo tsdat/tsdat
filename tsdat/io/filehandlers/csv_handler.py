@@ -9,8 +9,7 @@ from .file_handlers import AbstractFileHandler
 
 class CsvHandler(AbstractFileHandler):
 
-    @staticmethod
-    def write(ds: xr.Dataset, filename: str, config: Config = None, **kwargs):
+    def write(self, ds: xr.Dataset, filename: str, config: Config = None, **kwargs):
         # You can only write one-dimensional data to csv
         if len(ds.dims) > 1:
             raise TypeError("Dataset has more than one dimension, so it can't be saved to csv.  Try netcdf instead.")
@@ -37,9 +36,8 @@ class CsvHandler(AbstractFileHandler):
         yaml_filename = f"{filename}.yaml"
         with open(yaml_filename, 'w') as file:
             yaml.dump(metadata, file)
-    
-    @staticmethod
-    def read(filename: str, **kwargs):
+
+    def read(self, filename: str, **kwargs):
         # First read the csv into a pandas dataframe
         # dataset_def = DSUTIL.extract_metadata(ds)
         # ds = DSUTIL.set_metadata(ds, dataset_definition)
@@ -61,22 +59,22 @@ class CsvHandler(AbstractFileHandler):
         # TODO: Use config?
         return xr.Dataset(dataframe.to_xarray())
 
-    @staticmethod
-    def variable_to_dict(ds: xr.Dataset, variable_name):
-        var_dict = {}
-        attributes = {}
-        variable: xr.DataArray = ds[variable_name]
-
-        # First save the attributes
-        for attr in variable.attrs:
-            attributes[attr] = variable.attrs.get(attr)
-        var_dict['attrs'] = attributes
-
-        # Now save the dimension information
-        if DSUtil.is_coord_var(ds, variable_name):
-            var_dict['coodinate_variable'] = True
-        else:
-            dims, lengths = DSUtil.get_shape(ds, variable_name)
-            var_dict['dims'] = dims
-
-        return var_dict
+    # TODO: do we need this method?
+    # def variable_to_dict(self, ds: xr.Dataset, variable_name):
+    #     var_dict = {}
+    #     attributes = {}
+    #     variable: xr.DataArray = ds[variable_name]
+    #
+    #     # First save the attributes
+    #     for attr in variable.attrs:
+    #         attributes[attr] = variable.attrs.get(attr)
+    #     var_dict['attrs'] = attributes
+    #
+    #     # Now save the dimension information
+    #     if DSUtil.is_coord_var(ds, variable_name):
+    #         var_dict['coodinate_variable'] = True
+    #     else:
+    #         dims, lengths = DSUtil.get_shape(ds, variable_name)
+    #         var_dict['dims'] = dims
+    #
+    #     return var_dict

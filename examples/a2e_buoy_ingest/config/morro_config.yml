@@ -115,7 +115,7 @@ dataset_definition:  # Describes the dataset that will be produced
       type: double
       attrs:
         long_name: Blanking Distance
-        comment: a “blind zone” where the instruments do not measure anything. Typically less than 1m.
+        comment: a "blind zone" where the instruments do not measure anything. Typically less than 1m.
         units: m
 
     # This is a computed value, but the computation is now done in
