@@ -41,4 +41,4 @@ class ATTS(object):
     FAIL_RANGE = 'fail_range'
     WARN_RANGE = 'warn_range'
     FILL_VALUE = '_FillValue'
-
+    CORRECTIONS_APPLIED = 'corrections_applied'

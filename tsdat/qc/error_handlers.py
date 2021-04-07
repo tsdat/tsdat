@@ -17,6 +17,8 @@ class QCParamKeys:
     TEST_MEANING = 'meaning'
     CORRECTION = 'correction'
 
+# TODO: Add utility method to add the 'corrections_applied' attribute to the variable
+
 
 class QualityHandler(abc.ABC):
     """-------------------------------------------------------------------
@@ -35,6 +37,7 @@ class QualityHandler(abc.ABC):
         self.test = test
         self.params = parameters
 
+
     @abc.abstractmethod
     def run(self, variable_name: str, results_array: np.ndarray):
         """-------------------------------------------------------------------
@@ -49,6 +52,11 @@ class QualityHandler(abc.ABC):
             each data value of the variable.  True means the test failed.
         -------------------------------------------------------------------"""
         pass
+
+    def record_correction(self, variable_name: str):
+        correction = self.params.get("correction", None)
+        if correction is not None:
+            DSUtil.record_corrections_applied(self.ds, variable_name, correction)
 
 
 class RecordQualityResults(QualityHandler):
@@ -75,6 +83,8 @@ class RemoveFailedValues(QualityHandler):
             var_values = self.ds[variable_name].data
             replaced_values = np.where(keep_array, var_values, fill_value)
             self.ds[variable_name].data = replaced_values
+
+            self.record_correction(variable_name)
 
 
 class SendEmailAWS(QualityHandler):

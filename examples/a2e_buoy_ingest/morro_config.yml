@@ -115,7 +115,7 @@ dataset_definition:  # Describes the dataset that will be produced
       type: double
       attrs:
         long_name: Blanking Distance
-        comment: a “blind zone” where the instruments do not measure anything. Typically less than 1m.
+        comment: a "blind zone" where the instruments do not measure anything. Typically less than 1m.
         units: m
 
     # This is a computed value, but the computation is now done in
@@ -265,38 +265,32 @@ dataset_definition:  # Describes the dataset that will be produced
         units: degree_E
     
 #-----------------------------------------------------------------
-coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
+quality_management:
 
-  missing:
+  manage_missing_coordinates:
     checker:
       classname: tsdat.qc.operators.CheckMissing
     handlers:
-      fail_pipeline:
-        classname: tsdat.qc.error_handlers.FailPipeline
+      - classname: tsdat.qc.error_handlers.FailPipeline
     variables:
       - COORDS
 
-  monotonic:
+
+  manage_coordinate_monotonicity:
     checker:
       classname: tsdat.qc.operators.CheckMonotonic
     handlers:
-      fail_pipeline:
-        classname: tsdat.qc.error_handlers.FailPipeline
+      - classname: tsdat.qc.error_handlers.FailPipeline
     variables:
       - COORDS
 
-#-----------------------------------------------------------------
 
-quality_management:
-
-  missing:
+  manage_missing_values:
     checker:
       classname: tsdat.qc.operators.CheckMissing
     handlers:
-      replace_with_fill_value:
-        classname: tsdat.qc.error_handlers.RemoveFailedValues
-      record_qc:
-        classname: tsdat.qc.error_handlers.RecordQualityResults
+      - classname: tsdat.qc.error_handlers.RemoveFailedValues
+      - classname: tsdat.qc.error_handlers.RecordQualityResults
         parameters:
           bit: 1
           assessment: Bad
@@ -304,14 +298,13 @@ quality_management:
     variables:
       - DATA_VARS
 
-  fail_min:
+
+  manage_fail_min:
     checker:
       classname: tsdat.qc.operators.CheckFailMin
     handlers:
-      replace_with_fill_value:
-        classname: tsdat.qc.error_handlers.RemoveFailedValues
-      record_qc:
-        classname: tsdat.qc.error_handlers.RecordQualityResults
+      - classname: tsdat.qc.error_handlers.RemoveFailedValues
+      - classname: tsdat.qc.error_handlers.RecordQualityResults
         parameters:
           bit: 2
           assessment: Bad
@@ -319,14 +312,13 @@ quality_management:
     variables:
       - DATA_VARS
 
-  fail_max:
+
+  manage_fail_max:
     checker:
       classname: tsdat.qc.operators.CheckFailMax
     handlers:
-      replace_with_fill_value:
-        classname: tsdat.qc.error_handlers.RemoveFailedValues
-      record_qc:
-        classname: tsdat.qc.error_handlers.RecordQualityResults
+      - classname: tsdat.qc.error_handlers.RemoveFailedValues
+      - classname: tsdat.qc.error_handlers.RecordQualityResults
         parameters:
           bit: 3
           assessment: Bad

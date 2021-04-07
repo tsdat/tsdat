@@ -42,17 +42,7 @@ class QC(object):
 
         -------------------------------------------------------------------"""
 
-        # First run the coordinate variable tests, in order
-        qc_tests: List[QualityTestDefinition] = config.get_qc_tests_coord()
-
-        for qc_test in qc_tests:
-            qc_checker = QCChecker(ds, config, qc_test, previous_data, coord=True)
-            ds = qc_checker.run()
-
-        # Then run the other variable qc tests, in order
-        qc_tests: List[QualityTestDefinition] = config.get_qc_tests()
-
-        for qc_test in qc_tests:
+        for qc_test in config.qc_tests.values():
             qc_checker = QCChecker(ds, config, qc_test, previous_data)
             ds = qc_checker.run()
 
@@ -66,8 +56,7 @@ class QCChecker:
     def __init__(self, ds: xr.Dataset,
                  config: Config,
                  test: QualityTestDefinition,
-                 previous_data: xr.Dataset,
-                 coord: bool = False):
+                 previous_data: xr.Dataset):
 
         # Get the variables this test applies to
         variable_names = test.variables
@@ -104,12 +93,12 @@ class QCChecker:
         error_handlers = test.error_handlers
 
         self.ds = ds
+        self.config = config
         self.variable_names = variable_names
         self.operator = operator
         self.error_handlers = error_handlers
         self.test: QualityTestDefinition = test
         self.previous_data = previous_data
-        self.coord = coord
 
     def run(self) -> xr.Dataset:
         """-------------------------------------------------------------------
@@ -131,9 +120,8 @@ class QCChecker:
 
             # Apply the error handlers
             if self.error_handlers is not None:
-                for handler_name in self.error_handlers.keys():
-                    handler_desc = {handler_name: self.error_handlers.get(handler_name)}
-                    error_handler = instantiate_handler(self.ds, self.previous_data, self.test, handler_desc=handler_desc)[0]
+                for handler in self.error_handlers:
+                    error_handler = instantiate_handler(self.ds, self.previous_data, self.test, handler_desc=handler)
                     error_handler.run(variable_name, results_array)
                     self.ds: xr.Dataset = error_handler.ds
                 self.operator.ds = self.ds

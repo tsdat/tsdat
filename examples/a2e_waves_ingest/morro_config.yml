@@ -354,84 +354,97 @@ dataset_definition:  # Describes the dataset that will be produced
         _FillValue: -9999
 
 #-----------------------------------------------------------------
-coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
+quality_management:
 
-  missing:
-    variables:
-      - COORDS
+  #---------------------------------------------------------------
+  manage_missing_coordinates:
     checker:
       classname: tsdat.qc.operators.CheckMissing
     handlers:
-      fail_pipeline:
-        classname: tsdat.qc.error_handlers.FailPipeline
-
-  monotonic:
+      - classname: tsdat.qc.error_handlers.FailPipeline
     variables:
       - COORDS
+
+  manage_coordinate_monotonicity:
     checker:
       classname: tsdat.qc.operators.CheckMonotonic
     handlers:
-      fail_pipeline:
-        classname: tsdat.qc.error_handlers.FailPipeline
+      - classname: tsdat.qc.error_handlers.FailPipeline
+    variables:
+      - COORDS
+  
+  #---------------------------------------------------------------
+  manage_missing_values:
+    checker:
+      classname: tsdat.qc.operators.CheckMissing
+    handlers:
+      - classname: tsdat.qc.error_handlers.RemoveFailedValues
+      - classname: tsdat.qc.error_handlers.RecordQualityResults
+        parameters:
+          bit: 1
+          assessment: Bad
+          meaning: "Value is equal to _FillValue or NaN"
+    variables:
+      - DATA_VARS
 
-#-----------------------------------------------------------------
-quality_management:  # Define QC tests for non-coordinate variables
+  manage_fail_min:
+    checker:
+      classname: tsdat.qc.operators.CheckFailMin
+    handlers:
+      - classname: tsdat.qc.error_handlers.RecordQualityResults
+        parameters:
+          bit: 2
+          assessment: Bad
+          meaning: "Value is less than the fail_range."
+    variables:
+      - DATA_VARS
 
-    missing:
-        bit: 1
-        meaning: "Value is equal to _FillValue or NaN"
-        assessment: Bad
-        variables:
-          - DATA_VARS
-        checker:
-          classname: tsdat.qc.operators.CheckMissing
-        handlers:
-          replace_with_fill_value:
-            classname: tsdat.qc.error_handlers.RemoveFailedValues
+  manage_fail_max:
+    checker:
+      classname: tsdat.qc.operators.CheckFailMax
+    handlers:
+      - classname: tsdat.qc.error_handlers.RecordQualityResults
+        parameters:
+          bit: 3
+          assessment: Bad
+          meaning: "Value is greater than the fail_range."
+    variables:
+      - DATA_VARS
 
-    fail_min:
-        bit: 2
-        meaning: "Value is less than the fail_range."
-        assessment: Bad
-        variables:
-          - DATA_VARS
-        checker:
-          classname: tsdat.qc.operators.CheckFailMin
+  manage_warn_min:
+    checker:
+      classname: tsdat.qc.operators.CheckWarnMin
+    handlers:
+      - classname: tsdat.qc.error_handlers.RecordQualityResults
+        parameters:
+          bit: 4
+          assessment: Indeterminate
+          meaning: "Value is less than the warn_range."
+    variables:
+      - DATA_VARS
 
-    fail_max:
-        bit: 3
-        meaning: "Value is greater than the fail_range."
-        assessment: Bad
-        variables:
-          - DATA_VARS
-        checker:
-          classname: tsdat.qc.operators.CheckFailMax
+  manage_warn_max:
+    checker:
+      classname: tsdat.qc.operators.CheckWarnMax
+    handlers:
+      - classname: tsdat.qc.error_handlers.RecordQualityResults
+        parameters:
+          bit: 5
+          assessment: Indeterminate
+          meaning: "Value is greater than the warn_range."
+    variables:
+      - DATA_VARS
 
-    warn_min:
-        bit: 4
-        meaning: "Value is less than the warn_range."
-        assessment: Indeterminate
-        variables:
-          - DATA_VARS
-        checker:
-          classname: tsdat.qc.operators.CheckWarnMin
-
-    warn_max:
-        bit: 5
-        meaning: "Value is greater than the warn_range."
-        assessment: Indeterminate
-        variables:
-          - DATA_VARS
-        checker:
-          classname: tsdat.qc.operators.CheckWarnMax
-
-    valid_delta:
-        bit: 6
-        meaning: "Difference between current and previous values exceeds valid_delta."
-        assessment: Indeterminate
-        variables:
-          - DATA_VARS
-        checker:
-          classname: tsdat.qc.operators.CheckValidDelta
-          parameters:
-            dim: time
+  manage_valid_delta:
+    checker:
+      classname: tsdat.qc.operators.CheckValidDelta
+      parameters:
+        dim: time
+    handlers:
+      - classname: tsdat.qc.error_handlers.RecordQualityResults
+        parameters:
+          bit: 6
+          assessment: Indeterminate
+          meaning: "Difference between current and previous values exceeds valid_delta."
+    variables:
+      - DATA_VARS

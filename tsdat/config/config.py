@@ -20,19 +20,18 @@ class Config:
     def __init__(self, dictionary: Dict):
         pipeline_dict = dictionary.get(Keys.PIPELINE)
         dataset_dict = dictionary.get(Keys.DATASET_DEFINITION)
-        qc_tests_dict = dictionary.get(Keys.QC_TESTS, None)
-        qc_tests_coord_dict = dictionary.get(Keys.QC_TESTS_COORD, None)
+        qc_tests_dict = dictionary.get(Keys.QC_TESTS, {})
 
         self.pipeline_definition = PipelineDefinition(pipeline_dict)
         self.dataset_definition = DatasetDefinition(dataset_dict, self.pipeline_definition.output_datastream_name)
 
-        if qc_tests_dict is not None:
-            self.qc_tests = self._parse_qc_tests(qc_tests_dict)
+        self.qc_tests = self._parse_qc_tests(qc_tests_dict)
 
-        if qc_tests_coord_dict is not None:
-            self.qc_tests_coord = self._parse_qc_tests(qc_tests_coord_dict)
-
-
+    def _parse_qc_tests(self, dictionary) -> Dict[str, QualityTestDefinition]:
+        qc_tests: Dict[str, QualityTestDefinition] = {}
+        for test_name, test_dict in dictionary.items():
+            qc_tests[test_name] = QualityTestDefinition(test_name, test_dict)
+        return qc_tests
 
     @classmethod
     def load(self, filepaths: List[str]):
@@ -59,22 +58,6 @@ class Config:
                 for dictionary in dict_list:
                     config.update(dictionary)
         return Config(config)
-
-    def get_qc_tests(self):
-        return self.qc_tests.values()
-
-    def get_qc_tests_coord(self):
-        return self.qc_tests_coord.values()
-
-    def _parse_pipeline(self, dictionary) -> Dict[str, Dict]:
-        return dictionary
-
-    def _parse_qc_tests(self, dictionary):
-        qc_tests: Dict[str, QualityTestDefinition] = {}
-        for test_name, test_dict in dictionary.items():
-            qc_tests[test_name] = QualityTestDefinition(test_name, test_dict)
-
-        return qc_tests
 
     @staticmethod
     def lint_yaml(filename):
