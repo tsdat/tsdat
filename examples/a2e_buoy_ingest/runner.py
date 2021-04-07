@@ -25,7 +25,3 @@ def run_pipeline():
     morro_pipeline = BuoyIngestPipeline(morro_config, storage)
     morro_raw_file = os.path.join(data_dir, 'morro/buoy.z06.00.20201201.000000.zip')
     morro_pipeline.run(morro_raw_file)
-
-
-if __name__ == "__main__":
-    run_pipeline()
