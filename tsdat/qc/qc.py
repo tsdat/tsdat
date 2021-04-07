@@ -42,17 +42,7 @@ class QC(object):
 
         -------------------------------------------------------------------"""
 
-        # First run the coordinate variable tests, in order
-        qc_tests: List[QualityTestDefinition] = config.get_qc_tests_coord()
-
-        for qc_test in qc_tests:
-            qc_checker = QCChecker(ds, config, qc_test, previous_data, coord=True)
-            ds = qc_checker.run()
-
-        # Then run the other variable qc tests, in order
-        qc_tests: List[QualityTestDefinition] = config.get_qc_tests()
-
-        for qc_test in qc_tests:
+        for qc_test in config.qc_tests.values():
             qc_checker = QCChecker(ds, config, qc_test, previous_data)
             ds = qc_checker.run()
 
@@ -66,20 +56,30 @@ class QCChecker:
     def __init__(self, ds: xr.Dataset,
                  config: Config,
                  test: QualityTestDefinition,
-                 previous_data: xr.Dataset,
-                 coord: bool = False):
+                 previous_data: xr.Dataset):
 
         # Get the variables this test applies to
         variable_names = test.variables
 
         # Convert the list to upper case in case the user made a typo in the yaml
         variable_names_upper = [x.upper() for x in variable_names]
+        
+        # Add variables where a keyword was used
+        if VARS.COORDS in variable_names_upper:
+            variable_names.remove(VARS.COORDS)
+            variable_names.extend(DSUtil.get_coordinate_variable_names(ds))
 
+        if VARS.DATA_VARS in variable_names_upper:
+            variable_names.remove(VARS.DATA_VARS)
+            variable_names.extend(DSUtil.get_non_qc_variable_names(ds))
+        
         if VARS.ALL in variable_names_upper:
-            if coord:
-                variable_names = DSUtil.get_coordinate_variable_names(ds)
-            else:
-                variable_names = DSUtil.get_non_qc_variable_names(ds)
+            variable_names.remove(VARS.ALL)
+            variable_names.extend(DSUtil.get_coordinate_variable_names(ds))
+            variable_names.extend(DSUtil.get_non_qc_variable_names(ds))
+        
+        # Remove any duplicates while preserving insertion order
+        variable_names = list(dict.fromkeys(variable_names))
 
         # Exclude any excludes
         excludes = test.exclude
@@ -93,12 +93,12 @@ class QCChecker:
         error_handlers = test.error_handlers
 
         self.ds = ds
+        self.config = config
         self.variable_names = variable_names
         self.operator = operator
         self.error_handlers = error_handlers
         self.test: QualityTestDefinition = test
         self.previous_data = previous_data
-        self.coord = coord
 
     def run(self) -> xr.Dataset:
         """-------------------------------------------------------------------
@@ -115,37 +115,15 @@ class QCChecker:
 
             # Apply the operator
             results_array: np.ndarray = self.operator.run(variable_name)
+            if results_array is None:
+                results_array = np.zeros_like(self.ds[variable_name].data, dtype='bool')
 
-            # If results_array is None, then we just skip this test
-            if results_array is not None:
-
-                # TODO: Only record qc if a qc bit has been defined
-                # If this is not a coordinate variable, then record
-                # the test results in a qc_ companion variable
-                if not self.coord:
-                    self.ds.qcfilter.add_test(
-                        variable_name, index=results_array,
-                        test_number=self.test.qc_bit,
-                        test_meaning=self.test.meaning,
-                        test_assessment=self.test.assessment)
-
-                # If any values fail, then call any defined error handlers
-                if np.sum(results_array) > 0 and self.error_handlers is not None:
-                    for handler_name in self.error_handlers.keys():
-                        handler_desc = {handler_name: self.error_handlers.get(handler_name)}
-                        error_handler = instantiate_handler(self.ds, self.previous_data, self.test, handler_desc=handler_desc)[0]
-                        error_handler.run(variable_name, results_array)
-                        self.ds: xr.Dataset = error_handler.ds
-                    self.operator.ds = self.ds
-
-            else: 
-                results_array = np.zeros_like(self.ds[variable_name].data) == 1
-
-                if not self.coord:
-                    self.ds.qcfilter.add_test(
-                        variable_name, index=results_array,
-                        test_number=self.test.qc_bit,
-                        test_meaning="N/A",
-                        test_assessment="Indeterminate")
+            # Apply the error handlers
+            if self.error_handlers is not None:
+                for handler in self.error_handlers:
+                    error_handler = instantiate_handler(self.ds, self.previous_data, self.test, handler_desc=handler)
+                    error_handler.run(variable_name, results_array)
+                    self.ds: xr.Dataset = error_handler.ds
+                self.operator.ds = self.ds
 
         return self.ds

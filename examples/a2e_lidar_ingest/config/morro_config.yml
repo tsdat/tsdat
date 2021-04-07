@@ -78,65 +78,37 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name: Pressure
         units: hPa
-    
-#-----------------------------------------------------------------
-coordinate_variable_qc_tests:  # Define QC tests for coordinate variables
 
-  missing:
-    variables:
-      - ALL
-    operator:
+#-----------------------------------------------------------------
+quality_management:
+
+  #---------------------------------------------------------------
+  manage_missing_coordinates:
+    checker:
       classname: tsdat.qc.operators.CheckMissing
-    error_handlers:
-      fail_pipeline:
-        classname: tsdat.qc.error_handlers.FailPipeline
-
-  monotonic:
+    handlers:
+      - classname: tsdat.qc.error_handlers.FailPipeline
     variables:
-      - time
-    operator:
+      - COORDS
+
+  manage_coordinate_monotonicity:
+    checker:
       classname: tsdat.qc.operators.CheckMonotonic
-    error_handlers:
-      fail_pipeline:
-        classname: tsdat.qc.error_handlers.FailPipeline
+    handlers:
+      - classname: tsdat.qc.error_handlers.FailPipeline
+    variables:
+      - COORDS
 
-#-----------------------------------------------------------------
-quality_tests:
-
-    missing:
-        qc_bit: 1
-        meaning: "Value is equal to _FillValue or NaN"
-        assessment: Bad
-        variables:
-          - ALL  # keyword to apply test to all variables
-        operator:
-          classname: tsdat.qc.operators.CheckMissing
-        error_handlers:
-          # Replace any NaNs with _FillValue
-          replace_with_fill_value:
-            classname: tsdat.qc.error_handlers.RemoveFailedValues
-
-    # # missing:
-    # despike:
-    #     # qc_bit: 1
-    #     # meaning: "Value is equal to _FillValue or NaN"
-    #     meaning: "Spikes above a specified threshold were removed according to Lansing et al 2021"
-    #     # assessment: Bad
-    #     variables:
-    #       - ALL  # keyword to apply test to all variables
-    #     operator:
-    #       classname: tsdat.qc.operators.Despike
-    #     # error_handlers:
-    #     #   # Replace any NaNs with _FillValue
-    #     #   replace_with_fill_value:
-    #     #     classname: tsdat.qc.error_handlers.RemoveFailedValues        
-
-    # despike:
-    #     test_num: 1
-    #     meaning: "Value was above spiking theshold"
-    #     correction: "Spikes above a specified threshold were removed according to Lansing et al 2021"
-    #     assessment: Indeterminate
-    #     variables:
-    #       - ALL
-    #     operator:
-    #       classname: tsdat.qc.operators.Despike
+  #---------------------------------------------------------------
+  manage_missing_values:
+    checker:
+      classname: tsdat.qc.operators.CheckMissing
+    handlers:
+      - classname: tsdat.qc.error_handlers.RemoveFailedValues
+      - classname: tsdat.qc.error_handlers.RecordQualityResults
+        parameters:
+          bit: 1
+          assessment: Bad
+          meaning: "Value is equal to _FillValue or NaN"
+    variables:
+      - DATA_VARS

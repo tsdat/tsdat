@@ -23,6 +23,12 @@ class DSUtil:
     -------------------------------------------------------------------"""
 
     @staticmethod
+    def record_corrections_applied(ds: xr.Dataset, variable: str, correction: str):
+        corrections = ds[variable].attrs.get(ATTS.CORRECTIONS_APPLIED, [])
+        corrections.append(correction)
+        ds[variable].attrs[ATTS.CORRECTIONS_APPLIED] = corrections
+
+    @staticmethod
     def datetime64_to_string(datetime64: Union[np.ndarray, np.datetime64]) -> Tuple[str, str]:
         datetime = act.utils.datetime64_to_datetime()[0]
         return datetime.strftime("%Y%m%d"), datetime.strftime("%H%M%S")

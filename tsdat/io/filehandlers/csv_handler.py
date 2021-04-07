@@ -59,22 +59,3 @@ class CsvHandler(AbstractFileHandler):
         # TODO: Use config?
         return xr.Dataset(dataframe.to_xarray())
 
-    # TODO: do we need this method?
-    # def variable_to_dict(self, ds: xr.Dataset, variable_name):
-    #     var_dict = {}
-    #     attributes = {}
-    #     variable: xr.DataArray = ds[variable_name]
-    #
-    #     # First save the attributes
-    #     for attr in variable.attrs:
-    #         attributes[attr] = variable.attrs.get(attr)
-    #     var_dict['attrs'] = attributes
-    #
-    #     # Now save the dimension information
-    #     if DSUtil.is_coord_var(ds, variable_name):
-    #         var_dict['coodinate_variable'] = True
-    #     else:
-    #         dims, lengths = DSUtil.get_shape(ds, variable_name)
-    #         var_dict['dims'] = dims
-    #
-    #     return var_dict

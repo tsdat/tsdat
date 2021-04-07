@@ -1,3 +1,4 @@
+import re
 import abc
 import datetime
 import numpy as np
@@ -8,6 +9,7 @@ from tsdat.utils import DSUtil
 from tsdat.config import (
     Config,
     DatasetDefinition,
+    VariableDefinition
 )
 from tsdat.io import (
     DatastreamStorage,
@@ -211,6 +213,121 @@ class Pipeline(abc.ABC):
                 prev_dataset = FileHandler.read(netcdf_file, config=self.config)
 
         return prev_dataset
+
+    def reduce_raw_datasets(self, raw_mapping: Dict[str, xr.Dataset], definition: DatasetDefinition) -> List[xr.Dataset]:
+        """-------------------------------------------------------------------
+        Removes unused variables from each raw dataset in the raw mapping and
+        performs input to output naming and unit conversions as defined in the
+        dataset definition.
+
+        Args:
+        ---
+            raw_mapping (Dict[str, xr.Dataset]):    The raw xarray dataset mapping.
+            definition (DatasetDefinition): The DatasetDefinition used to
+                                            select the variables to keep.
+
+        Returns:
+        ---
+            List[xr.Dataset]:   A list of reduced datasets.
+        -------------------------------------------------------------------"""
+
+        def _find_files_with_variable(variable: VariableDefinition) -> List[xr.Dataset]:
+            files = []
+            variable_name = variable.get_input_name()
+            for filename, dataset in raw_mapping.items():
+                if variable_name in dataset.variables:
+                    files.append(filename)
+            return files
+
+        def _find_files_with_regex(variable: VariableDefinition) -> List[xr.Dataset]:
+            regex = re.compile(variable.input.file_pattern)
+            return list(filter(regex.search, raw_mapping.keys()))
+
+        # Determine which datasets will be used to retrieve variables
+        retrieval_rules: Dict[str, List[VariableDefinition]] = {}
+        for variable in definition.vars.values():
+
+            if variable.has_input():
+                search_func = _find_files_with_variable
+
+                if hasattr(variable.input, "file_pattern"):
+                    search_func = _find_files_with_regex
+
+                filenames = search_func(variable)
+                for filename in filenames:
+                    file_rules = retrieval_rules.get(filename, [])
+                    retrieval_rules[filename] = file_rules + [variable]
+
+        # Build the list of reduced datasets
+        reduced_datasets: List[xr.Dataset] = []
+        for filename, variable_definitions in retrieval_rules.items():
+            raw_dataset = raw_mapping[filename]
+            reduced_dataset = self.reduce_raw_dataset(raw_dataset, variable_definitions, definition)
+            reduced_datasets.append(reduced_dataset)
+
+        return reduced_datasets
+
+    def reduce_raw_dataset(self, raw_dataset: xr.Dataset, variable_definitions: List[VariableDefinition], definition: DatasetDefinition) -> xr.Dataset:
+        """-------------------------------------------------------------------
+        Removes unused variables from the raw dataset provided and keeps only
+        the variables and coordinates pertaining to the provided variable
+        definitions. Also performs input to output naming and unit conversions
+        as defined in the dataset definition.
+
+        Args:
+        ---
+            raw_mapping (Dict[str, xr.Dataset]):    The raw xarray dataset mapping.
+            variable_definitions (List[VariableDefinition]):    List of variables to keep.
+            definition (DatasetDefinition): The DatasetDefinition used to select the variables to keep.
+
+        Returns:
+        ---
+            xr.Dataset: The reduced dataset.
+        -------------------------------------------------------------------"""
+        def _retrieve_and_convert(variable: VariableDefinition) -> Dict:
+            var_name = variable.get_input_name()
+            if var_name in raw_dataset.variables:
+                data_array = raw_dataset[var_name]
+
+                # Input to output unit conversion
+                data = data_array.values
+                in_units = variable.get_input_units()
+                out_units = variable.get_output_units()
+                data = variable.input.converter.run(data, in_units, out_units)
+
+                # Consolidate retrieved data
+                dictionary = {
+                    "attrs":    data_array.attrs,
+                    "dims":     list(variable.dims.keys()),
+                    "data":     data
+                }
+                return dictionary
+            return None
+
+        # Get the coordinate definitions of the given variables
+        dims: List[str] = []
+        for var_definition in variable_definitions:
+            dims.extend(var_definition.get_coordinate_names())
+        dims: List[str] = list(dict.fromkeys(dims))
+        coord_definitions = [definition.get_variable(coord_name) for coord_name in dims]
+
+        coords = {}
+        for coordinate in coord_definitions:
+            coords[coordinate.name] = _retrieve_and_convert(coordinate)
+
+        data_vars = {}
+        for variable in variable_definitions:
+            data_var = _retrieve_and_convert(variable)
+            if data_var:
+                data_vars[variable.name] = data_var
+
+        reduced_dict = {
+            "attrs":        raw_dataset.attrs,
+            "dims":         dims,
+            "coords":       coords,
+            "data_vars":    data_vars
+        }
+        return xr.Dataset.from_dict(reduced_dict)
 
     def store_and_reopen_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
