@@ -77,15 +77,17 @@ class FilesystemTemporaryStorage(TemporaryStorage):
         return fetched_file
 
     def fetch_previous_file(self, datastream_name: str, start_time: str) -> DisposableLocalTempFile:
+
         # fetch files one day previous and one day after start date (since find is exclusive)
         date = datetime.datetime.strptime(start_time, "%Y%m%d.%H%M%S")
         prev_date = (date - datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
         next_date = (date + datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
         files = self.datastream_storage.find(datastream_name, prev_date, next_date, filetype=DatastreamStorage.default_file_type)
+        dates = [DSUtil.get_date_from_filename(_file) for _file in files]
 
         previous_filepath = None
-        if files:
-            i = bisect.bisect_left(files, start_time)
+        if dates:
+            i = bisect.bisect_left(dates, start_time)
             if i > 0:
                 previous_filepath = files[i-1]
 
