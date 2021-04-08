@@ -10,6 +10,17 @@
 #               docker login registry.gitlab.com
 #
 ###################################################################
-docker build -f ./Dockerfile -t registry.gitlab.com/gov-doe-arm/mplcmask ../../
+# TODO: this should be automated with CICD build to create new version
+# of docker image every time a new version is released.
 
-docker push registry.gitlab.com/gov-doe-arm/mplcmask
+# Build the image
+docker build -f ./Dockerfile -t tsdat/tsdat-lambda:latest .
+
+# Push to docker hub
+# Make sure to log in first:
+#     docker login --username=clansing
+docker push tsdat/tsdat-lambda:latest
+
+
+
+
