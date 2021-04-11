@@ -1,4 +1,29 @@
 import importlib
+from typing import Dict
+import yaml
+import re
+import os
+
+
+def configure_yaml():
+    """-------------------------------------------------------------------
+    Configure yaml to automatically substitute environment variables
+    referenced by the following syntax:  ${VAR_NAME}
+    -------------------------------------------------------------------"""
+    path_matcher = re.compile(r'\$\{([^}^{]+)\}')
+
+    def path_constructor(loader, node):
+        # Extract the matched value, expand env variable, and replace the match
+        value = node.value
+        match = path_matcher.match(value)
+        env_var = match.group()[2:-1]
+        return os.environ.get(env_var, '') + value[match.end():]
+
+    yaml.add_implicit_resolver('!path', path_matcher)
+    yaml.add_constructor('!path', path_constructor)
+
+    yaml.add_implicit_resolver('!path', path_matcher, None, yaml.SafeLoader)
+    yaml.add_constructor('!path', path_constructor, yaml.SafeLoader)
 
 
 def instantiate_handler(*args, handler_desc=None):

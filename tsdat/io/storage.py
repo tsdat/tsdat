@@ -8,7 +8,7 @@ import yaml
 from datetime import datetime
 from typing import List, Union, Any
 
-from tsdat.config.utils import instantiate_handler
+from tsdat.config.utils import instantiate_handler, configure_yaml
 from tsdat.io import FileHandler
 from tsdat.utils import DSUtil
 
@@ -45,17 +45,17 @@ class DatastreamStorage(abc.ABC):
         Returns:
             DatastreamStorage: An subclass instance created from the config file.
         -------------------------------------------------------------------"""
+        # Add the config folder as a special environment parameter before we
+        # load the yaml file
+        config_folder = os.path.dirname(storage_config_file)
+        os.environ['CONFIG_DIR'] = config_folder
+
+        # Configure yaml to substitute environment variables
+        configure_yaml()
+
         # Load the config file
         with open(storage_config_file, 'r') as file:
-            storage_dict = yaml.load(file, Loader=yaml.FullLoader).get('storage', {})
-
-        # Now we have to substitute any special variables in the storage parameters
-        config_folder = os.path.dirname(storage_config_file)
-        if 'parameters' in storage_dict:
-            for key, value in storage_dict['parameters'].items():
-                if isinstance (value, str) and '$CONFIG_DIR' in value:
-                    new_value = value.replace('$CONFIG_DIR', config_folder)
-                    storage_dict['parameters'][key] = new_value
+            storage_dict = yaml.load(file, Loader=yaml.SafeLoader).get('storage', {})
 
         # Now instantiate the storage
         storage = instantiate_handler(handler_desc=storage_dict)

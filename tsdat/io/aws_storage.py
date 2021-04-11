@@ -328,8 +328,9 @@ class AwsStorage(DatastreamStorage):
         storage_temp_path = self.parameters.get('storage_temp_path')
 
         assert bucket_name
-        assert storage_root_path
-        assert storage_temp_path
+
+        storage_root_path = 'root' if not storage_root_path else storage_root_path
+        storage_temp_path = 'temp' if not storage_temp_path else storage_temp_path
 
         self._root = S3Path(bucket_name, storage_root_path)
         self._temp_path = S3Path(bucket_name, storage_temp_path)

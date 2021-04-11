@@ -3,11 +3,11 @@ storage:
   classname:  tsdat.io.FilesystemStorage
   parameters:
     retain_input_files: True
-    root_dir: $CONFIG_DIR/../storage/root
+    root_dir: ${CONFIG_DIR}/../storage/root
 
   file_handlers:
     input:
-      imu:
+      sta:
         file_pattern: '.*\.sta'
         classname: pipeline.sta_filehandler.StaFileHandler
 

@@ -54,7 +54,7 @@ class Config:
         for filepath in filepaths:
             Config.lint_yaml(filepath)
             with open(filepath, 'r') as file:
-                dict_list = list(yaml.load_all(file, Loader=yaml.FullLoader))
+                dict_list = list(yaml.safe_load_all(file))
                 for dictionary in dict_list:
                     config.update(dictionary)
         return Config(config)

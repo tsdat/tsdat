@@ -1,6 +1,6 @@
 
 storage:
-  classname:  tsdat.io.AWSStorage
+  classname:  tsdat.io.AwsStorage
   parameters:
     retain_input_files: True
     aws_region: us-west-2
