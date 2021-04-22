@@ -94,8 +94,9 @@ class DatastreamStorage(abc.ABC):
 
     def __init__(self, parameters={}):
         self.parameters = parameters
-        retain_input_files_str = parameters.get('retain_input_files', 'False')
-        retain_input_files = False if retain_input_files_str.lower() == 'false' else True
+        retain_input_files = parameters.get('retain_input_files', 'False')
+        if type(retain_input_files) == str:
+            retain_input_files = False if retain_input_files.lower() == 'false' else True
 
         self.remove_input_files = not retain_input_files
 
