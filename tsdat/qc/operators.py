@@ -1,5 +1,5 @@
 import abc
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 import xarray as xr
@@ -109,56 +109,78 @@ class CheckMissing(QualityOperator):
             self.ds[variable_name].data = replaced_values
 
 
-class CheckFailMin(QualityOperator):
+class CheckMin(QualityOperator):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
-        fail_min = DSUtil.get_fail_min(self.ds, variable_name)
+        # Get the minimum value
+        _min = self.ds[variable_name].attrs.get(self.params["key"], None)
+        if isinstance(_min, List):
+            _min = _min[0]
 
-        # If no valid_min is available, then we just skip this test
+        # If no minimum value is available, then we just skip this test
         results_array = None
-        if fail_min is not None:
-            results_array = np.less(self.ds[variable_name].values, fail_min)
+        if _min is not None:
+            results_array = np.less(self.ds[variable_name].values, _min)
 
         return results_array
 
 
-class CheckFailMax(QualityOperator):
+class CheckMax(QualityOperator):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
-        fail_max = DSUtil.get_fail_max(self.ds, variable_name)
+        # Get the maximum value
+        _max = self.ds[variable_name].attrs.get(self.params["key"], None)
+        if isinstance(_max, List):
+            _max = _max[-1]
 
-        # If no valid_min is available, then we just skip this test
+        # If no maximum value is available, then we just skip this test
         results_array = None
-        if fail_max is not None:
-            results_array = np.greater(self.ds[variable_name].values, fail_max)
+        if _max is not None:
+            results_array = np.greater(self.ds[variable_name].values, _max)
 
         return results_array
 
 
-class CheckWarnMin(QualityOperator):
+class CheckValidMin(CheckMin):
 
-    def run(self, variable_name: str) -> Optional[np.ndarray]:
-        warn_min = DSUtil.get_warn_min(self.ds, variable_name)
-
-        # If no valid_min is available, then we just skip this test
-        results_array = None
-        if warn_min is not None:
-            results_array = np.less(self.ds[variable_name].values, warn_min)
-
-        return results_array
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters):
+        super().__init__(ds, previous_data, test, parameters=parameters)
+        self.params["key"] = "valid_range"
 
 
-class CheckWarnMax(QualityOperator):
+class CheckValidMax(CheckMax):
 
-    def run(self, variable_name: str) -> Optional[np.ndarray]:
-        warn_max = DSUtil.get_warn_max(self.ds, variable_name)
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters):
+        super().__init__(ds, previous_data, test, parameters=parameters)
+        self.params["key"] = "valid_range"
 
-        # If no valid_min is available, then we just skip this test
-        results_array = None
-        if warn_max is not None:
-            results_array = np.greater(self.ds[variable_name].values, warn_max)
 
-        return results_array
+class CheckFailMin(CheckMin):
+
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters):
+        super().__init__(ds, previous_data, test, parameters=parameters)
+        self.params["key"] = "fail_range"
+
+
+class CheckFailMax(CheckMax):
+
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters):
+        super().__init__(ds, previous_data, test, parameters=parameters)
+        self.params["key"] = "fail_range"
+
+
+class CheckWarnMin(CheckMin):
+
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters):
+        super().__init__(ds, previous_data, test, parameters=parameters)
+        self.params["key"] = "warn_range"
+
+
+class CheckWarnMax(CheckMax):
+
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters):
+        super().__init__(ds, previous_data, test, parameters=parameters)
+        self.params["key"] = "warn_range"
 
 
 class CheckValidDelta(QualityOperator):
