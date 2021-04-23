@@ -133,12 +133,12 @@ class BuoyIngestPipeline(IngestPipeline):
                                     QC applied.
         -------------------------------------------------------------------"""
 
-        def format_time_xticks(ax, /, *, start=4, stop=21, step=4, date_format="%H-%M"):
+        def format_time_xticks(ax, start=4, stop=21, step=4, date_format="%H-%M"):
             ax.xaxis.set_major_locator(mpl.dates.HourLocator(byhour=range(start, stop, step)))
             ax.xaxis.set_major_formatter(mpl.dates.DateFormatter(date_format))
             plt.setp(ax.xaxis.get_majorticklabels(), rotation=0, ha='center')
         
-        def double_plot(ax, twin, /, *, data, colors, var_labels=["",""], ax_labels=["",""], **kwargs):
+        def double_plot(ax, twin, data, colors, var_labels=["",""], ax_labels=["",""], **kwargs):
             def _add_lineplot(_ax, _data, _c, _label, _ax_label, _spine):
                 _line = _data.plot(ax=_ax, c=_c, label=_label, linewidth=2, **kwargs)
                 _ax.tick_params(axis="y", which="both", colors=_c)

@@ -52,7 +52,7 @@ class WaveIngestPipeline(IngestPipeline):
             dataset (xr.Dataset):   The xarray dataset with customizations and
                                     QC applied.
         -------------------------------------------------------------------"""
-        def format_time_xticks(ax, /, *, start=4, stop=21, step=4, date_format="%H-%M"):
+        def format_time_xticks(ax, start=4, stop=21, step=4, date_format="%H-%M"):
             ax.xaxis.set_major_locator(mpl.dates.HourLocator(byhour=range(start, stop, step)))
             ax.xaxis.set_major_formatter(mpl.dates.DateFormatter(date_format))
             plt.setp(ax.xaxis.get_majorticklabels(), rotation=0, ha='center')
