@@ -83,14 +83,14 @@ dataset_definition:
 
     # The version of the standards document this data conforms to.
     # This attribute is highly recommended but is not required.
-    conventions: "ME Data Pipeline Standards: Version 1.0"
+    # conventions: "ME Data Pipeline Standards: Version 1.0"
 
     # If an optional Digital Object Identifier (DOI) has been obtained
     # for the data, it may be included here.
     #doi: "10.21947/1671051"
 
     # The institution who produced the data
-    #institution: "PNNL"
+    # institution: "Pacific Northwest National Laboratory"
 
     # Include the url to the specific tagged release of the code
     # used for this pipeline invocation.
@@ -98,7 +98,7 @@ dataset_definition:
     # Note that MHKiT-Cloud will automatically create a new code
     # release whenever the pipeline is deployed to production and
     # record this attribute automatically.
-    code_url: "https://github.com/clansing/tsdat/releases/tag/1.0"
+    code_url: "https://github.com/tsdat/tsdat/releases/tag/v0.2.2"
 
     # Published or web-based references that describe the methods
     # algorithms, or third party libraries used to process the data.

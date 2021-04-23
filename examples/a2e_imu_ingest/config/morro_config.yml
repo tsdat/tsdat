@@ -11,10 +11,10 @@ dataset_definition:  # Describes the dataset that will be produced
   attributes:
     title: "IMU Buoy Dataset"
     description: "Euler angles, accelerometer, magnetometer and Gyroscope data"
-    conventions: MHKiT-Cloud Data Standards v. 1.0
     doi: 10.21947/1671051
-    institution: PNNL
-    code_url: https://github.com/clansing/tsdat/releases/tag/1.0
+    conventions: "ME Data Pipeline Standards: Version 1.0"
+    institution: Pacific Northwest National Laboratory
+    code_url: https://github.com/tsdat/tsdat/releases/tag/v0.2.2
     location_meaning: Morro Bay
     instrument_name: GX5-45 IMU
     instrument_meaning: Self-powered floating buoy hosting a suite of meteorological and marine instruments.

@@ -5,18 +5,19 @@ pipeline:
   location_id: "morro"
   dataset_name: "buoy_z06"
   # qualifier: ""
-  temporal: "10m"
+  temporal: "10min"
   data_level: "a1"
 
 dataset_definition:  # Describes the dataset that will be produced
   attributes:
-    code_url: "https://github.com/clansing/tsdat/releases/tag/1.0"
-    conventions: "ME Data Pipeline Standards v1.0"
     description: "Pacific Northwest National Laboratory (PNNL) manages this AXYS WindSentinelTM buoy (Buoy #130) on 
     behalf of the U.S. Department of Energy (DOE) that collect a comprehensive set of meteorological and oceanographic
     (metocean) data to support resource characterization for wind energy offshore. The buoy collects in-situ sea 
     surface temperature, salinity, ocean currents, and wave data as well as near-surface air temperature, humidity, and
     horizontal wind speed and direction."
+    conventions: "ME Data Pipeline Standards: Version 1.0"
+    institution: Pacific Northwest National Laboratory
+    code_url: https://github.com/tsdat/tsdat/releases/tag/v0.2.2
     instrument_manufacturer: "AXYS Technologies Inc."
     instrument_meaning: "Self-powered floating buoy hosting a suite of meteorological and marine instruments."
     instrument_name: "WindSentinel"
