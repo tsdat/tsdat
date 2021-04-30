@@ -1,13 +1,17 @@
-.. user_guide:
+.. _user_guide:
 
 User Guide
 ##########
+
+.. _terms:
 
 Terminology
 ***********
 
 Coming soon...
 
+
+.. _config-files:
 
 Configuration Files
 *******************
@@ -19,13 +23,19 @@ breaks down the various properties of both types of configuration files and
 shows how these files can be modified to support a wide variety of data 
 pipelines.
 
+.. _pipeline-config:
+
 Pipeline Configuration Files
 ----------------------------
 
 
+.. _storage-config:
+
 Storage Configuration Files
 ---------------------------
 
+
+.. _file-handlers:
 
 File Handlers
 *************
@@ -50,9 +60,13 @@ defined below:
             dataset.to_netcdf(filename)
 
 
+.. _quality-management:
+
 Quality Management
 ******************
 
+
+.. _quality-checkers:
 
 Quality Checkers
 ----------------
@@ -65,6 +79,8 @@ the same shape as the underlying data it is applied to. Quality Checkers are
 registered in the pipeline configuration file. They are applied on a 
 variable-by-variable basis as defined in the pipeline configuration file.
 
+
+.. _quality-handlers:
 
 Quality Handlers
 ----------------
@@ -81,20 +97,33 @@ may be warrented. See the :ref:`custom-quality-handlers` section for more
 details on how to create your own quality handler.
 
 
-Customizing Data Pipelines
-**************************
+
+.. _customizing-tsdat:
+
+Customizing tsdat
+*****************
 
 
-Custom Pipelines
-----------------
 
+.. _ingest-pipeline-hooks:
 
 Custom Code Hooks: IngestPipeline
 ---------------------------------
 
 
+
+.. _custom-pipelines:
+
+Custom Pipelines
+----------------
+
+
+
+.. _custom-quality-checkers:
+
 Custom Quality Checkers
 -----------------------
+
 
 
 .. _custom-quality-handlers:

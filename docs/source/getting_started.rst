@@ -8,13 +8,18 @@
 .. _anaconda: https://www.anaconda.com
 .. _docker: https://www.docker.com
 
+
+.. _getting-started:
+
 Getting Started
 ###############
 
-Installation
-------------
+.. _installation:
 
-You can install tsdat simply by running `pip install tsdat` in a console 
+Installation
+************
+
+You can install tsdat simply by running ``pip install tsdat`` in a console 
 window, but that is probably not what you want, unless you are looking to build
 the architecture around a data pipeline from scratch. 
 
@@ -28,32 +33,34 @@ the relevant packages for that template repository, but in general it should be
 as simple as:
 
 #.	Click the “Use this template” button to create your own repository.
-#.	Run `pip install tsdat` in a terminal window.
-#.	Run `python3 run_pipeline.py data/inputs` in a terminal window at the top level of your repository. By default, the repository template will come configured to run on an example dataset.
+
+#.	Run ``pip install tsdat`` in a terminal window.
+
+#.	Run ``python3 run_pipeline.py`` in a terminal window at the top level of your repository. By default, the repository template will come configured to run on an example dataset.
+
 #.	Modify the configuration files, code hooks, and add your own dataset. See the customization section of the documentation for more information on how this can be done.
+
 
 We recommend using an `anaconda`_ environment or (preferably) a `docker`_ 
 container to manage your project’s environment if you plan on deploying this
 project to AWS or a production system in the future.
 
+.. _using-tsdat:
 
 Using tsdat
------------
+***********
 
-Once tsdat is installed and you have defined a config file, you can run it on your input data using the following code::
-    
+Once tsdat is installed and you have defined a config file, you can run it on 
+your input data using the following code:
+
+.. code-block:: python
+
     import tsdat
     config = tsdat.Config.load("path/to/yourconfigfile.yaml")
     storage = tsdat.storage.FilesystemStorage("path/to/storage/area")
     pipeline = tsdat.IngestPipeline(config, storage)
     pipeline.run("path/to/raw/file")
 
-For detailed examples of how to set up and use tsdat, consult the `examples and tutorials`_ section.
 
-
-
-Dependencies
-------------
-
-Tsdat is built using `Xarray`_ internals on top of the `netCDF`_ data format commonly used in Climate and 
-Meteorological domains. Tsdat also makes use of the `act-atmos`_ for its quality tests and various utilities.
+For detailed examples of how to set up and use tsdat, consult the 
+:ref:`examples-and-tutorials` section.

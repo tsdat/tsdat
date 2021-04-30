@@ -3,13 +3,22 @@
 .. _Issues: https://github.com/tsdat/tsdat/issues
 .. _Pull requests: https://github.com/tsdat/tsdat/pulls
 
+
+.. _developer-guide:
+
 Developer Guide
 ###############
+
+
+.. _api-reference:
 
 API Reference
 *************
 
 Coming soon...
+
+
+.. _contributing:
 
 Contributing
 ************

@@ -1,5 +1,9 @@
 .. examples_and_tutorials:
 
+.. _GitHub repository: https://github.com/tsdat/tsdat/tree/master/examples
+
+.. _examples-and-tutorials:
+
 Examples and Tutorials
 ######################
 
@@ -10,13 +14,17 @@ simplify the development of develop data pipelines and to show off some of the
 more advanced features of the library.
 
 
+.. _examples:
+
 Examples
 ********
 
-Tsdat hosts several examples on its GitHub repository at 
-https://github.com/tsdat/tsdat/tree/master/examples/. 
+Tsdat hosts several examples on its `GitHub repository`_. 
 
 More examples coming soon.
+
+
+.. _tutorials:
 
 Tutorials
 *********
