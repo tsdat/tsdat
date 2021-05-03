@@ -19,7 +19,7 @@ docker-compose build
 # Push to docker hub
 # Make sure to log in first:
 #     docker login --username=clansing
-docker push tsdat/tsdat-lambda:0.2.1
+docker push tsdat/tsdat-lambda:0.2.2
 
 
 

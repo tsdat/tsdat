@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   tsdat:
-    image: tsdat/tsdat-lambda:0.2.1
+    image: tsdat/tsdat-lambda:0.2.2
     container_name: tsdat
     hostname: tsdat
     build:
