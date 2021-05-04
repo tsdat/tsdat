@@ -153,27 +153,27 @@ quality_management:
   #---------------------------------------------------------------
   manage_missing_coordinates:
     checker:
-      classname: tsdat.qc.operators.CheckMissing
+      classname: tsdat.qc.checkers.CheckMissing
     handlers:
-      - classname: tsdat.qc.error_handlers.FailPipeline
+      - classname: tsdat.qc.handlers.FailPipeline
     variables:
       - time
 
   manage_coordinate_monotonicity:
     checker:
-      classname: tsdat.qc.operators.CheckMonotonic
+      classname: tsdat.qc.checkers.CheckMonotonic
     handlers:
-      - classname: tsdat.qc.error_handlers.FailPipeline
+      - classname: tsdat.qc.handlers.FailPipeline
     variables:
       - time
   
   #---------------------------------------------------------------
   manage_missing_values:
     checker:
-      classname: tsdat.qc.operators.CheckMissing
+      classname: tsdat.qc.checkers.CheckMissing
     handlers:
-      - classname: tsdat.qc.error_handlers.RemoveFailedValues
-      - classname: tsdat.qc.error_handlers.RecordQualityResults
+      - classname: tsdat.qc.handlers.RemoveFailedValues
+      - classname: tsdat.qc.handlers.RecordQualityResults
         parameters:
           bit: 1
           assessment: Bad

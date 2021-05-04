@@ -4,7 +4,7 @@ import xarray as xr
 
 from typing import List
 
-from tsdat.config import Config, QualityTestDefinition
+from tsdat.config import Config, QualityManagerDefinition
 from tsdat.constants import VARS
 from tsdat.utils import DSUtil
 from tsdat.config.utils import instantiate_handler
@@ -17,16 +17,16 @@ class QC(object):
     -------------------------------------------------------------------"""
 
     @staticmethod
-    def apply_tests(ds: xr.Dataset, config: Config, previous_data: xr.Dataset) -> xr.Dataset:
+    def apply_managers(ds: xr.Dataset, config: Config, previous_data: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
-        Applies the QC tests defined in the given Config to this dataset.
+        Applies the Quality Managers defined in the given Config to this dataset.
         QC results will be embedded in the dataset.  QC metadata will be
         stored as attributes, and QC flags will be stored as a bitwise integer
         in new companion qc_ variables that are added to the dataset.
         This method will create QC companion variables if they don't exist.
 
         Args:
-            ds (xr.Dataset): The dataset to apply tests to
+            ds (xr.Dataset): The dataset to apply quality managers to
             config (Config): A configuration definition (loaded from yaml)
             previous_data(xr.Dataset): A dataset from the previous processing
             interval (i.e., file).  This is used to check for consistency between
@@ -37,29 +37,30 @@ class QC(object):
             QCError:  A QCError indicates that a fatal error has occurred.
 
         Returns:
-            (xr.Dataset): The dataset after quality tests and handlers have
+            (xr.Dataset): The dataset after quality checkers and handlers have
             been applied.
 
         -------------------------------------------------------------------"""
 
-        for qc_test in config.qc_tests.values():
-            qc_checker = QCChecker(ds, config, qc_test, previous_data)
-            ds = qc_checker.run()
+        for definition in config.quality_managers.values():
+            quality_manager = QualityManager(ds, config, definition, previous_data)
+            ds = quality_manager.run()
 
         return ds
 
 
-class QCChecker:
+class QualityManager:
     """-------------------------------------------------------------------
-    Applies a single QC test to the given Dataset, as defined by the Config
+    Applies a single Quality Manager to the given Dataset, as defined by 
+    the Config
     -------------------------------------------------------------------"""
     def __init__(self, ds: xr.Dataset,
                  config: Config,
-                 test: QualityTestDefinition,
+                 definition: QualityManagerDefinition,
                  previous_data: xr.Dataset):
 
-        # Get the variables this test applies to
-        variable_names = test.variables
+        # Get the variables this quality manager applies to
+        variable_names = definition.variables
 
         # Convert the list to upper case in case the user made a typo in the yaml
         variable_names_upper = [x.upper() for x in variable_names]
@@ -82,48 +83,49 @@ class QCChecker:
         variable_names = list(dict.fromkeys(variable_names))
 
         # Exclude any excludes
-        excludes = test.exclude
+        excludes = definition.exclude
         for exclude in excludes:
             variable_names.remove(exclude)
 
-        # Get the operator
-        operator = instantiate_handler(ds, previous_data, test, handler_desc=test.operator)
+        # Get the quality checker
+        quality_checker = instantiate_handler(ds, previous_data, definition, handler_desc=definition.checker)
 
-        # Get the error handlers (optional)
-        error_handlers = test.error_handlers
+        # Get the quality handlers
+        handlers = definition.handlers
 
         self.ds = ds
         self.config = config
         self.variable_names = variable_names
-        self.operator = operator
-        self.error_handlers = error_handlers
-        self.test: QualityTestDefinition = test
+        self.checker = quality_checker
+        self.handlers = handlers
+        self.definition: QualityManagerDefinition = definition
         self.previous_data = previous_data
 
     def run(self) -> xr.Dataset:
         """-------------------------------------------------------------------
-        Runs the QC test for each specified variable
+        Runs the QualityChecker and QualityHandler(s) for each specified 
+        variable as defined in the config file.
 
         Raises:
             QCError:  A QCError indicates that a fatal error has occurred.
 
         Returns:
-            (xr.Dataset): The dataset after the quality operator and its 
+            (xr.Dataset): The dataset after the quality checker and the
             quality handlers have been run.
         -------------------------------------------------------------------"""
         for variable_name in self.variable_names:
 
-            # Apply the operator
-            results_array: np.ndarray = self.operator.run(variable_name)
+            # Apply the quality checker
+            results_array: np.ndarray = self.checker.run(variable_name)
             if results_array is None:
                 results_array = np.zeros_like(self.ds[variable_name].data, dtype='bool')
 
-            # Apply the error handlers
-            if self.error_handlers is not None:
-                for handler in self.error_handlers:
-                    error_handler = instantiate_handler(self.ds, self.previous_data, self.test, handler_desc=handler)
-                    error_handler.run(variable_name, results_array)
-                    self.ds: xr.Dataset = error_handler.ds
-                self.operator.ds = self.ds
+            # Apply quality handlers
+            if self.handlers is not None:
+                for handler in self.handlers:
+                    quality_handler = instantiate_handler(self.ds, self.previous_data, self.definition, handler_desc=handler)
+                    quality_handler.run(variable_name, results_array)
+                    self.ds: xr.Dataset = quality_handler.ds
+                self.checker.ds = self.ds
 
         return self.ds

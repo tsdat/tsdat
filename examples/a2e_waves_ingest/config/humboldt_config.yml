@@ -358,27 +358,27 @@ quality_management:
   #---------------------------------------------------------------
   manage_missing_coordinates:
     checker:
-      classname: tsdat.qc.operators.CheckMissing
+      classname: tsdat.qc.checkers.CheckMissing
     handlers:
-      - classname: tsdat.qc.error_handlers.FailPipeline
+      - classname: tsdat.qc.handlers.FailPipeline
     variables:
       - COORDS
 
   manage_coordinate_monotonicity:
     checker:
-      classname: tsdat.qc.operators.CheckMonotonic
+      classname: tsdat.qc.checkers.CheckMonotonic
     handlers:
-      - classname: tsdat.qc.error_handlers.FailPipeline
+      - classname: tsdat.qc.handlers.FailPipeline
     variables:
       - COORDS
   
   #---------------------------------------------------------------
   manage_missing_values:
     checker:
-      classname: tsdat.qc.operators.CheckMissing
+      classname: tsdat.qc.checkers.CheckMissing
     handlers:
-      - classname: tsdat.qc.error_handlers.RemoveFailedValues
-      - classname: tsdat.qc.error_handlers.RecordQualityResults
+      - classname: tsdat.qc.handlers.RemoveFailedValues
+      - classname: tsdat.qc.handlers.RecordQualityResults
         parameters:
           bit: 1
           assessment: Bad
@@ -388,9 +388,9 @@ quality_management:
 
   manage_fail_min:
     checker:
-      classname: tsdat.qc.operators.CheckFailMin
+      classname: tsdat.qc.checkers.CheckFailMin
     handlers:
-      - classname: tsdat.qc.error_handlers.RecordQualityResults
+      - classname: tsdat.qc.handlers.RecordQualityResults
         parameters:
           bit: 2
           assessment: Bad
@@ -400,9 +400,9 @@ quality_management:
 
   manage_fail_max:
     checker:
-      classname: tsdat.qc.operators.CheckFailMax
+      classname: tsdat.qc.checkers.CheckFailMax
     handlers:
-      - classname: tsdat.qc.error_handlers.RecordQualityResults
+      - classname: tsdat.qc.handlers.RecordQualityResults
         parameters:
           bit: 3
           assessment: Bad
@@ -412,9 +412,9 @@ quality_management:
 
   manage_warn_min:
     checker:
-      classname: tsdat.qc.operators.CheckWarnMin
+      classname: tsdat.qc.checkers.CheckWarnMin
     handlers:
-      - classname: tsdat.qc.error_handlers.RecordQualityResults
+      - classname: tsdat.qc.handlers.RecordQualityResults
         parameters:
           bit: 4
           assessment: Indeterminate
@@ -424,9 +424,9 @@ quality_management:
 
   manage_warn_max:
     checker:
-      classname: tsdat.qc.operators.CheckWarnMax
+      classname: tsdat.qc.checkers.CheckWarnMax
     handlers:
-      - classname: tsdat.qc.error_handlers.RecordQualityResults
+      - classname: tsdat.qc.handlers.RecordQualityResults
         parameters:
           bit: 5
           assessment: Indeterminate
@@ -436,11 +436,11 @@ quality_management:
 
   manage_valid_delta:
     checker:
-      classname: tsdat.qc.operators.CheckValidDelta
+      classname: tsdat.qc.checkers.CheckValidDelta
       parameters:
         dim: time
     handlers:
-      - classname: tsdat.qc.error_handlers.RecordQualityResults
+      - classname: tsdat.qc.handlers.RecordQualityResults
         parameters:
           bit: 6
           assessment: Indeterminate

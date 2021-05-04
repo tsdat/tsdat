@@ -5,11 +5,8 @@ from typing import List, Dict
 from .keys import Keys
 from .pipeline_definition import PipelineDefinition
 from .dataset_definition import DatasetDefinition
-from .quality_test_definition import QualityTestDefinition
+from .quality_manager_definition import QualityManagerDefinition
 
-
-# TODO: add api method to download yaml templates or put them all
-# in the examples folder.
 
 class Config:
     """
@@ -20,18 +17,18 @@ class Config:
     def __init__(self, dictionary: Dict):
         pipeline_dict = dictionary.get(Keys.PIPELINE)
         dataset_dict = dictionary.get(Keys.DATASET_DEFINITION)
-        qc_tests_dict = dictionary.get(Keys.QC_TESTS, {})
+        quality_managers_dict = dictionary.get(Keys.QUALITY_MANAGEMENT, {})
 
         self.pipeline_definition = PipelineDefinition(pipeline_dict)
         self.dataset_definition = DatasetDefinition(dataset_dict, self.pipeline_definition.output_datastream_name)
 
-        self.qc_tests = self._parse_qc_tests(qc_tests_dict)
+        self.quality_managers = self._parse_quality_managers(quality_managers_dict)
 
-    def _parse_qc_tests(self, dictionary) -> Dict[str, QualityTestDefinition]:
-        qc_tests: Dict[str, QualityTestDefinition] = {}
-        for test_name, test_dict in dictionary.items():
-            qc_tests[test_name] = QualityTestDefinition(test_name, test_dict)
-        return qc_tests
+    def _parse_quality_managers(self, dictionary) -> Dict[str, QualityManagerDefinition]:
+        quality_managers: Dict[str, QualityManagerDefinition] = {}
+        for manager_name, manager_dict in dictionary.items():
+            quality_managers[manager_name] = QualityManagerDefinition(manager_name, manager_dict)
+        return quality_managers
 
     @classmethod
     def load(self, filepaths: List[str]):
@@ -61,8 +58,7 @@ class Config:
 
     @staticmethod
     def lint_yaml(filename):
-        # new-line-at-end-of-file
-        conf = YamlLintConfig('{"extends": "relaxed", "rules": {"line-length": "disable", "trailing-spaces": "disable", "empty-lines": "disable"}}')
+        conf = YamlLintConfig('{"extends": "relaxed", "rules": {"line-length": "disable", "trailing-spaces": "disable", "empty-lines": "disable", "new-line-at-end-of-file": "disable"}}')
         with open(filename) as file:
             gen = linter.run(file, conf)
             errors = [error for error in gen if error.level == "error"]

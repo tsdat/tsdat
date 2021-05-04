@@ -38,7 +38,7 @@ class IngestPipeline(Pipeline):
 
             # Apply quality control / quality assurance to the dataset.
             previous_dataset = self.get_previous_dataset(dataset)
-            dataset = QC.apply_tests(dataset, self.config, previous_dataset)
+            dataset = QC.apply_managers(dataset, self.config, previous_dataset)
 
             # Apply any final touches to the dataset and persist the dataset
             dataset = self.hook_finalize_dataset(dataset)
@@ -52,7 +52,7 @@ class IngestPipeline(Pipeline):
         Pipeline hook that can be used to apply standard corrections for the 
         instrument/measurement or calibrations. This method is called
         immediately after the dataset is converted to standard format and
-        before any QC tests are applied.
+        before Quality Management occurs.
 
         If corrections are applied, then the `corrections_applied` attribute
         should be updated on the variable(s) that this method applies
@@ -75,7 +75,7 @@ class IngestPipeline(Pipeline):
         Hook to allow for user customizations to the standardized dataset such
         as inserting a derived variable based on other variables in the
         dataset.  This method is called immediately after the apply_corrections
-        hook and before any QC tests are applied.
+        hook and before Quality Management occurs.
 
         Args:
         ---
@@ -122,7 +122,7 @@ class IngestPipeline(Pipeline):
     def hook_finalize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
         Hook to apply any final customizations to the dataset before it is
-        saved. This hook is called after quality tests have been applied.
+        saved. This hook is called after Quality Management has occured.
 
         Args:
             dataset (xr.Dataset): The dataset to finalize.
@@ -135,7 +135,7 @@ class IngestPipeline(Pipeline):
     def hook_generate_and_persist_plots(self, dataset: xr.Dataset) -> None:
         """-------------------------------------------------------------------
         Hook to allow users to create plots from the xarray dataset after 
-        processing and QC have been applied and just before the dataset is
+        the dataset has been finalized and just before the dataset is
         saved to disk.
 
         To save on filesystem space (which is limited when running on the
