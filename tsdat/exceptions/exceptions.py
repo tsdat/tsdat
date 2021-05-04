@@ -5,7 +5,7 @@ Global tsdat exception and warning classes
 
 class QCError(Exception):
     """-----------------------------------------------------------------------
-    Indicates that a given QC test failed with a fatal error.
+    Indicates that a given Quality Manager failed with a fatal error.
     -----------------------------------------------------------------------"""
     pass
 

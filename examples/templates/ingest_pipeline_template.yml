@@ -276,7 +276,7 @@ dataset_definition:
       # You may add any additional attributes as needed to describe your
       # variables.
       #
-      # Any metadata used for QC tests will be indicated.
+      # Any metadata used for Quality Managers will be indicated.
       #-------------------------------------------------------------
       attrs:
 
@@ -330,7 +330,7 @@ dataset_definition:
       # You may add any additional attributes as needed to describe your
       # variables.
       #
-      # Any metadata used for QC tests will be indicated.
+      # Any metadata used for Quality Managers will be indicated.
       #-------------------------------------------------------------
       attrs:
         # A minimal description of what the variable represents.
@@ -360,17 +360,17 @@ dataset_definition:
 
         # The maximum allowed difference between any two consecutive values of a variable,
         # values outside of which should be flagged as "Bad".
-        # This attribute is used for the valid_delta QC test.  If not specified, this
+        # This attribute is used for the valid_delta Quality Manager.  If not specified, this
         # variable will be omitted from the test.
         #valid_delta: 0.25
 
         # A two-element array of [min, max] outside of which the data should be flagged as "Bad".
-        # This attribute is used for the fail_min and fail_max QC tests.
+        # This attribute is used for the fail_min and fail_max Quality Managers.
         # If not specified, this variable will be omitted from these tests.
         #fail_range: [0, 40]
 
         # A two-element array of [min, max] outside of which the data should be flagged as "Indeterminate".
-        # This attribute is used for the warn_min and warn_max QC tests.
+        # This attribute is used for the warn_min and warn_max Quality Managers.
         # If not specified, this variable will be omitted from these tests.
         #warn_range: [0, 30]
 
@@ -431,46 +431,28 @@ dataset_definition:
 
 ---
 ####################################################################
-# PART 2: QC TESTS
-# Define the QC tests that will be applied to variable data.
-####################################################################
-coordinate_variable_qc_tests:
-  #-----------------------------------------------------------------
-  # The following section defines the default qc tests that will be
-  # performed on coordinate variables in a dataset.  Note that by
-  # default, coordinate variable tests will NOT set a QC bit and
-  # will trigger a critical pipeline failure.  This is because
-  # Problems with coordinate variables are considered to cause
-  # the dataset to be unusable and should be manually reviewed.
-  #
-  # However, the user may override the default coordinate variable
-  # tests and error handlers if they feel that data correction is
-  # warranted.
-  #
-  # For a complete list of tests provided by MHKiT-Cloud, please see
-  # the tsdat.qc.operators package.
-  #
-  # Users are also free to add custom tests defined by their own
-  # checker classes.
-  #-----------------------------------------------------------------
+# PART 2: Quality Management
+# Define the Quality Checks and Handlers that will be applied to 
+# variable data.
+####################################################################-
 
 quality_management:
   #-----------------------------------------------------------------
-  # The following section defines the default qc tests that will be
-  # performed on variables in a dataset.
+  # The following section defines the default quality managers that 
+  # will be performed on variables in the dataset.
   #
-  # For a complete list of tests provided by MHKiT-Cloud, please see
-  # the tsdat.qc.operators package.
+  # For a complete list of checks provided by MHKiT-Cloud, please see
+  # the tsdat.qc.checkers package.
   #
   # Users are also free to add custom tests defined by their own
-  # checker classes.
+  # QualityChecker and QualityHandler classes.
   #-----------------------------------------------------------------
   
   #-----------------------------------------------------------------
   # Checks on coordinate variables
   #-----------------------------------------------------------------
   
-  # The name of the test.
+  # The name of the quality manager.
   manage_missing_coordinates:
 
     # Quality checker used to identify problematic variable values.
@@ -478,13 +460,13 @@ quality_management:
     checker:
       # This quality checker will identify values that are missing,
       # NaN, or equal to each variable's _FillValue
-      classname: "tsdat.qc.operators.CheckMissing"
+      classname: "tsdat.qc.checkers.CheckMissing"
     
-    # Quality handler used to manage problematic variable values. 
+    # Quality handlers are used to handle problematic variable values. 
     # Users can define their own quality handlers and link them here.
     handlers:
       # This quality handler will cause the pipeline to fail
-      - classname: "tsdat.qc.error_handlers.FailPipeline"
+      - classname: "tsdat.qc.handlers.FailPipeline"
     
     # Which variables to apply the test to
     variables:
@@ -497,10 +479,10 @@ quality_management:
       # This quality checker will identify variables that are not
       # strictly monotonic (That is, it identifies variables whose 
       # values are not strictly increasing or strictly decreasing)
-      classname: "tsdat.qc.operators.CheckMonotonic"
+      classname: "tsdat.qc.checkers.CheckMonotonic"
 
     handlers:
-      - classname: "tsdat.qc.error_handlers.FailPipeline"
+      - classname: "tsdat.qc.handlers.FailPipeline"
 
     variables:
       - COORDS
@@ -514,7 +496,7 @@ quality_management:
     # to override with their own class if they want to change
     # behavior.
     checker:
-      classname: "tsdat.qc.operators.CheckMissing"
+      classname: "tsdat.qc.checkers.CheckMissing"
 
     # Error handlers are optional and run after the test is
     # performed if any of the values fail the test.  Users
@@ -525,7 +507,7 @@ quality_management:
     handlers:
       
       # This error handler will replace any NaNs with _FillValue
-      - classname: "tsdat.qc.error_handlers.RemoveFailedValues"
+      - classname: "tsdat.qc.handlers.RemoveFailedValues"
         # Quality handlers and all other objects that have a 'classname'
         # property can take a dictionary of parameters. These 
         # parameters are made available to the object or class in the
@@ -545,7 +527,7 @@ quality_management:
       # This quality handler will record the results of the 
       # quality check in the ancillary qc variable for each
       # variable this quality manager is applied to.
-      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+      - classname: "tsdat.qc.handlers.RecordQualityResults"
         parameters:
 
           # The bit (1-32) used to record the results of this test.
@@ -565,9 +547,9 @@ quality_management:
 
   manage_fail_min:
     checker:
-      classname: "tsdat.qc.operators.CheckFailMin"
+      classname: "tsdat.qc.checkers.CheckFailMin"
     handlers: 
-      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+      - classname: "tsdat.qc.handlers.RecordQualityResults"
         parameters:
           bit: 2
           assessment: "Bad"
@@ -577,9 +559,9 @@ quality_management:
 
   manage_fail_max:
     checker:
-      classname: "tsdat.qc.operators.CheckFailMax"
+      classname: "tsdat.qc.checkers.CheckFailMax"
     handlers:
-      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+      - classname: "tsdat.qc.handlers.RecordQualityResults"
         parameters:  
           bit: 3
           assessment: "Bad"
@@ -589,9 +571,9 @@ quality_management:
 
   manage_warn_min:
     checker:
-      classname: "tsdat.qc.operators.CheckWarnMin"
+      classname: "tsdat.qc.checkers.CheckWarnMin"
     handlers:
-      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+      - classname: "tsdat.qc.handlers.RecordQualityResults"
         parameters:  
           bit: 4
           assessment: "Indeterminate"
@@ -601,9 +583,9 @@ quality_management:
 
   manage_warn_max:
     checker:
-      classname: "tsdat.qc.operators.CheckWarnMax"
+      classname: "tsdat.qc.checkers.CheckWarnMax"
     handlers:
-      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+      - classname: "tsdat.qc.handlers.RecordQualityResults"
         parameters:  
           bit: 5
           assessment: "Indeterminate"
@@ -613,11 +595,11 @@ quality_management:
 
   manage_valid_delta:
     checker:
-      classname: "tsdat.qc.operators.CheckValidDelta"
+      classname: "tsdat.qc.checkers.CheckValidDelta"
       parameters:
         dim: time  # specifies the dimension over which to compute the delta
     handlers:
-      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+      - classname: "tsdat.qc.handlers.RecordQualityResults"
         parameters:
           bit: 6
           assessment: "Indeterminate"
@@ -626,35 +608,35 @@ quality_management:
       - DATA_VARS
 
     #-----------------------------------------------------------------
-    # Example of a user-created test that shows how to specify
-    # an error handler.  Error handlers may be optionally added to
-    # any of the tests described above.  (Note that this example will
-    # not work, it is just provided as an example of adding a
-    # custom QC test.)
+    # Example of a user-created Quality Manager that shows how to 
+    # specify a Quality Checker and Quality Handler. 
+    #  
+    # (Note that this example will not work, it is just provided as an
+    # example of adding a custom Quality Checker.)
     #-----------------------------------------------------------------
-    # temp_test:
+    # temperature_manager:
 
     #   checker:
-    #     classname: "myproject.qc.operators.TestTemp"
+    #     classname: "myproject.qc.checkers.CheckTemperature"
 
     #   #-------------------------------------------------------------
-    #   # See the tsdat.qc.error_handlers package for a list of
-    #   # available error handlers.
+    #   # See the tsdat.qc.handlers package for a list of
+    #   # available quality handlers.
     #   #-------------------------------------------------------------
     #   handlers:
 
     #       # This handler will set bit number 7 on the ancillary qc 
     #       # variable for the variable(s) this test applies to.
-    #     - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+    #     - classname: "tsdat.qc.handlers.RecordQualityResults"
     #       parameters:
     #         bit: 7
     #         assessment: "Indeterminate"
     #         meaning: "Test for some special condition in temperature."
 
-    #       # This error handler will notify users via email.  The
+    #       # This quality handler will notify users via email.  The
     #       # datastream name, variable, and failing values will be
     #       # included.
-    #     - classname: "tsdat.qc.error_handlers.SendEmailAWS"
+    #     - classname: "tsdat.qc.handlers.SendEmailAWS"
     #       parameters:
     #         message: "Test failed..."
     #         recipients: ["carina.lansing@pnnl.gov", "maxwell.levin@pnnl.gov"]

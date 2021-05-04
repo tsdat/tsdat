@@ -4,8 +4,8 @@ class QualityManagerKeys:
 
     VARIABLES = 'variables'
     EXCLUDE = 'exclude'
-    OPERATOR = 'checker'
-    ERROR_HANDLERS = 'handlers'
+    CHECKER = 'checker'
+    HANDLERS = 'handlers'
 
 
 class QualityManagerDefinition:
@@ -17,8 +17,8 @@ class QualityManagerDefinition:
         self.name = name
         self.variables = dictionary.get(QualityManagerKeys.VARIABLES)
         self.exclude = dictionary.get(QualityManagerKeys.EXCLUDE, [])
-        self.operator = dictionary.get(QualityManagerKeys.OPERATOR)
-        self.error_handlers = dictionary.get(QualityManagerKeys.ERROR_HANDLERS, {})
+        self.checker = dictionary.get(QualityManagerKeys.CHECKER)
+        self.handlers = dictionary.get(QualityManagerKeys.HANDLERS, {})
 
         # Now set any other properties that may have been added by user
         for key in dictionary:
