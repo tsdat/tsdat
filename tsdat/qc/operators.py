@@ -4,17 +4,17 @@ from typing import Dict, List, Optional
 import numpy as np
 import xarray as xr
 
-from tsdat.config import QualityTestDefinition
+from tsdat.config import QualityManagerDefinition
 from tsdat.constants import ATTS
 from tsdat.utils import DSUtil
 
 
-class QualityOperator(abc.ABC):
+class QualityChecker(abc.ABC):
     """-------------------------------------------------------------------
     Class containing the code to perform a single QC test on a Dataset
     variable.
     -------------------------------------------------------------------"""
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters={}):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityManagerDefinition, parameters={}):
         """-------------------------------------------------------------------
         Args:
             ds (xr.Dataset): The dataset the operator will be applied to
@@ -56,7 +56,7 @@ class QualityOperator(abc.ABC):
         pass
 
 
-class CheckMissing(QualityOperator):
+class CheckMissing(QualityChecker):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
         """-------------------------------------------------------------------
@@ -93,9 +93,6 @@ class CheckMissing(QualityOperator):
             if self.ds[variable_name].values.dtype.type in (type(0.0), np.float16, np.float32, np.float64):
                 results_array |= np.isnan(self.ds[variable_name].values)
 
-            # TODO: we also need to check if any values are outside valid range
-            # TODO: in the config file, we need a replace with missing handler for this test
-
         return results_array
 
     def _replace_invalid_values(self, fill_value, variable_name: str):
@@ -109,7 +106,7 @@ class CheckMissing(QualityOperator):
             self.ds[variable_name].data = replaced_values
 
 
-class CheckMin(QualityOperator):
+class CheckMin(QualityChecker):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
         # Get the minimum value
@@ -125,7 +122,7 @@ class CheckMin(QualityOperator):
         return results_array
 
 
-class CheckMax(QualityOperator):
+class CheckMax(QualityChecker):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
         # Get the maximum value
@@ -143,47 +140,47 @@ class CheckMax(QualityOperator):
 
 class CheckValidMin(CheckMin):
 
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityManagerDefinition, parameters):
         super().__init__(ds, previous_data, test, parameters=parameters)
         self.params["key"] = "valid_range"
 
 
 class CheckValidMax(CheckMax):
 
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityManagerDefinition, parameters):
         super().__init__(ds, previous_data, test, parameters=parameters)
         self.params["key"] = "valid_range"
 
 
 class CheckFailMin(CheckMin):
 
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityManagerDefinition, parameters):
         super().__init__(ds, previous_data, test, parameters=parameters)
         self.params["key"] = "fail_range"
 
 
 class CheckFailMax(CheckMax):
 
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityManagerDefinition, parameters):
         super().__init__(ds, previous_data, test, parameters=parameters)
         self.params["key"] = "fail_range"
 
 
 class CheckWarnMin(CheckMin):
 
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityManagerDefinition, parameters):
         super().__init__(ds, previous_data, test, parameters=parameters)
         self.params["key"] = "warn_range"
 
 
 class CheckWarnMax(CheckMax):
 
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityManagerDefinition, parameters):
         super().__init__(ds, previous_data, test, parameters=parameters)
         self.params["key"] = "warn_range"
 
 
-class CheckValidDelta(QualityOperator):
+class CheckValidDelta(QualityChecker):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
 
@@ -242,7 +239,7 @@ class CheckValidDelta(QualityOperator):
         return results_array
 
 
-class CheckMonotonic(QualityOperator):
+class CheckMonotonic(QualityChecker):
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
 

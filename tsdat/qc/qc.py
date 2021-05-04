@@ -4,7 +4,7 @@ import xarray as xr
 
 from typing import List
 
-from tsdat.config import Config, QualityTestDefinition
+from tsdat.config import Config, QualityManagerDefinition
 from tsdat.constants import VARS
 from tsdat.utils import DSUtil
 from tsdat.config.utils import instantiate_handler
@@ -55,7 +55,7 @@ class QCChecker:
     -------------------------------------------------------------------"""
     def __init__(self, ds: xr.Dataset,
                  config: Config,
-                 test: QualityTestDefinition,
+                 test: QualityManagerDefinition,
                  previous_data: xr.Dataset):
 
         # Get the variables this test applies to
@@ -97,7 +97,7 @@ class QCChecker:
         self.variable_names = variable_names
         self.operator = operator
         self.error_handlers = error_handlers
-        self.test: QualityTestDefinition = test
+        self.test: QualityManagerDefinition = test
         self.previous_data = previous_data
 
     def run(self) -> xr.Dataset:

@@ -1,6 +1,6 @@
 from typing import Dict
 
-class QCTestKeys:
+class QualityManagerKeys:
 
     VARIABLES = 'variables'
     EXCLUDE = 'exclude'
@@ -8,17 +8,17 @@ class QCTestKeys:
     ERROR_HANDLERS = 'handlers'
 
 
-class QualityTestDefinition:
+class QualityManagerDefinition:
     """
     Converts dictionary of properties into a class
     """
     def __init__(self, name: str, dictionary: Dict):
         assert(dictionary is not None)
         self.name = name
-        self.variables = dictionary.get(QCTestKeys.VARIABLES)
-        self.exclude = dictionary.get(QCTestKeys.EXCLUDE, [])
-        self.operator = dictionary.get(QCTestKeys.OPERATOR)
-        self.error_handlers = dictionary.get(QCTestKeys.ERROR_HANDLERS, {})
+        self.variables = dictionary.get(QualityManagerKeys.VARIABLES)
+        self.exclude = dictionary.get(QualityManagerKeys.EXCLUDE, [])
+        self.operator = dictionary.get(QualityManagerKeys.OPERATOR)
+        self.error_handlers = dictionary.get(QualityManagerKeys.ERROR_HANDLERS, {})
 
         # Now set any other properties that may have been added by user
         for key in dictionary:

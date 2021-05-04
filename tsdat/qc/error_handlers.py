@@ -1,13 +1,9 @@
 import abc
 
-from xarray.core.utils import get_temp_dimname
-from tsdat.exceptions.exceptions import DefinitionError
-from typing import Dict
-
 import numpy as np
 import xarray as xr
 
-from tsdat.config import QualityTestDefinition
+from tsdat.config import QualityManagerDefinition
 from tsdat.exceptions import QCError
 from tsdat.utils import DSUtil
 
@@ -17,15 +13,13 @@ class QCParamKeys:
     TEST_MEANING = 'meaning'
     CORRECTION = 'correction'
 
-# TODO: Add utility method to add the 'corrections_applied' attribute to the variable
-
 
 class QualityHandler(abc.ABC):
     """-------------------------------------------------------------------
     Class containing code to be executed if a particular qc test fails.
     -------------------------------------------------------------------"""
 
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityTestDefinition, parameters={}):
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, test: QualityManagerDefinition, parameters={}):
         """-------------------------------------------------------------------
         Args:
             ds (xr.Dataset): The dataset the operator will be applied to
@@ -102,10 +96,6 @@ class FailPipeline(QualityHandler):
     Throw an exception, halting the pipeline & indicating a critical error
     -------------------------------------------------------------------"""
     def run(self, variable_name: str, results_array: np.ndarray):
-        # TODO: Not sure if a critical error should be thrown by an error handler
-        # or by the operator itself.  The operator would know more information,
-        # so would be able to print out a more useful error message.
-        # If we deem this error handler not useful, we should remove it.
         if results_array.any():
             message = f"QC test {self.test.name} failed for variable {variable_name}"
             raise QCError(message)
