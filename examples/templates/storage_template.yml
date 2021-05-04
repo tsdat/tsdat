@@ -1,26 +1,23 @@
 
 storage:
+
   classname:  tsdat.io.AwsStorage
   parameters:
     retain_input_files: True
-    aws_region: us-west-2
     bucket_name: mhk-datalake-test
-    storage_root_path: tsdat/storage/root
-    storage_temp_path: tsdat/storage/temp
+    root_dir: tsdat-store
 
   file_handlers:
     input:
       wind_csv:
         file_pattern: '.*wind.*\.csv'  # <====You have to use a valid Python regex pattern
         classname: tsdat.io.filehandlers.CsvHandler
-        parameters: #<====Parameters can be passed to any handler
-          start_line: 4
-
-      waves_csv:
-        file_pattern: '.*waves.*\.csv'  # <====You have to use a valid Python regex pattern
-        classname: tsdat.io.filehandlers.CsvHandler
-        parameters: #<====Parameters can be passed to any handler
-          start_line: 8
+        parameters: #<====Parameters can be passed to any handler and used as kwargs for the read or write methods
+          read:
+            read_csv:
+              sep: "\t"
+              header: 41
+              index_col: False
 
     output:  # for now, you have to use one of our handlers
       netcdf:

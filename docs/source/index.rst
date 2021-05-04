@@ -4,13 +4,14 @@
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :hidden:
 
    getting_started.rst
-   user_guide.rst
+   configuring_tsdat.rst
    examples_and_tutorials.rst
-   developer_guide.rst
+   api.rst
+   collaboration.rst
    acknowledgements.rst
 
 .. _tsdat:

@@ -10,17 +10,16 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+project_dir = os.path.abspath('../../')
+print(f"project_dir = {project_dir}")
+sys.path.insert(0, project_dir)
 
 import sphinx_rtd_theme
-
 extensions = [
-    "sphinx_rtd_theme",
+    "sphinx_rtd_theme"
 ]
-
-
 
 # -- Project information -----------------------------------------------------
 
@@ -38,7 +37,10 @@ release = '0.0.1'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',  # Core library for html generation from docstrings
+    'sphinx.ext.autosummary',  # Create neat summary tables
 ]
+autosummary_generate = True  # Turn on sphinx.ext.autosummary
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

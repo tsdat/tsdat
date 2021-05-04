@@ -1,0 +1,664 @@
+####################################################################
+# TSDAT (Time-Series Data) INGEST PIPELINE CONFIGURATION TEMPLATE
+#
+# This file contains an annotated example of how to configure an
+# tsdat data ingest processing pipeline.
+####################################################################
+
+# Specify the type of pipeline that will be run:  Ingest or VAP
+#
+# Ingests are run against raw data and are used to convert
+# proprietary instrument data files into standardized format, perform
+# quality control checks against the data, and apply corrections as
+# needed.
+#
+# VAPs are used to combine one or more lower-level standardized data
+# files, optionally transform data to new coordinate grids, and/or
+# to apply scientific algorithms to derive new variables that provide
+# additional insights on the data.
+pipeline:
+  type: "Ingest"
+
+  # Used to specify the level of data that this pipeline will use as
+  # input. For ingests, this will be used as the data level for raw data.
+  # If type: Ingest is specified, this defaults to "00"
+  # input_data_level: "00"
+  
+  # Used to specify the level of data that this pipeline will produce.
+  # It is recommended that ingests use "a1" and VAPs should use "b1", 
+  # but this is not enforced.
+  data_level: "a1"
+
+  # A label for the location where the data were obtained from
+  location_id: "humboldt_z05"
+
+  # A string consisting of any letters, digits, "-" or "_" that can
+  # be used to uniquely identify the instrument used to produce
+  # the data.  To prevent confusion with the temporal resolution
+  # of the instrument, the instrument identifier must not end
+  # with a number.
+  dataset_name: "buoy"
+
+  # An optional qualifier that distinguishes these data from other
+  # data sets produced by the same instrument.  The qualifier
+  # must not end with a number.
+  #qualifier: "lidar"
+
+  # A optional description of the data temporal resolution
+  # (e.g., 30m, 1h, 200ms, 14d, 10Hz).  All temporal resolution
+  # descriptors require a units identifier.
+  #temporal: "10m"
+
+####################################################################
+# PART 1: DATASET DEFINITION
+# Define dimensions, variables, and metadata that will be included
+# in your processed, standardized data file.
+####################################################################
+dataset_definition:
+  #-----------------------------------------------------------------
+  # Global Attributes (general metadata)
+  #
+  # All optional attributes are commented out.  You may remove them
+  # if not applicable to your data.
+  #
+  # You may add any additional attributes as needed to describe your
+  # data collection and processing activities.
+  #-----------------------------------------------------------------
+  attributes:
+
+    # A succinct English language description of what is in the dataset.
+    # The value would be similar to a publication title.
+    # Example: "Atmospheric Radiation Measurement (ARM) program Best
+    # Estimate cloud and radiation measurements (ARMBECLDRAD)"
+    # This attribute is highly recommended but is not required.
+    title: "Buoy Dataset for Buoy #120"
+
+    # Longer English language description of the data.
+    # Example: "ARM best estimate hourly averaged QC controlled product,
+    # derived from ARM observational Value-Added Product data: ARSCL,
+    # MWRRET, QCRAD, TSI, and satellite; see input_files for the names of
+    # original files used in calculation of this product"
+    # This attribute is highly recommended but is not required.
+    description: "Example ingest dataset used for demonstration purposes."
+
+    # The version of the standards document this data conforms to.
+    # This attribute is highly recommended but is not required.
+    # conventions: "ME Data Pipeline Standards: Version 1.0"
+
+    # If an optional Digital Object Identifier (DOI) has been obtained
+    # for the data, it may be included here.
+    #doi: "10.21947/1671051"
+
+    # The institution who produced the data
+    # institution: "Pacific Northwest National Laboratory"
+
+    # Include the url to the specific tagged release of the code
+    # used for this pipeline invocation.
+    # Example,  https://github.com/clansing/twrmr/releases/tag/1.0.
+    # Note that MHKiT-Cloud will automatically create a new code
+    # release whenever the pipeline is deployed to production and
+    # record this attribute automatically.
+    code_url: "https://github.com/tsdat/tsdat/releases/tag/v0.2.2"
+
+    # Published or web-based references that describe the methods
+    # algorithms, or third party libraries used to process the data.
+    #references: "https://github.com/MHKiT-Software/MHKiT-Python"
+
+    # A more detailed description of the site location.
+    #location_meaning: "Buoy is located of the coast of Humboldt, CA"
+
+    # Name of instrument(s) used to collect data.
+    #instrument_name: "Wind Sentinel"
+
+    # Serial number of instrument(s) used to collect data.
+    #serial_number: "000011312"
+
+    # Description of instrument(s) used to collect data.
+    #instrument_meaning: "Self-powered floating buoy hosting a suite of meteorological and marine instruments."
+
+    # Manufacturer of instrument(s) used to collect data.
+    #instrument_manufacturer: "AXYS Technologies Inc."
+
+    # The date(s) of the last time the instrument(s) was calibrated.
+    #last_calibration_date: "2020-10-01"
+
+    # The expected sampling interval of the instrument (e.g., "400 us")
+    #sampling_interval: "10 min"
+
+  #-----------------------------------------------------------------
+  # Dimensions (shape)
+  #-----------------------------------------------------------------
+  dimensions:
+    # All time series data must have a "time" dimension
+    # TODO: provide a link to the documentation online
+    time:
+        length: "unlimited"
+  
+  #-----------------------------------------------------------------
+  # Variable Defaults
+  # 
+  # Variable defaults can be used to specify a default dimension(s), 
+  # data type, or variable attributes. This can be used to reduce the 
+  # number of properties that a variable needs to define in this 
+  # config file, which can be useful for vaps or ingests with many
+  # variables.
+  # 
+  # Once a default property has been defined, (e.g. 'type: float64') 
+  # that property becomes optional for all variables (e.g. No variables
+  # need to have a 'type' property). 
+  # 
+  # This section is entirely optional, so it is commented out.
+  #-----------------------------------------------------------------
+  # variable_defaults:
+
+    # Optionally specify defaults for variable inputs. These defaults will
+    # only be applied to variables that have an 'input' property. This
+    # is to allow for variables that are created on the fly, but defined in
+    # the config file.
+    # input:
+
+      # If this is specified, the pipeline will attempt to match the file pattern
+      # to an input filename. This is useful for cases where a variable has the 
+      # same name in multiple input files, but it should only be retrieved from
+      # one file.
+      # file_pattern: "buoy"
+
+      # Specify this to indicate that the variable must be retrieved. If this is
+      # set to True and the variable is not found in the input file the pipeline
+      # will crash. If this is set to False, the pipeline will continue.
+      # required: True
+
+      # Defaults for the converter used to translate input numpy arrays to
+      # numpy arrays used for calculations
+      # converter:
+        
+        #-------------------------------------------------------------
+        # Specify the classname of the converter to use as a default. 
+        # A converter is used to convert the raw data into standardized
+        # values.
+        #
+        # Use the DefaultConverter for all non-time variables that
+        # use units supported by udunits2.
+        # https://www.unidata.ucar.edu/software/udunits/udunits-2.2.28/udunits2.html#Database
+        #
+        # If your raw data has units that are not supported by udunits2,
+        # you can specify your own Converter class.
+        #-------------------------------------------------------------
+        # classname: "tsdat.utils.converters.DefaultConverter"
+
+        # If the default converter always requires specific parameters, these
+        # can be defined here. Note that these parameters are not tied to the
+        # classname specified above and will be passed to all converters defined
+        # here.
+        # parameters:
+
+          # Example of parameter format:
+          # param_name: param_value          
+    
+    # The name(s) of the dimension(s) that dimension this data by 
+    # default. For time-series tabular data, the following is a 'good'
+    # default to use:
+    # dims: [time]
+    
+    # The data type to use by default. The data type must be one of:
+    # int8 (or byte), uint8 (or ubyte), int16 (or short), uint16 (or ushort), 
+    # int32 (or int), uint32 (or uint), int64 (or long), uint64 (or ulong), 
+    # float32 (or float), float64 (or double), char, str
+    # type: float64
+    
+    # Any attributes that should be defined by default 
+    # attrs:
+
+      # Default _FillValue to use for missing data. Recommended to use
+      # -9999 because it is the default _FillValue according to CF
+      # conventions for netCDF data.
+      # _FillValue: -9999
+
+  #-----------------------------------------------------------------
+  # Variables
+  #-----------------------------------------------------------------
+  variables:
+
+    #---------------------------------------------------------------
+    # All time series data must have a "time" coordinate variable which
+    # contains the data values for the time dimension
+    # TODO: provide a link to the documentation online
+    #---------------------------------------------------------------
+    time:  # Variable name as it will appear in the processed data
+
+      #---------------------------------------------------------------
+      # The input section for each variable is used to specify the
+      # mapping between the raw data file and the processed output data
+      #---------------------------------------------------------------
+      input:
+        # Name of the variable in the raw data
+        name: "DataTimeStamp"
+        
+        #-------------------------------------------------------------
+        # A converter is used to convert the raw data into standardized
+        # values.
+        #-------------------------------------------------------------
+        # Use the StringTimeConverter if your raw data provides time
+        # as a formatted string.
+        converter:
+          classname: "tsdat.utils.converters.StringTimeConverter"
+          parameters:
+            # A list of timezones can be found here:
+            # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+            timezone: "US/Pacific"
+            time_format: "%Y-%m-%d %H:%M:%S"
+
+        # Use the TimestampTimeConverter if your raw data provides time
+        # as a numeric UTC timestamp
+        #converter:
+        #  classname: tsdat.utils.converters.TimestampTimeConverter
+        #  parameters:
+        #    # Unit of the numeric value as used by pandas.to_datetime (D,s,ms,us,ns)
+        #    unit: s
+
+      # The shape of this variable.  All coordinate variables (e.g., time) must
+      # have a single dimension that exactly matches the variable name
+      dims: [time]
+
+      # The data type of the variable.  Must be one of:
+      # int8 (or byte), uint8 (or ubyte), int16 (or short), uint16 (or ushort), 
+      # int32 (or int), uint32 (or uint), int64 (or long), uint64 (or ulong), 
+      # float32 (or float), float64 (or double), char, str
+      type: int64
+
+      #-------------------------------------------------------------
+      # The attrs section define the attributes (metadata) that will
+      # be set for this variable.
+      #
+      # All optional attributes are commented out.  You may remove them
+      # if not applicable to your data.
+      #
+      # You may add any additional attributes as needed to describe your
+      # variables.
+      #
+      # Any metadata used for QC tests will be indicated.
+      #-------------------------------------------------------------
+      attrs:
+
+        # A minimal description of what the variable represents.
+        long_name: "Time offset from epoch"
+
+        # A string exactly matching a value in from the CF or MRE
+        # Standard Name table, if a match exists
+        #standard_name: time
+
+        # A CFUnits-compatible string indicating the units the data
+        # are measured in.
+        # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#units
+        #
+        # Note:  CF Standards require this exact format for time.
+        # UTC is strongly recommended.
+        # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#time-coordinate
+        units: "seconds since 1970-01-01T00:00:00"
+
+    #-----------------------------------------------------------------
+    # Mean temperature variable (non-coordinate variable)
+    #-----------------------------------------------------------------
+    sea_surface_temperature: # Variable name as it will appear in the processed data
+
+      #---------------------------------------------------------------
+      # The input section for each variable is used to specify the
+      # mapping between the raw data file and the processed output data
+      #---------------------------------------------------------------
+      input:
+        # Name of the variable in the raw data
+        name: "Surface Temperature (C)"
+
+        # Units of the variable in the raw data
+        units: "degC"
+
+      # The shape of this variable
+      dims: [time]
+
+      # The data type of the variable.  Can be one of:
+      # [byte, ubyte, char, short, ushort, int32 (or int), uint32 (or uint),
+      # int64 (or long), uint64 (or ulong), float, double, string]
+      type: double
+
+      #-------------------------------------------------------------
+      # The attrs section define the attributes (metadata) that will
+      # be set for this variable.
+      #
+      # All optional attributes are commented out.  You may remove them
+      # if not applicable to your data.
+      #
+      # You may add any additional attributes as needed to describe your
+      # variables.
+      #
+      # Any metadata used for QC tests will be indicated.
+      #-------------------------------------------------------------
+      attrs:
+        # A minimal description of what the variable represents.
+        long_name: "Mean sea surface temperature"
+
+        # An optional attribute to provide human-readable context for what this variable
+        # represents, how it was measured, or anything else that would be relevant to end-users.
+        #comment: Rolling 10-minute average sea surface temperature. Aligned such that the temperature reported at time 'n' represents the average across the interval (n-1, n].
+
+        # A CFUnits-compatible string indicating the units the data
+        # are measured in.
+        # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#units
+        units: "degC"
+
+        # The value used to initialize the variable’s data. Defaults to -9999.
+        # Coordinate variables must not use this attribute.
+        #_FillValue: -9999
+
+        # An array of variable names that depend on the values from this variable. This is primarily
+        # used to indicate if a variable has an ancillary qc variable.
+        # NOTE: QC ancillary variables will be automatically recorded via the MHKiT-Cloud pipeline engine.
+        #ancillary_variables: []
+
+        # A two-element array of [min, max] representing the smallest and largest valid values
+        # of a variable.  Values outside valid_range will be filled with _FillValue.
+        #valid_range: [-50, 50]
+
+        # The maximum allowed difference between any two consecutive values of a variable,
+        # values outside of which should be flagged as "Bad".
+        # This attribute is used for the valid_delta QC test.  If not specified, this
+        # variable will be omitted from the test.
+        #valid_delta: 0.25
+
+        # A two-element array of [min, max] outside of which the data should be flagged as "Bad".
+        # This attribute is used for the fail_min and fail_max QC tests.
+        # If not specified, this variable will be omitted from these tests.
+        #fail_range: [0, 40]
+
+        # A two-element array of [min, max] outside of which the data should be flagged as "Indeterminate".
+        # This attribute is used for the warn_min and warn_max QC tests.
+        # If not specified, this variable will be omitted from these tests.
+        #warn_range: [0, 30]
+
+        # An array of strings indicating what corrections, if any, have been applied to the data.
+        #corrections_applied: []
+
+        # The height of the instrument above ground level (AGL), or in the case of above
+        # water, above the surface.
+        #sensor_height: "30m"
+
+    #-----------------------------------------------------------------
+    # Example of a variables that hold a single scalar value that
+    # is not present in the raw data.
+    #-----------------------------------------------------------------
+    latitude:
+      data: 71.323 #<-----The data field can be used to specify a pre-set value
+      type: float
+
+      #<-----This variable has no input, which means it will be set by
+      # the pipeline and not pulled from the raw data
+
+      #<-----This variable has no dimensions, which means it will be
+      # a scalar value
+
+      attrs:
+        long_name: "North latitude"
+        standard_name: "latitude"
+        comment: "Recorded lattitude at the instrument location"
+        units: "degree_N"
+        valid_range: [-90.f, 90.f]
+
+    longitude:
+      data: -156.609
+      type: float
+      attrs:
+        long_name: "East longitude"
+        standard_name: "longitude"
+        comment: "Recorded longitude at the instrument location"
+        units: "degree_E"
+        valid_range: [-180.f, 180.f]
+
+    #-----------------------------------------------------------------
+    # Example of a variable that is derived by the processing pipeline
+    #-----------------------------------------------------------------
+    foo:
+      type: float
+
+      #<-----This variable has no input, which means it will be set by
+      # the pipeline and not pulled from the raw data
+
+      dims: [time]
+
+      attrs:
+        long_name: "some other property"
+        units: "kg/m^3"
+        comment: "Computed from temp_mean point value using some formula..."
+        references: ["http://sccoos.org/data/autoss/", "http://sccoos.org/about/dmac/"]
+
+---
+####################################################################
+# PART 2: QC TESTS
+# Define the QC tests that will be applied to variable data.
+####################################################################
+coordinate_variable_qc_tests:
+  #-----------------------------------------------------------------
+  # The following section defines the default qc tests that will be
+  # performed on coordinate variables in a dataset.  Note that by
+  # default, coordinate variable tests will NOT set a QC bit and
+  # will trigger a critical pipeline failure.  This is because
+  # Problems with coordinate variables are considered to cause
+  # the dataset to be unusable and should be manually reviewed.
+  #
+  # However, the user may override the default coordinate variable
+  # tests and error handlers if they feel that data correction is
+  # warranted.
+  #
+  # For a complete list of tests provided by MHKiT-Cloud, please see
+  # the tsdat.qc.operators package.
+  #
+  # Users are also free to add custom tests defined by their own
+  # checker classes.
+  #-----------------------------------------------------------------
+
+quality_management:
+  #-----------------------------------------------------------------
+  # The following section defines the default qc tests that will be
+  # performed on variables in a dataset.
+  #
+  # For a complete list of tests provided by MHKiT-Cloud, please see
+  # the tsdat.qc.operators package.
+  #
+  # Users are also free to add custom tests defined by their own
+  # checker classes.
+  #-----------------------------------------------------------------
+  
+  #-----------------------------------------------------------------
+  # Checks on coordinate variables
+  #-----------------------------------------------------------------
+  
+  # The name of the test.
+  manage_missing_coordinates:
+
+    # Quality checker used to identify problematic variable values.
+    # Users can define their own quality checkers and link them here
+    checker:
+      # This quality checker will identify values that are missing,
+      # NaN, or equal to each variable's _FillValue
+      classname: "tsdat.qc.operators.CheckMissing"
+    
+    # Quality handler used to manage problematic variable values. 
+    # Users can define their own quality handlers and link them here.
+    handlers:
+      # This quality handler will cause the pipeline to fail
+      - classname: "tsdat.qc.error_handlers.FailPipeline"
+    
+    # Which variables to apply the test to
+    variables:
+      # keyword to apply test to all coordinate variables
+      - COORDS
+
+  manage_coordinate_monotonicity:
+
+    checker:
+      # This quality checker will identify variables that are not
+      # strictly monotonic (That is, it identifies variables whose 
+      # values are not strictly increasing or strictly decreasing)
+      classname: "tsdat.qc.operators.CheckMonotonic"
+
+    handlers:
+      - classname: "tsdat.qc.error_handlers.FailPipeline"
+
+    variables:
+      - COORDS
+
+  #-----------------------------------------------------------------
+  # Checks on data variables
+  #-----------------------------------------------------------------
+  manage_missing_values:  
+
+    # The class that performs the quality check. Users are free
+    # to override with their own class if they want to change
+    # behavior.
+    checker:
+      classname: "tsdat.qc.operators.CheckMissing"
+
+    # Error handlers are optional and run after the test is
+    # performed if any of the values fail the test.  Users
+    # may specify one or more error handlers which will be
+    # executed in sequence.  Users are free to add their
+    # own QCErrorHandler subclass if they want to add custom
+    # behavior.
+    handlers:
+      
+      # This error handler will replace any NaNs with _FillValue
+      - classname: "tsdat.qc.error_handlers.RemoveFailedValues"
+        # Quality handlers and all other objects that have a 'classname'
+        # property can take a dictionary of parameters. These 
+        # parameters are made available to the object or class in the
+        # code and can be used to implement custom behavior with little 
+        # overhead.
+        parameters:
+          
+          # The correction parameter is used by the RemoveFailedValues
+          # quality handler to append to a list of corrections for each
+          # variable that this handler is applied to. As a best practice,
+          # quality handlers that modify data values should use the 
+          # correction parameter to update the 'corrections_applied'
+          # variable attribute on the variable this test is applied to.
+          correction: "Set NaN and missing values to _FillValue"
+
+      
+      # This quality handler will record the results of the 
+      # quality check in the ancillary qc variable for each
+      # variable this quality manager is applied to.
+      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+        parameters:
+
+          # The bit (1-32) used to record the results of this test.
+          # This is used to update the variable's ancillary qc
+          # variable.
+          bit: 1
+
+          # The assessment of the test.  Must be either 'Bad' or 'Indeterminate'
+          assessment: "Bad"
+          
+          # The description of the data quality from this check
+          meaning: "Value is equal to _FillValue or NaN"
+
+    variables:
+      # keyword to apply test to all non-coordinate variables
+      - DATA_VARS
+
+  manage_fail_min:
+    checker:
+      classname: "tsdat.qc.operators.CheckFailMin"
+    handlers: 
+      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+        parameters:
+          bit: 2
+          assessment: "Bad"
+          meaning: "Value is less than the fail_range."
+    variables:
+      - DATA_VARS
+
+  manage_fail_max:
+    checker:
+      classname: "tsdat.qc.operators.CheckFailMax"
+    handlers:
+      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+        parameters:  
+          bit: 3
+          assessment: "Bad"
+          meaning: "Value is greater than the fail_range."
+    variables:
+      - DATA_VARS
+
+  manage_warn_min:
+    checker:
+      classname: "tsdat.qc.operators.CheckWarnMin"
+    handlers:
+      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+        parameters:  
+          bit: 4
+          assessment: "Indeterminate"
+          meaning: "Value is less than the warn_range."
+    variables:
+      - DATA_VARS
+
+  manage_warn_max:
+    checker:
+      classname: "tsdat.qc.operators.CheckWarnMax"
+    handlers:
+      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+        parameters:  
+          bit: 5
+          assessment: "Indeterminate"
+          meaning: "Value is greater than the warn_range."
+    variables:
+      - DATA_VARS
+
+  manage_valid_delta:
+    checker:
+      classname: "tsdat.qc.operators.CheckValidDelta"
+      parameters:
+        dim: time  # specifies the dimension over which to compute the delta
+    handlers:
+      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+        parameters:
+          bit: 6
+          assessment: "Indeterminate"
+          meaning: "Difference between current and previous values exceeds valid_delta."
+    variables:
+      - DATA_VARS
+
+    #-----------------------------------------------------------------
+    # Example of a user-created test that shows how to specify
+    # an error handler.  Error handlers may be optionally added to
+    # any of the tests described above.  (Note that this example will
+    # not work, it is just provided as an example of adding a
+    # custom QC test.)
+    #-----------------------------------------------------------------
+    # temp_test:
+
+    #   checker:
+    #     classname: "myproject.qc.operators.TestTemp"
+
+    #   #-------------------------------------------------------------
+    #   # See the tsdat.qc.error_handlers package for a list of
+    #   # available error handlers.
+    #   #-------------------------------------------------------------
+    #   handlers:
+
+    #       # This handler will set bit number 7 on the ancillary qc 
+    #       # variable for the variable(s) this test applies to.
+    #     - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+    #       parameters:
+    #         bit: 7
+    #         assessment: "Indeterminate"
+    #         meaning: "Test for some special condition in temperature."
+
+    #       # This error handler will notify users via email.  The
+    #       # datastream name, variable, and failing values will be
+    #       # included.
+    #     - classname: "tsdat.qc.error_handlers.SendEmailAWS"
+    #       parameters:
+    #         message: "Test failed..."
+    #         recipients: ["carina.lansing@pnnl.gov", "maxwell.levin@pnnl.gov"]
+      
+    #   # Specifies the variable(s) this quality manager applies to
+    #   variables:
+    #     - temp_mean
