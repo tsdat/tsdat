@@ -33,7 +33,6 @@ class IngestPipeline(Pipeline):
 
             # Standardize the dataset and apply corrections / customizations
             dataset = self.standardize_dataset(raw_dataset_mapping)
-            dataset = self.hook_apply_corrections(dataset, raw_dataset_mapping)
             dataset = self.hook_customize_dataset(dataset, raw_dataset_mapping)
 
             # Apply quality control / quality assurance to the dataset.

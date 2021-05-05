@@ -18,7 +18,7 @@ plt.style.use(style_file)
 
 class StaPipeline(IngestPipeline):
 
-    def hook_apply_corrections(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
+    def hook_customize_dataset(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         
         # Compress row of variables in input into variables dimensioned by time and height
         for raw_filename, raw_dataset in raw_mapping.items():
