@@ -4,7 +4,7 @@ import xarray as xr
 from typing import Dict, List, Union
 from .pipeline import Pipeline
 from tsdat.io.filehandlers import FileHandler
-from tsdat.qc import QC
+from tsdat.qc import QualityManagement
 from tsdat.utils import DSUtil
 from tsdat.config import DatasetDefinition, VariableDefinition
 from .pipeline import Pipeline
@@ -38,7 +38,7 @@ class IngestPipeline(Pipeline):
 
             # Apply quality control / quality assurance to the dataset.
             previous_dataset = self.get_previous_dataset(dataset)
-            dataset = QC.apply_managers(dataset, self.config, previous_dataset)
+            dataset = QualityManagement.run(dataset, self.config, previous_dataset)
 
             # Apply any final touches to the dataset and persist the dataset
             dataset = self.hook_finalize_dataset(dataset)

@@ -10,14 +10,14 @@ from tsdat.utils import DSUtil
 from tsdat.config.utils import instantiate_handler
 
 
-class QC(object):
+class QualityManagement:
     """-------------------------------------------------------------------
     Class that provides static helper functions for providing quality
     control checks on a tsdat-standardized xarray dataset.
     -------------------------------------------------------------------"""
 
     @staticmethod
-    def apply_managers(ds: xr.Dataset, config: Config, previous_data: xr.Dataset) -> xr.Dataset:
+    def run(ds: xr.Dataset, config: Config, previous_data: xr.Dataset) -> xr.Dataset:
         """-------------------------------------------------------------------
         Applies the Quality Managers defined in the given Config to this dataset.
         QC results will be embedded in the dataset.  QC metadata will be
