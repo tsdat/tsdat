@@ -1,11 +1,11 @@
-act-atmos
-cfunits
-netcdf4
-numpy
-pandas>=1.0.0
-pyyaml
-xarray
-yamllint
-boto3
-cmocean
-seaborn
+act-atmos >= 0.7
+cfunits >= 3.3
+netcdf4 >= 1.5
+numpy >= 1.20
+pandas >= 1.2
+pyyaml >= 5.4
+xarray >= 0.17
+yamllint >= 1.26
+boto3 >= 1.17
+cmocean >= 2.0
+seaborn >= 0.11
