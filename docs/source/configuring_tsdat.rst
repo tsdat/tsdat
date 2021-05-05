@@ -190,7 +190,7 @@ of the custom classes that can be defined in Tsdat and what their purpose is.
 IngestPipeline Code Hooks
 =============================
 
-The following hook methods (which can be easily identified because they all start with the 'hook_' prefix) 
+The following hook methods (which can be easily identified because they all start with the 'hook\_' prefix) 
 are provided in the IngestPipeline template.  They are listed in the order that they are
 executed in the pipeline.
 

@@ -10,7 +10,7 @@
    getting_started.rst
    configuring_tsdat.rst
    examples_and_tutorials.rst
-   api.rst
+   autoapi/index.rst
    collaboration.rst
    acknowledgements.rst
 
@@ -76,3 +76,4 @@ datasets that are much more accessible to data users. Tsdat encourages
 following data standards and best practices when building data pipelines so 
 that your data is clean, easy to understand, more accessible, and ultimately 
 more valuable to your data users. 
+
