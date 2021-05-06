@@ -45,29 +45,6 @@ class IngestPipeline(Pipeline):
 
             # Hook to generate custom plots
             self.hook_generate_and_persist_plots(dataset)
-
-    def hook_apply_corrections(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Pipeline hook that can be used to apply standard corrections for the 
-        instrument/measurement or calibrations. This method is called
-        immediately after the dataset is converted to standard format and
-        before Quality Management occurs.
-
-        If corrections are applied, then the `corrections_applied` attribute
-        should be updated on the variable(s) that this method applies
-        corrections to.
-
-        Args:
-        ---
-            dataset (xr.Dataset):   A standardized xarray dataset where the 
-                                    variable names correspond with the output 
-                                    variable names from the config file.
-            raw_mapping (Dict[str, xr.Dataset]):    The raw dataset mapping.
-        Returns:
-        ---
-            xr.Dataset: The input xarray dataset with corrections applied.
-        -------------------------------------------------------------------"""
-        return dataset
     
     def hook_customize_dataset(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         """-------------------------------------------------------------------

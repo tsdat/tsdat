@@ -209,16 +209,6 @@ hook_customize_raw_datasets
    This method is called before the inputs are merged and converted to
    standard format as specified by the config file.
 
-hook_apply_corrections
-   IngestPipeline hook that can be used to apply standard corrections for the 
-   instrument/measurement or calibrations. This method is called
-   immediately after the dataset is converted to standard format and
-   before any QC tests are applied.
-
-   If corrections are applied, then the ``corrections_applied`` attribute
-   should be updated on the variable(s) that this method applies
-   corrections to.
-
 hook_customize_dataset
    Hook to allow for user customizations to the standardized dataset such
    as inserting a derived variable based on other variables in the
