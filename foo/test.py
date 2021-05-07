@@ -1,4 +1,5 @@
 import seaborn
+from typing import List
 
 import abc
 
@@ -100,30 +101,14 @@ class QualityHandler(abc.ABC):
             pass
 
 
-
-def hello_world(name):
-    """Summary line.
-
-    Extended description of function.
-
-    :param int arg1: Description of arg1.
-    :param str arg2: Description of arg2.
-    :raise: ValueError if arg1 is equal to arg2
-    :return: Description of return value
-    :rtype: bool
-
-    :example:
-
-    >>> a=1
-    >>> b=2
-    >>> func(a,b)
-    True
-    
-    .. code-block:: python
-       :linenos:
-    
-       a=1
-       b=2
-       func(a,b)
+def hello_world(name: str) -> List[str]:
     """
-    print(f"hello world {name}")
+
+    :param name:
+    :type name:
+    :return:
+    :rtype:
+    """
+
+    return [f"hello world {name}"]
+

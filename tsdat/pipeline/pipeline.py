@@ -117,20 +117,15 @@ class Pipeline(abc.ABC):
         return xr.merge([dataset, static_ds])
 
     def add_missing_variables(self, dataset: xr.Dataset, dod: DatasetDefinition):
-        """-------------------------------------------------------------------
-        Uses the dataset definition to initialize variables that are defined
-        in the dataset definition but did not have input. Uses the appropriate
-        shape and _FillValue to initialize each variable.
+        """
 
-        Args:
-        ---
-            dataset (xr.Dataset): The dataset to add the variables to
-            dod (DatasetDefinition): The DatasetDefinition to use.
-
-        Returns:
-        ---
-            xr.Dataset: The original dataset with possible additional variables initialized.
-        -------------------------------------------------------------------"""
+        :param dataset:
+        :type dataset:
+        :param dod:
+        :type dod:
+        :return:
+        :rtype:
+        """
         coords, data_vars = {}, {}
         for var_name, var_def in dod.vars.items():
             if var_name not in dataset.variables:
