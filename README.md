@@ -12,7 +12,7 @@ test
 You can install tsdat and its dependencies using pip
 
 ```bash
-pip3 install tsdat
+pip install tsdat
 ```
 
 ## Documentation
@@ -34,7 +34,7 @@ git clone https://github.com/tsdat/tsdat.git
 You can install the tsdat  requirements via:
 
 ```bash
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Releasing to pypi
@@ -53,6 +53,4 @@ pip install twine
 cd tsdat
 python setup.py sdist bdist_wheel
 twine upload dist/*
-```
-
 ```
