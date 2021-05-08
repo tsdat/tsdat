@@ -10,18 +10,24 @@ from tsdat.utils import DSUtil
 
 
 class QualityChecker(abc.ABC):
-    """-------------------------------------------------------------------
-    Class containing the code to perform a single Quality Check on a 
+    """Class containing the code to perform a single Quality Check on a 
     Dataset variable.
-    -------------------------------------------------------------------"""
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, definition: QualityManagerDefinition, parameters={}):
-        """-------------------------------------------------------------------
-        Args:
-            ds (xr.Dataset): The dataset the checker will be applied to
-            previous_data (xr.Dataset): Data from the previous processing interval
-            definition (QualityManagerDefinition)  : The quality manager definition
-            params(Dict)   : A dictionary of checker-specific parameters
-        -------------------------------------------------------------------"""
+    
+    :param ds: The dataset the checker will be applied to
+    :type ds: xr.Dataset
+    :param previous_data: A dataset from the previous processing interval 
+        (i.e., file).  This is used to check for consistency between files, 
+        such as for monitonic or delta checks when we need to check the previous value.
+    :type previous_data: xr.Dataset
+    :param definition: The quality manager definition as specified in the
+        pipeline config file
+    :type definition: QualityManagerDefinition
+    :param parameters: A dictionary of checker-specific parameters specified in the
+        pipeline config file.  Defaults to {}
+    :type parameters: dict, optional
+    """
+    
+    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, definition: QualityManagerDefinition, parameters={}):    
         self.ds = ds
         self.previous_data = previous_data
         self.definition = definition
@@ -29,16 +35,13 @@ class QualityChecker(abc.ABC):
 
     @abc.abstractmethod
     def run(self, variable_name: str) -> Optional[np.ndarray]:
-        """-------------------------------------------------------------------
-        Check a dataset's variable to see if it passes a quality check.
+        """Check a dataset's variable to see if it passes a quality check.
         These checks can be performed on the entire variable at one time by
         using xarray vectorized numerical operators.
 
-        Args:
-            variable_name (str):  The name of the variable to check
-
-        Returns:
-            np.ndarray | None: If the check was performed, return a
+        :param variable_name: The name of the variable to check
+        :type variable_name: str
+        :return: If the check was performed, return a
             ndarray of the same shape as the variable. Each value in the
             data array will be either True or False, depending upon the
             results of the check.  True means the check failed.  False means
@@ -52,19 +55,19 @@ class QualityChecker(abc.ABC):
             If the check was skipped for some reason (i.e., it was not
             relevant given the current attributes defined for this dataset),
             then the run method should return None.
-        -------------------------------------------------------------------"""
+        :rtype: Optional[np.ndarray]
+        """        
         pass
 
 
 class CheckMissing(QualityChecker):
+    """Checks if any values are assigned to _FillValue or 'NaN' (for non-time
+    variables) or checks if values are assigned to 'NaT' (for time variables).
+    Also, for non-time variables, checks if values are above or below
+    valid_range, as this is considered missing as well.
+    """
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
-        """-------------------------------------------------------------------
-        Checks if any values are assigned to _FillValue or 'NaN' (for non-time
-        variables) or checks if values are assigned to 'NaT' (for time variables).
-        Also, for non-time variables, checks if values are above or below
-        valid_range, as this is considered missing as well.
-        -------------------------------------------------------------------"""
 
         # If this is a time variable, we check for 'NaT'
         if self.ds[variable_name].values.dtype.type == np.datetime64:
@@ -107,6 +110,15 @@ class CheckMissing(QualityChecker):
 
 
 class CheckMin(QualityChecker):
+    """Check that no values for the specified variable are less than 
+    a specified minimum threshold.  The threshold value is an attribute
+    set on the variable in question. The  attribute name is 
+    specified in the quality checker definition in the pipeline config
+    file by setting a param called 'key: ATTRIBUTE_NAME'.
+    
+    If the key parameter is not set or the variable does not possess
+    the specified attribute, this check will be skipped.
+    """
 
     def run(self, variable_name: str) -> Optional[np.ndarray]:
         # Get the minimum value
@@ -123,7 +135,16 @@ class CheckMin(QualityChecker):
 
 
 class CheckMax(QualityChecker):
-
+    """Check that no values for the specified variable are greater than 
+    a specified maximum threshold.  The threshold value is an attribute
+    set on the variable in question. The  attribute name is 
+    specified in the quality checker definition in the pipeline config
+    file by setting a param called 'key: ATTRIBUTE_NAME'.
+    
+    If the key parameter is not set or the variable does not possess
+    the specified attribute, this check will be skipped.
+    """
+    
     def run(self, variable_name: str) -> Optional[np.ndarray]:
         # Get the maximum value
         _max = self.ds[variable_name].attrs.get(self.params["key"], None)
@@ -139,13 +160,22 @@ class CheckMax(QualityChecker):
 
 
 class CheckValidMin(CheckMin):
-
+    """Check that no values for the specified variable are less than 
+    the minimum vaue set by the 'valid_range' attribute.  If the
+    variable in question does not posess the 'valid_range' attribute,
+    this check will be skipped.
+    """
     def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, definition: QualityManagerDefinition, parameters):
         super().__init__(ds, previous_data, definition, parameters=parameters)
         self.params["key"] = "valid_range"
 
 
 class CheckValidMax(CheckMax):
+    """Check that no values for the specified variable are greater than 
+    the maximum vaue set by the 'valid_range' attribute.  If the
+    variable in question does not posess the 'valid_range' attribute, 
+    this check will be skipped.
+    """
 
     def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, definition: QualityManagerDefinition, parameters):
         super().__init__(ds, previous_data, definition, parameters=parameters)
@@ -153,35 +183,55 @@ class CheckValidMax(CheckMax):
 
 
 class CheckFailMin(CheckMin):
-
+    """Check that no values for the specified variable are less than 
+    the minimum vaue set by the 'fail_range' attribute.  If the
+    variable in question does not posess the 'fail_range' attribute,
+    this check will be skipped.
+    """
     def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, definition: QualityManagerDefinition, parameters):
         super().__init__(ds, previous_data, definition, parameters=parameters)
         self.params["key"] = "fail_range"
 
 
 class CheckFailMax(CheckMax):
-
+    """Check that no values for the specified variable greater less than 
+    the maximum vaue set by the 'fail_range' attribute.  If the
+    variable in question does not posess the 'fail_range' attribute,
+    this check will be skipped.
+    """
     def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, definition: QualityManagerDefinition, parameters):
         super().__init__(ds, previous_data, definition, parameters=parameters)
         self.params["key"] = "fail_range"
 
 
 class CheckWarnMin(CheckMin):
-
+    """Check that no values for the specified variable are less than 
+    the minimum vaue set by the 'warn_range' attribute.  If the
+    variable in question does not posess the 'warn_range' attribute,
+    this check will be skipped.
+    """
     def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, definition: QualityManagerDefinition, parameters):
         super().__init__(ds, previous_data, definition, parameters=parameters)
         self.params["key"] = "warn_range"
 
 
 class CheckWarnMax(CheckMax):
-
+    """Check that no values for the specified variable are greater than 
+    the maximum vaue set by the 'warn_range' attribute.  If the
+    variable in question does not posess the 'warn_range' attribute,
+    this check will be skipped.
+    """
     def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, definition: QualityManagerDefinition, parameters):
         super().__init__(ds, previous_data, definition, parameters=parameters)
         self.params["key"] = "warn_range"
 
 
 class CheckValidDelta(QualityChecker):
-
+    """Check that the difference between any two consecutive
+    values is not greater than the threshold set by the 
+    'valid_delta' attribute.  If the variable in question
+    does not posess the 'valid_delta' attribute, this check will be skipped.
+    """
     def run(self, variable_name: str) -> Optional[np.ndarray]:
 
         valid_delta = self.ds[variable_name].attrs.get(ATTS.VALID_DELTA, None)
@@ -240,7 +290,9 @@ class CheckValidDelta(QualityChecker):
 
 
 class CheckMonotonic(QualityChecker):
-
+    """Checks that all values for the specified variable are either 
+    strictly increasing or strictly decreasing.
+    """
     def run(self, variable_name: str) -> Optional[np.ndarray]:
 
         results_array = None

@@ -47,7 +47,7 @@ class DSUtil:
         :param datetime64: The datetime64 object
         :type datetime64: Union[np.ndarray, np.datetime64]
         :return: A tuple of strings representing the formatted date.  The first string is
-        the day in 'yyyymmdd' format.  The second string is the time in 'hhmmss' format.
+            the day in 'yyyymmdd' format.  The second string is the time in 'hhmmss' format.
         :rtype: Tuple[str, str]
         """        
         datetime = act.utils.datetime64_to_datetime()[0]
@@ -61,7 +61,7 @@ class DSUtil:
         :param variable_data: ndarray of variable data
         :type variable_data: np.ndarray
         :return: An ndarray of the same shape, with time values converted to 
-        long timestamps (e.g., int64)
+            long timestamps (e.g., int64)
         :rtype: np.ndarray
         """        
         return variable_data.astype(pd.Timestamp).astype(np.int64)
@@ -74,7 +74,7 @@ class DSUtil:
         :param ds: The data as an xarray dataset; defaults to None
         :type ds: xr.Dataset, optional.
         :param config: The Config object used to assist reading time data from 
-        the raw_dataset; defaults to None.
+            the raw_dataset; defaults to None.
         :type config: Config, optional
         :return: The datastream name
         :rtype: str
@@ -94,7 +94,7 @@ class DSUtil:
         :param ds: The dataset
         :type ds: xr.Dataset
         :return: A tuple of [day, time] as formatted strings representing
-        the last time point in the dataset.
+            the last time point in the dataset.
         :rtype: Tuple[str, str]
         """
         time64 = np.min(ds['time'].data)
@@ -110,9 +110,9 @@ class DSUtil:
         :param variable_name: A variable in the dataset
         :type variable_name: str
         :return: The max value of the fail_range attribute or 
-        None if not defined
+            None if not defined
         :rtype: same data type of the variable (int, float, etc.)
-        or None
+            or None
         """        
         fail_max = None
         fail_range = ds[variable_name].attrs.get(ATTS.FAIL_RANGE, None)
@@ -130,9 +130,9 @@ class DSUtil:
         :param variable_name: A variable in the dataset
         :type variable_name: str
         :return: The min value of the fail_range attribute or 
-        None if not defined
+            None if not defined
         :rtype: same data type of the variable (int, float, etc.)
-        or None
+            or None
         """     
         fail_min = None
         fail_range = ds[variable_name].attrs.get(ATTS.FAIL_RANGE, None)
@@ -150,9 +150,9 @@ class DSUtil:
         :param variable_name: A variable in the dataset
         :type variable_name: str
         :return: The max value of the valid_range attribute or 
-        None if not defined
+            None if not defined
         :rtype: same data type of the variable (int, float, etc.)
-        or None
+            or None
         """     
         valid_max = None
         valid_range = ds[variable_name].attrs.get(ATTS.VALID_RANGE, None)
@@ -170,9 +170,9 @@ class DSUtil:
         :param variable_name: A variable in the dataset
         :type variable_name: str
         :return: The min value of the valid_range attribute or 
-        None if not defined
+            None if not defined
         :rtype: same data type of the variable (int, float, etc.)
-        or None
+            or None
         """     
         valid_min = None
         valid_range = ds[variable_name].attrs.get(ATTS.VALID_RANGE, None)
@@ -190,9 +190,9 @@ class DSUtil:
         :param variable_name: A variable in the dataset
         :type variable_name: str
         :return: The value of the _FillValue attr or None
-        if it is not defined
+            if it is not defined
         :rtype: same data type of the variable (int, float, etc.)
-        or None
+            or None
         """        
         return ds[variable_name].attrs.get(ATTS.FILL_VALUE, None)
 
@@ -228,11 +228,11 @@ class DSUtil:
         :param raw_ds: A raw dataset (not standardized)
         :type raw_ds: xr.Dataset
         :param time_var_definition: The 'time' variable definition from the 
-        pipeline config
+            pipeline config
         :type time_var_definition: VariableDefinition
         :return: A tuple of strings representing the last time data point
-        in the dataset.  The first string is the day in 'yyyymmdd' format.  
-        The second string is the time in 'hhmmss' format.
+            in the dataset.  The first string is the day in 'yyyymmdd' format.  
+            The second string is the time in 'hhmmss' format.
         :rtype: Tuple[str, str]
         """        
         time_var_name = time_var_definition.get_input_name()
@@ -254,11 +254,11 @@ class DSUtil:
         :param raw_ds: A raw dataset (not standardized)
         :type raw_ds: xr.Dataset
         :param time_var_definition: The 'time' variable definition from the 
-        pipeline config
+            pipeline config
         :type time_var_definition: VariableDefinition
         :return: A tuple of strings representing the first time data point
-        in the dataset.  The first string is the day in 'yyyymmdd' format.  
-        The second string is the time in 'hhmmss' format.
+            in the dataset.  The first string is the day in 'yyyymmdd' format.  
+            The second string is the time in 'hhmmss' format.
         :rtype: Tuple[str, str]
         """        
         time_var_name = time_var_definition.get_input_name()
@@ -292,8 +292,8 @@ class DSUtil:
         :param variable_name: A variable in the dataset
         :type variable_name: str
         :return: A tuple where the first value is an array of the dimension
-        names belonging to this variable and the second value is an array
-        of the corresponding lengths of those dimensions.
+            names belonging to this variable and the second value is an array
+            of the corresponding lengths of those dimensions.
         :rtype: Tuple[List[str], List[int]]
         """
         var = ds.get(variable_name)
@@ -314,8 +314,8 @@ class DSUtil:
         :param ds: A standardized dataset
         :type ds: xr.Dataset
         :return: A tuple of strings representing the first time data point
-        in the dataset.  The first string is the day in 'yyyymmdd' format.  
-        The second string is the time in 'hhmmss' format.
+            in the dataset.  The first string is the day in 'yyyymmdd' format.  
+            The second string is the time in 'hhmmss' format.
         :rtype: Tuple[str, str]
         """        
         time64 = np.min(ds['time'].data)
@@ -324,12 +324,11 @@ class DSUtil:
 
     @staticmethod
     def get_timestamp(dt64: np.datetime64):
-        """-------------------------------------------------------------------
-        Convert a datetime64 value into a long integer timestamp
+        """Convert a datetime64 value into a long integer timestamp
         :param dt64: datetime64 object
         :return: timestamp in seconds since 1970-01-01T00:00:00Z
         :rtype: int
-        -------------------------------------------------------------------"""
+        """
         ts = int((dt64 - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's'))
         return ts
 
@@ -384,9 +383,9 @@ class DSUtil:
         :param variable_name: A variable in the dataset
         :type variable_name: str
         :return: The max value of the warn_range attribute or 
-        None if not defined
+            None if not defined
         :rtype: same data type of the variable (int, float, etc.)
-        or None
+            or None
         """   
         warn_max = None
         warn_range = ds[variable_name].attrs.get(ATTS.WARN_RANGE, None)
@@ -404,9 +403,9 @@ class DSUtil:
         :param variable_name: A variable in the dataset
         :type variable_name: str
         :return: The min value of the warn_range attribute or 
-        None if not defined
+            None if not defined
         :rtype: same data type of the variable (int, float, etc.)
-        or None
+            or None
         """   
         warn_min = None
         warn_range = ds[variable_name].attrs.get(ATTS.WARN_RANGE, None)
@@ -443,6 +442,7 @@ class DSUtil:
 
         TODO: Depending on use cases, we will likely add more arguments to be able to quickly produce
         the most common types of QC plots.
+        
         :param ds: A dataset
         :type ds: xr.Dataset
         :param variable_name: The variable to plot
@@ -473,10 +473,10 @@ class DSUtil:
         follow the format: `datastream_name.date.time.description.extension`.
 
         :param dataset: The dataset from which the plot data is drawn from.
-        This is used to collect the datastream_name and start date/time.
+            This is used to collect the datastream_name and start date/time.
         :type dataset: xr.Dataset
         :param plot_description: The description of the plot. Should be as 
-        brief as possible and contain no spaces. Underscores may be used.
+            brief as possible and contain no spaces. Underscores may be used.
         :type plot_description: str
         :param extension: The file extension for the plot.
         :type extension: str
@@ -521,7 +521,7 @@ class DSUtil:
         :param old_filename: The name of the original raw file.
         :type old_filename: str
         :param config: The Config object used to assist reading time data from 
-        the raw_dataset.
+            the raw_dataset.
         :type config: Config
         :return: The standardized filename of the raw file.
         :rtype: str
@@ -574,9 +574,11 @@ class DSUtil:
         where the datastream should be located. Does NOT create the directory
         where the datastream should be located.
 
-        :param datastream_name: The name of the datastream whose directory path should be generated.
+        :param datastream_name: The name of the datastream whose directory path should
+            be generated.
         :type datastream_name: str
-        :param root: The directory to use as the root of the directory structure. Defaults to None. Defaults to ""
+        :param root: The directory to use as the root of the directory structure.
+            Defaults to None. Defaults to ""
         :type root: str, optional
         :return: The path to the directory where the datastream should be located.
         :rtype: str

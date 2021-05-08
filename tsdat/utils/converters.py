@@ -9,19 +9,17 @@ class Converter(abc.ABC):
     Users can extend this class if they have a special units conversion
     for their input data that cannot be resolved with the default converter
     classes.
+    
+    :param parameters: A dictionary of converter-specific parameters
+        which get passed from the pipeline config file.  Defaults to {}
+    :type parameters: dict, optional
     """    
 
-    def __init__(self, parameters={}):
-        """Constructor
-
-        :param parameters: A dictionary of converter-specific parameters which get
-        passed from the pipeline config file.  Defaults to {}
-        :type parameters: dict, optional
-        """        
+    def __init__(self, parameters={}):     
         self.parameters = parameters
 
     @abc.abstractmethod
-    def run(self, data: np.ndarray, in_units: str, out_units: str) -> np.ndarray:
+    def run(self, data: np.ndarray, in_units: str, out_units: str) -> np.ndarray:    
         """Convert the input data from in_units to out_units.
 
         :param data: Data array to be modified.
@@ -51,13 +49,12 @@ class StringTimeConverter(Converter):
     One of the parameters should be 'time_format', which is the 
     the strftime to parse time, eg "%d/%m/%Y". Note that "%f" will parse all
     the way up to nanoseconds. See strftime documentation for more information on choices.
-    """
-    def __init__(self, parameters={}):
-        """Constructor
 
-        :param parameters:  dictionary of converter-specific parameters, defaults to {}.
-        :type parameters: dict, optional
-        """        
+
+    :param parameters:  dictionary of converter-specific parameters.  Defaults to {}.  
+    :type parameters: dict, optional    
+    """
+    def __init__(self, parameters={}):      
         super().__init__(parameters=parameters)
         self.format = self.parameters.get('time_format', None)
         assert self.format
@@ -87,14 +84,12 @@ class TimestampTimeConverter(Converter):
     One of the parameters should be 'unit'. This parameter denotes the time 
     unit (e.g., D,s,ms,us,ns), which is an integer or float number. The 
     timestamp will be based off the unix epoch start.
+    
+    :param parameters: A dictionary of converter-specific parameters which 
+        get passed from the pipeline config file.  Defaults to {}
+    :type parameters: dict, optional
     """   
-    def __init__(self, parameters={}):
-        """Constructor.  Initializes the class.
-
-        :param parameters: A dictionary of converter-specific parameters which get
-        passed from the pipeline config file.  Defaults to {}
-        :type parameters: dict, optional
-        """       
+    def __init__(self, parameters={}):  
         super().__init__(parameters=parameters)
         self.unit = self.parameters.get('unit', None)
         assert self.unit
