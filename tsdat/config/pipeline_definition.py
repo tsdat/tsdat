@@ -3,6 +3,8 @@ from tsdat.exceptions import DefinitionError
 
 
 class PipelineKeys:
+    """Class that provides a handle for keys in the pipeline section of the
+    pipeline config file."""
     TYPE = 'type'
     INPUT_DATA_LEVEL = 'input_data_level'
     OUTPUT_DATA_LEVEL = 'data_level'
@@ -14,8 +16,16 @@ class PipelineKeys:
 
 
 class PipelineDefinition:
+    """Wrapper for the pipeline portion of the pipeline config file.
 
-    def __init__(self, dictionary: Dict[str, Any]):
+    :param dictionary: The pipeline component of the pipeline config file.
+    :type dictionary: Dict[str]
+    :raises DefinitionError: 
+        Raises DefinitionError if one of the file naming components 
+        contains an illegal character.
+    """
+
+    def __init__(self, dictionary: Dict[str]):
         self.dictionary = dictionary
 
         # Parse pipeline type and output data level
@@ -53,6 +63,12 @@ class PipelineDefinition:
         self.output_datastream_name = f"{base_datastream_name}.{output_data_level}"
 
     def check_file_name_components(self):
+        """Performs sanity checks on the config properties used in naming 
+        files output by tsdat pipelines.
+
+        :raises DefinitionError: 
+            Raises DefinitionError if a component has been set improperly.
+        """
         illegal_characters = [".", "-", " "]
         components_to_check = [self.location_id, self.dataset_name, self.qualifier, self.temporal]
         valid = lambda component: sum([bad_char in component for bad_char in illegal_characters]) == 0

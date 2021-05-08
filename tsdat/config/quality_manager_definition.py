@@ -1,7 +1,8 @@
 from typing import Dict
 
 class QualityManagerKeys:
-
+    """Class that provides a handle for keys in the quality management section
+    of the pipeline config file."""
     VARIABLES = 'variables'
     EXCLUDE = 'exclude'
     CHECKER = 'checker'
@@ -9,9 +10,17 @@ class QualityManagerKeys:
 
 
 class QualityManagerDefinition:
+    """Wrapper for the quality_management portion of the pipeline config 
+    file.
+    
+    :param name: The name of the quality manager in the config file.
+    :type name: str
+    :param dictionary: 
+        The dictionary contents of the quality manager from the config 
+        file.
+    :type dictionary: Dict
     """
-    Converts dictionary of properties into a class
-    """
+
     def __init__(self, name: str, dictionary: Dict):
         assert(dictionary is not None)
         self.name = name

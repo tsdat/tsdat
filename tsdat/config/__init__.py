@@ -1,3 +1,5 @@
+"""Module that wraps objects defined in pipeline and yaml configuration files.
+"""
 from .config import Config
 from .keys import Keys
 from .dimension_definition import DimensionDefinition

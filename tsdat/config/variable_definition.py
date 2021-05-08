@@ -6,6 +6,8 @@ from tsdat.utils.converters import Converter
 
 
 class VarKeys:
+    """Class that provides a handle for keys in the variables section of the 
+    pipeline config file."""
     INPUT = 'input'
     DIMS = 'dims'
     TYPE = 'type'
@@ -13,6 +15,8 @@ class VarKeys:
 
 
 class VarInputKeys:
+    """Class that provides a handle for keys in the variable input section of 
+    the pipeline config file."""
     NAME = 'name'
     CONVERTER = 'converter'
     # TIME_FORMAT = 'time_format'
@@ -21,17 +25,25 @@ class VarInputKeys:
     REQUIRED = 'required'
 
 class ConverterKeys:
+    """Class that provides a handle for keys in the converter section of 
+    the pipeline config file."""
     CLASSNAME = 'classname'
     PARAMETERS = 'parameters'
 
 
 class VarInput:    
-    """-----------------------------------------------------------------------
-    Class to explicitly encode fields set by the variable's input source 
+    """Class to explicitly encode fields set by the variable's input source
     defined by the yaml file.
-    -----------------------------------------------------------------------"""
+
+    :param dictionary: 
+        The dictionary entry corresponding with a variable's input section
+        from the config file.
+    :type dictionary: Dict
+    :param defaults: 
+        The default input parameters, defaults to {}
+    :type defaults: Dict, optional
+    """
     def __init__(self, dictionary: Dict, defaults: Dict = {}):
-        
         # Name will always come from input dictionary and is required
         self.name: str = dictionary.get(VarInputKeys.NAME)
         
@@ -67,10 +79,24 @@ class VarInput:
 
 
 class VariableDefinition:
-    """-----------------------------------------------------------------------
-    Class to encode variable definitions from the config file. Also provides
+    """Class to encode variable definitions from the config file. Also provides
     a few utility methods.
-    -----------------------------------------------------------------------"""
+    
+    :param name: The name of the variable in the output file.
+    :type name: str
+    :param dictionary: 
+        The dictionary entry corresponding with this variable in the 
+        config file.
+    :type dictionary: Dict
+    :param 
+        available_dimensions: A mapping of dimension name to 
+        DimensionDefinition objects.
+    :type available_dimensions: Dict[str, DimensionDefinition]
+    :param defaults: 
+        The defaults to use when instantiating this VariableDefinition 
+        object, defaults to {}.
+    :type defaults: Dict, optional
+    """
     def __init__(self, name: str, dictionary: Dict, available_dimensions: Dict[str, DimensionDefinition], defaults: Dict = {}):
         self.name: str = name
         self.input = self._parse_input(dictionary, defaults)
@@ -85,12 +111,39 @@ class VariableDefinition:
         self._predefined = hasattr(self, "data")
     
     def _parse_input(self, dictionary: Dict, defaults: Dict = {}) -> VarInput:
+        """Parses the variable's input property, if it has one, from the 
+        variable dictionary.
+
+        :param dictionary: 
+            The dictionary entry corresponding with this variable in the config
+            file.
+        :type dictionary: Dict
+        :param defaults: 
+            The defaults to use when instantiating the VariableDefinition 
+            object, defaults to {}.
+        :type defaults: Dict, optional
+        :return: A VarInput object for this VariableDefinition, or None.
+        :rtype: VarInput
+        """
         input_source = dictionary.get(VarKeys.INPUT, None)
         if not input_source:
             return None
         return VarInput(input_source, defaults.get(VarKeys.INPUT, {}))
     
     def _parse_attributes(self, dictionary: Dict, defaults: Dict = {}) -> Dict[str, Any]:
+        """Parses the variable's attributes from the variable dictionary.
+
+        :param dictionary: 
+            The dictionary entry corresponding with this variable in the config
+            file.
+        :type dictionary: Dict
+        :param defaults: 
+            The defaults to use when instantiating the VariableDefinition 
+            object, defaults to {}.
+        :type defaults: Dict, optional
+        :return: A mapping of attribute name to attribute value.
+        :rtype: Dict[str, Any]
+        """
         # Initialize attributes dictionary. Defaults used only for non-coordinate variables
         attributes: Dict[str, Any] = {}
         if not self.is_coordinate():
@@ -103,6 +156,21 @@ class VariableDefinition:
         return attributes
         
     def _parse_dimensions(self, dictionary: Dict, available_dimensions: Dict[str, DimensionDefinition], defaults: Dict = {}) -> Dict[str, DimensionDefinition]:
+        """Parses the variable's dimensions from the variable dictionary.
+
+        :param dictionary: 
+            The dictionary entry corresponding with this variable in the config
+            file.
+        :type dictionary: Dict
+        :param available_dimensions: 
+            A mapping of dimension name to DimensionDefinition.
+        :param defaults: 
+            The defaults to use when instantiating the VariableDefinition 
+            object, defaults to {}.
+        :type defaults: Dict, optional
+        :return: A mapping of dimension name to DimensionDefinition objects.
+        :rtype: Dict[str, DimensionDefinition]
+        """
         default_dims: List[str] = defaults.get(VarKeys.DIMS, [])
         requested_dimensions: List[str] = dictionary.get(VarKeys.DIMS, default_dims)
         parsed_dimensions: Dict[str, DimensionDefinition] = {}
@@ -114,19 +182,26 @@ class VariableDefinition:
         return parsed_dimensions
 
     def _parse_data_type(self, dictionary: Dict, defaults: Dict = {}) -> object:
-        """-------------------------------------------------------------------
-        Parses the data_type string and returns the appropriate numpy data 
+        """Parses the data_type string and returns the appropriate numpy data 
         type (i.e. "float" -> np.float). 
 
-        Args:
-            data_type (str): the data type as read from the yaml.
-
-        Returns:
-            Object: The numpy data type corresponding with the type provided
-                    in the yaml file, or data_type if the provided data_type
-                    is not in the MHKiT-Cloud Data Standards list of data 
-                    types.
-        -------------------------------------------------------------------"""
+        :param dictionary: 
+            The dictionary entry corresponding with this variable in the config
+            file.
+        :type dictionary: Dict
+        :param defaults: 
+            The defaults to use when instantiating the VariableDefinition 
+            object, defaults to {}.
+        :type defaults: Dict, optional
+        :raises KeyError: 
+            Raises KeyError if the data type in the dictionary does not match
+            a valid data type.
+        :return: 
+            The numpy data type corresponding with the type provided in the 
+            yaml file, or data_type if the provided data_type is not in the 
+            ME Data Standards list of data types.
+        :rtype: object
+        """
         default_data_type = defaults.get(VarKeys.TYPE, None)
         data_type: str = dictionary.get(VarKeys.TYPE, default_data_type)
         mappings = {
@@ -160,180 +235,170 @@ class VariableDefinition:
         return mappings[data_type]
 
     def add_fillvalue_if_none(self, attributes: Dict[str, Any]) -> Dict[str, Any]:
-        """-------------------------------------------------------------------
-        Adds the _FillValue attribute to the provided attributes dictionary if
-        the _FillValue attribute has not already been defined and returns the 
-        modified attributes dictionary.
+        """Adds the _FillValue attribute to the provided attributes dictionary 
+        if the _FillValue attribute has not already been defined and returns 
+        the modified attributes dictionary.
 
-        Args:
-            attributes (Dict[str, Any]):    The dictionary containing user- 
-                                            defined variable attributes.
-
-        Returns:
-            Dict[str, Any]: The dictionary containing user-defined variable 
-                            attributes. Is guaranteed to have a _FillValue 
-                            attribute.
-        -------------------------------------------------------------------"""
+        :param attributes: 
+            The dictionary containing user-defined variable attributes.
+        :type attributes: Dict[str, Any]
+        :return: 
+            The dictionary containing user-defined variable attributes. Is 
+            guaranteed to have a _FillValue attribute.
+        :rtype: Dict[str, Any]
+        """
         current_attr = attributes.get("_FillValue", -9999)
         attributes["_FillValue"] = current_attr
         return attributes
 
     def is_constant(self) -> bool:
-        """-------------------------------------------------------------------
-        Returns True if the variable is a constant. A variable is constant if
-        it does not have any dimensions.
+        """Returns True if the variable is a constant. A variable is constant
+        if it does not have any dimensions.
 
-        Returns:
-            bool: True if the variable is constant, False otherwise.
-        -------------------------------------------------------------------"""
+        :return: True if the variable is constant, False otherwise.
+        :rtype: bool
+        """
         return len(list(self.dims.keys())) == 0
     
     def is_predefined(self) -> bool:
-        """-------------------------------------------------------------------
-        Returns True if the variable's data was predefined in the config yaml 
-        file.
+        """Returns True if the variable's data was predefined in the config
+        yaml file.
 
-        Returns:
-            bool: True if the variable is predefined, False otherwise.
-        -------------------------------------------------------------------"""
+        :return: True if the variable is predefined, False otherwise.
+        :rtype: bool
+        """
         return self._predefined
 
     def is_coordinate(self) -> bool:
-        """-------------------------------------------------------------------
-        Returns True if the variable is a coordinate variable. A variable is a 
-        coordinate variable if it is dimensioned by itself.
+        """Returns True if the variable is a coordinate variable. A variable is
+        defined as a coordinate variable if it is dimensioned by itself.
 
-        Returns:
-            bool:   True if the variable is a coordinate variable, False 
-                    otherwise.
-        -------------------------------------------------------------------"""
+        :return: 
+            True if the variable is a coordinate variable, False otherwise.
+        :rtype: bool
+        """
         return [self.name] == [dim_name for dim_name in self.dims]
 
 
     def is_derived(self) -> bool:
-        """-------------------------------------------------------------------
-        Return True if the variable is derived. A variable is derived if it 
+        """Return True if the variable is derived. A variable is derived if it
         does not have an input and it is not predefined.
 
-        Returns:
-            bool: True if the Variable is derived, False otherwise.
-        -------------------------------------------------------------------"""
+        :return: True if the Variable is derived, False otherwise.
+        :rtype: bool
+        """
         return self.input is None and not self.is_predefined()
     
     def has_converter(self) -> bool:
-        """-------------------------------------------------------------------
-        Return True if the variable has an input converter defined, False
+        """Returns True if the variable has an input converter defined, False
         otherwise.
 
-        Returns:
-            bool:   True if the Variable has a converter defined, False 
-                    otherwise.
-        -------------------------------------------------------------------"""
+        :return: True if the Variable has a converter defined, False otherwise.
+        :rtype: bool
+        """
         return self.has_input() and hasattr(self.input, "converter")
 
     def is_required(self) -> bool:
-        """-------------------------------------------------------------------
-        Returns True if the variable has the 'required' property defined and 
+        """Returns True if the variable has the 'required' property defined and 
         the 'required' property evaluates to True. A required variable is a 
         variable which much be retrieved in the input dataset. If a required
         variable is not in the input dataset, the process should crash.
 
-        Returns:
-            bool: True if the Variable is required, False otherwise.
-        -------------------------------------------------------------------"""
+        :return: True if the variable is required, False otherwise.
+        :rtype: bool
+        """
         return self.has_input() and self.input.is_required()
 
     def has_input(self) -> bool:
-        """-------------------------------------------------------------------
-        Return True if the variable is copied from an input dataset, 
+        """Return True if the variable is copied from an input dataset,
         regardless of whether or not unit and/or naming conversions should be 
         applied.
 
-        Returns:
-            bool: True if the Variable has an input defined, False otherwise.
-        -------------------------------------------------------------------"""
+        :return: True if the Variable has an input defined, False otherwise.
+        :rtype: bool
+        """
         return self.input is not None
 
     def get_input_name(self) -> str:
-        """-------------------------------------------------------------------
-        Returns the name of the variable in the input if defined, otherwise 
+        """Returns the name of the variable in the input if defined, otherwise 
         returns None.
 
-        Returns:
-            str: The name of the variable in the input, or None.
-        -------------------------------------------------------------------"""
+        :return: The name of the variable in the input, or None.
+        :rtype: str
+        """
         if not self.has_input():
             return None
         return self.input.name
     
     def get_input_units(self) -> str:
-        """-------------------------------------------------------------------
-        If the variable has input, returns the units of the input variable or 
-        the output units if no input units are defined.
+        """If the variable has input, returns the units of the input variable 
+        or the output units if no input units are defined.
 
-        Returns:
-            str: The units of the input variable data.
-        -------------------------------------------------------------------"""
+        :return: The units of the input variable data.
+        :rtype: str
+        """
         if not self.has_input():
             return None
         return getattr(self.input, "units", self.get_output_units())
     
     def get_output_units(self) -> str:
-        """-------------------------------------------------------------------
-        Returns the units of the output data or None if no units attribute has
+        """Returns the units of the output data or None if no units attribute has
         been defined.
 
-        Returns:
-            str: The units of the output variable data.
-        -------------------------------------------------------------------"""
+        :return: The units of the output variable data.
+        :rtype: str
+        """
         return self.attrs.get("units", None)
 
     def get_coordinate_names(self) -> List[str]:
-        """-------------------------------------------------------------------
-        Returns the names of the coordinate VariableDefinition(s) that this 
+        """Returns the names of the coordinate VariableDefinition(s) that this 
         VariableDefinition is dimensioned by.
 
-        Returns:
-            List[str]: A list of dimension/coordinate variable names.
-        -------------------------------------------------------------------"""
+        :return: A list of dimension/coordinate variable names.
+        :rtype: List[str]
+        """
         return list(self.dims.keys())
     
     def get_shape(self) -> Tuple[int]:
-        """-------------------------------------------------------------------
-        Returns the shape of the data attribute on the VariableDefinition. 
-        Raises a KeyError if the data attribute has not been set yet.
+        """Returns the shape of the data attribute on the VariableDefinition. 
 
-        Returns:
-            Tuple[int]: The shape of the VariableDefinition's data, or None.
-        -------------------------------------------------------------------"""
+        :raises KeyError:
+            Raises a KeyError if the data attribute has not been set yet.
+        :return: The shape of the VariableDefinition's data, or None.
+        :rtype: Tuple[int]
+        """
         if not hasattr(self, "data"):
             raise KeyError(f"No data has been set for variable: '{self.name}'")
         return self.data.shape
 
     def get_data_type(self) -> np.dtype:
-        """-------------------------------------------------------------------
-        Returns the data type of the variable's data as a numpy dtype.
-        -------------------------------------------------------------------"""
+        """Retrieves the variable's data type.
+
+        :return: Returns the data type of the variable's data as a numpy dtype.
+        :rtype: np.dtype
+        """
         return self.type
     
-    def get_FillValue(self):
-        """-------------------------------------------------------------------
-        Returns the variable's _FillValue attribute, using -9999 as a default
-        if the _FillValue attribute has not been defined.
-        -------------------------------------------------------------------"""
+    def get_FillValue(self) -> int:
+        """Retrieves the variable's _FillValue attribute, using -9999 as a 
+        default if it has not been defined.
+
+        :return: Returns the variable's _FillValue.
+        :rtype: int
+        """
         return getattr(self.attrs.get("_FillValue", -9999), "value", -9999)
 
     def run_converter(self, data: np.ndarray) -> np.ndarray:
-        """-------------------------------------------------------------------
-        If the variable has an input converter, runs the input converter for 
+        """If the variable has an input converter, runs the input converter for 
         the input/output units on the provided data.
 
-        Args:
-            data (np.ndarray): The data to be converted.
-        
-        Returns:
-            np.ndarray: The data, converted to its output units.
-        -------------------------------------------------------------------"""
+        :param data: The data to be converted.
+        :type data: np.ndarray
+        :return: 
+            Returns the data after it has been run through the variable's 
+            converter.
+        :rtype: np.ndarray
+        """
         if self.has_converter():
             in_units = self.get_input_units()
             out_units = self.get_output_units()
@@ -342,22 +407,23 @@ class VariableDefinition:
 
 
     def to_dict(self) -> Dict:
-        """-------------------------------------------------------------------
-        Returns the Variable as a dictionary to be used to intialize an xarray
-        Dataset or DataArray.
+        """Returns the Variable as a dictionary to be used to intialize an 
+        empty xarray Dataset or DataArray.
 
         Returns a dictionary like (Example is for `temperature`):
-        ```
-        {
-            "dims": ["time"], 
-            "data": [], 
-            "attrs": {"units": "degC"}
-        }
-        ```
+        
+        .. code-block:: python3
+            
+            {
+                "dims": ["time"], 
+                "data": [], 
+                "attrs": {"units": "degC"}
+            }
+        
 
-        Returns:
-            Dict: A dictionary representation of the variable.
-        -------------------------------------------------------------------"""
+        :return: A dictionary representation of the variable.
+        :rtype: Dict
+        """
         dictionary = {
             "dims":     [name for name, dim in self.dims.items()],
             "data":     self.data if hasattr(self, "data") else [],
