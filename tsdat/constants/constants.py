@@ -1,18 +1,13 @@
-import act
-import xarray as xr
-
-
-class VARS(object):
+class VARS:
+    """Class that adds keywords for referring to variables."""
     ALL = 'ALL'
     COORDS = 'COORDS'
     DATA_VARS = 'DATA_VARS'
 
 
-class ATTS(object):
-    """-------------------------------------------------------------------
-    Class that adds methods for interacting with tsdat data model
-    specific attributes.
-    -------------------------------------------------------------------"""
+class ATTS:
+    """Class that adds constants for interacting with tsdat data-model 
+    specific attributes."""
     # Symbolic constants for global attributes
     TITLE = 'title'
     DESCRIPTION = 'description'
