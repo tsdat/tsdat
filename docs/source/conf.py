@@ -64,11 +64,7 @@ extensions.append('autoapi.extension')
 
 # Add directories for sphinx-autoapi to search in for code
 autoapi_dirs = [
-    '../../tsdat/config', 
-    '../../tsdat/constants', 
-    '../../tsdat/exceptions',
-    '../../tsdat/io/filehandlers',
-    '../../tsdat/pipeline'
+    '../../tsdat'
     ]
 
 # https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html#confval-autoapi_python_use_implicit_namespaces
