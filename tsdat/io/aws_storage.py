@@ -20,13 +20,29 @@ SEPARATOR = '$$$'
 
 
 class S3Path(str):
-    """-------------------------------------------------------------------
-    This class wraps a 'special' path string that lets us include the
+    """This class wraps a 'special' path string that lets us include the
     bucket name and region in the path, so that we can use it seamlessly
-    in boto3 APIs.
-    -------------------------------------------------------------------"""
+    in boto3 APIs.  We are creating our own string to hold the region, 
+    bucket & key (i.e., path), since boto3 needs all three in order to
+    access a file.
+
+    Example:
+    .. code-block:: python
+
+        s3_client = boto3.client('s3', region_name='eu-central-1')
+        s3_client.download_file(bucket, key, download_path)
+
+    :param bucket_name: The S3 bucket name where this file is located
+    :type bucket_name: str
+    :param bucket_path: The key to access this file in the bucket
+    :type bucket_path: str, optional
+    :param region_name: The AWS region where this file is located, defaults to None,
+        which inherits the default configured region.
+    :type region_name: str, optional
+    """
 
     def __init__(self, bucket_name: str, bucket_path: str = '', region_name: str = None):
+    
         self._bucket_name = bucket_name
         self._region_name = region_name
 
@@ -43,16 +59,6 @@ class S3Path(str):
         return self.bucket_path
 
     def __new__(cls, bucket_name: str, bucket_path: str, region_name: str = None):
-        """-------------------------------------------------------------------
-        We are creating our own string to hold the region, bucket & key (i.e., path),
-        since boto3 needs all three in order to access a file
-
-        Example:
-        s3_client = boto3.client('s3', region_name='eu-central-1')
-        s3_client.download_file(bucket, key, download_path)
-
-        If region_name is not specified, then the default configured region is used.
-        -------------------------------------------------------------------"""
         assert bucket_name
         assert bucket_path
 
@@ -82,6 +88,12 @@ class S3Path(str):
         return self._region_name
 
     def join(self, *args):
+        """Joins segments in an S3 path.  This method behaves
+        exactly like os.path.join.
+
+        :return: A New S3Path with the additional segments added.
+        :rtype: S3Path
+        """        
         bucket_path = self.bucket_path
 
         for segment in args:
@@ -92,6 +104,13 @@ class S3Path(str):
 
 
 class AwsTemporaryStorage(TemporaryStorage):
+    """Class used to store temporary files or perform
+    fileystem actions on files other than datastream files
+    that reside in the same AWS S3 bucket as the DatastreamStorage.
+    This is a helper class intended to be used in the internals of
+    pipeline implementations only.  It is not meant as an external API for
+    interacting with files in DatastreamStorage.
+    """    
 
     def __init__(self, *args, **kwargs):
         super(AwsTemporaryStorage, self).__init__(*args, **kwargs)
@@ -299,33 +318,30 @@ class AwsTemporaryStorage(TemporaryStorage):
 
 
 class AwsStorage(DatastreamStorage):
+    """Datastreamstorage subclass for an AWS S3-based filesystem.
 
-    """-----------------------------------------------------------------------
-    datastreamstorage subclass for an aws s3-based filesystem.  see
-    parent class for method docstrings.
-    -----------------------------------------------------------------------"""
+    :param parameters: Dictionary of parameters that should be
+        set automatically from the storage config file when this
+        class is intantiated via the DatstreamStorage.from-config()
+        method.  Defaults to {}
+        
+        Key parameters that should be set in the config file include
+        
+        :retain_input_files: Whether the input files should be cleaned
+            up after they are done processing
+        :root_dir: The bucket 'key' to use to prepend to all processed files
+            created in the persistent store.  Defaults to 'root'
+        :temp_dir: The bucket 'key' to use to prepend to all temp 
+            files created in the S3 bucket.  Defaults to 'temp'
+        :bucket_name: The name of the S3 bucket to store to
+    :type parameters: dict, optional
+    """
 
     def __init__(self, parameters={}):
-        """-------------------------------------------------------------------
-        Initialize the storage from the given parameters used to connect
-        to an S3 bucket.
-
-        Params:
-            aws_region  (str):  The region where the s3 bucket is located.
-            bucket_name (str):  The name of the s3 bucket where the storage
-                                files will be saved.
-
-            storage_root_path (str): The path in the bucket to the root of the
-                                     storage.
-
-            storage_temp_path (str): The path in the bucket to a temporary
-                                     folder used for writing short-lived temp
-                                     files.
-        -------------------------------------------------------------------"""
         super().__init__(parameters=parameters)
         bucket_name = self.parameters.get('bucket_name')
-        storage_root_path = self.parameters.get('storage_root_path')
-        storage_temp_path = self.parameters.get('storage_temp_path')
+        storage_root_path = self.parameters.get('root_dir')
+        storage_temp_path = self.parameters.get('temp_dir')
 
         assert bucket_name
 

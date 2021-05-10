@@ -22,6 +22,13 @@ from tsdat.utils import DSUtil
 
 
 class FilesystemTemporaryStorage(TemporaryStorage):
+    """Class used to store temporary files or perform
+    fileystem actions on files other than datastream files
+    that reside in the same local filesystem as the DatastreamStorage.
+    This is a helper class intended to be used in the internals of
+    pipeline implementations only.  It is not meant as an external API for
+    interacting with files in DatastreamStorage.
+    """    
 
     def extract_files(self, list_or_filepath: Union[str, List[str]]) -> DisposableStorageTempFileList:
         extracted_files = []
@@ -106,19 +113,24 @@ class FilesystemTemporaryStorage(TemporaryStorage):
 
 
 class FilesystemStorage(DatastreamStorage):
+    """Datastreamstorage subclass for a local Linux-based filesystem.
 
-    """-----------------------------------------------------------------------
-    DatastreamStorage subclass for a typical Linux-based filesystem.  See
-    parent class for method docstrings.
-    -----------------------------------------------------------------------"""
+    TODO: rename to LocalStorage as this is more intuitive.
+ 
+    :param parameters: Dictionary of parameters that should be
+        set automatically from the storage config file when this
+        class is intantiated via the DatstreamStorage.from-config()
+        method.  Defaults to {}
+        
+        Key parameters that should be set in the config file include
+        
+        :retain_input_files: Whether the input files should be cleaned
+            up after they are done processing
+        :root_dir: The root path under which processed files will e stored.
+    :type parameters: dict, optional
+    """
 
     def __init__(self, parameters={}):
-        """-------------------------------------------------------------------
-        Initialize the storage from the given parameters.
-
-        Params:
-            root  (str):  The root path where output data will be stored.
-        -------------------------------------------------------------------"""
         super().__init__(parameters=parameters)
 
         self._root = parameters.get('root_dir')
