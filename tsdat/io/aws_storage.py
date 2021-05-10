@@ -170,17 +170,6 @@ class AwsTemporaryStorage(TemporaryStorage):
         return extracted_files
 
     def extract_zipfile(self, filepath) -> List[S3Path]:
-        """-------------------------------------------------------------------
-        Unzips the passed file from one S3 location into the temporary
-        folder for this invocation (i.e., base_path) in memory without
-        using local disk.
-
-        Args:
-            filepath (S3Path): The path to the zipfile in s3
-
-        Returns:
-            List[S3Path]: A list of the paths of files that were extracted
-        -------------------------------------------------------------------"""
         s3_resource = self.datastream_storage.s3_resource
         zip_obj = s3_resource.Object(bucket_name=filepath.bucket_name, key=filepath.bucket_path)
         buffer = io.BytesIO(zip_obj.get()["Body"].read())
@@ -287,13 +276,13 @@ class AwsTemporaryStorage(TemporaryStorage):
         objects.delete()
 
     def listdir(self, filepath: S3Path) -> List[S3Path]:
-        """-----------------------------------------------------------------------
-        List the files contained under this directory's s3 key.  This
-        Will only list the files under the given directory (not subfolders).
-        TODO: At some point we might need pagination to support cases where there
-              are a huge number of files.  But this won't happen for a long time,
-              if ever.
-        -----------------------------------------------------------------------"""
+
+        # List the files contained under this directory's s3 key.  This
+        # This will only list the files under the given directory (not subfolders).
+        # TODO: At some point we might need pagination to support cases where there
+        #       are a huge number of files.  But this won't happen for a long time,
+        #       if ever.
+
         paths = []
         s3_resource = self.datastream_storage.s3_resource
         bucket = s3_resource.Bucket(filepath.bucket_name)
@@ -318,7 +307,7 @@ class AwsTemporaryStorage(TemporaryStorage):
 
 
 class AwsStorage(DatastreamStorage):
-    """Datastreamstorage subclass for an AWS S3-based filesystem.
+    """DatastreamStorage subclass for an AWS S3-based filesystem.
 
     :param parameters: Dictionary of parameters that should be
         set automatically from the storage config file when this
