@@ -25,7 +25,7 @@ class PipelineDefinition:
         contains an illegal character.
     """
 
-    def __init__(self, dictionary: Dict[str]):
+    def __init__(self, dictionary: Dict[str, Dict]):
         self.dictionary = dictionary
 
         # Parse pipeline type and output data level
