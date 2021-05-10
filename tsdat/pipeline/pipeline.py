@@ -18,6 +18,19 @@ from tsdat.io import (
 
 
 class Pipeline(abc.ABC):
+    """This class serves as the base class for all tsdat data pipelines. 
+
+    :param pipeline_config: 
+        The pipeline config file. Can be either a config object, or the 
+        path to the pipeline config file that should be used with this 
+        pipeline.
+    :type pipeline_config: Union[str, Config]
+    :param storage_config: 
+        The storage config file. Can be either a config object, or the 
+        path to the storage config file that should be used with this 
+        pipeline.
+    :type storage_config: Union[str, DatastreamStorage]
+    """
 
     def __init__(self, pipeline_config: Union[str, Config], storage_config: Union[str, DatastreamStorage]) -> None:
         # We can pass either a Config object or the path to a config file
@@ -34,20 +47,26 @@ class Pipeline(abc.ABC):
 
     @abc.abstractmethod
     def run(self, filepath: Union[str, List[str]]):
+        """This method is the entry point for the pipeline. It will take one 
+        or more file paths and process them from start to finish. All classes
+        extending the Pipeline class must implement this method.
+
+        :param filepath: 
+            The path or list of paths to the file(s) to run the pipeline on.
+        :type filepath: Union[str, List[str]]
+        """
         return
 
     def standardize_dataset(self, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Standardizes the dataset by applying variable name and units 
-        conversions as defined in the config. Returns the standardized 
-        dataset.
+        """Standardizes the dataset by applying variable name and units 
+        conversions as defined by the pipeline config file. This method 
+        returns the standardized dataset.
 
-        Args:
-            raw_mapping (Dict[str, xr.Dataset]):   The raw xarray dataset mapping.
-
-        Returns:
-            xr.Dataset: The standardized dataset.
-        -------------------------------------------------------------------"""
+        :param raw_mapping: The raw dataset mapping.
+        :type raw_mapping: Dict[str, xr.Dataset]
+        :return: The standardized dataset.
+        :rtype: xr.Dataset
+        """
         definition = self.config.dataset_definition
         
         raw_datasets = self.reduce_raw_datasets(raw_mapping, definition)
@@ -71,21 +90,17 @@ class Pipeline(abc.ABC):
         return merged_dataset
 
     def check_required_variables(self, dataset: xr.Dataset, dod: DatasetDefinition):
-        """-------------------------------------------------------------------
-        Function to throw an error if a required variable could not be 
+        """Function to throw an error if a required variable could not be 
         retrieved.
 
-        Args:
-        ---
-            dataset (xr.Dataset): The dataset to check.
-            dod (DatasetDefinition): The DatasetDefinition used to specify 
-                                        required variables.
-
-        Raises:
-        ---
-            Exception: Raises an exception to indicate the variable could not 
-                        be retrieved.
-        -------------------------------------------------------------------"""
+        :param dataset: The dataset to check.
+        :type dataset: xr.Dataset
+        :param dod: The DatasetDefinition used to specify required variables.
+        :type dod: DatasetDefinition
+        :raises Exception: 
+            Raises an exception to indicate the variable could not be 
+            retrieved.
+        """        
         for variable in dod.coords.values():
             if variable.is_required() and variable.name not in dataset.variables:
                 raise Exception(f"Required coordinate variable '{variable.name}' could not be retrieved.")
@@ -94,19 +109,16 @@ class Pipeline(abc.ABC):
                 raise Exception(f"Required variable '{variable.name}' could not be retrieved.")
 
     def add_static_variables(self, dataset: xr.Dataset, dod: DatasetDefinition) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Uses the dataset definition to add static variables (variables that 
-        are hard-coded in the config) to the output dataset.
+        """Uses the DatasetDefinition to add static variables (variables whose
+        data are defined in the pipeline config file) to the output dataset.
 
-        Args:
-        ---
-            dataset (xr.Dataset): The dataset to add the variables to
-            dod (DatasetDefinition): The DatasetDefinition object to pull data from.
-
-        Returns:
-        ---
-            xr.Dataset: The original dataset with added variables from the config.
-        -------------------------------------------------------------------"""
+        :param dataset: The dataset to add static variables to.
+        :type dataset: xr.Dataset
+        :param dod: The DatasetDefinition to pull data from.
+        :type dod: DatasetDefinition
+        :return: The original dataset with added variables from the config
+        :rtype: xr.Dataset
+        """
         coords, data_vars = {}, {}
         for variable in dod.get_static_variables():
             if variable.is_coordinate():
@@ -116,21 +128,18 @@ class Pipeline(abc.ABC):
         static_ds = xr.Dataset.from_dict({"coords": coords, "data_vars": data_vars})
         return xr.merge([dataset, static_ds])
 
-    def add_missing_variables(self, dataset: xr.Dataset, dod: DatasetDefinition):
-        """-------------------------------------------------------------------
-        Uses the dataset definition to initialize variables that are defined
-        in the dataset definition but did not have input. Uses the appropriate
-        shape and _FillValue to initialize each variable.
+    def add_missing_variables(self, dataset: xr.Dataset, dod: DatasetDefinition) -> xr.Dataset:
+        """Uses the dataset definition to initialize variables that are 
+        defined in the dataset definiton but did not have input. Uses the
+        appropriate shape and _FillValue to initialize each variable.
 
-        Args:
-        ---
-            dataset (xr.Dataset): The dataset to add the variables to
-            dod (DatasetDefinition): The DatasetDefinition to use.
-
-        Returns:
-        ---
-            xr.Dataset: The original dataset with possible additional variables initialized.
-        -------------------------------------------------------------------"""
+        :param dataset: The dataset to add the variables to.
+        :type dataset: xr.Dataset
+        :param dod: The DatasetDefinition to use.
+        :type dod: DatasetDefinition
+        :return: The original dataset with variables that still need to be initialized, initialized.
+        :rtype: xr.Dataset
+        """
         coords, data_vars = {}, {}
         for var_name, var_def in dod.vars.items():
             if var_name not in dataset.variables:
@@ -147,21 +156,20 @@ class Pipeline(abc.ABC):
         return xr.merge([dataset, missing_vars_ds])
 
     def add_attrs(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset], dod: DatasetDefinition) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Adds global and variable-level attributes to the dataset from the 
-        DatasetDefinition.
+        """Adds global and variable-level attributes to the dataset from the
+        DatasetDefinition object.
 
-        Args:
-            dataset (xr.Dataset): The dataset to add attributes to.
-            raw_mapping (Dict[str, xr.Dataset]): The raw dataset mapping. Used
-                                                to set the 'input_files' global 
-                                                attribute.
-            dod (DatasetDefinition): The DatasetDefinition containing the 
-                                    attributes to add.
-
-        Returns:
-            xr.Dataset: The original dataset with the attributes added.
-        -------------------------------------------------------------------"""
+        :param dataset: The dataset to add attributes to.
+        :type dataset: xr.Dataset
+        :param raw_mapping: 
+            The raw dataset mapping. Used to set the ``input_files`` global 
+            attribute.
+        :type raw_mapping: Dict[str, xr.Dataset]
+        :param dod: The DatasetDefinition containing the attributes to add.
+        :type dod: DatasetDefinition
+        :return: The original dataset with the attributes added.
+        :rtype: xr.Dataset
+        """
         def _set_attr(obj: Any, att_name: str, att_val: Any):
             if hasattr(obj, "attrs"):
                 if hasattr(obj.attrs, att_name):
@@ -190,20 +198,18 @@ class Pipeline(abc.ABC):
         return dataset
 
     def get_previous_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Utility method to retrieve the previous set of data for the same
+        """Utility method to retrieve the previous set of data for hte same
         datastream as the provided dataset from the DatastreamStorage.
 
-        Args:
-        ---
-            dataset (xr.Dataset):   The reference dataset that will be used to
-                                    search the DatastreamStore for prior data.
-
-        Returns:
-        ---
-            xr.Dataset: The previous dataset from the DatastreamStorage if it
-                        exists, else None.
-        -------------------------------------------------------------------"""
+        :param dataset: 
+            The reference dataset that will be used to search the 
+            DatastreamStore for prior data.
+        :type dataset: xr.Dataset
+        :return: 
+            The previous dataset from the DatastreamStorage if it exists, 
+            otherwise None.
+        :rtype: xr.Dataset
+        """
         prev_dataset = None
         start_date, start_time = DSUtil.get_start_time(dataset)
         datastream_name = DSUtil.get_datastream_name(dataset, self.config)
@@ -215,22 +221,18 @@ class Pipeline(abc.ABC):
         return prev_dataset
 
     def reduce_raw_datasets(self, raw_mapping: Dict[str, xr.Dataset], definition: DatasetDefinition) -> List[xr.Dataset]:
-        """-------------------------------------------------------------------
-        Removes unused variables from each raw dataset in the raw mapping and
-        performs input to output naming and unit conversions as defined in the
-        dataset definition.
+        """Removes unused variables from each raw dataset in the raw mapping 
+        and performs input to output naming and unit conversions as defined 
+        in the dataset definition.
 
-        Args:
-        ---
-            raw_mapping (Dict[str, xr.Dataset]):    The raw xarray dataset mapping.
-            definition (DatasetDefinition): The DatasetDefinition used to
-                                            select the variables to keep.
-
-        Returns:
-        ---
-            List[xr.Dataset]:   A list of reduced datasets.
-        -------------------------------------------------------------------"""
-
+        :param raw_mapping: The raw xarray dataset mapping.
+        :type raw_mapping: Dict[str, xr.Dataset]
+        :param definition: 
+            The DatasetDefinition used to select the variables to keep.
+        :type definition: DatasetDefinition
+        :return: A list of reduced datasets.
+        :rtype: List[xr.Dataset]
+        """
         def _find_files_with_variable(variable: VariableDefinition) -> List[xr.Dataset]:
             files = []
             variable_name = variable.get_input_name()
@@ -268,22 +270,21 @@ class Pipeline(abc.ABC):
         return reduced_datasets
 
     def reduce_raw_dataset(self, raw_dataset: xr.Dataset, variable_definitions: List[VariableDefinition], definition: DatasetDefinition) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Removes unused variables from the raw dataset provided and keeps only
-        the variables and coordinates pertaining to the provided variable
-        definitions. Also performs input to output naming and unit conversions
-        as defined in the dataset definition.
+        """Removes unused variables from the raw dataset provided and keeps 
+        only the variables and coordinates pertaining to the provdided 
+        variable definitions. Also performs input to output naming and unit 
+        conversions as defined in the DatasetDefinition.
 
-        Args:
-        ---
-            raw_mapping (Dict[str, xr.Dataset]):    The raw xarray dataset mapping.
-            variable_definitions (List[VariableDefinition]):    List of variables to keep.
-            definition (DatasetDefinition): The DatasetDefinition used to select the variables to keep.
-
-        Returns:
-        ---
-            xr.Dataset: The reduced dataset.
-        -------------------------------------------------------------------"""
+        :param raw_dataset: The raw dataset mapping.
+        :type raw_dataset: xr.Dataset
+        :param variable_definitions: List of variables to keep.
+        :type variable_definitions: List[VariableDefinition]
+        :param definition: 
+            The DatasetDefinition used to select the variables to keep.
+        :type definition: DatasetDefinition
+        :return: The reduced dataset.
+        :rtype: xr.Dataset
+        """
         def _retrieve_and_convert(variable: VariableDefinition) -> Dict:
             var_name = variable.get_input_name()
             if var_name in raw_dataset.variables:
@@ -330,19 +331,14 @@ class Pipeline(abc.ABC):
         return xr.Dataset.from_dict(reduced_dict)
 
     def store_and_reopen_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Uses the DatastreamStorage object to persist the dataset in all the
-        formats specified in the storage config.
+        """Uses the DatastreamStorage object to persist the dataset in the
+        format specified by the storage config file.
 
-        Args:
-        ---
-            dataset (xr.Dataset): The dataset to store.
-
-        Returns:
-        ---
-            xr.Dataset: The dataset after it has been saved to disk and
-                        reopened.
-        -------------------------------------------------------------------"""
+        :param dataset: The dataset to store.
+        :type dataset: xr.Dataset
+        :return: The dataset after it has been saved to disk and reopened.
+        :rtype: xr.Dataset
+        """
         reopened_dataset = None
 
         saved_paths = self.storage.save(dataset)
