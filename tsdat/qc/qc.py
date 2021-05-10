@@ -11,37 +11,29 @@ from tsdat.config.utils import instantiate_handler
 
 
 class QualityManagement:
-    """-------------------------------------------------------------------
-    Class that provides static helper functions for providing quality
+    """Class that provides static helper functions for providing quality
     control checks on a tsdat-standardized xarray dataset.
-    -------------------------------------------------------------------"""
+    """    
 
     @staticmethod
     def run(ds: xr.Dataset, config: Config, previous_data: xr.Dataset) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Applies the Quality Managers defined in the given Config to this dataset.
+        """Applies the Quality Managers defined in the given Config to this dataset.
         QC results will be embedded in the dataset.  QC metadata will be
         stored as attributes, and QC flags will be stored as a bitwise integer
         in new companion qc_ variables that are added to the dataset.
         This method will create QC companion variables if they don't exist.
 
-        Args:
-            ds (xr.Dataset): The dataset to apply quality managers to
-            config (Config): A configuration definition (loaded from yaml)
-            previous_data(xr.Dataset): A dataset from the previous processing
-            interval (i.e., file).  This is used to check for consistency between
-            files, such as for monitonic or delta checks when we need to check
-            the previous value.
-
-        Raises:
-            QCError:  A QCError indicates that a fatal error has occurred.
-
-        Returns:
-            (xr.Dataset): The dataset after quality checkers and handlers have
-            been applied.
-
-        -------------------------------------------------------------------"""
-
+        :param ds: The dataset to apply quality managers to
+        :type ds: xr.Dataset
+        :param config: A configuration definition (loaded from yaml)
+        :type config: Config
+        :param previous_data: A dataset from the previous processing interval 
+            (i.e., file).  This is used to check for consistency between files, 
+            such as for monitonic or delta checks when we need to check the previous value.
+        :type previous_data: xr.Dataset
+        :return: The dataset after quality checkers and handlers have been applied.
+        :rtype: xr.Dataset
+        """        
         for definition in config.quality_managers.values():
             quality_manager = QualityManager(ds, config, definition, previous_data)
             ds = quality_manager.run()
@@ -50,10 +42,20 @@ class QualityManagement:
 
 
 class QualityManager:
-    """-------------------------------------------------------------------
-    Applies a single Quality Manager to the given Dataset, as defined by 
+    """Applies a single Quality Manager to the given Dataset, as defined by 
     the Config
-    -------------------------------------------------------------------"""
+    
+    :param ds: The dataset for which we will perform quality management.
+    :type ds: xr.Dataset
+    :param config: The Config from the pipeline definition file.
+    :type config: Config
+    :param definition: Definition of the quality test this class manages.
+    :type definition: QualityManagerDefinition
+    :param previous_data: A dataset from the previous processing interval 
+        (i.e., file).  This is used to check for consistency between files, 
+        such as for monitonic or delta checks when we need to check the previous value.
+    :type previous_data: xr.Dataset
+    """
     def __init__(self, ds: xr.Dataset,
                  config: Config,
                  definition: QualityManagerDefinition,
@@ -102,17 +104,14 @@ class QualityManager:
         self.previous_data = previous_data
 
     def run(self) -> xr.Dataset:
-        """-------------------------------------------------------------------
-        Runs the QualityChecker and QualityHandler(s) for each specified 
+        """Runs the QualityChecker and QualityHandler(s) for each specified 
         variable as defined in the config file.
 
-        Raises:
-            QCError:  A QCError indicates that a fatal error has occurred.
-
-        Returns:
-            (xr.Dataset): The dataset after the quality checker and the
-            quality handlers have been run.
-        -------------------------------------------------------------------"""
+        :return: The dataset after the quality checker and the quality handlers
+            have been run.
+        :raises QCError: A QCError indicates that a fatal error has occurred.
+        :rtype: xr.Dataset
+        """  
         for variable_name in self.variable_names:
 
             # Apply the quality checker

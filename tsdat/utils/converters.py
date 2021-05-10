@@ -5,59 +5,56 @@ from act.utils import data_utils
 
 
 class Converter(abc.ABC):
+    """Base class for converting data arrays from one units to another.
+    Users can extend this class if they have a special units conversion
+    for their input data that cannot be resolved with the default converter
+    classes.
+    
+    :param parameters: A dictionary of converter-specific parameters
+        which get passed from the pipeline config file.  Defaults to {}
+    :type parameters: dict, optional
+    """    
 
-    def __init__(self, parameters={}):
-        """-------------------------------------------------------------------
-        Base class for converting data arrays from one units to another.
-        Users can extend this class if they have a special units conversion
-        for their input data that cannot be resolved with the default converter
-        classes.
-
-        Args:
-            parameters(Dict) : A dictionary of converter-specific parameters
-        -------------------------------------------------------------------"""
+    def __init__(self, parameters={}):     
         self.parameters = parameters
 
     @abc.abstractmethod
-    def run(self, data: np.ndarray, in_units: str, out_units: str) -> np.ndarray:
-        """-------------------------------------------------------------------
-        Convert the input data from in_units to out_units.
+    def run(self, data: np.ndarray, in_units: str, out_units: str) -> np.ndarray:    
+        """Convert the input data from in_units to out_units.
 
-        Args:
-            data(np.ndarray) : Data array to be modified.
-            in_units(str)    : Current units of the data array.
-            out_units(str)   : Units to be converted to.
-
-        Returns:
-            data (np.ndarray): Data array converted into the new units.
-        -------------------------------------------------------------------"""
+        :param data: Data array to be modified.
+        :type data: np.ndarray
+        :param in_units: Current units of the data array.
+        :type in_units: str
+        :param out_units: Units to be converted to.
+        :type out_units: str
+        :return: Data array converted into the new units.
+        :rtype: np.ndarray
+        """        
 
 
 class DefaultConverter(Converter):
-    """-------------------------------------------------------------------
-    Default class for converting units on data arrays.  This class utilizes
+    """Default class for converting units on data arrays.  This class utilizes
     ACT.utils.data_utils.convert_units, and should work for most variables
     except time (see StringTimeConverter and TimestampTimeConverter)
-    -------------------------------------------------------------------"""
-    def run(self, data: np.ndarray, in_units: str, out_units: str) -> np.ndarray:
+    """    
+    def run(self, data: np.ndarray, in_units: str, out_units: str) -> np.ndarray:    
         return data_utils.convert_units(data, in_units, out_units)
 
 
 class StringTimeConverter(Converter):
+    """Convert a time string to a np.datetime64, which is needed for xarray.
+    This class utilizes pd.to_datetime to perform the conversion.
+    
+    One of the parameters should be 'time_format', which is the 
+    the strftime to parse time, eg "%d/%m/%Y". Note that "%f" will parse all
+    the way up to nanoseconds. See strftime documentation for more information on choices.
 
-    def __init__(self, parameters={}):
-        """-------------------------------------------------------------------
-        Convert a time string to a np.datetime64, which is needed for xarray.
-        This class utilizes pd.to_datetime to perform the conversion.
 
-        Args:
-            parameters(Dict) : A dictionary of converter-specific parameters
-
-                time_format  : The strftime to parse time, eg "%d/%m/%Y",
-                               note that "%f" will parse all the way up to
-                               nanoseconds. See strftime documentation for
-                               more information on choices.
-        -------------------------------------------------------------------"""
+    :param parameters:  dictionary of converter-specific parameters.  Defaults to {}.  
+    :type parameters: dict, optional    
+    """
+    def __init__(self, parameters={}):      
         super().__init__(parameters=parameters)
         self.format = self.parameters.get('time_format', None)
         assert self.format
@@ -81,18 +78,18 @@ class StringTimeConverter(Converter):
 
 
 class TimestampTimeConverter(Converter):
-    """-------------------------------------------------------------------
-    Convert a numeric UTC timestamp to a np.datetime64, which is needed for
+    """Convert a numeric UTC timestamp to a np.datetime64, which is needed for
     xarray.  This class utilizes pd.to_datetime to perform the conversion.
-
-    Args:
-        parameters(Dict) : A dictionary of converter-specific parameters
-
-            unit         : The unit of the arg (D,s,ms,us,ns) denote the unit,
-                           which is an integer or float number. The
-                           timestamp will be based off the unix epoch start.
-    -------------------------------------------------------------------"""
-    def __init__(self, parameters={}):
+    
+    One of the parameters should be 'unit'. This parameter denotes the time 
+    unit (e.g., D,s,ms,us,ns), which is an integer or float number. The 
+    timestamp will be based off the unix epoch start.
+    
+    :param parameters: A dictionary of converter-specific parameters which 
+        get passed from the pipeline config file.  Defaults to {}
+    :type parameters: dict, optional
+    """   
+    def __init__(self, parameters={}):  
         super().__init__(parameters=parameters)
         self.unit = self.parameters.get('unit', None)
         assert self.unit

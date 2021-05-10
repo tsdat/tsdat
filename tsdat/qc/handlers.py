@@ -8,6 +8,9 @@ from tsdat.exceptions import QCError
 from tsdat.utils import DSUtil
 
 class QCParamKeys:
+    """Symbolic constants used for referencing QC-related
+    fields in the pipeline config file
+    """
     QC_BIT = 'bit'
     ASSESSMENT = 'assessment'
     TEST_MEANING = 'meaning'
@@ -15,17 +18,24 @@ class QCParamKeys:
 
 
 class QualityHandler(abc.ABC):
-    """-------------------------------------------------------------------
-    Class containing code to be executed if a particular quality check fails.
-    -------------------------------------------------------------------"""
+    """Class containing code to be executed if a particular quality check fails.
+
+    :param ds: The dataset the handler will be applied to
+    :type ds: xr.Dataset
+    :param previous_data: A dataset from the previous processing interval 
+        (i.e., file).  This is used to check for consistency between files, 
+        such as for monitonic or delta checks when we need to check the previous value.
+    :type previous_data: xr.Dataset
+    :param quality_manager: The quality_manager definition as specified in the 
+        pipeline config file
+    :type quality_manager: QualityManagerDefinition
+    :param parameters: A dictionary of handler-specific parameters specified in the
+        pipeline config file.  Defaults to {}
+    :type parameters: dict, optional
+    """
 
     def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, quality_manager: QualityManagerDefinition, parameters={}):
-        """-------------------------------------------------------------------
-        Args:
-            ds (xr.Dataset): The dataset the handler will be applied to
-            quality_manager (QualityManagerDefinition)  : The quality_manager definition
-            params(Dict)   : A dictionary of handler-specific parameters
-        -------------------------------------------------------------------"""
+
         self.ds = ds
         self.previous_data = previous_data
         self.quality_manager = quality_manager
@@ -34,30 +44,40 @@ class QualityHandler(abc.ABC):
 
     @abc.abstractmethod
     def run(self, variable_name: str, results_array: np.ndarray):
-        """-------------------------------------------------------------------
-        Perform a follow-on action if a quality check fails. This can be used 
+        """Perform a follow-on action if a quality check fails. This can be used 
         to correct data if needed (such as replacing a bad value with missing 
         value, emailing a contact persion, or raising an exception if the 
         failure constitutes a critical error).
 
-        Args:
-            variable_name (str): Name of the variable that failed
-            results_array (np.ndarray)  : An array of True/False values for
-            each data value of the variable.  True means the check failed.
-        -------------------------------------------------------------------"""
+        :param variable_name: Name of the variable that failed
+        :type variable_name: str
+        :param results_array: An array of True/False values for each data value
+            of the variable.  True means the check failed.
+        :type results_array: np.ndarray
+        """        
         pass
 
     def record_correction(self, variable_name: str):
+        """If a correction was made to variable data to fix invalid values
+        as detected by a quality check, this method will record the fix
+        to the appropriate variable attribute.  The correction description
+        will come from the handler params which get set in the pipeline config
+        file.
+
+        :param variable_name: Name
+        :type variable_name: str
+        """        
         correction = self.params.get("correction", None)
         if correction is not None:
             DSUtil.record_corrections_applied(self.ds, variable_name, correction)
 
 
 class RecordQualityResults(QualityHandler):
-    """-----------------------------------------------------------------------
-    Record the results of the quality check in an ancillary qc variable.
-    -----------------------------------------------------------------------"""
+    
+    """Record the results of the quality check in an ancillary qc variable.
+    """
     def run(self, variable_name: str, results_array: np.ndarray):
+      
         self.ds.qcfilter.add_test(
             variable_name, index=results_array,
             test_number=self.params.get(QCParamKeys.QC_BIT),
@@ -66,9 +86,8 @@ class RecordQualityResults(QualityHandler):
 
 
 class RemoveFailedValues(QualityHandler):
-    """-------------------------------------------------------------------
-    Replace all the failed values with _FillValue
-    -------------------------------------------------------------------"""
+    """Replace all the failed values with _FillValue
+    """
     def run(self, variable_name: str, results_array: np.ndarray):
         if results_array.any():
             fill_value = DSUtil.get_fill_value(self.ds, variable_name)
@@ -82,9 +101,8 @@ class RemoveFailedValues(QualityHandler):
 
 
 class SendEmailAWS(QualityHandler):
-    """-------------------------------------------------------------------
-    Send an email to the recipients using AWS services.
-    -------------------------------------------------------------------"""
+    """Send an email to the recipients using AWS services.
+    """
     def run(self, variable_name: str, results_array: np.ndarray):
         # TODO: we will implement this later after we get the cloud
         # stuff implemented.
@@ -92,9 +110,8 @@ class SendEmailAWS(QualityHandler):
 
 
 class FailPipeline(QualityHandler):
-    """-------------------------------------------------------------------
-    Throw an exception, halting the pipeline & indicating a critical error
-    -------------------------------------------------------------------"""
+    """Throw an exception, halting the pipeline & indicating a critical error
+    """
     def run(self, variable_name: str, results_array: np.ndarray):
         if results_array.any():
             message = f"Quality Manager {self.quality_manager.name} failed for variable {variable_name}"
