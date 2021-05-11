@@ -23,7 +23,7 @@ copyright = '2021, Carina Lansing, Maxwell Levin'
 author = 'Carina Lansing, Maxwell Levin'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = '0.2.2'
 
 
 # -- General configuration ---------------------------------------------------
