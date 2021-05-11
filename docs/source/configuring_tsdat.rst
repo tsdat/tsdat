@@ -15,14 +15,15 @@ different phases of the pipeline along with multiple layers of configuration tha
 .. figure:: figures/configuration.png
    :alt: Tsdat pipelines provide multiple levels of configuration.
 
-As shown in the figure, users can customize Tsdat in two ways:
+As shown in the figure, users can customize Tsdat in three ways:
 
 #. **Configuration files** - shown as input to the pipeline on the left
-#. **Code hooks** - indicated in the pipeline diagram with code (<>) bubbles.  Code hooks are provided by
-   extending a specific base class as explained below.  Code hooks with a GREEN outline are methods contained within
-   the custom IngestPipeline class that runs the pipeline.  Code hooks with a PURPLE outline
-   are classes created outside the pipeline, but are declared in the storage config file.  Code hooks
-   with a RED outline are classes created outside the pipeline, but are declared in the pipeline config file.
+#. **Code hooks** - indicated **inside** the pipeline with code (<>) bubbles.  Code hooks are provided by
+   extending the IngestPipeline base class to create custom pipeline behavior.
+#. **Helper classes** - indicated **outside** the pipeline with code (<>) bubbles.  Helper classes
+   are described in more detail below and provide reusable, cross-pipeline functionality such
+   as custom file readers or quality control checks.  The specific helper classes that are used
+   for a given pipeline are declared in the storage or pipeline config files.
 
 
 More information on config file syntax and code hook base classes are provided below.
@@ -162,7 +163,7 @@ can also be referenced in the
     :language: yaml
 
 ********************
-Code Hooks
+Code Customizations
 ********************
 This section describes all the types of classes that can be extended in Tsdat to provide
 custom pipeline behavior.  To start with, each pipeline will define a main Pipeline class
@@ -224,17 +225,17 @@ hook_generate_and_persist_plots
    processing and QC have been applied and just before the dataset is saved to disk.
 
 
-********************
+=============================
 File Handlers
-********************
+=============================
 File Handlers are classes that are used to read and write files.  Each File Handler
 should extend the ``tsdat.io.filehandlers.file_handlers.AbstractFileHandler`` base
 class.  The AbstractFileHandler base class defines two methods:
 
-read
+:read:
    Read a file into an XArray Dataset object.
 
-write
+:write:
    Write an XArray Dataset to file.  This method only needs to be implemented for
    handlers that will be used to save processed data to persistent storage.
 
@@ -246,9 +247,21 @@ for another example  of writing a custom FileHandler to read raw instrument data
 The File Handlers that are to be used in your pipeline are configured in your
 :ref:`storage config file<storage_config>`
 
-********************
+=============================
+Converters
+=============================
+Converters are classes that are used to convert units from the raw data to standardized format.
+Each Converter should extend the ``tsdat.utils.converters.Converter`` base class.
+The Converter base class defines one method, **run**, which converts a numpy ndarray of variable
+data from the input units to the output units.  Currently tsdat provides two converters for working
+with time data.  ``tsdat.utils.converters.StringTimeConverter`` converts time values in a variety
+of string formats, and ``tsdat.utils.converters.TimestampTimeConverter`` converts time values in
+long integer format.  In addtion, tsdat provides a ``tsdat.utils.converters.DefaultConverter``
+which converts any units from one udunits2 supported units type to another.
+
+=============================
 Quality Management
-********************
+=============================
 Two types of classes can be defined in your pipeline to ensure standardized
 data meets quality requirements: 
 
@@ -264,9 +277,9 @@ QualityHandler
 The specific QCCheckers and QCHandlers used for a pipeline and the
 variables they run on are specified in the :ref:`pipeline config file<pipeline_config>`.
 
-===================
+-----------------------------
 Quality Checkers
-===================
+-----------------------------
 Quality Checkers are classes that are used to perform a QC test on a specific
 variable.  Each Quality Checker should extend the ``tsdat.qc.checkers.QualityChecker`` base
 class, which defines a ``run()`` method that performs the check.
@@ -275,9 +288,9 @@ by the pipeline and invoked on the specified variables.  See the :ref:`API Refer
 for a detailed description of the QualityChecker.run() method as well as a list of all
 QualityCheckers defined by Tsdat.
 
-===================
+-----------------------------
 Quality Handlers
-===================
+-----------------------------
 Quality Handlers are classes that are used to correct variable data when a specific
 quality test fails.  An example is interpolating missing values to fill gaps.
 Each Quality Handler should extend the ``tsdat.qc.handlers.QualityHandler`` base
