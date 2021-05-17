@@ -8,14 +8,8 @@ storage:
   file_handlers:
     input:
       sta:
-        file_pattern: '.*\.sta'
-        classname: tsdat.io.filehandlers.CsvHandler
-        parameters:
-          read:
-            read_csv:
-              sep: "\t"
-              header: 41
-              index_col: False
+        file_pattern: '.*\.sta\.7z'
+        classname: pipeline.filehandlers.StaFileHandler
     output:
       netcdf:
         file_extension: '.nc'
