@@ -24,7 +24,7 @@ class QualityHandler(abc.ABC):
     :type ds: xr.Dataset
     :param previous_data: A dataset from the previous processing interval 
         (i.e., file).  This is used to check for consistency between files, 
-        such as for monitonic or delta checks when we need to check the previous value.
+        such as for monotonic or delta checks when we need to check the previous value.
     :type previous_data: xr.Dataset
     :param quality_manager: The quality_manager definition as specified in the 
         pipeline config file
@@ -73,7 +73,6 @@ class QualityHandler(abc.ABC):
 
 
 class RecordQualityResults(QualityHandler):
-    
     """Record the results of the quality check in an ancillary qc variable.
     """
     def run(self, variable_name: str, results_array: np.ndarray):
@@ -97,6 +96,24 @@ class RemoveFailedValues(QualityHandler):
             replaced_values = np.where(keep_array, var_values, fill_value)
             self.ds[variable_name].data = replaced_values
 
+            self.record_correction(variable_name)
+
+
+class SortDatasetByCoordinate(QualityHandler):
+    """Sort coordinate data using xr.Dataset.sortby(). Accepts the following
+    parameters:
+
+    .. code-block:: yaml
+
+        parameters:
+          # Whether or not to sort in ascending order. Defaults to True.
+          ascending: True
+    """
+
+    def run(self, variable_name: str, results_array: np.ndarray):
+        if results_array.any():
+            order = self.params.get('ascending', True)
+            self.ds = self.ds.sortby(self.ds[variable_name], order)
             self.record_correction(variable_name)
 
 
