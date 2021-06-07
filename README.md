@@ -52,7 +52,7 @@ pip install twine
 
 Then commit tsdat with the new build numbers.
 
-### 2) Then deploy the new release to pypi.
+### 2) Deploy the new release to pypi.
 
 ```bash
 cd tsdat
@@ -60,7 +60,7 @@ python setup.py sdist bdist_wheel
 twine upload dist/*
 ```
 
-### 3) Finally deploy the new release to docker hub
+### 3) Deploy the new release to docker hub
 
 **Prereq: Log in to docker hub**
 ```bash
@@ -71,3 +71,5 @@ docker login --username=clansing
 cd tsdat/docker
 ./build.sh
 ```
+
+### 4) Create a tagged release in GitHub
