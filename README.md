@@ -50,6 +50,8 @@ pip install twine
 2. docker/docker-compose.yml
 3. docker/build.sh
 
+Then commit tsdat with the new build numbers.
+
 ### 2) Then deploy the new release.
 
 ```bash
