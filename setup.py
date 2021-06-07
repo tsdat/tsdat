@@ -16,7 +16,7 @@ with open(path.join(CWD, 'requirements.txt')) as requirements_file:
 
 setup(
     name="tsdat",
-    version="0.2.3",
+    version="0.2.4",
     description="A data processing framework used to convert time series data into standardized format.",
     long_description=README,
     long_description_content_type="text/markdown",
