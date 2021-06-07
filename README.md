@@ -45,7 +45,10 @@ TODO: to be replaced by CICD build instead of manual process.
 pip install twine
 ```
 
-### 1) Update the version number in setup.py
+### 1) Update the version numbers
+1. setup.py
+2. docker/docker-compose.yml
+3. docker/build.sh
 
 ### 2) Then deploy the new release.
 
