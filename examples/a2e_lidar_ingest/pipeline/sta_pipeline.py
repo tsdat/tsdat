@@ -23,7 +23,7 @@ class StaPipeline(IngestPipeline):
         # Compress row of variables in input into variables dimensioned by time and height
         for raw_filename, raw_dataset in raw_mapping.items():
             if ".sta" in raw_filename:
-                raw_categories = ["Wind Speed (m/s)", "Wind Direction (�)", "Data Availability (%)"]
+                raw_categories = ["Wind Speed (m/s)", "Wind Direction (°)", "Data Availability (%)"]
                 output_var_names = ["wind_speed", "wind_direction", "data_availability"]
                 heights = dataset.height.data
                 for category, output_name in zip(raw_categories, output_var_names):

@@ -145,7 +145,10 @@ quality_management:
     checker:
       classname: tsdat.qc.checkers.CheckMonotonic
     handlers:
-      - classname: tsdat.qc.handlers.FailPipeline
+      - classname: tsdat.qc.handlers.SortDatasetByCoordinate
+        parameters:
+          ascending: True
+          correction: "Coordinate data was sorted in order to ensure monotonicity."
     variables:
       - time
   
