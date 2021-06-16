@@ -3,6 +3,7 @@ import struct
 import datetime
 import numpy as np
 import xarray as xr
+from typing import Dict
 
 from tsdat import Config
 from tsdat.io import AbstractFileHandler
@@ -52,6 +53,59 @@ def fread(fileObj, dtype):
         val = int.from_bytes(val, 'big')
     return val
 
+def extract_data(filename: str, packet: Dict[str, Dict]) -> xr.Dataset:
+    # Create dictionary to hold raw binary data
+    raw_data = {category: {var_name: [] for var_name in subpacket.keys()} for category, subpacket in packet.items()}
+
+    # Read the binary data from file and append to raw data dictionary
+    with open(filename, "rb") as bfile:
+        try:
+            while(True):
+                for category, subpacket in packet.items():
+                    for name, dtype in subpacket.items():
+                        _data = fread(bfile, dtype)
+                        if name:
+                            raw_data[category][name].append(_data)
+        except:
+            pass
+    
+    # Convert raw data into numpy arrays
+    data = {category: {var_name: np.array(subpacket[var_name]) for var_name in subpacket.keys()}
+            for category, subpacket in raw_data.items()}
+    
+    # Create datetime array from gps times
+    time = [datetime.datetime(year=1980, month=1, day=6)] * len(data["gps_time"]["tow"])
+    for i in range(len(time)):
+        days = int(7 * data["gps_time"]["week_number"][i])
+        seconds = data["gps_time"]["tow"][i] - 18  # GPS time to UTC is currently 18 seconds off
+        time[i] += datetime.timedelta(days=days, seconds=seconds)
+    time = np.array(time, dtype=np.datetime64)
+
+    # Create handles for variables
+    roll = np.array(data["rpy"]["roll"])
+    pitch = np.array(data["rpy"]["pitch"])
+    yaw = np.array(data["rpy"]["yaw"])
+    gyro = np.array([data["gyro"]["x"], data["gyro"]["y"], data["gyro"]["z"]]).transpose()
+    accel = np.array([data["accel"]["x"], data["accel"]["y"], data["accel"]["z"]]).transpose()
+    mag = np.array([data["mag"]["x"], data["mag"]["y"], data["mag"]["z"]]).transpose()
+    pres = np.array(data["pressure"]["data"])
+
+    # Create data dictionary and return dataset
+    dictionary = {
+        # Dimensions / coordinates
+        "time":     {"dims": ["time"],  "data": time},
+        "space":    {"dims": ["space"], "data": ["x", "y", "z"]},
+        # Data variables
+        "roll":     {"dims": ["time"],  "data": roll},
+        "pitch":    {"dims": ["time"],  "data": pitch},
+        "yaw":      {"dims": ["time"],  "data": yaw},
+        "gyro":     {"dims": ["time", "space"], "data": gyro},
+        "accel":    {"dims": ["time", "space"], "data": accel},
+        "mag":      {"dims": ["time", "space"], "data": mag},
+        "pres":     {"dims": ["time"],  "data": pres},
+    }
+    return xr.Dataset.from_dict(dictionary)
+
 
 class ImuFileHandler(AbstractFileHandler):
 
@@ -61,59 +115,10 @@ class ImuFileHandler(AbstractFileHandler):
     def read(self, filename: str, **kwargs) -> xr.Dataset:
         
         # Determine which packet to use. 
-        packet = morro_packet
-        if "z05" in os.path.basename(filename):
-            packet = humbolt_packet
-
-        # Create dictionary to hold raw binary data
-        raw_data = {category: {var_name: [] for var_name in subpacket.keys()} for category, subpacket in packet.items()}
-
-        # Read the binary data from file and append to raw data dictionary
-        with open(filename, "rb") as bfile:
-            try:
-                while(True):
-                    for category, subpacket in packet.items():
-                        for name, dtype in subpacket.items():
-                            _data = fread(bfile, dtype)
-                            if name:
-                                raw_data[category][name].append(_data)
-            except:
-                pass
+        dataset = None
+        try:
+            dataset = extract_data(filename, morro_packet)
+        except:
+            dataset = extract_data(filename, humbolt_packet)
         
-        # Convert raw data into numpy arrays
-        data = {category: {var_name: np.array(subpacket[var_name]) for var_name in subpacket.keys()}
-                for category, subpacket in raw_data.items()}
-        
-        # Create datetime array from gps times
-        time = [datetime.datetime(year=1980, month=1, day=6)] * len(data["gps_time"]["tow"])
-        for i in range(len(time)):
-            days = int(7 * data["gps_time"]["week_number"][i])
-            seconds = data["gps_time"]["tow"][i] - 18  # GPS time to UTC is currently 18 seconds off
-            time[i] += datetime.timedelta(days=days, seconds=seconds)
-        time = np.array(time, dtype=np.datetime64)
-
-        # Create handles for variables
-        roll = np.array(data["rpy"]["roll"])
-        pitch = np.array(data["rpy"]["pitch"])
-        yaw = np.array(data["rpy"]["yaw"])
-        gyro = np.array([data["gyro"]["x"], data["gyro"]["y"], data["gyro"]["z"]]).transpose()
-        accel = np.array([data["accel"]["x"], data["accel"]["y"], data["accel"]["z"]]).transpose()
-        mag = np.array([data["mag"]["x"], data["mag"]["y"], data["mag"]["z"]]).transpose()
-        pres = np.array(data["pressure"]["data"])
-
-        # Create data dictionary and return dataset
-        dictionary = {
-            # Dimensions / coordinates
-            "time":     {"dims": ["time"],  "data": time},
-            "space":    {"dims": ["space"], "data": ["x", "y", "z"]},
-            # Data variables
-            "roll":     {"dims": ["time"],  "data": roll},
-            "pitch":    {"dims": ["time"],  "data": pitch},
-            "yaw":      {"dims": ["time"],  "data": yaw},
-            "gyro":     {"dims": ["time", "space"], "data": gyro},
-            "accel":    {"dims": ["time", "space"], "data": accel},
-            "mag":      {"dims": ["time", "space"], "data": mag},
-            "pres":     {"dims": ["time"],  "data": pres},
-        }
-        return xr.Dataset.from_dict(dictionary)
-    
+        return dataset
