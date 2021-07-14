@@ -1,4 +1,4 @@
-act-atmos >= 0.7
+act-atmos >= 1.0.4
 cfunits >= 3.3
 netcdf4 >= 1.5
 numpy >= 1.20
