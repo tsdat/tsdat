@@ -5,6 +5,7 @@ import pathlib
 import zipfile
 
 import datetime
+import _strptime # added to workaround https://bugs.python.org/issue8098, causes issues on some machines
 import os
 import shutil
 import xarray as xr
