@@ -428,7 +428,7 @@ class TemporaryStorage(abc.ABC):
 
     :param storage: A reference to the corresponding DatastreamStorage
     :type storage: DatastreamStorage
-    """    
+    """
 
     def __init__(self, storage: DatastreamStorage):
         self.datastream_storage = storage
@@ -459,6 +459,22 @@ class TemporaryStorage(abc.ABC):
         # remove any garbage files left in the local temp folder
         shutil.rmtree(self.local_temp_folder)
 
+    def ignore_zip_check(self, filepath: str) -> bool:
+        """Return true if this file should be excluded from the zip file check.
+        We need this for Office documents, since they are actually zip files
+        under the hood, so we don't want to try to unzip them.
+
+        :param filepath: the file we are potentially extracting
+        :type filepath: str
+        :return: whether we should check if it is a zip or not
+        :rtype: bool
+        """
+        ext = os.path.splitext(filepath)[1]
+        excluded_types = ['.xlsx']
+        if ext in excluded_types:
+            return True
+
+        return False
 
     def get_temp_filepath(self, filename: str = None, disposable: bool = True) -> DisposableLocalTempFile:
         """Construct a filepath for a temporary file that will be located in the

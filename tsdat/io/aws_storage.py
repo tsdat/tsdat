@@ -203,8 +203,12 @@ class AwsTemporaryStorage(TemporaryStorage):
             files = [list_or_filepath]
 
         for filepath in files:
-            is_tar = self.is_tarfile(filepath)  # .tar or .tar.gz
-            is_zip = self.is_zipfile(filepath)  # .zip
+            if self.ignore_zip_check(filepath):
+                is_tar = False
+                is_zip = False
+            else:
+                is_tar = self.is_tarfile(filepath)  # .tar or .tar.gz
+                is_zip = self.is_zipfile(filepath)  # .zip
 
             if is_tar or is_zip:
                 # only dispose of the parent zip if set by storage policy
