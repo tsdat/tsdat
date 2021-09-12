@@ -47,8 +47,7 @@ class CsvHandler(AbstractFileHandler):
 
         write_params = self.parameters.get('write', {})
         to_dataframe_kwargs = write_params.get('to_dataframe', {})
-        to_csv_kwargs = dict(index=False)
-        to_csv_kwargs.update(write_params.get('to_csv', {}))
+        to_csv_kwargs = write_params.get('to_csv', {})
 
         df = ds.to_dataframe(**to_dataframe_kwargs)
         df.to_csv(filename, **to_csv_kwargs)
