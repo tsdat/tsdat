@@ -2,7 +2,9 @@
 .idea/
 .history/
 .vscode/
+.pytest_cache/
 *.pyc
 build/
 dist/
 tsdat.egg-info
+**/storage/**

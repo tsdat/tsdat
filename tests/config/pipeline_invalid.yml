@@ -1,0 +1,25 @@
+# Should raise a tsdat.exceptions.DefinitionError due to Illegal Symbols
+# dataset_name should not include '-' characters
+
+pipeline:
+  location_id: "test"
+  dataset_name: "illegal-dataset-name"
+  data_level: "a1"
+
+dataset_definition:
+  attributes:
+    institution: PNNL
+    title: Test case for catching configuration file errors
+
+  dimensions:
+    time:
+      length: unlimited
+
+  variables:
+    time:
+      input:
+        name: TimeString
+      dims: [time]
+      type: long
+      attrs:
+        units: seconds since 1970-01-01T00:00:00

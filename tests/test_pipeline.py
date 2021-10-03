@@ -1,48 +1,59 @@
 import os
+import pytest
 import shutil
-import sys
-import unittest
+import tsdat
+import xarray as xr
 
-# Add the examples directory to the pythonpath
-test_dir = os.path.dirname(os.path.realpath(__file__))
-project_dir = os.path.dirname(test_dir)
-examples_dir = os.path.join(project_dir, 'examples')
-
-
-def _delete_dir(folder_path):
-    if os.path.isdir(folder_path):
-        shutil.rmtree(folder_path)
-
-
-def run_example(folder_name):
-    # Clean up the storage folder if it already exists
-    _delete_dir(os.path.join(examples_dir, folder_name, 'storage'))
-
-    package_dir = os.path.join(examples_dir, folder_name)
-    sys.path.insert(0, package_dir)
-    from pipeline.runner import run_pipeline
-    run_pipeline()
-    sys.path.pop(0)
+from tests import (
+    NON_MONOTONIC_CSV,
+    PIPELINE_INVALID_CONFIG,
+    PIPELINE_FAIL_CONFIG,
+    PIPELINE_ROBUST_CONFIG,
+    STORAGE_CONFIG,
+    STORAGE_PATH,
+)
 
 
-class TestIngestPipeline(unittest.TestCase):
-    """-------------------------------------------------------------------
-    Test the full pipeline using the custom examples from the pipeline
-    folder
-    -------------------------------------------------------------------"""
-
-    def test_a2e_buoy_ingest(self):
-        run_example('a2e_buoy_ingest')
-
-    def test_a2e_imu_ingest(self):
-        run_example('a2e_imu_ingest')
-
-    def test_a2e_lidar_ingest(self):
-        run_example('a2e_lidar_ingest')
-
-    def test_a2e_waves_ingest(self):
-        run_example('a2e_waves_ingest')
+def delete_existing_outputs():
+    if os.path.isdir(STORAGE_PATH):
+        shutil.rmtree(STORAGE_PATH)
 
 
-if __name__ == '__main__':
-    unittest.main()
+def test_yaml_validation():
+    delete_existing_outputs()
+    with pytest.raises(tsdat.exceptions.DefinitionError):
+        tsdat.IngestPipeline(PIPELINE_INVALID_CONFIG, STORAGE_CONFIG)
+
+
+def test_fail_non_monotonic():
+    delete_existing_outputs()
+    Pipeline = tsdat.IngestPipeline(PIPELINE_FAIL_CONFIG, STORAGE_CONFIG)
+    with pytest.raises(tsdat.exceptions.QCError):
+        Pipeline.run(NON_MONOTONIC_CSV)
+
+
+def test_robust_pipeline():
+    delete_existing_outputs()
+    Pipeline = tsdat.IngestPipeline(PIPELINE_ROBUST_CONFIG, STORAGE_CONFIG)
+    Pipeline.run(NON_MONOTONIC_CSV)
+
+    raw_dir = os.path.join(STORAGE_PATH, "test.SortedDataset.00")
+    processed_dir = os.path.join(STORAGE_PATH, "test.SortedDataset.a1")
+
+    assert os.path.isdir(raw_dir) and os.path.isdir(processed_dir)
+
+    processed_file = os.path.join(processed_dir, os.listdir(processed_dir)[0])
+    ds: xr.Dataset = xr.open_dataset(processed_file)
+
+    for expected_output_var in ["time", "height_in", "height_out", "dummy_var"]:
+        assert expected_output_var in ds.variables
+
+    assert ds["height_out"].attrs["units"] == "km"
+
+    assert (ds["height_in"].data == 1000 * ds["height_out"].data).all()
+
+    assert (ds["qc_dummy_var"].data == 1).all()
+
+    # Check timestamp order was corrected and is increasing
+    diff = ds["time"].diff("time").astype(int)
+    assert (diff > 0).all()

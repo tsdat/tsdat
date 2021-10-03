@@ -1,0 +1,74 @@
+pipeline:
+  type: Ingest
+  location_id: "test"
+  dataset_name: "SortedDataset"
+  data_level: "a1"
+
+dataset_definition:
+  attributes:
+    institution: PNNL
+    title: "Surface Meteorological Measurements and Ocean Current Measurements from Buoy #130 at Morro Bay, CA"
+
+  dimensions:
+    time:
+      length: unlimited
+
+  variables:
+    time:
+      input:
+        name: TimeString
+        converter:
+          classname: tsdat.utils.converters.StringTimeConverter
+          parameters:
+            timezone: UTC
+            time_format: "%Y%m%d %H%M%S"
+      dims: [time]
+      type: long
+      attrs:
+        units: seconds since 1970-01-01T00:00:00
+    
+    height_in:
+      input:
+        name: InHeight(m)
+      dims: [time]
+      type: float
+      attrs:
+        units: m
+
+    height_out:
+      input:
+        name: InHeight(m)
+        units: m
+      dims: [time]
+      type: float
+      attrs:
+        units: km
+        _FillValue: -9990
+
+    dummy_var:
+      dims: [time]
+      type: float
+
+
+quality_management:
+
+  manage_coordinate_monotonicity:
+    checker:
+      classname: tsdat.qc.checkers.CheckMonotonic
+    handlers:
+      - classname: tsdat.qc.handlers.SortDatasetByCoordinate
+    variables:
+      - COORDS
+
+  manage_missing_values:
+    checker:
+      classname: tsdat.qc.checkers.CheckMissing
+    handlers:
+      - classname: tsdat.qc.handlers.RemoveFailedValues
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          bit: 1
+          assessment: Bad
+          meaning: "Value is equal to _FillValue or NaN"
+    variables:
+      - DATA_VARS

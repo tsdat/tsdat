@@ -1,9 +1,8 @@
 ## VSCode Setup Instructions
 
-Press `F1` and run the `Python: Configure Tests` command. Select `unittest`. 
+Press `F1` and run the `Python: Configure Tests` command. Select `pytest`. 
 Select `tests` as the directory containing the tests. 
-Select `test_*.py` as the pattern to use for searching for tests.
+Run the tests using the test icon in the navigation panel.
 
 ## PyCharm Setup Instructions
 TODO
-
