@@ -1,8 +1,11 @@
 # Time Series Data Analytical Toolkit (TSDAT)
 
+
 [![main](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml/badge.svg)](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml)
+[![codecov](https://codecov.io/gh/tsdat/tsdat/branch/main/graph/badge.svg?token=W2FHMSQLEH)](https://codecov.io/gh/tsdat/tsdat)
 [![PyPI version](https://badge.fury.io/py/tsdat.svg)](https://badge.fury.io/py/tsdat)
 [![DOI](https://zenodo.org/badge/306085871.svg)](https://zenodo.org/badge/latestdoi/306085871)
+
 
 The Time Series Data Analytical Toolkit (TSDAT) is an open-source python framework
 for creating pipelines to read-in, standardize, and enhance time series datasets of
