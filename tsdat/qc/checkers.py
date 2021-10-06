@@ -70,8 +70,8 @@ class CheckMissing(QualityChecker):
     def run(self, variable_name: str) -> Optional[np.ndarray]:
 
         # If this is a time variable, we check for 'NaT'
-        if self.ds[variable_name].values.dtype.type == np.datetime64:
-            results_array = np.isnat(self.ds[variable_name].values)
+        if self.ds[variable_name].data.dtype.type == np.datetime64:
+            results_array = np.isnat(self.ds[variable_name].data)
 
         else:
             fill_value = DSUtil.get_fill_value(self.ds, variable_name)
@@ -82,31 +82,16 @@ class CheckMissing(QualityChecker):
                 fill_value = -9999
 
             # Make sure fill value has same data type as the variable
-            fill_value = np.array(fill_value, dtype=self.ds[variable_name].values.dtype.type)
-
-            # First replace any values that are outside valid_range to be fill_value so
-            # it will get flagged as missing
-            self._replace_invalid_values(fill_value, variable_name)
+            fill_value = np.array(fill_value, dtype=self.ds[variable_name].data.dtype.type)
 
             # First check if any values are assigned to _FillValue
-            results_array = np.equal(self.ds[variable_name].values, fill_value)
+            results_array = np.equal(self.ds[variable_name].data, fill_value)
 
-            # Then, if the value is numeric, we should also check if any values are assigned to
-            # NaN
-            if self.ds[variable_name].values.dtype.type in (type(0.0), np.float16, np.float32, np.float64):
-                results_array |= np.isnan(self.ds[variable_name].values)
+            # Then, if the value is numeric, we should also check if any values are assigned to NaN
+            if self.ds[variable_name].data.dtype.type in (type(0.0), np.float16, np.float32, np.float64):
+                results_array |= np.isnan(self.ds[variable_name].data)
 
         return results_array
-
-    def _replace_invalid_values(self, fill_value, variable_name: str):
-        valid_min = DSUtil.get_valid_min(self.ds, variable_name)
-        valid_max = DSUtil.get_valid_max(self.ds, variable_name)
-
-        if valid_min is not None and valid_max is not None:
-            values = self.ds[variable_name].values
-            keep_array = np.logical_not( (values < valid_min) | (values > valid_max))
-            replaced_values = np.where(keep_array, values, fill_value)
-            self.ds[variable_name].data = replaced_values
 
 
 class CheckMin(QualityChecker):
@@ -129,7 +114,7 @@ class CheckMin(QualityChecker):
         # If no minimum value is available, then we just skip this check
         results_array = None
         if _min is not None:
-            results_array = np.less(self.ds[variable_name].values, _min)
+            results_array = np.less(self.ds[variable_name].data, _min)
 
         return results_array
 
@@ -154,7 +139,7 @@ class CheckMax(QualityChecker):
         # If no maximum value is available, then we just skip this check
         results_array = None
         if _max is not None:
-            results_array = np.greater(self.ds[variable_name].values, _max)
+            results_array = np.greater(self.ds[variable_name].data, _max)
 
         return results_array
 
@@ -271,7 +256,7 @@ class CheckValidDelta(QualityChecker):
                         variable_data = np.insert(variable_data, 0, previous_row, axis=axis)
 
                 # If the variable is a time variable, then we convert to nanoseconds before doing our check
-                if self.ds[variable_name].values.dtype.type == np.datetime64:
+                if self.ds[variable_name].data.dtype.type == np.datetime64:
                     variable_data = DSUtil.datetime64_to_timestamp(variable_data)
 
                 # Compute the difference between each two numbers and check if it exceeds valid_delta
@@ -328,7 +313,7 @@ class CheckMonotonic(QualityChecker):
                     variable_data = np.insert(variable_data, 0, previous_row, axis=axis)
 
             # If the variable is a time variable, then we convert to nanoseconds before doing our check
-            if self.ds[variable_name].values.dtype.type == np.datetime64:
+            if self.ds[variable_name].data.dtype.type == np.datetime64:
                 variable_data = DSUtil.datetime64_to_timestamp(variable_data)
 
             # Compute the difference between each two numbers and check if they are either all

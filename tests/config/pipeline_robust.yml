@@ -12,6 +12,10 @@ dataset_definition:
   dimensions:
     time:
       length: unlimited
+  
+  variable_defaults:
+    dims: [time]
+    type: float
 
   variables:
     time:
@@ -30,8 +34,6 @@ dataset_definition:
     height_in:
       input:
         name: InHeight(m)
-      dims: [time]
-      type: float
       attrs:
         units: m
 
@@ -39,15 +41,21 @@ dataset_definition:
       input:
         name: InHeight(m)
         units: m
-      dims: [time]
-      type: float
       attrs:
         units: km
-        _FillValue: -9990
+        warn_range: [0.0, 1.0]
+        fail_range: [0.0, 1.5]
+        valid_range: [-2.0, 6.0]
+        valid_delta: 6.0
 
-    dummy_var:
+    uninitialized_var:
       dims: [time]
       type: float
+
+    static_dimensionless_var:
+      data: 0.42
+      dims: []
+
 
 
 quality_management:
@@ -65,6 +73,7 @@ quality_management:
       classname: tsdat.qc.checkers.CheckMissing
     handlers:
       - classname: tsdat.qc.handlers.RemoveFailedValues
+        correction: Missing or NaN values were replaced with _FillValue
       - classname: tsdat.qc.handlers.RecordQualityResults
         parameters:
           bit: 1
@@ -72,3 +81,89 @@ quality_management:
           meaning: "Value is equal to _FillValue or NaN"
     variables:
       - DATA_VARS
+    # exclude:
+    #   - static_dimensionless_var
+
+  manage_warn_min:
+    checker:
+      classname: tsdat.qc.checkers.CheckWarnMin
+    handlers:
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          bit: 2
+          assessment: Indeterminate
+          meaning: "Value is less than warn_range"
+    variables:
+      - height_out
+
+  manage_warn_max:
+    checker:
+      classname: tsdat.qc.checkers.CheckWarnMax
+    handlers:
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          bit: 3
+          assessment: Indeterminate
+          meaning: "Value is greater than warn_range"
+    variables:
+      - height_out
+
+  manage_fail_min:
+    checker:
+      classname: tsdat.qc.checkers.CheckFailMin
+    handlers:
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          bit: 2
+          assessment: Bad
+          meaning: "Value is less than fail_range"
+    variables:
+      - height_out
+
+  manage_fail_max:
+    checker:
+      classname: tsdat.qc.checkers.CheckFailMax
+    handlers:
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          bit: 3
+          assessment: Bad
+          meaning: "Value is greater than fail_range"
+    variables:
+      - height_out
+
+  manage_valid_min:
+    checker:
+      classname: tsdat.qc.checkers.CheckValidMin
+    handlers:
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          bit: 2
+          assessment: Bad
+          meaning: "Value is less than valid_range"
+    variables:
+      - height_out
+
+  manage_valid_max:
+    checker:
+      classname: tsdat.qc.checkers.CheckValidMax
+    handlers:
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          bit: 3
+          assessment: Bad
+          meaning: "Value is greater than valid_range"
+    variables:
+      - height_out
+
+  manage_valid_delta:
+    checker:
+      classname: tsdat.qc.checkers.CheckValidDelta
+    handlers:
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          bit: 4
+          assessment: Bad
+          meaning: "Value delta is greater than valid_delta"
+    variables:
+      - height_out

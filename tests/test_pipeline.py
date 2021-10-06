@@ -34,6 +34,7 @@ def test_fail_non_monotonic():
 
 def test_robust_pipeline():
     delete_existing_outputs()
+
     Pipeline = tsdat.IngestPipeline(PIPELINE_ROBUST_CONFIG, STORAGE_CONFIG)
     Pipeline.run(NON_MONOTONIC_CSV)
 
@@ -45,15 +46,24 @@ def test_robust_pipeline():
     processed_file = os.path.join(processed_dir, os.listdir(processed_dir)[0])
     ds: xr.Dataset = xr.open_dataset(processed_file)
 
-    for expected_output_var in ["time", "height_in", "height_out", "dummy_var"]:
-        assert expected_output_var in ds.variables
-
-    assert ds["height_out"].attrs["units"] == "km"
-
-    assert (ds["height_in"].data == 1000 * ds["height_out"].data).all()
-
-    assert (ds["qc_dummy_var"].data == 1).all()
+    expected_output_variables = [
+        "time",
+        "height_in",
+        "height_out",
+        "uninitialized_var",
+        "static_dimensionless_var",
+    ]
+    for variable_name in expected_output_variables:
+        assert variable_name in ds.variables
 
     # Check timestamp order was corrected and is increasing
     diff = ds["time"].diff("time").astype(int)
     assert (diff > 0).all()
+
+    # Check height variable units and conversion
+    assert ds["height_in"].attrs["units"] == "m"
+    assert ds["height_out"].attrs["units"] == "km"
+    assert (ds["height_in"].data == 1000 * ds["height_out"].data).all()
+
+    # Check test variables initialized / evaluated correctly
+    assert (ds["qc_uninitialized_var"].data == 1).all()

@@ -42,19 +42,10 @@ def instantiate_handler(*args, handler_desc: Dict = None) -> Union[object, List[
     """
     handler = None
 
-    if handler_desc is not None:
+    if handler_desc:
         classname = handler_desc.get('classname', None)
         params = handler_desc.get('parameters', {})
-
-        if classname is None:  # handler is an dictionary of multiple handlers
-            handler = []
-            for handler_dict in handler_desc.values():
-                classname = handler_dict.get('classname', None)
-                params = handler_dict.get('parameters', {})
-                handler.append(_instantiate_class(*args, classname=classname, parameters=params))
-
-        else:
-            handler = _instantiate_class(*args, classname=classname, parameters=params)
+        handler = _instantiate_class(*args, classname=classname, parameters=params)
 
     return handler
 

@@ -1,22 +1,16 @@
-import mimetypes
-
-import datetime
-import matplotlib.pyplot as plt
+import os
+import act
 import numpy as np
 import pandas as pd
-import os
 import xarray as xr
-from typing import List, Dict, Tuple, Union, Optional
+import matplotlib.pyplot as plt
 
-import act
+from typing import List, Dict, Tuple, Optional
 from tsdat.constants import ATTS
 
 # Note that we can't use these in the type hints because
 # importing them here causes a circular dependency
 # from tsdat.config import Config, VariableDefinition
-
-
-mimetypes.init()
 
 
 class DSUtil:  
@@ -41,7 +35,7 @@ class DSUtil:
         ds[variable].attrs[ATTS.CORRECTIONS_APPLIED] = corrections
 
     @staticmethod
-    def datetime64_to_string(datetime64: Union[np.ndarray, np.datetime64]) -> Tuple[str, str]:
+    def datetime64_to_string(datetime64: np.datetime64) -> Tuple[str, str]:
         """Convert a datetime64 object to formated string.
 
         :param datetime64: The datetime64 object
@@ -50,7 +44,7 @@ class DSUtil:
             the day in 'yyyymmdd' format.  The second string is the time in 'hhmmss' format.
         :rtype: Tuple[str, str]
         """        
-        datetime = act.utils.datetime64_to_datetime()[0]
+        datetime = act.utils.datetime64_to_datetime(datetime64)[0]
         return datetime.strftime("%Y%m%d"), datetime.strftime("%H%M%S")
 
     @staticmethod
@@ -79,12 +73,10 @@ class DSUtil:
         :return: The datastream name
         :rtype: str
         """        
-        assert(ds is not None or config is not None)
-        if ds is not None and "datastream_name" in ds.attrs:
+        assert(ds or config)
+        if ds and "datastream_name" in ds.attrs:
             return ds.attrs["datastream_name"]
-        elif config :
-            return config.dataset_definition.datastream_name
-        return None
+        return config.dataset_definition.attrs.get("datastream_name")
 
     @staticmethod
     def get_end_time(ds: xr.Dataset) -> Tuple[str, str]:
@@ -97,88 +89,8 @@ class DSUtil:
             the last time point in the dataset.
         :rtype: Tuple[str, str]
         """
-        time64 = np.min(ds['time'].data)
+        time64 = np.max(ds['time'].data)
         return DSUtil.datetime64_to_string(time64)
-
-    @staticmethod
-    def get_fail_max(ds: xr.Dataset, variable_name: str):     
-        """Get the max value from the fail_range attribute
-        for the given variable.
-
-        :param ds: The dataset
-        :type ds: xr.Dataset
-        :param variable_name: A variable in the dataset
-        :type variable_name: str
-        :return: The max value of the fail_range attribute or 
-            None if not defined
-        :rtype: same data type of the variable (int, float, etc.)
-            or None
-        """        
-        fail_max = None
-        fail_range = ds[variable_name].attrs.get(ATTS.FAIL_RANGE, None)
-        if fail_range is not None:
-            fail_max = fail_range[-1]
-        return fail_max
-
-    @staticmethod
-    def get_fail_min(ds: xr.Dataset, variable_name):
-        """Get the min value from the fail_range attribute
-        for the given variable.
-
-        :param ds: The dataset
-        :type ds: xr.Dataset
-        :param variable_name: A variable in the dataset
-        :type variable_name: str
-        :return: The min value of the fail_range attribute or 
-            None if not defined
-        :rtype: same data type of the variable (int, float, etc.)
-            or None
-        """     
-        fail_min = None
-        fail_range = ds[variable_name].attrs.get(ATTS.FAIL_RANGE, None)
-        if fail_range is not None:
-            fail_min = fail_range[0]
-        return fail_min
-
-    @staticmethod
-    def get_valid_max(ds: xr.Dataset, variable_name):
-        """Get the max value from the valid_range attribute
-        for the given variable.
-
-        :param ds: The dataset
-        :type ds: xr.Dataset
-        :param variable_name: A variable in the dataset
-        :type variable_name: str
-        :return: The max value of the valid_range attribute or 
-            None if not defined
-        :rtype: same data type of the variable (int, float, etc.)
-            or None
-        """     
-        valid_max = None
-        valid_range = ds[variable_name].attrs.get(ATTS.VALID_RANGE, None)
-        if valid_range is not None:
-            valid_max = valid_range[-1]
-        return valid_max
-
-    @staticmethod
-    def get_valid_min(ds: xr.Dataset, variable_name):
-        """Get the min value from the valid_range attribute
-        for the given variable.
-
-        :param ds: The dataset
-        :type ds: xr.Dataset
-        :param variable_name: A variable in the dataset
-        :type variable_name: str
-        :return: The min value of the valid_range attribute or 
-            None if not defined
-        :rtype: same data type of the variable (int, float, etc.)
-            or None
-        """     
-        valid_min = None
-        valid_range = ds[variable_name].attrs.get(ATTS.VALID_RANGE, None)
-        if valid_range is not None:
-            valid_min = valid_range[0]
-        return valid_min
 
     @staticmethod
     def get_fill_value(ds: xr.Dataset, variable_name: str):
@@ -206,17 +118,7 @@ class DSUtil:
         :return: List of non-qc data variable names
         :rtype: List[str]
         """        
-        varnames = []
-
-        def exclude_qc(variable_name):
-            if variable_name.startswith('qc_'):
-                return False
-            else:
-                return True
-
-        varnames = filter(exclude_qc, list(ds.data_vars.keys()))
-
-        return varnames
+        return [var for var in ds.data_vars.keys() if not var.startswith('qc_')]
 
     @staticmethod
     def get_raw_end_time(raw_ds: xr.Dataset, time_var_definition) -> Tuple[str, str]:
@@ -236,13 +138,12 @@ class DSUtil:
         :rtype: Tuple[str, str]
         """        
         time_var_name = time_var_definition.get_input_name()
-        time_data = raw_ds[time_var_name].values
+        time_data = raw_ds[time_var_name].data
 
         time64_data = time_var_definition.run_converter(time_data)
 
         end_datetime64 = np.max(time64_data)
-        end: datetime.datetime = act.utils.datetime64_to_datetime(end_datetime64)[0]
-        return end.strftime("%Y%m%d"), end.strftime("%H%M%S")
+        return DSUtil.datetime64_to_string(end_datetime64)
 
     @staticmethod
     def get_raw_start_time(raw_ds: xr.Dataset, time_var_definition) -> Tuple[str, str]:
@@ -262,13 +163,12 @@ class DSUtil:
         :rtype: Tuple[str, str]
         """        
         time_var_name = time_var_definition.get_input_name()
-        time_data = raw_ds[time_var_name].values
+        time_data = raw_ds[time_var_name].data
 
         time64_data = time_var_definition.run_converter(time_data)
 
         start_datetime64 = np.min(time64_data)
-        start: datetime.datetime = act.utils.datetime64_to_datetime(start_datetime64)[0]
-        return start.strftime("%Y%m%d"), start.strftime("%H%M%S")
+        return DSUtil.datetime64_to_string(start_datetime64)
 
     @staticmethod
     def get_coordinate_variable_names(ds: xr.Dataset) -> List[str]:
@@ -280,31 +180,6 @@ class DSUtil:
         :rtype: List[str]
         """        
         return list(ds.coords.keys())
-
-    @staticmethod
-    def get_shape(ds: xr.Dataset, variable_name: str) -> Tuple[List[str], List[int]]:
-        """Get the shape of a variable's data.  Convenience 
-        method to provide access to dimension names and their
-        lengths in one call.
-
-        :param ds: The dataset
-        :type ds: xr.Dataset
-        :param variable_name: A variable in the dataset
-        :type variable_name: str
-        :return: A tuple where the first value is an array of the dimension
-            names belonging to this variable and the second value is an array
-            of the corresponding lengths of those dimensions.
-        :rtype: Tuple[List[str], List[int]]
-        """
-        var = ds.get(variable_name)
-        dims = []
-        lengths = []
-
-        for dim in var.sizes:
-            dims.append(dim)
-            lengths.append(var.sizes[dim])
-
-        return dims, lengths
 
     @staticmethod
     def get_start_time(ds: xr.Dataset) -> Tuple[str, str]:
@@ -319,42 +194,7 @@ class DSUtil:
         :rtype: Tuple[str, str]
         """        
         time64 = np.min(ds['time'].data)
-        start = act.utils.datetime64_to_datetime(time64)[0]
-        return start.strftime("%Y%m%d"), start.strftime("%H%M%S")
-
-    @staticmethod
-    def get_timestamp(dt64: np.datetime64):
-        """Convert a datetime64 value into a long integer timestamp
-        :param dt64: datetime64 object
-        :return: timestamp in seconds since 1970-01-01T00:00:00Z
-        :rtype: int
-        """
-        ts = int((dt64 - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's'))
-        return ts
-
-    @staticmethod
-    def get_variables_with_dimension(ds: xr.Dataset, dim_name: str, include_qc=False) -> List[str]:
-        """Find all variables dimensioned by the given dim.
-        Note that this method will only get data variables, NOT coordinate
-        variables.
-
-        :param ds: A dataset
-        :type ds: xr.Dataset
-        :param dim_name: Dimension name
-        :type dim_name: str
-        :param include_qc: Should qc variables be included, defaults to False
-        :type include_qc: bool, optional
-        :return: A list of all variable names that have that dimension
-        :rtype: List[str]
-        """        
-        variable_names: List[str] = []
-        for variable_name in ds.data_vars:
-            if include_qc or not variable_name.startswith('qc_'):
-                variable = ds.get(variable_name)
-                for dim in variable.sizes:
-                    if dim == dim_name:
-                        variable_names.append(variable_name)
-        return variable_names
+        return DSUtil.datetime64_to_string(time64)
 
     @staticmethod
     def get_metadata(ds: xr.Dataset) -> Dict:
@@ -374,65 +214,7 @@ class DSUtil:
         return metadata
 
     @staticmethod
-    def get_warn_max(ds: xr.Dataset, variable_name):
-        """Get the max value from the warn_range attribute
-        for the given variable.
-
-        :param ds: The dataset
-        :type ds: xr.Dataset
-        :param variable_name: A variable in the dataset
-        :type variable_name: str
-        :return: The max value of the warn_range attribute or 
-            None if not defined
-        :rtype: same data type of the variable (int, float, etc.)
-            or None
-        """   
-        warn_max = None
-        warn_range = ds[variable_name].attrs.get(ATTS.WARN_RANGE, None)
-        if warn_range is not None:
-            warn_max = warn_range[-1]
-        return warn_max
-
-    @staticmethod
-    def get_warn_min(ds: xr.Dataset, variable_name):
-        """Get the min value from the warn_range attribute
-        for the given variable.
-
-        :param ds: The dataset
-        :type ds: xr.Dataset
-        :param variable_name: A variable in the dataset
-        :type variable_name: str
-        :return: The min value of the warn_range attribute or 
-            None if not defined
-        :rtype: same data type of the variable (int, float, etc.)
-            or None
-        """   
-        warn_min = None
-        warn_range = ds[variable_name].attrs.get(ATTS.WARN_RANGE, None)
-        if warn_range is not None:
-            warn_min = warn_range[0]
-        return warn_min
-
-    @staticmethod
-    def is_coord_var(ds: xr.Dataset, variable_name: str) -> bool:
-        """Determine if given variable is a coordinate variable
-        for a dimension.
-
-        :param ds: A dataset
-        :type ds: xr.Dataset
-        :param variable_name: A variable in the dataset
-        :type variable_name: str
-        :return: True if the variable is a coordinate variable
-        :rtype: bool
-        """        
-        for dim in ds.coords.dims.keys():
-            if variable_name == dim:
-                return True
-
-        return False
-
-    @staticmethod
-    def plot_qc(ds: xr.Dataset, variable_name: str, filename: str=None):       
+    def plot_qc(ds: xr.Dataset, variable_name: str, filename: str=None, **kwargs) -> act.plotting.TimeSeriesDisplay:       
         """Create a QC plot for the given variable.  This is based on the ACT library:
         https://arm-doe.github.io/ACT/source/auto_examples/plot_qc.html#sphx-glr-source-auto-examples-plot-qc-py
 
@@ -450,8 +232,8 @@ class DSUtil:
         :param filename: The filename for the image.  Saves the plot as this filename if provided.
         :type filename: str, optional
         """
-
-        display = act.plotting.TimeSeriesDisplay(ds, figsize=(15, 10), subplot_shape=(2,))
+        datastream_name = DSUtil.get_datastream_name(ds=ds)
+        display = act.plotting.TimeSeriesDisplay(ds, subplot_shape=(2,), ds_name=datastream_name, **kwargs)
 
         # Plot temperature data in top plot
         display.plot(variable_name, subplot_index=(0,))
@@ -459,11 +241,10 @@ class DSUtil:
         # Plot QC data
         display.qc_flag_block_plot(variable_name, subplot_index=(1,))
 
-        # Either display or save the plot, depending upon the parameters passed
         if filename:
             plt.savefig(filename)
-        else:
-            plt.show()
+
+        return display
 
     @staticmethod
     def get_plot_filename(dataset: xr.Dataset, plot_description: str, extension: str) -> str:
@@ -559,14 +340,11 @@ class DSUtil:
         :type filename: str
         :return: The datstream name, or None if filename is not in proper format.
         :rtype: Optional[str]
-        """        
-        datastream_name = None
-
-        parts = filename.split(".")
-        if len(parts) > 2:
-            datastream_name = f'{parts[0]}.{parts[1]}.{parts[2]}'
-
-        return datastream_name
+        """
+        basename = os.path.basename(filename)
+        assert len(basename.split(".")) >= 3
+        components = basename.split(".")
+        return f"{components[0]}.{components[1]}.{components[2]}"
 
     @staticmethod
     def get_datastream_directory(datastream_name: str, root: str = "") -> str:
@@ -596,14 +374,12 @@ class DSUtil:
         :return: True if the file extension matches an image mimetype
         :rtype: bool
         """
-        is_an_image = False
-        mimetype = mimetypes.guess_type(filename)[0]
-        if mimetype is not None:
-            mimetype = mimetype.split('/')[0]
-            if mimetype == 'image':
-                is_an_image = True
+        import mimetypes
+        mimetypes.init()
 
-        return is_an_image
+        mimetype = mimetypes.guess_type(filename)[0]
+        return mimetype and mimetype.split('/')[0] == "image"
+        
 
 # TODO: Maybe we need a method to be able to quickly dump out a summary of the list of problems with the data.
 

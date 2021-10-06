@@ -4,6 +4,8 @@
 pipeline:
   location_id: "test"
   dataset_name: "illegal-dataset-name"
+  qualifier: "qualifier"
+  temporal: "temporal_resolution"
   data_level: "a1"
 
 dataset_definition:

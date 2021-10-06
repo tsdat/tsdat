@@ -1,0 +1,16 @@
+[run]
+branch = True
+source = ./tsdat
+
+[report]
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    pass
+    if __name__ == .__main__.:
+    plt.show()
+    warnings.warn
+ignore_errors = True
+omit =
+    ; Currently don't have capability to programatically test aws stuff
+    *aws_storage.py

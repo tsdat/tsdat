@@ -8,10 +8,13 @@ storage:
   file_handlers:
     input:
       csv:
-        file_pattern: '.*\.csv'
+        file_pattern: ['.*\.csv']
         classname: tsdat.io.filehandlers.CsvHandler
 
     output:
       netcdf:
         file_extension: '.nc'
         classname: tsdat.io.filehandlers.NetCdfHandler
+      csv:
+        file_extension: '.csv'
+        classname: tsdat.io.filehandlers.CsvHandler
