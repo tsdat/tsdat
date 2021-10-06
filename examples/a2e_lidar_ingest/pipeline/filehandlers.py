@@ -25,7 +25,9 @@ class StaFileHandler(AbstractFileHandler):
             config (Config, optional):  Optional Config object. Defaults to
                                         None.
         -------------------------------------------------------------------"""
-        raise NotImplementedError("Error: this file format should not be used to write to.")
+        raise NotImplementedError(
+            "Error: this file format should not be used to write to."
+        )
 
     def read(self, filename: str, **kwargs) -> xr.Dataset:
         """-------------------------------------------------------------------
@@ -38,6 +40,8 @@ class StaFileHandler(AbstractFileHandler):
         Returns:
             xr.Dataset: An xr.Dataset object
         -------------------------------------------------------------------"""
-        lzma_file = lzma.open(filename, "rt", encoding="cp1252")  # Default encoding for Windows devices
+        lzma_file = lzma.open(
+            filename, "rt", encoding="cp1252"
+        )  # Default encoding for Windows devices
         df = pd.read_csv(lzma_file, sep="\t", header=41, index_col=False)
         return df.to_xarray()

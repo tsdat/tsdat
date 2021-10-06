@@ -17,6 +17,7 @@ example_dir = os.path.abspath(os.path.dirname(__file__))
 style_file = os.path.join(example_dir, "styling.mplstyle")
 plt.style.use(style_file)
 
+
 class BuoyIngestPipeline(IngestPipeline):
     """-------------------------------------------------------------------
     This is an example class that extends the default IngestPipeline in
@@ -25,7 +26,10 @@ class BuoyIngestPipeline(IngestPipeline):
     corrections, or create custom plots, they should follow this example
     to extend the IngestPipeline class.
     -------------------------------------------------------------------"""
-    def hook_customize_raw_datasets(self, raw_dataset_mapping: Dict[str, xr.Dataset]) -> Dict[str, xr.Dataset]:
+
+    def hook_customize_raw_datasets(
+        self, raw_dataset_mapping: Dict[str, xr.Dataset]
+    ) -> Dict[str, xr.Dataset]:
         """-------------------------------------------------------------------
         Hook to allow for user customizations to one or more raw xarray Datasets
         before they merged and used to create the standardized dataset.  The
@@ -54,22 +58,24 @@ class BuoyIngestPipeline(IngestPipeline):
         -------------------------------------------------------------------"""
         dod = self.config.dataset_definition
         time_def = dod.get_variable("time")
-        
+
         for filename, dataset in raw_dataset_mapping.items():
-            if "surfacetemp" in filename: 
+            if "surfacetemp" in filename:
                 old_name = "Surface Temperature (C)"
                 new_name = "surfacetemp - Surface Temperature (C)"
-                raw_dataset_mapping[filename] = dataset.rename_vars({old_name: new_name})
+                raw_dataset_mapping[filename] = dataset.rename_vars(
+                    {old_name: new_name}
+                )
 
             if "gill" in filename:
                 name_mapping = {
-                    "Horizontal Speed (m/s)":       "gill_horizontal_wind_speed",
-                    "Horizontal Direction (deg)":   "gill_horizontal_wind_direction" 
+                    "Horizontal Speed (m/s)": "gill_horizontal_wind_speed",
+                    "Horizontal Direction (deg)": "gill_horizontal_wind_direction",
                 }
                 raw_dataset_mapping[filename] = dataset.rename_vars(name_mapping)
-            
+
             if "currents" in filename:
-               
+
                 def has_vel_and_dir(index: int) -> bool:
                     has_vel = f"Vel{index+1} (mm/s)" in dataset.variables
                     has_dir = f"Dir{index+1} (deg)" in dataset.variables
@@ -94,8 +100,12 @@ class BuoyIngestPipeline(IngestPipeline):
                 dataset = dataset.set_coords("depth")
 
                 # Add current velocity and direction data to dataset
-                dataset["current_speed"] = xr.DataArray(data=vel_data, dims=["time", "depth"])
-                dataset["current_direction"] = xr.DataArray(data=dir_data, dims=["time", "depth"])
+                dataset["current_speed"] = xr.DataArray(
+                    data=vel_data, dims=["time", "depth"]
+                )
+                dataset["current_direction"] = xr.DataArray(
+                    data=dir_data, dims=["time", "depth"]
+                )
 
                 raw_dataset_mapping[filename] = dataset
 
@@ -134,19 +144,28 @@ class BuoyIngestPipeline(IngestPipeline):
         -------------------------------------------------------------------"""
 
         def format_time_xticks(ax, start=4, stop=21, step=4, date_format="%H-%M"):
-            ax.xaxis.set_major_locator(mpl.dates.HourLocator(byhour=range(start, stop, step)))
+            ax.xaxis.set_major_locator(
+                mpl.dates.HourLocator(byhour=range(start, stop, step))
+            )
             ax.xaxis.set_major_formatter(mpl.dates.DateFormatter(date_format))
-            plt.setp(ax.xaxis.get_majorticklabels(), rotation=0, ha='center')
-        
-        def double_plot(ax, twin, data, colors, var_labels=["",""], ax_labels=["",""], **kwargs):
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=0, ha="center")
+
+        def double_plot(
+            ax, twin, data, colors, var_labels=["", ""], ax_labels=["", ""], **kwargs
+        ):
             def _add_lineplot(_ax, _data, _c, _label, _ax_label, _spine):
                 _line = _data.plot(ax=_ax, c=_c, label=_label, linewidth=2, **kwargs)
                 _ax.tick_params(axis="y", which="both", colors=_c)
                 _ax.set_ylabel(_ax_label, color=_c)
                 _ax.spines[_spine].set_color(_c)
+
             _add_lineplot(ax, data[0], colors[0], var_labels[0], ax_labels[0], "left")
-            _add_lineplot(twin, data[1], colors[1], var_labels[1], ax_labels[1], "right")
-            twin.spines["left"].set_color(colors[0])  # twin overwrites ax, so set color here
+            _add_lineplot(
+                twin, data[1], colors[1], var_labels[1], ax_labels[1], "right"
+            )
+            twin.spines["left"].set_color(
+                colors[0]
+            )  # twin overwrites ax, so set color here
 
         def add_colorbar(ax, plot, label):
             cb = plt.colorbar(plot, ax=ax, pad=0.01)
@@ -158,7 +177,7 @@ class BuoyIngestPipeline(IngestPipeline):
 
         # Useful variables
         ds = dataset
-        date = pd.to_datetime(ds.time.data[0]).strftime('%d-%b-%Y')
+        date = pd.to_datetime(ds.time.data[0]).strftime("%d-%b-%Y")
         cmap = sns.color_palette("viridis", as_cmap=True)
         colors = [cmap(0.00), cmap(0.60)]
 
@@ -168,33 +187,63 @@ class BuoyIngestPipeline(IngestPipeline):
 
             # Define data and metadata
             data = [
-                [ds.wind_speed, ds.wind_direction], 
-                [ds.pressure, ds.rh], 
-                [ds.air_temperature, ds.CTD_SST]]
+                [ds.wind_speed, ds.wind_direction],
+                [ds.pressure, ds.rh],
+                [ds.air_temperature, ds.CTD_SST],
+            ]
             var_labels = [
                 [r"$\overline{\mathrm{U}}$ Cup", r"$\overline{\mathrm{\theta}}$ Cup"],
                 ["Pressure", "Relative Humidity"],
-                ["Air Temperature", "Sea Surface Temperature"]]
+                ["Air Temperature", "Sea Surface Temperature"],
+            ]
             ax_labels = [
-                [r"$\overline{\mathrm{U}}$ (ms$^{-1}$)", r"$\bar{\mathrm{\theta}}$ (degrees)"],
+                [
+                    r"$\overline{\mathrm{U}}$ (ms$^{-1}$)",
+                    r"$\bar{\mathrm{\theta}}$ (degrees)",
+                ],
                 [r"$\overline{\mathrm{P}}$ (bar)", r"$\overline{\mathrm{RH}}$ (%)"],
-                [r"$\overline{\mathrm{T}}_{air}$ ($\degree$C)", r"$\overline{\mathrm{SST}}$ ($\degree$C)"]]
+                [
+                    r"$\overline{\mathrm{T}}_{air}$ ($\degree$C)",
+                    r"$\overline{\mathrm{SST}}$ ($\degree$C)",
+                ],
+            ]
 
             # Create figure and axes objects
             fig, axs = plt.subplots(nrows=3, figsize=(14, 8), constrained_layout=True)
             twins = [ax.twinx() for ax in axs]
-            fig.suptitle(f"Surface Met Parameters at {ds.attrs['location_meaning']} on {date}")
+            fig.suptitle(
+                f"Surface Met Parameters at {ds.attrs['location_meaning']} on {date}"
+            )
 
             # Create the plots
             gill_data = [ds.gill_wind_speed, ds.gill_wind_direction]
-            gill_labels = [r"$\overline{\mathrm{U}}$ Gill", r"$\overline{\mathrm{\theta}}$ Gill"]
-            double_plot(axs[0], twins[0], data=gill_data, colors=colors, var_labels=gill_labels, linestyle="--")
+            gill_labels = [
+                r"$\overline{\mathrm{U}}$ Gill",
+                r"$\overline{\mathrm{\theta}}$ Gill",
+            ]
+            double_plot(
+                axs[0],
+                twins[0],
+                data=gill_data,
+                colors=colors,
+                var_labels=gill_labels,
+                linestyle="--",
+            )
             for i in range(3):
-                double_plot(axs[i], twins[i], data=data[i], colors=colors, var_labels=var_labels[i], ax_labels=ax_labels[i])
-                axs[i].grid(which="both", color='lightgray', linewidth=0.5)
+                double_plot(
+                    axs[i],
+                    twins[i],
+                    data=data[i],
+                    colors=colors,
+                    var_labels=var_labels[i],
+                    ax_labels=ax_labels[i],
+                )
+                axs[i].grid(which="both", color="lightgray", linewidth=0.5)
                 lines = axs[i].lines + twins[i].lines
                 labels = [line.get_label() for line in lines]
-                axs[i].legend(lines, labels, ncol=len(labels), bbox_to_anchor=(1, -0.15))
+                axs[i].legend(
+                    lines, labels, ncol=len(labels), bbox_to_anchor=(1, -0.15)
+                )
                 format_time_xticks(axs[i])
                 axs[i].set_xlabel("Time (UTC)")
             twins[0].set_ylim(0, 360)
@@ -210,19 +259,34 @@ class BuoyIngestPipeline(IngestPipeline):
 
             # Define data and metadata
             data = [ds.conductivity, ds.CTD_SST]
-            var_labels = [r"Conductivity (S m$^{-1}$)", r"$\overline{\mathrm{SST}}$ ($\degree$C)"]
-            ax_labels = [r"Conductivity (S m$^{-1}$)", r"$\overline{\mathrm{SST}}$ ($\degree$C)"]
+            var_labels = [
+                r"Conductivity (S m$^{-1}$)",
+                r"$\overline{\mathrm{SST}}$ ($\degree$C)",
+            ]
+            ax_labels = [
+                r"Conductivity (S m$^{-1}$)",
+                r"$\overline{\mathrm{SST}}$ ($\degree$C)",
+            ]
 
             # Create the figure and axes objects
             fig, ax = plt.subplots(figsize=(14, 8), constrained_layout=True)
-            fig.suptitle(f"Conductivity and Sea Surface Temperature at {ds.attrs['location_meaning']} on {date}")
+            fig.suptitle(
+                f"Conductivity and Sea Surface Temperature at {ds.attrs['location_meaning']} on {date}"
+            )
             twin = ax.twinx()
 
             # Make the plot
-            double_plot(ax, twin, data=data, colors=colors, var_labels=var_labels, ax_labels=ax_labels)
-            
+            double_plot(
+                ax,
+                twin,
+                data=data,
+                colors=colors,
+                var_labels=var_labels,
+                ax_labels=ax_labels,
+            )
+
             # Set the labels and ticks
-            ax.grid(which="both", color='lightgray', linewidth=0.5)
+            ax.grid(which="both", color="lightgray", linewidth=0.5)
             lines = ax.lines + twin.lines
             labels = [line.get_label() for line in lines]
             ax.legend(lines, labels, ncol=len(labels), bbox_to_anchor=(1, -0.03))
@@ -232,7 +296,7 @@ class BuoyIngestPipeline(IngestPipeline):
             # Save and close the figure
             fig.savefig(tmp_path, dpi=100)
             self.storage.save(tmp_path)
-            plt.close()      
+            plt.close()
 
         # Create the third plot - current speed and direction
         filename = DSUtil.get_plot_filename(dataset, "current_velocity", "png")
@@ -246,22 +310,43 @@ class BuoyIngestPipeline(IngestPipeline):
             levels = 30
 
             # Calculations for quiver plot
-            qv_slice = slice(1, None)  # Skip first to prevent weird overlap with axes borders
+            qv_slice = slice(
+                1, None
+            )  # Skip first to prevent weird overlap with axes borders
             qv_degrees = ds_1H.current_direction.data[qv_slice, qv_slice].transpose()
-            qv_theta = (qv_degrees + 90) * (np.pi/180)
+            qv_theta = (qv_degrees + 90) * (np.pi / 180)
             X, Y = ds_1H.time.data[qv_slice], ds_1H.depth.data[qv_slice]
             U, V = np.cos(-qv_theta), np.sin(-qv_theta)
 
             # Create figure and axes objects
-            fig, ax = plt.subplots(figsize=(14,8), constrained_layout=True)
-            fig.suptitle(f"Current Speed and Direction at {ds.attrs['location_meaning']} on {date}")
+            fig, ax = plt.subplots(figsize=(14, 8), constrained_layout=True)
+            fig.suptitle(
+                f"Current Speed and Direction at {ds.attrs['location_meaning']} on {date}"
+            )
 
             # Make the plots
-            csf = ds.current_speed.plot.contourf(ax=ax, x="time", yincrease=False, levels=levels, cmap=cmocean.cm.deep_r, add_colorbar=False)
+            csf = ds.current_speed.plot.contourf(
+                ax=ax,
+                x="time",
+                yincrease=False,
+                levels=levels,
+                cmap=cmocean.cm.deep_r,
+                add_colorbar=False,
+            )
             # ds.current_speed.plot.contour(ax=ax, x="time", yincrease=False, levels=levels, colors="lightgray", linewidths=0.5)
-            ax.quiver(X, Y, U, V, width=0.002, scale=60, color="white", pivot='middle', zorder=10)
+            ax.quiver(
+                X,
+                Y,
+                U,
+                V,
+                width=0.002,
+                scale=60,
+                color="white",
+                pivot="middle",
+                zorder=10,
+            )
             add_colorbar(ax, csf, r"Current Speed (mm s$^{-1}$)")
-            
+
             # Set the labels and ticks
             format_time_xticks(ax)
             ax.set_xlabel("Time (UTC)")

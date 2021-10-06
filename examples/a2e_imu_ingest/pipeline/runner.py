@@ -12,19 +12,21 @@ def run_pipeline():
     data_dir = os.path.join(example_dir, "data")
 
     # Load the storage
-    storage_config = os.path.join(config_dir, 'storage_config.yml')
+    storage_config = os.path.join(config_dir, "storage_config.yml")
     storage = DatastreamStorage.from_config(storage_config)
 
     # Run the ingest for Humboldt
-    humboldt_config = os.path.join(config_dir, 'humboldt_config.yml')
+    humboldt_config = os.path.join(config_dir, "humboldt_config.yml")
     humboldt_pipeline = ImuIngestPipeline(humboldt_config, storage)
-    humboldt_raw_file = os.path.join(data_dir, 'humboldt/buoy.z05.00.20201201.000000.imu.bin')
+    humboldt_raw_file = os.path.join(
+        data_dir, "humboldt/buoy.z05.00.20201201.000000.imu.bin"
+    )
     humboldt_pipeline.run(humboldt_raw_file)
 
     # Run the ingest for Morro Bay
-    morro_config = os.path.join(config_dir, 'morro_config.yml')
+    morro_config = os.path.join(config_dir, "morro_config.yml")
     morro_pipeline = ImuIngestPipeline(morro_config, storage)
-    morro_raw_file = os.path.join(data_dir, 'morro/buoy.z06.00.20201201.000000.imu.bin')
+    morro_raw_file = os.path.join(data_dir, "morro/buoy.z06.00.20201201.000000.imu.bin")
     morro_pipeline.run(morro_raw_file)
 
 

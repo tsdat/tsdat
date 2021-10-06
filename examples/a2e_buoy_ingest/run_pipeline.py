@@ -5,7 +5,7 @@ import sys
 
 # Add the pipeline package to the pythonpath
 example_path = os.path.dirname(os.path.realpath(__file__))
-package_path = os.path.join(example_path, 'pipeline')
+package_path = os.path.join(example_path, "pipeline")
 sys.path.append(package_path)
 from pipeline.runner import run_pipeline
 

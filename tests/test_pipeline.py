@@ -45,7 +45,7 @@ def test_robust_pipeline():
 
     output_nc = os.path.join(processed_dir, "test.SortedDataset.a1.20211001.000000.nc")
     assert os.path.isfile(output_nc)
-    
+
     ds: xr.Dataset = xr.open_dataset(output_nc)
 
     expected_output_variables = [

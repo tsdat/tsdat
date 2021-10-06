@@ -9,10 +9,13 @@ CWD = pathlib.Path(__file__).parent
 README = (CWD / "README.md").read_text()
 
 # Get the list of dependencies from the requirements.txt file
-with open(path.join(CWD, 'requirements.txt')) as requirements_file:
+with open(path.join(CWD, "requirements.txt")) as requirements_file:
     # Parse requirements.txt, ignoring any commented-out lines.
-    REQUIREMENTS = [line for line in requirements_file.read().splitlines()
-                    if not line.startswith('#')]
+    REQUIREMENTS = [
+        line
+        for line in requirements_file.read().splitlines()
+        if not line.startswith("#")
+    ]
 
 setup(
     name="tsdat",
@@ -26,17 +29,17 @@ setup(
     license="Simplified BSD (2-clause)",
     classifiers=[
         "Development Status :: 3 - Alpha",
-        'Natural Language :: English',
+        "Natural Language :: English",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Topic :: Scientific/Engineering",
         "Intended Audience :: Science/Research",
-        "Operating System :: OS Independent"
+        "Operating System :: OS Independent",
     ],
-    packages=find_packages(exclude=['docs', 'tests', 'examples', 'examples_dev']),
-    entry_points={'console_scripts': []},
+    packages=find_packages(exclude=["docs", "tests", "examples", "examples_dev"]),
+    entry_points={"console_scripts": []},
     include_package_data=True,
     zip_safe=False,
     install_requires=REQUIREMENTS,
-    scripts=[]
+    scripts=[],
 )
