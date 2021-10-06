@@ -7,14 +7,16 @@ from tsdat.config import QualityManagerDefinition
 from tsdat.exceptions import QCError
 from tsdat.utils import DSUtil
 
+
 class QCParamKeys:
     """Symbolic constants used for referencing QC-related
     fields in the pipeline config file
     """
-    QC_BIT = 'bit'
-    ASSESSMENT = 'assessment'
-    TEST_MEANING = 'meaning'
-    CORRECTION = 'correction'
+
+    QC_BIT = "bit"
+    ASSESSMENT = "assessment"
+    TEST_MEANING = "meaning"
+    CORRECTION = "correction"
 
 
 class QualityHandler(abc.ABC):
@@ -22,11 +24,11 @@ class QualityHandler(abc.ABC):
 
     :param ds: The dataset the handler will be applied to
     :type ds: xr.Dataset
-    :param previous_data: A dataset from the previous processing interval 
-        (i.e., file).  This is used to check for consistency between files, 
+    :param previous_data: A dataset from the previous processing interval
+        (i.e., file).  This is used to check for consistency between files,
         such as for monotonic or delta checks when we need to check the previous value.
     :type previous_data: xr.Dataset
-    :param quality_manager: The quality_manager definition as specified in the 
+    :param quality_manager: The quality_manager definition as specified in the
         pipeline config file
     :type quality_manager: QualityManagerDefinition
     :param parameters: A dictionary of handler-specific parameters specified in the
@@ -34,19 +36,24 @@ class QualityHandler(abc.ABC):
     :type parameters: dict, optional
     """
 
-    def __init__(self, ds: xr.Dataset, previous_data: xr.Dataset, quality_manager: QualityManagerDefinition, parameters={}):
+    def __init__(
+        self,
+        ds: xr.Dataset,
+        previous_data: xr.Dataset,
+        quality_manager: QualityManagerDefinition,
+        parameters={},
+    ):
 
         self.ds = ds
         self.previous_data = previous_data
         self.quality_manager = quality_manager
         self.params = parameters
 
-
     @abc.abstractmethod
     def run(self, variable_name: str, results_array: np.ndarray):
-        """Perform a follow-on action if a quality check fails. This can be used 
-        to correct data if needed (such as replacing a bad value with missing 
-        value, emailing a contact persion, or raising an exception if the 
+        """Perform a follow-on action if a quality check fails. This can be used
+        to correct data if needed (such as replacing a bad value with missing
+        value, emailing a contact persion, or raising an exception if the
         failure constitutes a critical error).
 
         :param variable_name: Name of the variable that failed
@@ -54,7 +61,7 @@ class QualityHandler(abc.ABC):
         :param results_array: An array of True/False values for each data value
             of the variable.  True means the check failed.
         :type results_array: np.ndarray
-        """        
+        """
         pass
 
     def record_correction(self, variable_name: str):
@@ -66,27 +73,29 @@ class QualityHandler(abc.ABC):
 
         :param variable_name: Name
         :type variable_name: str
-        """        
+        """
         correction = self.params.get("correction", None)
         if correction is not None:
             DSUtil.record_corrections_applied(self.ds, variable_name, correction)
 
 
 class RecordQualityResults(QualityHandler):
-    """Record the results of the quality check in an ancillary qc variable.
-    """
+    """Record the results of the quality check in an ancillary qc variable."""
+
     def run(self, variable_name: str, results_array: np.ndarray):
-      
+
         self.ds.qcfilter.add_test(
-            variable_name, index=results_array,
+            variable_name,
+            index=results_array,
             test_number=self.params.get(QCParamKeys.QC_BIT),
             test_meaning=self.params.get(QCParamKeys.TEST_MEANING),
-            test_assessment=self.params.get(QCParamKeys.ASSESSMENT))
+            test_assessment=self.params.get(QCParamKeys.ASSESSMENT),
+        )
 
 
 class RemoveFailedValues(QualityHandler):
-    """Replace all the failed values with _FillValue
-    """
+    """Replace all the failed values with _FillValue"""
+
     def run(self, variable_name: str, results_array: np.ndarray):
         if results_array.any():
             fill_value = DSUtil.get_fill_value(self.ds, variable_name)
@@ -112,14 +121,14 @@ class SortDatasetByCoordinate(QualityHandler):
 
     def run(self, variable_name: str, results_array: np.ndarray):
         if results_array.any():
-            order = self.params.get('ascending', True)
+            order = self.params.get("ascending", True)
             self.ds = self.ds.sortby(self.ds[variable_name], order)
             self.record_correction(variable_name)
 
 
 class SendEmailAWS(QualityHandler):
-    """Send an email to the recipients using AWS services.
-    """
+    """Send an email to the recipients using AWS services."""
+
     def run(self, variable_name: str, results_array: np.ndarray):
         # TODO: we will implement this later after we get the cloud
         # stuff implemented.
@@ -127,8 +136,8 @@ class SendEmailAWS(QualityHandler):
 
 
 class FailPipeline(QualityHandler):
-    """Throw an exception, halting the pipeline & indicating a critical error
-    """
+    """Throw an exception, halting the pipeline & indicating a critical error"""
+
     def run(self, variable_name: str, results_array: np.ndarray):
         if results_array.any():
             message = f"Quality Manager {self.quality_manager.name} failed for variable {variable_name}"

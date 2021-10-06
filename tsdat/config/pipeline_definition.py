@@ -5,14 +5,15 @@ from tsdat.exceptions import DefinitionError
 class PipelineKeys:
     """Class that provides a handle for keys in the pipeline section of the
     pipeline config file."""
-    TYPE = 'type'
-    INPUT_DATA_LEVEL = 'input_data_level'
-    OUTPUT_DATA_LEVEL = 'data_level'
-    
-    LOCATION_ID = 'location_id'
-    DATASET_NAME = 'dataset_name'
-    QUALIFIER = 'qualifier'
-    TEMPORAL = 'temporal'
+
+    TYPE = "type"
+    INPUT_DATA_LEVEL = "input_data_level"
+    OUTPUT_DATA_LEVEL = "data_level"
+
+    LOCATION_ID = "location_id"
+    DATASET_NAME = "dataset_name"
+    QUALIFIER = "qualifier"
+    TEMPORAL = "temporal"
 
 
 class PipelineDefinition:
@@ -20,8 +21,8 @@ class PipelineDefinition:
 
     :param dictionary: The pipeline component of the pipeline config file.
     :type dictionary: Dict[str]
-    :raises DefinitionError: 
-        Raises DefinitionError if one of the file naming components 
+    :raises DefinitionError:
+        Raises DefinitionError if one of the file naming components
         contains an illegal character.
     """
 
@@ -37,12 +38,16 @@ class PipelineDefinition:
 
         # Parse input data level
         default_input_data_level = {"Ingest": "00", "VAP": "a1"}.get(pipeline_type)
-        input_data_level = dictionary.get(PipelineKeys.INPUT_DATA_LEVEL, default_input_data_level)
+        input_data_level = dictionary.get(
+            PipelineKeys.INPUT_DATA_LEVEL, default_input_data_level
+        )
         self.input_data_level: str = input_data_level
 
         # Parse output data level
         default_output_data_level = {"Ingest": "a1", "VAP": "b1"}.get(pipeline_type)
-        output_data_level = dictionary.get(PipelineKeys.OUTPUT_DATA_LEVEL, default_output_data_level)
+        output_data_level = dictionary.get(
+            PipelineKeys.OUTPUT_DATA_LEVEL, default_output_data_level
+        )
         self.output_data_level: str = output_data_level
 
         # Parse file naming components
@@ -50,7 +55,7 @@ class PipelineDefinition:
         self.dataset_name = dictionary.get(PipelineKeys.DATASET_NAME)
         self.qualifier = dictionary.get(PipelineKeys.QUALIFIER, "")
         self.temporal = dictionary.get(PipelineKeys.TEMPORAL, "")
-        
+
         self.check_file_name_components()
 
         # Parse datastream_name
@@ -63,18 +68,32 @@ class PipelineDefinition:
         self.output_datastream_name = f"{base_datastream_name}.{output_data_level}"
 
     def check_file_name_components(self):
-        """Performs sanity checks on the config properties used in naming 
+        """Performs sanity checks on the config properties used in naming
         files output by tsdat pipelines.
 
-        :raises DefinitionError: 
+        :raises DefinitionError:
             Raises DefinitionError if a component has been set improperly.
         """
         illegal_characters = [".", "-", " "]
-        components_to_check = [self.location_id, self.dataset_name, self.qualifier, self.temporal]
-        valid = lambda component: sum([bad_char in component for bad_char in illegal_characters]) == 0
-        bad_components = [component for component in components_to_check if not valid(component)]
+        components_to_check = [
+            self.location_id,
+            self.dataset_name,
+            self.qualifier,
+            self.temporal,
+        ]
+        valid = (
+            lambda component: sum(
+                [bad_char in component for bad_char in illegal_characters]
+            )
+            == 0
+        )
+        bad_components = [
+            component for component in components_to_check if not valid(component)
+        ]
         if bad_components:
-            message = f"The following properties contained one or more illegal characters: "
+            message = (
+                f"The following properties contained one or more illegal characters: "
+            )
             message += f"{bad_components}\n"
             message += f"Illegal characters include: {illegal_characters}"
             raise DefinitionError(message)

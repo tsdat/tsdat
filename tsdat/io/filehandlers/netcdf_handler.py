@@ -26,7 +26,9 @@ class NetCdfHandler(AbstractFileHandler):
     :type parameters: Dict, optional
     """
 
-    def write(self, ds: xr.Dataset, filename: str, config: Config = None, **kwargs) -> None:
+    def write(
+        self, ds: xr.Dataset, filename: str, config: Config = None, **kwargs
+    ) -> None:
         """Saves the given dataset to a netCDF file.
 
         :param ds: The dataset to save.

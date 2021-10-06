@@ -11,14 +11,14 @@ from .pipeline import Pipeline
 
 class IngestPipeline(Pipeline):
     """The IngestPipeline class is designed to read in raw, non-standardized
-    data and convert it to a standardized format by embedding metadata, 
-    applying quality checks and quality controls, and by saving the 
+    data and convert it to a standardized format by embedding metadata,
+    applying quality checks and quality controls, and by saving the
     now-processed data in a standard file format."""
 
     def run(self, filepath: Union[str, List[str]]) -> None:
         """Runs the IngestPipeline from start to finish.
 
-        :param filepath: 
+        :param filepath:
             The path or list of paths to the file(s) to run the pipeline on.
         :type filepath: Union[str, List[str]]
         """
@@ -26,10 +26,14 @@ class IngestPipeline(Pipeline):
         with self.storage.tmp.extract_files(filepath) as file_paths:
 
             # Open each raw file into a Dataset, standardize the raw file names and store.
-            raw_dataset_mapping: Dict[str, xr.Dataset] = self.read_and_persist_raw_files(file_paths)
+            raw_dataset_mapping: Dict[
+                str, xr.Dataset
+            ] = self.read_and_persist_raw_files(file_paths)
 
             # Customize the raw data before it is used as input for standardization
-            raw_dataset_mapping: Dict[str, xr.Dataset] = self.hook_customize_raw_datasets(raw_dataset_mapping)
+            raw_dataset_mapping: Dict[
+                str, xr.Dataset
+            ] = self.hook_customize_raw_datasets(raw_dataset_mapping)
 
             # Standardize the dataset and apply corrections / customizations
             dataset = self.standardize_dataset(raw_dataset_mapping)
@@ -45,11 +49,13 @@ class IngestPipeline(Pipeline):
 
             # Hook to generate custom plots
             self.hook_generate_and_persist_plots(dataset)
-    
-    def hook_customize_dataset(self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
-        """Hook to allow for user customizations to the standardized dataset 
-        such as inserting a derived variable based on other variables in the 
-        dataset. This method is called immediately after the 
+
+    def hook_customize_dataset(
+        self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]
+    ) -> xr.Dataset:
+        """Hook to allow for user customizations to the standardized dataset
+        such as inserting a derived variable based on other variables in the
+        dataset. This method is called immediately after the
         ``standardize_dataset`` method and before ``QualityManagement`` has
         been run.
 
@@ -62,11 +68,13 @@ class IngestPipeline(Pipeline):
         """
         return dataset
 
-    def hook_customize_raw_datasets(self, raw_dataset_mapping: Dict[str, xr.Dataset]) -> Dict[str, xr.Dataset]:
-        """Hook to allow for user customizations to one or more raw xarray 
-        Datasets before they merged and used to create the standardized 
-        dataset. The raw_dataset_mapping will contain one entry for each file 
-        being used as input to the pipeline.  The keys are the standardized 
+    def hook_customize_raw_datasets(
+        self, raw_dataset_mapping: Dict[str, xr.Dataset]
+    ) -> Dict[str, xr.Dataset]:
+        """Hook to allow for user customizations to one or more raw xarray
+        Datasets before they merged and used to create the standardized
+        dataset. The raw_dataset_mapping will contain one entry for each file
+        being used as input to the pipeline.  The keys are the standardized
         raw file name, and the values are the datasets.
 
         This method would typically only be used if the user is combining
@@ -90,7 +98,7 @@ class IngestPipeline(Pipeline):
 
     def hook_finalize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
         """Hook to apply any final customizations to the dataset before it is
-        saved. This hook is called after QualityManagement has been run and 
+        saved. This hook is called after QualityManagement has been run and
         immediately before the dataset it saved to file.
 
         :param dataset: The dataset to finalize.
@@ -101,13 +109,13 @@ class IngestPipeline(Pipeline):
         return dataset
 
     def hook_generate_and_persist_plots(self, dataset: xr.Dataset) -> None:
-        """Hook to allow users to create plots from the xarray dataset after 
+        """Hook to allow users to create plots from the xarray dataset after
         the dataset has been finalized and just before the dataset is
         saved to disk.
 
         To save on filesystem space (which is limited when running on the
         cloud via a lambda function), this method should only
-        write one plot to local storage at a time. An example of how this 
+        write one plot to local storage at a time. An example of how this
         could be done is below:
 
         .. code-block:: python
@@ -118,15 +126,15 @@ class IngestPipeline(Pipeline):
                 ax.plot(dataset["time"].data, dataset["sea_level"].data)
                 fig.save(tmp_path)
                 storage.save(tmp_path)
-            
+
             filename = DSUtil.get_plot_filename(dataset, "qc_sea_level", "png")
             with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
                 fig, ax = plt.subplots(figsize=(10,5))
                 DSUtil.plot_qc(dataset, "sea_level", tmp_path)
                 storage.save(tmp_path)
 
-        :param dataset: 
-            The xarray dataset with customizations and QualityManagement 
+        :param dataset:
+            The xarray dataset with customizations and QualityManagement
             applied.
         :type dataset: xr.Dataset
         """
@@ -156,7 +164,9 @@ class IngestPipeline(Pipeline):
                 # Don't use dataset if no FileHandler is registered for it
                 if dataset is not None:
                     # create the standardized name for raw file
-                    new_filename = DSUtil.get_raw_filename(dataset, tmp_path, self.config)
+                    new_filename = DSUtil.get_raw_filename(
+                        dataset, tmp_path, self.config
+                    )
 
                     # add the raw dataset to our dictionary
                     raw_dataset_mapping[new_filename] = dataset

@@ -1,4 +1,3 @@
-
 """The tsdat.qc package provides the classes that the data pipeline
 uses to manage quality control/quality assurance for the dataset.  This
 includes the infrastructure to run quality tests and handle failures,
@@ -9,9 +8,9 @@ pipeline config file.
 """
 from .qc import QualityManagement, QualityManager
 from .checkers import (
-    QualityChecker, 
+    QualityChecker,
     CheckWarnMax,
-    CheckFailMax, 
+    CheckFailMax,
     CheckFailMin,
     CheckMax,
     CheckMin,
@@ -20,7 +19,7 @@ from .checkers import (
     CheckValidDelta,
     CheckValidMax,
     CheckValidMin,
-    CheckWarnMin   
+    CheckWarnMin,
 )
 from .handlers import (
     QualityHandler,
@@ -28,5 +27,5 @@ from .handlers import (
     FailPipeline,
     RecordQualityResults,
     RemoveFailedValues,
-    SendEmailAWS
+    SendEmailAWS,
 )

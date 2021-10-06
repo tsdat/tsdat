@@ -7,14 +7,14 @@ from tsdat.exceptions import DefinitionError
 
 
 class DatasetDefinition:
-    """Wrapper for the dataset_definition portion of the pipeline config 
+    """Wrapper for the dataset_definition portion of the pipeline config
     file.
 
-    :param dictionary: 
-        The portion of the config file corresponding with the dataset 
+    :param dictionary:
+        The portion of the config file corresponding with the dataset
         definition.
     :type dictionary: Dict
-    :param datastream_name: 
+    :param datastream_name:
         The name of the datastream that the config file is for.
     :type datastream_name: str
     """
@@ -35,14 +35,14 @@ class DatasetDefinition:
         self._validate_dataset_definition()
 
     def _parse_dimensions(self, dictionary: Dict) -> Dict[str, DimensionDefinition]:
-        """Extracts the dimensions from the dataset_definition portion of the 
+        """Extracts the dimensions from the dataset_definition portion of the
         config file.
 
-        :param dictionary: 
+        :param dictionary:
             The dataset_definition dictionary from the config file.
         :type dictionary: Dict
-        :return: 
-            Returns a mapping of output dimension names to DimensionDefinition 
+        :return:
+            Returns a mapping of output dimension names to DimensionDefinition
             objects.
         :rtype: Dict[str, DimensionDefinition]
         """
@@ -51,17 +51,19 @@ class DatasetDefinition:
             dimensions[dim_name] = DimensionDefinition(dim_name, dim_dict)
         return dimensions
 
-    def _parse_variables(self, dictionary: Dict, available_dimensions: Dict[str, DimensionDefinition]) -> Dict[str, VariableDefinition]:
-        """Extracts the variables from the dataset_definition portion of the 
+    def _parse_variables(
+        self, dictionary: Dict, available_dimensions: Dict[str, DimensionDefinition]
+    ) -> Dict[str, VariableDefinition]:
+        """Extracts the variables from the dataset_definition portion of the
         config file.
 
-        :param dictionary: 
+        :param dictionary:
             The dataset_definition dictionary from the config file.
         :type dictionary: Dict
-        :param available_dimensions: 
+        :param available_dimensions:
             The DimensionDefinition objects that have already been parsed.
         :type available_dimensions: Dict[str, DimensionDefinition]
-        :return: 
+        :return:
             Returns a mapping of output variable names to VariableDefinition
             objects.
         :rtype: Dict[str, VariableDefinition]
@@ -69,22 +71,26 @@ class DatasetDefinition:
         defaults: Dict[str, Any] = dictionary.get(Keys.DEFAULTS, {})
         variables: Dict[str, VariableDefinition] = {}
         for var_name, var_dict in dictionary[Keys.VARIABLES].items():
-            variables[var_name] = VariableDefinition(var_name, var_dict, available_dimensions, defaults=defaults)
+            variables[var_name] = VariableDefinition(
+                var_name, var_dict, available_dimensions, defaults=defaults
+            )
         return variables
-    
-    def _parse_coordinates(self, vars: Dict[str, VariableDefinition]) -> Tuple[Dict[str, VariableDefinition], Dict[str, VariableDefinition]]:
+
+    def _parse_coordinates(
+        self, vars: Dict[str, VariableDefinition]
+    ) -> Tuple[Dict[str, VariableDefinition], Dict[str, VariableDefinition]]:
         """Separates coordinate variables and data variables.
 
-        Determines which variables are coordinate variables and moves those 
+        Determines which variables are coordinate variables and moves those
         variables from ``self.vars`` to ``self.coords``. Coordinate variables
         are defined as variables that are dimensioned by themselves, i.e.,
-        ``var.name == var.dim.name`` is a true statement for coordinate 
+        ``var.name == var.dim.name`` is a true statement for coordinate
         variables, but false for data variables.
 
         :param vars: The dictionary of VariableDefinition objects to check.
         :type vars: Dict[str, VariableDefinition]
         :return: The dictionary of dimensions in the dataset.
-        :rtype: 
+        :rtype:
             Tuple[Dict[str, VariableDefinition], Dict[str, VariableDefinition]]
         """
         coords = {name: var for name, var in vars.items() if var.is_coordinate()}
@@ -99,20 +105,26 @@ class DatasetDefinition:
         # Ensure that there is a time coordinate variable
         if "time" not in self.coords:
             raise DefinitionError("'time' must be defined as a coordinate variable.")
-        
+
         # Warn if any dimensions do not have an associated coordinate variable
         dims_without_coords = [dim for dim in self.dims if dim not in self.coords]
         for dim in dims_without_coords:
-            warnings.warn(f"Dimension {dim} does not have an associated coordinate variable.")
+            warnings.warn(
+                f"Dimension {dim} does not have an associated coordinate variable."
+            )
 
         # Ensure that all coordinate variables are dimensioned by themselves
         valid = lambda coord: (list(coord.dims.keys()) == [coord.name])
-        bad_coordinates = [coord.name for coord in self.coords.values() if not valid(coord)]
+        bad_coordinates = [
+            coord.name for coord in self.coords.values() if not valid(coord)
+        ]
         if bad_coordinates:
-            raise DefinitionError(f"The following coordinate variable(s) are not dimensioned solely by themselves:\n{bad_coordinates}")
-    
+            raise DefinitionError(
+                f"The following coordinate variable(s) are not dimensioned solely by themselves:\n{bad_coordinates}"
+            )
+
     def get_attr(self, attribute_name) -> Any:
-        """Retrieves the value of the attribute requested, or None if it does 
+        """Retrieves the value of the attribute requested, or None if it does
         not exist.
 
         :param attribute_name: The name of the attribute to retrieve.
@@ -123,7 +135,7 @@ class DatasetDefinition:
         return self.attrs.get(attribute_name, None)
 
     def get_variable_names(self) -> List[str]:
-        """Retrieves the list of variable names. Note that this excludes 
+        """Retrieves the list of variable names. Note that this excludes
         coordinate variables.
 
         :return: The list of variable names.
@@ -133,13 +145,13 @@ class DatasetDefinition:
 
     def get_variable(self, variable_name: str) -> VariableDefinition:
         """Attemps to retrieve the requested variable. First searches the data
-        variables, then searches the coordinate variables. Returns ``None`` if 
-        no data or coordinate variables have been defined with the requested 
+        variables, then searches the coordinate variables. Returns ``None`` if
+        no data or coordinate variables have been defined with the requested
         variable name.
 
         :param variable_name: The name of the variable to retrieve.
         :type variable_name: str
-        :return: 
+        :return:
             Returns the VariableDefinition for the variable, or ``None`` if the
             variable could not be found.
         :rtype: VariableDefinition
@@ -148,17 +160,17 @@ class DatasetDefinition:
         if variable is None:
             variable = self.coords.get(variable_name, None)
         return variable
-    
+
     def get_coordinates(self, variable: VariableDefinition) -> List[VariableDefinition]:
-        """Returns the coordinate VariableDefinition object(s) that dimension 
+        """Returns the coordinate VariableDefinition object(s) that dimension
         the requested VariableDefinition.
 
-        :param variable: 
-            The VariableDefinition whose coordinate variables should be 
+        :param variable:
+            The VariableDefinition whose coordinate variables should be
             retrieved.
         :type variable: VariableDefinition
-        :return: 
-            A list of VariableDefinition coordinate variables that dimension 
+        :return:
+            A list of VariableDefinition coordinate variables that dimension
             the provided VariableDefinition.
         :rtype: List[VariableDefinition]
         """
@@ -172,7 +184,7 @@ class DatasetDefinition:
         in the config file snippet below, "depth" is a static variable:
 
         .. code-block:: yaml
-            
+
             depth:
               data: [4, 8, 12]
               dims: [depth]

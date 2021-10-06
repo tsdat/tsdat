@@ -2,19 +2,20 @@ from typing import Union
 
 
 class DimKeys:
-    """Class that provides a handle for keys in the Dimensions section fo the 
+    """Class that provides a handle for keys in the Dimensions section fo the
     dataset_definition"""
-    LENGTH = 'length'
+
+    LENGTH = "length"
 
 
 class DimensionDefinition:
     """Class to represent dimensions defined in the pipeline config file.
-    
+
     :param name: The name of the dimension
     :type name: str
-    :param length: 
+    :param length:
         The length of the dimension. This should be one of:
-        ``"unlimited"``, ``"variable"``, or a positive `int`. The 'time' 
+        ``"unlimited"``, ``"variable"``, or a positive `int`. The 'time'
         dimension should always have length of ``"unlimited"``.
     :type length: Union[str, int]
     """
@@ -31,13 +32,13 @@ class DimensionDefinition:
         :rtype: bool
         """
         return self.length == "unlimited"
-    
+
     def is_variable_length(self) -> bool:
-        """Returns ``True`` if the dimension has variable length, meaning that 
-        the dimension's length is set at runtime. Represented by setting the 
+        """Returns ``True`` if the dimension has variable length, meaning that
+        the dimension's length is set at runtime. Represented by setting the
         length to ``"variable"``.
 
-        :return: 
+        :return:
             ``True`` if the dimension has variable length, False otherwise.
         :rtype: bool
         """

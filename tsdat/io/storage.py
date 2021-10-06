@@ -18,7 +18,7 @@ def _is_image(x):
 
 
 def _is_raw(x):
-    return True if '.raw.' in x.__str__() else False
+    return True if ".raw." in x.__str__() else False
 
 
 class DatastreamStorage(abc.ABC):
@@ -32,20 +32,17 @@ class DatastreamStorage(abc.ABC):
     appropriate subclass instance based upon a storage config
     file.
     """
+
     default_file_type = None
 
     # Stores the map of file types to filter functions that will
-    # be loaded from the storage config file and is used to 
+    # be loaded from the storage config file and is used to
     # find specific files in the store.
-    file_filters = {
-        'plots': _is_image,
-        'raw': _is_raw
-    }
+    file_filters = {"plots": _is_image, "raw": _is_raw}
 
     # Stores the map of supported file exensions that will be loaded
     # from the storage config file.
-    output_file_extensions = {
-    }
+    output_file_extensions = {}
 
     @staticmethod
     def from_config(storage_config_file: str):
@@ -56,33 +53,33 @@ class DatastreamStorage(abc.ABC):
         :type storage_config_file: str
         :return: A subclass instance created from the config file.
         :rtype: DatastreamStorage
-        """        
+        """
         # Add the config folder as a special environment parameter before we
         # load the yaml file
         config_folder = os.path.dirname(storage_config_file)
-        os.environ['CONFIG_DIR'] = config_folder
+        os.environ["CONFIG_DIR"] = config_folder
 
         # Configure yaml to substitute environment variables
         configure_yaml()
 
         # Load the config file
-        with open(storage_config_file, 'r') as file:
-            storage_dict = yaml.load(file, Loader=yaml.SafeLoader).get('storage', {})
+        with open(storage_config_file, "r") as file:
+            storage_dict = yaml.load(file, Loader=yaml.SafeLoader).get("storage", {})
 
         # Now instantiate the storage
         storage = instantiate_handler(handler_desc=storage_dict)
 
         # Now we need to register all the file handlers
         # First do the inputs
-        input_handlers = storage_dict.get('file_handlers',{}).get('input', {})
+        input_handlers = storage_dict.get("file_handlers", {}).get("input", {})
         for handler_dict in input_handlers.values():
             handler = instantiate_handler(handler_desc=handler_dict)
-            FileHandler.register_file_handler(handler_dict['file_pattern'], handler)
+            FileHandler.register_file_handler(handler_dict["file_pattern"], handler)
 
         # Now the outputs
-        output_handlers = storage_dict.get('file_handlers', {}).get('output', {})
+        output_handlers = storage_dict.get("file_handlers", {}).get("output", {})
         for key, handler_dict in output_handlers.items():
-            file_extension = handler_dict['file_extension']
+            file_extension = handler_dict["file_extension"]
             file_pattern = f".*\\{file_extension}"
 
             # First register the writers
@@ -106,9 +103,11 @@ class DatastreamStorage(abc.ABC):
 
     def __init__(self, parameters={}):
         self.parameters = parameters
-        retain_input_files = parameters.get('retain_input_files', 'False')
+        retain_input_files = parameters.get("retain_input_files", "False")
         if type(retain_input_files) == str:
-            retain_input_files = False if retain_input_files.lower() == 'false' else True
+            retain_input_files = (
+                False if retain_input_files.lower() == "false" else True
+            )
 
         self.remove_input_files = not retain_input_files
 
@@ -117,17 +116,18 @@ class DatastreamStorage(abc.ABC):
         """Each subclass should define the tmp property, which provides
         access to a TemporaryStorage object that is used to efficiently
         handle reading/writing temporary files used during the processing
-        pipeline, or to perform fileystem actions on files other than 
+        pipeline, or to perform fileystem actions on files other than
         processed datastream files that reside in the same filesystem as
         the DatastreamStorage. Is is not intended to be used outside of the pipeline.
 
         :raises NotImplementedError: [description]
-        """        
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def find(self, datastream_name: str, start_time: str, end_time: str,
-             filetype: str = None) -> List[str]:
+    def find(
+        self, datastream_name: str, start_time: str, end_time: str, filetype: str = None
+    ) -> List[str]:
         """Finds all files of the given type from the datastream store with the
         given datastream_name and timestamps from start_time (inclusive) up to
         end_time (exclusive).  Returns a list of paths to files that match the
@@ -148,14 +148,20 @@ class DatastreamStorage(abc.ABC):
         :type filetype: str, optional
         :return: A list of paths in datastream storage in ascending order
         :rtype: List[str]
-        """        
+        """
         return
 
     @abc.abstractmethod
-    def fetch(self, datastream_name: str, start_time: str, end_time: str,
-              local_path: str = None, filetype: int = None):
+    def fetch(
+        self,
+        datastream_name: str,
+        start_time: str,
+        end_time: str,
+        local_path: str = None,
+        filetype: int = None,
+    ):
         """Fetches files from the datastream store using the datastream_name,
-        start_time, and end_time to specify the file(s) to retrieve. If the 
+        start_time, and end_time to specify the file(s) to retrieve. If the
         local path is not specified, it is up to the subclass to determine
         where to put the retrieved file(s).
 
@@ -173,17 +179,19 @@ class DatastreamStorage(abc.ABC):
             be stored. Defaults to None.
         :type local_path: str, optional
         :param filetype: A file type from the DatastreamStorage.file_filters keys
-            If no type is specified, all files will be returned. Defaults to None. 
+            If no type is specified, all files will be returned. Defaults to None.
         :type filetype: int, optional
         :return: A list of paths where the retrieved files were stored in local storage.
-            This is a context manager class, so it this method should be called via 
+            This is a context manager class, so it this method should be called via
             the 'with' statement and all files referenced by the list will be
             cleaned up when it goes out of scope.
         :rtype: DisposableLocalTempFileList:
-        """        
+        """
         return
 
-    def save(self, dataset_or_path: Union[str, xr.Dataset], new_filename: str = None) -> List[Any]:
+    def save(
+        self, dataset_or_path: Union[str, xr.Dataset], new_filename: str = None
+    ) -> List[Any]:
         """Saves a local file to the datastream store.
 
         :param dataset_or_path: The dataset or local path to the file
@@ -208,7 +216,9 @@ class DatastreamStorage(abc.ABC):
 
             # Save file for every registered output file type
             for file_extension in DatastreamStorage.output_file_extensions.values():
-                dataset_filename = DSUtil.get_dataset_filename(dataset, file_extension=file_extension)
+                dataset_filename = DSUtil.get_dataset_filename(
+                    dataset, file_extension=file_extension
+                )
                 with self.tmp.get_temp_filepath(dataset_filename) as tmp_path:
                     FileHandler.write(dataset, tmp_path)
                     saved_paths.append(self.save_local_path(tmp_path, new_filename))
@@ -237,12 +247,13 @@ class DatastreamStorage(abc.ABC):
         :return: The path where this file was stored in storage.
             Path type is dependent upon the specific storage subclass.
         :rtype: Any
-        """        
+        """
         return
 
     @abc.abstractmethod
-    def exists(self, datastream_name: str, start_time: str, end_time: str,
-               filetype: str = None) -> bool:
+    def exists(
+        self, datastream_name: str, start_time: str, end_time: str, filetype: str = None
+    ) -> bool:
         """Checks if any data exists in the datastream store for the provided
         datastream and time range.
 
@@ -261,14 +272,15 @@ class DatastreamStorage(abc.ABC):
         :type filetype: str, optional
         :return: True if data exists, False otherwise.
         :rtype: bool
-        """        
+        """
         return
 
     @abc.abstractmethod
-    def delete(self, datastream_name: str, start_time: str, end_time: str,
-               filetype: str = None) -> None:
-        """Deletes datastream data in the datastream store in between the 
-        specified time range. 
+    def delete(
+        self, datastream_name: str, start_time: str, end_time: str, filetype: str = None
+    ) -> None:
+        """Deletes datastream data in the datastream store in between the
+        specified time range.
 
         :param datastream_name: The datastream_name as defined by ME Data Standards.
         :type datastream_name: str
@@ -284,7 +296,7 @@ class DatastreamStorage(abc.ABC):
             keys.  If no type is specified, all files will be deleted.
             Defaults to None.
         :type filetype: str, optional
-        """        
+        """
         return
 
 
@@ -293,15 +305,15 @@ class DisposableLocalTempFile:
     the LOCAL FILESYSTEM.  It will ensure that the file is deleted when
     it goes out of scope.
 
-    :param filepath: Path to a local temp file that could be deleted when 
+    :param filepath: Path to a local temp file that could be deleted when
         it goes out of scope.
     :type filepath: str
     :param disposable: True if this file should be automatically deleted
         when it goes out of scope.  Defaults to True.
     :type disposable: bool, optional
-    """    
-   
-    def __init__(self, filepath: str, disposable=True):  
+    """
+
+    def __init__(self, filepath: str, disposable=True):
         self.filepath = filepath
         self.disposable = disposable
 
@@ -320,7 +332,7 @@ class DisposableLocalTempFile:
                 shutil.rmtree(self.filepath)
 
 
-class DisposableLocalTempFileList (list):
+class DisposableLocalTempFileList(list):
     """Provides a context manager wrapper class for a list of
     temp files on the LOCAL FILESYSTEM.  It ensures that if
     specified, the files will be auto-deleted when the list
@@ -335,9 +347,11 @@ class DisposableLocalTempFileList (list):
     :param disposable: Should the local temp files be auto-deleted
         when they go out of scope. Defaults to True.
     :type disposable: bool, optional
-    """    
+    """
 
-    def __init__(self, filepath_list: List[str], delete_on_exception=False, disposable=True):
+    def __init__(
+        self, filepath_list: List[str], delete_on_exception=False, disposable=True
+    ):
         self.filepath_list = filepath_list
         self.delete_on_exception = delete_on_exception
         self.disposable = disposable
@@ -359,21 +373,21 @@ class DisposableLocalTempFileList (list):
                         shutil.rmtree(filepath)
 
 
-class DisposableStorageTempFileList (list):
+class DisposableStorageTempFileList(list):
     """Provides is a context manager wrapper class for a list of
     temp files on the STORAGE FILESYSTEM.  It will ensure that the
     specified files are deleted when the list goes out of scope.
 
     :param filepath_list: A list of files in temporary storage area
     :type filepath_list: List[str]
-    :param storage: The temporary storage service used to clean up 
+    :param storage: The temporary storage service used to clean up
         temporary files.
     :type storage: TemporaryStorage
     :param disposable_files: Which of the files from the filepath_list
         should be auto-deleted when the list goes out of scope.
-        Defaults to [] 
+        Defaults to []
     :type disposable_files: list, optional
-    """    
+    """
 
     def __init__(self, filepath_list: List[str], storage, disposable_files=[]):
         self.filepath_list = filepath_list
@@ -409,21 +423,21 @@ class DisposableStorageTempFileList (list):
 
 
 class TemporaryStorage(abc.ABC):
-    """Each DatastreamStorage should contain a corresponding 
+    """Each DatastreamStorage should contain a corresponding
     TemporaryStorage class which  provides
     access to a TemporaryStorage object that is used to efficiently
     handle reading/writing temporary files used during the processing
-    pipeline, or to perform fileystem actions on files other than 
+    pipeline, or to perform fileystem actions on files other than
     processed datastream files that reside in the same filesystem as
-    the DatastreamStorage. 
-    
-    TemporaryStorage methods return a context manager so that the 
+    the DatastreamStorage.
+
+    TemporaryStorage methods return a context manager so that the
     created temporary files can be automatically removed when they go out of scope.
-    
+
     TemporaryStorage is a helper class intended to be used in the internals of
     pipeline implementations only.  It is not meant as an external API for
     interacting with files in DatastreamStorage.
-    
+
     TODO: rename to a more intuitive name...
 
     :param storage: A reference to the corresponding DatastreamStorage
@@ -432,7 +446,7 @@ class TemporaryStorage(abc.ABC):
 
     def __init__(self, storage: DatastreamStorage):
         self.datastream_storage = storage
-        self._local_temp_folder = tempfile.mkdtemp(prefix='tsdat-pipeline-')
+        self._local_temp_folder = tempfile.mkdtemp(prefix="tsdat-pipeline-")
 
     @property
     def local_temp_folder(self) -> str:
@@ -442,7 +456,7 @@ class TemporaryStorage(abc.ABC):
 
         :return: Path to local temp folder
         :rtype: str
-        """        
+        """
         return self._local_temp_folder
 
     def clean(self):
@@ -454,8 +468,8 @@ class TemporaryStorage(abc.ABC):
 
         This method removes the local temp folder.  Child classes can
         extend this method to clean up their respective storage temp folders.
-        """        
-        
+        """
+
         # remove any garbage files left in the local temp folder
         shutil.rmtree(self.local_temp_folder)
 
@@ -470,13 +484,15 @@ class TemporaryStorage(abc.ABC):
         :rtype: bool
         """
         ext = os.path.splitext(filepath)[1]
-        excluded_types = ['.xlsx']
+        excluded_types = [".xlsx"]
         if ext in excluded_types:
             return True
 
         return False
 
-    def get_temp_filepath(self, filename: str = None, disposable: bool = True) -> DisposableLocalTempFile:
+    def get_temp_filepath(
+        self, filename: str = None, disposable: bool = True
+    ) -> DisposableLocalTempFile:
         """Construct a filepath for a temporary file that will be located in the
         storage-approved local temp folder and will be deleted when it goes
         out of scope.
@@ -491,7 +507,7 @@ class TemporaryStorage(abc.ABC):
         :return: Path to the local file.  The file will be
             automatically deleted when it goes out of scope.
         :rtype: DisposableLocalTempFile
-        """        
+        """
         if filename is None:
             now = datetime.now()
             filename = now.strftime("%Y-%m-%d.%H%M%S.%f")
@@ -508,7 +524,7 @@ class TemporaryStorage(abc.ABC):
 
         :return: Path to the local dir.
         :rtype: str
-        """        
+        """
         now = datetime.now()
         filename = now.strftime("%Y-%m-%d.%H%M%S.%f")
         temp_dir = os.path.join(self.local_temp_folder, filename)
@@ -519,13 +535,15 @@ class TemporaryStorage(abc.ABC):
         return temp_dir
 
     @abc.abstractmethod
-    def extract_files(self, file_path: Union[str, List[str]]) -> DisposableStorageTempFileList:
+    def extract_files(
+        self, file_path: Union[str, List[str]]
+    ) -> DisposableStorageTempFileList:
         """If provided a path to an archive file, this function will extract the
         archive into a temp directory IN THE SAME FILESYSTEM AS THE STORAGE.
         This means, for example that if storage was in an s3 bucket ,then
         the files would be extracted to a temp dir in that s3 bucket.  This
         is to prevent local disk limitations when running via Lambda.
-        
+
         If the file is not an archive, then the same file will be returned.
 
         This method supports zip, tar, and tar.g file formats.
@@ -538,11 +556,13 @@ class TemporaryStorage(abc.ABC):
             Files will be located in the temp area of the
             storage filesystem.
         :rtype: DisposableStorageTempFileList
-        """        
+        """
         pass
 
     @abc.abstractmethod
-    def fetch(self, file_path: str, local_dir=None, disposable=True) -> Union[DisposableLocalTempFile, str]:
+    def fetch(
+        self, file_path: str, local_dir=None, disposable=True
+    ) -> Union[DisposableLocalTempFile, str]:
         """Fetch a file from temp storage to a local temp folder.  If
         disposable is True, then a DisposableLocalTempFile will be returned
         so that it can be used with a context manager.
@@ -560,13 +580,15 @@ class TemporaryStorage(abc.ABC):
         :return: If disposable, return a DisposableLocalTempFile, otherwise
             return the path to the local file.
         :rtype: Union[DisposableLocalTempFile, str]
-        """        
+        """
         pass
 
     @abc.abstractmethod
-    def fetch_previous_file(self, datastream_name: str, start_time: str) -> DisposableLocalTempFile:
+    def fetch_previous_file(
+        self, datastream_name: str, start_time: str
+    ) -> DisposableLocalTempFile:
         """Look in DatastreamStorage for the first processed file before the given date.
-        
+
         :param datastream_name: The datastream_name as defined by ME Data Standards.
         :type datastream_name: str
         :param start_time: The start time or date to start searching for
@@ -577,7 +599,7 @@ class TemporaryStorage(abc.ABC):
             file. Otherwise return None.  (Return value wrapped in DisposableLocalTempFile
             so it can be auto-deleted if needed.)
         :rtype: DisposableLocalTempFile
-        """        
+        """
         pass
 
     @abc.abstractmethod
@@ -587,6 +609,5 @@ class TemporaryStorage(abc.ABC):
 
         :param file_path: The path of a file located in the same filesystem as the storage.
         :type file_path: str
-        """        
+        """
         pass
-

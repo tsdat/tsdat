@@ -13,14 +13,14 @@ from tsdat.constants import ATTS
 # from tsdat.config import Config, VariableDefinition
 
 
-class DSUtil:  
+class DSUtil:
     """
     Provides helper functions for xarray.Dataset
     """
 
     @staticmethod
     def record_corrections_applied(ds: xr.Dataset, variable: str, correction: str):
-        """Records a description of a correction made to a variable to the 
+        """Records a description of a correction made to a variable to the
         corrections_applied corresponding attribute.
 
         :param ds: Dataset containing the corrected variable
@@ -29,7 +29,7 @@ class DSUtil:
         :type variable: str
         :param correction: A description of the correction
         :type correction: str
-        """        
+        """
         corrections = ds[variable].attrs.get(ATTS.CORRECTIONS_APPLIED, [])
         corrections.append(correction)
         ds[variable].attrs[ATTS.CORRECTIONS_APPLIED] = corrections
@@ -43,7 +43,7 @@ class DSUtil:
         :return: A tuple of strings representing the formatted date.  The first string is
             the day in 'yyyymmdd' format.  The second string is the time in 'hhmmss' format.
         :rtype: Tuple[str, str]
-        """        
+        """
         datetime = act.utils.datetime64_to_datetime(datetime64)[0]
         return datetime.strftime("%Y%m%d"), datetime.strftime("%H%M%S")
 
@@ -54,10 +54,10 @@ class DSUtil:
 
         :param variable_data: ndarray of variable data
         :type variable_data: np.ndarray
-        :return: An ndarray of the same shape, with time values converted to 
+        :return: An ndarray of the same shape, with time values converted to
             long timestamps (e.g., int64)
         :rtype: np.ndarray
-        """        
+        """
         return variable_data.astype(pd.Timestamp).astype(np.int64)
 
     @staticmethod
@@ -67,13 +67,13 @@ class DSUtil:
 
         :param ds: The data as an xarray dataset; defaults to None
         :type ds: xr.Dataset, optional.
-        :param config: The Config object used to assist reading time data from 
+        :param config: The Config object used to assist reading time data from
             the raw_dataset; defaults to None.
         :type config: Config, optional
         :return: The datastream name
         :rtype: str
-        """        
-        assert(ds or config)
+        """
+        assert ds or config
         if ds and "datastream_name" in ds.attrs:
             return ds.attrs["datastream_name"]
         return config.dataset_definition.attrs.get("datastream_name")
@@ -89,7 +89,7 @@ class DSUtil:
             the last time point in the dataset.
         :rtype: Tuple[str, str]
         """
-        time64 = np.max(ds['time'].data)
+        time64 = np.max(ds["time"].data)
         return DSUtil.datetime64_to_string(time64)
 
     @staticmethod
@@ -105,7 +105,7 @@ class DSUtil:
             if it is not defined
         :rtype: same data type of the variable (int, float, etc.)
             or None
-        """        
+        """
         return ds[variable_name].attrs.get(ATTS.FILL_VALUE, None)
 
     @staticmethod
@@ -117,8 +117,8 @@ class DSUtil:
         :type ds: xr.Dataset
         :return: List of non-qc data variable names
         :rtype: List[str]
-        """        
-        return [var for var in ds.data_vars.keys() if not var.startswith('qc_')]
+        """
+        return [var for var in ds.data_vars.keys() if not var.startswith("qc_")]
 
     @staticmethod
     def get_raw_end_time(raw_ds: xr.Dataset, time_var_definition) -> Tuple[str, str]:
@@ -129,14 +129,14 @@ class DSUtil:
 
         :param raw_ds: A raw dataset (not standardized)
         :type raw_ds: xr.Dataset
-        :param time_var_definition: The 'time' variable definition from the 
+        :param time_var_definition: The 'time' variable definition from the
             pipeline config
         :type time_var_definition: VariableDefinition
         :return: A tuple of strings representing the last time data point
-            in the dataset.  The first string is the day in 'yyyymmdd' format.  
+            in the dataset.  The first string is the day in 'yyyymmdd' format.
             The second string is the time in 'hhmmss' format.
         :rtype: Tuple[str, str]
-        """        
+        """
         time_var_name = time_var_definition.get_input_name()
         time_data = raw_ds[time_var_name].data
 
@@ -154,14 +154,14 @@ class DSUtil:
 
         :param raw_ds: A raw dataset (not standardized)
         :type raw_ds: xr.Dataset
-        :param time_var_definition: The 'time' variable definition from the 
+        :param time_var_definition: The 'time' variable definition from the
             pipeline config
         :type time_var_definition: VariableDefinition
         :return: A tuple of strings representing the first time data point
-            in the dataset.  The first string is the day in 'yyyymmdd' format.  
+            in the dataset.  The first string is the day in 'yyyymmdd' format.
             The second string is the time in 'hhmmss' format.
         :rtype: Tuple[str, str]
-        """        
+        """
         time_var_name = time_var_definition.get_input_name()
         time_data = raw_ds[time_var_name].data
 
@@ -178,7 +178,7 @@ class DSUtil:
         :type ds: xr.Dataset
         :return: List of coordinate variable names
         :rtype: List[str]
-        """        
+        """
         return list(ds.coords.keys())
 
     @staticmethod
@@ -189,11 +189,11 @@ class DSUtil:
         :param ds: A standardized dataset
         :type ds: xr.Dataset
         :return: A tuple of strings representing the first time data point
-            in the dataset.  The first string is the day in 'yyyymmdd' format.  
+            in the dataset.  The first string is the day in 'yyyymmdd' format.
             The second string is the time in 'hhmmss' format.
         :rtype: Tuple[str, str]
-        """        
-        time64 = np.min(ds['time'].data)
+        """
+        time64 = np.min(ds["time"].data)
         return DSUtil.datetime64_to_string(time64)
 
     @staticmethod
@@ -207,14 +207,16 @@ class DSUtil:
         :type ds: xr.Dataset
         :return: A dictionary of global & variable attributes
         :rtype: Dict
-        """        
+        """
         attributes = ds.attrs
         variables = {var_name: ds[var_name].attrs for var_name in ds.variables}
         metadata = {"attributes": attributes, "variables": variables}
         return metadata
 
     @staticmethod
-    def plot_qc(ds: xr.Dataset, variable_name: str, filename: str=None, **kwargs) -> act.plotting.TimeSeriesDisplay:       
+    def plot_qc(
+        ds: xr.Dataset, variable_name: str, filename: str = None, **kwargs
+    ) -> act.plotting.TimeSeriesDisplay:
         """Create a QC plot for the given variable.  This is based on the ACT library:
         https://arm-doe.github.io/ACT/source/auto_examples/plot_qc.html#sphx-glr-source-auto-examples-plot-qc-py
 
@@ -224,7 +226,7 @@ class DSUtil:
 
         TODO: Depending on use cases, we will likely add more arguments to be able to quickly produce
         the most common types of QC plots.
-        
+
         :param ds: A dataset
         :type ds: xr.Dataset
         :param variable_name: The variable to plot
@@ -233,7 +235,9 @@ class DSUtil:
         :type filename: str, optional
         """
         datastream_name = DSUtil.get_datastream_name(ds=ds)
-        display = act.plotting.TimeSeriesDisplay(ds, subplot_shape=(2,), ds_name=datastream_name, **kwargs)
+        display = act.plotting.TimeSeriesDisplay(
+            ds, subplot_shape=(2,), ds_name=datastream_name, **kwargs
+        )
 
         # Plot temperature data in top plot
         display.plot(variable_name, subplot_index=(0,))
@@ -247,7 +251,9 @@ class DSUtil:
         return display
 
     @staticmethod
-    def get_plot_filename(dataset: xr.Dataset, plot_description: str, extension: str) -> str:
+    def get_plot_filename(
+        dataset: xr.Dataset, plot_description: str, extension: str
+    ) -> str:
         """Returns the filename for a plot according to MHKIT-Cloud Data
         standards. The dataset is used to determine the datastream_name and
         start date/time. The standards dictate that a plot filename should
@@ -256,14 +262,14 @@ class DSUtil:
         :param dataset: The dataset from which the plot data is drawn from.
             This is used to collect the datastream_name and start date/time.
         :type dataset: xr.Dataset
-        :param plot_description: The description of the plot. Should be as 
+        :param plot_description: The description of the plot. Should be as
             brief as possible and contain no spaces. Underscores may be used.
         :type plot_description: str
         :param extension: The file extension for the plot.
         :type extension: str
         :return: The standardized plot filename.
         :rtype: str
-        """        
+        """
         datastream_name = DSUtil.get_datastream_name(dataset)
         date, time = DSUtil.get_start_time(dataset)
         return f"{datastream_name}.{date}.{time}.{plot_description}.{extension}"
@@ -282,7 +288,7 @@ class DSUtil:
         :type file_extension: str, optional
         :return: The base filename of the dataset.
         :rtype: str
-        """        
+        """
         datastream_name = DSUtil.get_datastream_name(dataset)
         start_date, start_time = DSUtil.get_start_time(dataset)
         return f"{datastream_name}.{start_date}.{start_time}{file_extension}"
@@ -301,17 +307,19 @@ class DSUtil:
         :type raw_dataset: xr.Dataset
         :param old_filename: The name of the original raw file.
         :type old_filename: str
-        :param config: The Config object used to assist reading time data from 
+        :param config: The Config object used to assist reading time data from
             the raw_dataset.
         :type config: Config
         :return: The standardized filename of the raw file.
         :rtype: str
-        """        
+        """
         original_filename = os.path.basename(old_filename)
         raw_datastream_name = config.pipeline_definition.input_datastream_name
-        time_var = config.dataset_definition.get_variable('time')
+        time_var = config.dataset_definition.get_variable("time")
         start_date, start_time = DSUtil.get_raw_start_time(raw_dataset, time_var)
-        return f"{raw_datastream_name}.{start_date}.{start_time}.raw.{original_filename}"
+        return (
+            f"{raw_datastream_name}.{start_date}.{start_time}.raw.{original_filename}"
+        )
 
     @staticmethod
     def get_date_from_filename(filename: str) -> str:
@@ -322,7 +330,7 @@ class DSUtil:
         :type filename: str
         :return: The date, in "yyyymmdd.hhmmss" format.
         :rtype: str
-        """     
+        """
         filename = os.path.basename(filename)
         date = filename.split(".")[3]
         time = filename.split(".")[4]
@@ -333,7 +341,7 @@ class DSUtil:
         """Given a filename that conforms to MHKiT-Cloud Data Standards, return
         the datastream name.  Datastream name is everything to the left of the
         third '.' in the filename.
-        
+
         e.g., humboldt_ca.buoy_data.b1.20210120.000000.nc
 
         :param filename: The filename or path to the file.
@@ -360,7 +368,7 @@ class DSUtil:
         :type root: str, optional
         :return: The path to the directory where the datastream should be located.
         :rtype: str
-        """        
+        """
         location_id = datastream_name.split(".")[0]
         return os.path.join(root, location_id, datastream_name)
 
@@ -375,12 +383,11 @@ class DSUtil:
         :rtype: bool
         """
         import mimetypes
+
         mimetypes.init()
 
         mimetype = mimetypes.guess_type(filename)[0]
-        return mimetype and mimetype.split('/')[0] == "image"
-        
+        return mimetype and mimetype.split("/")[0] == "image"
+
 
 # TODO: Maybe we need a method to be able to quickly dump out a summary of the list of problems with the data.
-
-

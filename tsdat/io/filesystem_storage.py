@@ -5,7 +5,7 @@ import pathlib
 import zipfile
 
 import datetime
-import _strptime # added to workaround https://bugs.python.org/issue8098, causes issues on some machines
+import _strptime  # added to workaround https://bugs.python.org/issue8098, causes issues on some machines
 import os
 import shutil
 import xarray as xr
@@ -17,7 +17,7 @@ from tsdat.io import (
     DisposableLocalTempFile,
     DisposableStorageTempFileList,
     DisposableLocalTempFileList,
-    FileHandler
+    FileHandler,
 )
 from tsdat.utils import DSUtil
 
@@ -29,9 +29,11 @@ class FilesystemTemporaryStorage(TemporaryStorage):
     This is a helper class intended to be used in the internals of
     pipeline implementations only.  It is not meant as an external API for
     interacting with files in DatastreamStorage.
-    """    
+    """
 
-    def extract_files(self, list_or_filepath: Union[str, List[str]]) -> DisposableStorageTempFileList:
+    def extract_files(
+        self, list_or_filepath: Union[str, List[str]]
+    ) -> DisposableStorageTempFileList:
         extracted_files = []
         disposable_files = []
 
@@ -46,7 +48,7 @@ class FilesystemTemporaryStorage(TemporaryStorage):
                 is_tar = False
                 is_zip = False
             else:
-                is_tar = tarfile.is_tarfile(filepath) # tar or tar.gz
+                is_tar = tarfile.is_tarfile(filepath)  # tar or tar.gz
                 is_zip = zipfile.is_zipfile(filepath)
 
             if is_tar or is_zip:
@@ -61,7 +63,7 @@ class FilesystemTemporaryStorage(TemporaryStorage):
                     with tarfile.open(filepath) as tar:
                         tar.extractall(path=temp_dir)
                 else:
-                    with zipfile.ZipFile(filepath, 'r') as zipped:
+                    with zipfile.ZipFile(filepath, "r") as zipped:
                         zipped.extractall(temp_dir)
 
                 for filename in os.listdir(temp_dir):
@@ -76,9 +78,13 @@ class FilesystemTemporaryStorage(TemporaryStorage):
 
                 extracted_files.append(filepath)
 
-        return DisposableStorageTempFileList(extracted_files, self, disposable_files=disposable_files)
+        return DisposableStorageTempFileList(
+            extracted_files, self, disposable_files=disposable_files
+        )
 
-    def fetch(self, file_path: str, local_dir=None, disposable=True) -> Union[DisposableLocalTempFile, str]:
+    def fetch(
+        self, file_path: str, local_dir=None, disposable=True
+    ) -> Union[DisposableLocalTempFile, str]:
         if not local_dir:
             local_dir = self.create_temp_dir()
 
@@ -89,20 +95,27 @@ class FilesystemTemporaryStorage(TemporaryStorage):
 
         return fetched_file
 
-    def fetch_previous_file(self, datastream_name: str, start_time: str) -> DisposableLocalTempFile:
+    def fetch_previous_file(
+        self, datastream_name: str, start_time: str
+    ) -> DisposableLocalTempFile:
 
         # fetch files one day previous and one day after start date (since find is exclusive)
         date = datetime.datetime.strptime(start_time, "%Y%m%d.%H%M%S")
         prev_date = (date - datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
         next_date = (date + datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
-        files = self.datastream_storage.find(datastream_name, prev_date, next_date, filetype=DatastreamStorage.default_file_type)
+        files = self.datastream_storage.find(
+            datastream_name,
+            prev_date,
+            next_date,
+            filetype=DatastreamStorage.default_file_type,
+        )
         dates = [DSUtil.get_date_from_filename(_file) for _file in files]
 
         previous_filepath = None
         if dates:
             i = bisect.bisect_left(dates, start_time)
             if i > 0:
-                previous_filepath = files[i-1]
+                previous_filepath = files[i - 1]
 
         if previous_filepath:
             return self.fetch(previous_filepath)
@@ -122,14 +135,14 @@ class FilesystemStorage(DatastreamStorage):
     """Datastreamstorage subclass for a local Linux-based filesystem.
 
     TODO: rename to LocalStorage as this is more intuitive.
- 
+
     :param parameters: Dictionary of parameters that should be
         set automatically from the storage config file when this
         class is intantiated via the DatstreamStorage.from-config()
         method.  Defaults to {}
-        
+
         Key parameters that should be set in the config file include
-        
+
         :retain_input_files: Whether the input files should be cleaned
             up after they are done processing
         :root_dir: The root path under which processed files will e stored.
@@ -139,7 +152,7 @@ class FilesystemStorage(DatastreamStorage):
     def __init__(self, parameters={}):
         super().__init__(parameters=parameters)
 
-        self._root = parameters.get('root_dir')
+        self._root = parameters.get("root_dir")
         assert self._root
 
         # Make sure that the root folder exists
@@ -155,11 +168,14 @@ class FilesystemStorage(DatastreamStorage):
     def tmp(self):
         return self._tmp
 
-    def find(self, datastream_name: str, start_time: str, end_time: str,
-             filetype: str = None) -> List[str]:
+    def find(
+        self, datastream_name: str, start_time: str, end_time: str, filetype: str = None
+    ) -> List[str]:
         # TODO: think about refactoring so that you don't need both start and end time
         # TODO: if times don't include hours/min/sec, then add .000000 to the string
-        dir_to_check = DSUtil.get_datastream_directory(datastream_name=datastream_name, root=self._root)
+        dir_to_check = DSUtil.get_datastream_directory(
+            datastream_name=datastream_name, root=self._root
+        )
         storage_paths = []
 
         if os.path.isdir(dir_to_check):
@@ -173,11 +189,18 @@ class FilesystemStorage(DatastreamStorage):
 
         return sorted(storage_paths)
 
-    def fetch(self, datastream_name: str, start_time: str, end_time: str,
-              local_path: str = None,
-              filetype: int = None) -> DisposableLocalTempFileList:
+    def fetch(
+        self,
+        datastream_name: str,
+        start_time: str,
+        end_time: str,
+        local_path: str = None,
+        filetype: int = None,
+    ) -> DisposableLocalTempFileList:
         fetched_files = []
-        datastream_store_files = self.find(datastream_name, start_time, end_time, filetype=filetype)
+        datastream_store_files = self.find(
+            datastream_name, start_time, end_time, filetype=filetype
+        )
         local_dir = local_path
         if local_dir is None:
             local_dir = self.tmp.create_temp_dir()
@@ -194,20 +217,29 @@ class FilesystemStorage(DatastreamStorage):
         filename = os.path.basename(local_path) if not new_filename else new_filename
         datastream_name = DSUtil.get_datastream_name_from_filename(filename)
 
-        dest_dir = DSUtil.get_datastream_directory(datastream_name=datastream_name, root=self._root)
+        dest_dir = DSUtil.get_datastream_directory(
+            datastream_name=datastream_name, root=self._root
+        )
         os.makedirs(dest_dir, exist_ok=True)  # make sure the dest folder exists
         dest_path = os.path.join(dest_dir, filename)
 
         shutil.copy(local_path, dest_path)
         return dest_path
 
-    def exists(self, datastream_name: str, start_time: str, end_time: str, filetype: int = None) -> bool:
-        datastream_store_files = self.find(datastream_name, start_time, end_time, filetype=filetype)
+    def exists(
+        self, datastream_name: str, start_time: str, end_time: str, filetype: int = None
+    ) -> bool:
+        datastream_store_files = self.find(
+            datastream_name, start_time, end_time, filetype=filetype
+        )
         return len(datastream_store_files) > 0
 
-    def delete(self, datastream_name: str, start_time: str, end_time: str, filetype: int = None) -> None:
-        files_to_delete = self.find(datastream_name, start_time, end_time, filetype=filetype)
+    def delete(
+        self, datastream_name: str, start_time: str, end_time: str, filetype: int = None
+    ) -> None:
+        files_to_delete = self.find(
+            datastream_name, start_time, end_time, filetype=filetype
+        )
         for file in files_to_delete:
             os.remove(file)
         return
-

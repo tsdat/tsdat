@@ -1,9 +1,12 @@
 # Time Series Data Analytical Toolkit (TSDAT)
 
 
+[![PyPI version](https://badge.fury.io/py/tsdat.svg)](https://badge.fury.io/py/tsdat)
 [![main](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml/badge.svg)](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml)
 [![codecov](https://codecov.io/gh/tsdat/tsdat/branch/main/graph/badge.svg?token=W2FHMSQLEH)](https://codecov.io/gh/tsdat/tsdat)
-[![PyPI version](https://badge.fury.io/py/tsdat.svg)](https://badge.fury.io/py/tsdat)
+
+
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![DOI](https://zenodo.org/badge/306085871.svg)](https://zenodo.org/badge/latestdoi/306085871)
 
 
