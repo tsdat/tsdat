@@ -43,8 +43,10 @@ def test_robust_pipeline():
 
     assert os.path.isdir(raw_dir) and os.path.isdir(processed_dir)
 
-    processed_file = os.path.join(processed_dir, os.listdir(processed_dir)[0])
-    ds: xr.Dataset = xr.open_dataset(processed_file)
+    output_nc = os.path.join(processed_dir, "test.SortedDataset.a1.20211001.000000.nc")
+    assert os.path.isfile(output_nc)
+    
+    ds: xr.Dataset = xr.open_dataset(output_nc)
 
     expected_output_variables = [
         "time",
