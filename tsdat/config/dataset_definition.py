@@ -120,7 +120,7 @@ class DatasetDefinition:
                 bad_coordinates.append(coord.name)
         if bad_coordinates:
             msg = "Coordinate variables can only be dimensioned by themselves:\n"
-            msg += f"{bad_coordinates = }"
+            msg += f"bad coordinates: {bad_coordinates}"
             raise DefinitionError(msg)
 
     def get_attr(self, attribute_name) -> Any:
