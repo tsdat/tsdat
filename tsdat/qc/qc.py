@@ -1,8 +1,6 @@
 import numpy as np
 import xarray as xr
 
-from typing import List
-
 from tsdat.config import Config, QualityManagerDefinition
 from tsdat.constants import VARS
 from tsdat.utils import DSUtil

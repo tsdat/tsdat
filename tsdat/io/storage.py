@@ -6,7 +6,7 @@ import tempfile
 import xarray as xr
 import yaml
 from datetime import datetime
-from typing import List, Union, Any
+from typing import List, Union, Any, Dict
 
 from tsdat.config.utils import instantiate_handler, configure_yaml
 from tsdat.io import FileHandler
@@ -101,7 +101,8 @@ class DatastreamStorage(abc.ABC):
 
         return storage
 
-    def __init__(self, parameters={}):
+    def __init__(self, parameters: Union[Dict, None] = None):
+        parameters = parameters if parameters is not None else dict()
         self.parameters = parameters
         retain_input_files = parameters.get("retain_input_files", "False")
         if type(retain_input_files) == str:
@@ -389,7 +390,13 @@ class DisposableStorageTempFileList(list):
     :type disposable_files: list, optional
     """
 
-    def __init__(self, filepath_list: List[str], storage, disposable_files=[]):
+    def __init__(
+        self,
+        filepath_list: List[str],
+        storage,
+        disposable_files: Union[List, None] = None,
+    ):
+        disposable_files = disposable_files if disposable_files is not None else list()
         self.filepath_list = filepath_list
 
         # Make sure that we have passed the right class

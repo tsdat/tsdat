@@ -1,8 +1,7 @@
 import abc
-from typing import Dict, List, Optional
-
 import numpy as np
 import xarray as xr
+from typing import List, Optional, Dict, Union
 
 from tsdat.config import QualityManagerDefinition
 from tsdat.constants import ATTS
@@ -32,12 +31,13 @@ class QualityChecker(abc.ABC):
         ds: xr.Dataset,
         previous_data: xr.Dataset,
         definition: QualityManagerDefinition,
-        parameters={},
+        parameters: Union[Dict, None] = None,
     ):
+
         self.ds = ds
         self.previous_data = previous_data
         self.definition = definition
-        self.params = parameters
+        self.params = parameters if parameters is not None else dict()
 
     @abc.abstractmethod
     def run(self, variable_name: str) -> Optional[np.ndarray]:

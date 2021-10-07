@@ -5,11 +5,10 @@ import pathlib
 import zipfile
 
 import datetime
-import _strptime  # added to workaround https://bugs.python.org/issue8098, causes issues on some machines
+import _strptime  # noqa: F401
 import os
 import shutil
-import xarray as xr
-from typing import List, Union, Any
+from typing import List, Union, Any, Dict
 
 from tsdat.io import (
     DatastreamStorage,
@@ -17,7 +16,6 @@ from tsdat.io import (
     DisposableLocalTempFile,
     DisposableStorageTempFileList,
     DisposableLocalTempFileList,
-    FileHandler,
 )
 from tsdat.utils import DSUtil
 
@@ -149,7 +147,8 @@ class FilesystemStorage(DatastreamStorage):
     :type parameters: dict, optional
     """
 
-    def __init__(self, parameters={}):
+    def __init__(self, parameters: Union[Dict, None] = None):
+        parameters = parameters if parameters is not None else dict()
         super().__init__(parameters=parameters)
 
         self._root = parameters.get("root_dir")

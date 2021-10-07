@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict
 from tsdat.exceptions import DefinitionError
 
 
@@ -74,26 +74,21 @@ class PipelineDefinition:
         :raises DefinitionError:
             Raises DefinitionError if a component has been set improperly.
         """
-        illegal_characters = [".", "-", " "]
-        components_to_check = [
+        illegal_characters = [".", "-", "' '"]
+        components = [
             self.location_id,
             self.dataset_name,
             self.qualifier,
             self.temporal,
         ]
-        valid = (
-            lambda component: sum(
-                [bad_char in component for bad_char in illegal_characters]
-            )
-            == 0
-        )
-        bad_components = [
-            component for component in components_to_check if not valid(component)
-        ]
+
+        def _is_bad(component) -> bool:
+            bad_chars = [char in component for char in illegal_characters]
+            return sum(bad_chars)
+
+        bad_components = [component for component in components if _is_bad(component)]
         if bad_components:
-            message = (
-                f"The following properties contained one or more illegal characters: "
-            )
-            message += f"{bad_components}\n"
-            message += f"Illegal characters include: {illegal_characters}"
+            message = "Some filename components contained illegal characters: \n"
+            message += "\n".join(illegal_characters)
+            message += f"\nIllegal characters include: {illegal_characters}"
             raise DefinitionError(message)

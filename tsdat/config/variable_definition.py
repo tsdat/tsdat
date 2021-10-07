@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 from .dimension_definition import DimensionDefinition
 from .utils import instantiate_handler
 from tsdat.utils.converters import Converter
@@ -48,7 +48,7 @@ class VarInput:
     :type defaults: Dict, optional
     """
 
-    def __init__(self, dictionary: Dict, defaults: Dict = {}):
+    def __init__(self, dictionary: Dict, defaults: Union[Dict, None] = None):
         # Name will always come from input dictionary and is required
         self.name: str = dictionary.get(VarInputKeys.NAME)
 
@@ -57,6 +57,7 @@ class VarInput:
         parameters = {}
 
         # Update classname and add parameters from defaults
+        defaults: Dict = defaults if defaults is not None else dict()
         _default_converter = defaults.get(VarInputKeys.CONVERTER, {})
         classname = _default_converter.get(ConverterKeys.CLASSNAME, classname)
         parameters.update(_default_converter.get(ConverterKeys.PARAMETERS, {}))
@@ -83,7 +84,7 @@ class VarInput:
                 setattr(self, key, defaults[key])
 
     def is_required(self) -> bool:
-        return getattr(self, VarInputKeys.REQUIRED, False) == True
+        return bool(getattr(self, VarInputKeys.REQUIRED, False))
 
 
 class VariableDefinition:
@@ -111,7 +112,7 @@ class VariableDefinition:
         name: str,
         dictionary: Dict,
         available_dimensions: Dict[str, DimensionDefinition],
-        defaults: Dict = {},
+        defaults: Union[Dict, None] = None,
     ):
         self.name: str = name
         self.input = self._parse_input(dictionary, defaults)
@@ -125,7 +126,9 @@ class VariableDefinition:
 
         self._predefined = hasattr(self, "data")
 
-    def _parse_input(self, dictionary: Dict, defaults: Dict = {}) -> VarInput:
+    def _parse_input(
+        self, dictionary: Dict, defaults: Union[Dict, None] = None
+    ) -> VarInput:
         """Parses the variable's input property, if it has one, from the
         variable dictionary.
 
@@ -140,13 +143,14 @@ class VariableDefinition:
         :return: A VarInput object for this VariableDefinition, or None.
         :rtype: VarInput
         """
+        defaults = defaults if defaults is not None else dict()
         input_source = dictionary.get(VarKeys.INPUT, None)
         if not input_source:
             return None
         return VarInput(input_source, defaults.get(VarKeys.INPUT, {}))
 
     def _parse_attributes(
-        self, dictionary: Dict, defaults: Dict = {}
+        self, dictionary: Dict, defaults: Union[Dict, None] = None
     ) -> Dict[str, Any]:
         """Parses the variable's attributes from the variable dictionary.
 
@@ -162,6 +166,7 @@ class VariableDefinition:
         :rtype: Dict[str, Any]
         """
         # Initialize attributes dictionary. Defaults used only for non-coordinate variables
+        defaults = defaults if defaults is not None else dict()
         attributes: Dict[str, Any] = {}
         if not self.is_coordinate():
             attributes = self.add_fillvalue_if_none(attributes)
@@ -176,7 +181,7 @@ class VariableDefinition:
         self,
         dictionary: Dict,
         available_dimensions: Dict[str, DimensionDefinition],
-        defaults: Dict = {},
+        defaults: Union[Dict, None] = None,
     ) -> Dict[str, DimensionDefinition]:
         """Parses the variable's dimensions from the variable dictionary.
 
@@ -193,6 +198,7 @@ class VariableDefinition:
         :return: A mapping of dimension name to DimensionDefinition objects.
         :rtype: Dict[str, DimensionDefinition]
         """
+        defaults = defaults if defaults is not None else dict()
         default_dims: List[str] = defaults.get(VarKeys.DIMS, [])
         requested_dimensions: List[str] = dictionary.get(VarKeys.DIMS, default_dims)
         parsed_dimensions: Dict[str, DimensionDefinition] = {}
@@ -203,7 +209,9 @@ class VariableDefinition:
             parsed_dimensions[dim] = available_dimensions[dim]
         return parsed_dimensions
 
-    def _parse_data_type(self, dictionary: Dict, defaults: Dict = {}) -> object:
+    def _parse_data_type(
+        self, dictionary: Dict, defaults: Union[Dict, None] = None
+    ) -> object:
         """Parses the data_type string and returns the appropriate numpy data
         type (i.e. "float" -> np.float).
 
@@ -224,6 +232,7 @@ class VariableDefinition:
             ME Data Standards list of data types.
         :rtype: object
         """
+        defaults = defaults if defaults is not None else dict()
         default_data_type = defaults.get(VarKeys.TYPE, None)
         data_type: str = dictionary.get(VarKeys.TYPE, default_data_type)
         mappings = {

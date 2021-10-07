@@ -3,10 +3,10 @@ uses to manage I/O for the pipeline.  Specifically, it includes:
 
     #. The FileHandler infrastructure used to read/write to/from
        specific file formats, and
-    #. The Storage infrastructure used to store/access processed 
+    #. The Storage infrastructure used to store/access processed
        data files
 
- We warmly welcome community contribututions to increase the list of 
+ We warmly welcome community contribututions to increase the list of
  supported FileHandlers and Storage destinations.
 """
 from .filehandlers import (

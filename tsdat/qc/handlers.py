@@ -1,4 +1,5 @@
 import abc
+from typing import Union, Dict
 
 import numpy as np
 import xarray as xr
@@ -41,13 +42,12 @@ class QualityHandler(abc.ABC):
         ds: xr.Dataset,
         previous_data: xr.Dataset,
         quality_manager: QualityManagerDefinition,
-        parameters={},
+        parameters: Union[Dict, None] = None,
     ):
-
         self.ds = ds
         self.previous_data = previous_data
         self.quality_manager = quality_manager
-        self.params = parameters
+        self.params = parameters if parameters is not None else dict()
 
     @abc.abstractmethod
     def run(self, variable_name: str, results_array: np.ndarray):

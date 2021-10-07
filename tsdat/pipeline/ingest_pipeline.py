@@ -1,11 +1,9 @@
 import warnings
 import xarray as xr
 from typing import Dict, List, Union
-from .pipeline import Pipeline
 from tsdat.io.filehandlers import FileHandler
 from tsdat.qc import QualityManagement
 from tsdat.utils import DSUtil
-from tsdat.config import DatasetDefinition, VariableDefinition
 from .pipeline import Pipeline
 
 

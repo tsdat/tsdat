@@ -21,8 +21,8 @@ class AbstractFileHandler:
     :type parameters: Dict, optional
     """
 
-    def __init__(self, parameters: Dict = {}):
-        self.parameters = parameters
+    def __init__(self, parameters: Union[Dict, None] = None):
+        self.parameters = parameters if parameters is not None else dict()
 
     def write(
         self, ds: xr.Dataset, filename: str, config: Config = None, **kwargs

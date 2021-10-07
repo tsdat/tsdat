@@ -1,5 +1,4 @@
 import os
-import re
 import cmocean
 import numpy as np
 import pandas as pd
@@ -8,8 +7,7 @@ import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from typing import Any, Dict, List
-from tsdat.config import VariableDefinition, DatasetDefinition
+from typing import Dict
 from tsdat.pipeline import IngestPipeline
 from tsdat.utils import DSUtil
 
@@ -150,11 +148,9 @@ class BuoyIngestPipeline(IngestPipeline):
             ax.xaxis.set_major_formatter(mpl.dates.DateFormatter(date_format))
             plt.setp(ax.xaxis.get_majorticklabels(), rotation=0, ha="center")
 
-        def double_plot(
-            ax, twin, data, colors, var_labels=["", ""], ax_labels=["", ""], **kwargs
-        ):
+        def double_plot(ax, twin, data, colors, var_labels, ax_labels, **kwargs):
             def _add_lineplot(_ax, _data, _c, _label, _ax_label, _spine):
-                _line = _data.plot(ax=_ax, c=_c, label=_label, linewidth=2, **kwargs)
+                _data.plot(ax=_ax, c=_c, label=_label, linewidth=2, **kwargs)
                 _ax.tick_params(axis="y", which="both", colors=_c)
                 _ax.set_ylabel(_ax_label, color=_c)
                 _ax.spines[_spine].set_color(_c)

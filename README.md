@@ -2,12 +2,14 @@
 
 
 [![PyPI version](https://badge.fury.io/py/tsdat.svg)](https://badge.fury.io/py/tsdat)
-[![main](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml/badge.svg)](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml)
-[![codecov](https://codecov.io/gh/tsdat/tsdat/branch/main/graph/badge.svg?token=W2FHMSQLEH)](https://codecov.io/gh/tsdat/tsdat)
-
-
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![DOI](https://zenodo.org/badge/306085871.svg)](https://zenodo.org/badge/latestdoi/306085871)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+[![main](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml/badge.svg)](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml)
+[![Documentation Status](https://readthedocs.org/projects/tsdat/badge/?version=latest)](https://tsdat.readthedocs.io/en/latest/?badge=latest)
+[![codecov](https://codecov.io/gh/tsdat/tsdat/branch/main/graph/badge.svg?token=W2FHMSQLEH)](https://codecov.io/gh/tsdat/tsdat)
+[![Maintainability](https://api.codeclimate.com/v1/badges/e82e8c5103f4eb3a5686/maintainability)](https://codeclimate.com/github/tsdat/tsdat/maintainability)
+
 
 
 The Time Series Data Analytical Toolkit (TSDAT) is an open-source python framework

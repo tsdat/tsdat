@@ -6,8 +6,7 @@ import boto3
 import datetime
 import io
 import os
-import xarray as xr
-from typing import List, Union, Any
+from typing import List, Union, Dict
 
 from tsdat.io import (
     DatastreamStorage,
@@ -189,8 +188,6 @@ class AwsTemporaryStorage(TemporaryStorage):
         for filename in z.namelist():
             dest_path: S3Path = self.base_path.join(filename)
 
-            file_info = z.getinfo(filename)
-
             # do not include __MACOSX files
             if "__MACOSX" not in dest_path:
                 s3_resource.meta.client.upload_fileobj(
@@ -355,7 +352,8 @@ class AwsStorage(DatastreamStorage):
     :type parameters: dict, optional
     """
 
-    def __init__(self, parameters={}):
+    def __init__(self, parameters: Union[Dict, None] = None):
+        parameters = parameters if parameters is not None else dict()
         super().__init__(parameters=parameters)
         bucket_name = self.parameters.get("bucket_name")
         storage_root_path = self.parameters.get("root_dir")

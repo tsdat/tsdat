@@ -1,7 +1,9 @@
 import abc
 import numpy as np
 import pandas as pd
+
 from act.utils import data_utils
+from typing import Dict, Union
 
 
 class Converter(abc.ABC):
@@ -15,8 +17,8 @@ class Converter(abc.ABC):
     :type parameters: dict, optional
     """
 
-    def __init__(self, parameters={}):
-        self.parameters = parameters
+    def __init__(self, parameters: Union[Dict, None] = None):
+        self.parameters = parameters if parameters is not None else dict()
 
     @abc.abstractmethod
     def run(self, data: np.ndarray, in_units: str, out_units: str) -> np.ndarray:
@@ -56,7 +58,8 @@ class StringTimeConverter(Converter):
     :type parameters: dict, optional
     """
 
-    def __init__(self, parameters={}):
+    def __init__(self, parameters: Union[Dict, None] = None):
+        parameters = parameters if parameters is not None else dict()
         super().__init__(parameters=parameters)
         self.format = self.parameters.get("time_format", None)
         assert self.format
@@ -92,7 +95,8 @@ class TimestampTimeConverter(Converter):
     :type parameters: dict, optional
     """
 
-    def __init__(self, parameters={}):
+    def __init__(self, parameters: Union[Dict, None] = None):
+        parameters = parameters if parameters is not None else dict()
         super().__init__(parameters=parameters)
         self.unit = self.parameters.get("unit", None)
         assert self.unit

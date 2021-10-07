@@ -114,14 +114,14 @@ class DatasetDefinition:
             )
 
         # Ensure that all coordinate variables are dimensioned by themselves
-        valid = lambda coord: (list(coord.dims.keys()) == [coord.name])
-        bad_coordinates = [
-            coord.name for coord in self.coords.values() if not valid(coord)
-        ]
+        bad_coordinates: List[str] = []
+        for coord in self.coords.values():
+            if [coord.name] != list(coord.dims.keys()):
+                bad_coordinates.append(coord.name)
         if bad_coordinates:
-            raise DefinitionError(
-                f"The following coordinate variable(s) are not dimensioned solely by themselves:\n{bad_coordinates}"
-            )
+            msg = "Coordinate variables can only be dimensioned by themselves:\n"
+            msg += f"{bad_coordinates = }"
+            raise DefinitionError(msg)
 
     def get_attr(self, attribute_name) -> Any:
         """Retrieves the value of the attribute requested, or None if it does
