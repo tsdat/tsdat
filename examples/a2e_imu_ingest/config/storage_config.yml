@@ -9,7 +9,7 @@ storage:
     input:
       imu:
         file_pattern: '.*\.bin'
-        classname: pipeline.imu_filehandler.ImuFileHandler
+        classname: examples.a2e_imu_ingest.pipeline.filehandlers.ImuFileHandler
 
     output:
       netcdf:

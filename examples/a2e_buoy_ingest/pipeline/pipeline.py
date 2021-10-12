@@ -224,6 +224,7 @@ class BuoyIngestPipeline(IngestPipeline):
                 colors=colors,
                 var_labels=gill_labels,
                 linestyle="--",
+                ax_labels=["", ""],
             )
             for i in range(3):
                 double_plot(

@@ -15,7 +15,7 @@ style_file = os.path.join(example_dir, "styling.mplstyle")
 plt.style.use(style_file)
 
 
-class StaPipeline(IngestPipeline):
+class LidarIngestPipeline(IngestPipeline):
     def hook_customize_dataset(
         self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]
     ) -> xr.Dataset:

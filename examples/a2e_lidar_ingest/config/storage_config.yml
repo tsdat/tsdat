@@ -9,7 +9,7 @@ storage:
     input:
       sta:
         file_pattern: '.*\.sta\.7z'
-        classname: pipeline.filehandlers.StaFileHandler
+        classname: examples.a2e_lidar_ingest.pipeline.filehandlers.StaFileHandler
     output:
       netcdf:
         file_extension: '.nc'
