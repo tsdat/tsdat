@@ -269,7 +269,8 @@ class Pipeline(abc.ABC):
 
         # Determine which datasets will be used to retrieve variables
         retrieval_rules: Dict[str, List[VariableDefinition]] = {}
-        for variable in definition.vars.values():
+        variables = list(definition.vars.values()) + list(definition.coords.values())
+        for variable in variables:
 
             if variable.has_input():
                 search_func = _find_files_with_variable
