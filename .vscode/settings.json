@@ -1,0 +1,20 @@
+{
+    "python.envFile": "${workspaceFolder}/.vscode/.env",
+    "terminal.integrated.env.osx": {
+        "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"
+    },
+    "terminal.integrated.env.linux": {
+        "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"
+    },
+    "terminal.integrated.env.windows": {
+        "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"
+    },
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.pytestEnabled": true,
+    "editor.formatOnSave": true,
+    "python.linting.lintOnSave": true,
+    "python.formatting.provider": "black",
+    "autoDocstring.customTemplatePath": ".vscode/docstring.mustache"
+}
