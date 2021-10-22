@@ -536,8 +536,9 @@ class TemporaryStorage(abc.ABC):
         filename = now.strftime("%Y-%m-%d.%H%M%S.%f")
         temp_dir = os.path.join(self.local_temp_folder, filename)
 
-        # make sure the directory exists
-        os.makedirs(temp_dir, exist_ok=False)
+        # make sure the directory exists 
+        if not os.path.isdir(temp_dir):
+            os.makedirs(temp_dir, exist_ok=False)
 
         return temp_dir
 

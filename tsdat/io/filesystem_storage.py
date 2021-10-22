@@ -87,7 +87,9 @@ class FilesystemTemporaryStorage(TemporaryStorage):
             local_dir = self.create_temp_dir()
 
         fetched_file = os.path.join(local_dir, os.path.basename(file_path))
-        shutil.copy(file_path, fetched_file)
+        
+        if not file_path==fetched_file:
+            shutil.copy(file_path, fetched_file)
         if disposable:
             return DisposableLocalTempFile(fetched_file)
 
