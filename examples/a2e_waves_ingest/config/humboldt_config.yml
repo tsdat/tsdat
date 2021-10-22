@@ -79,6 +79,7 @@ dataset_definition:  # Describes the dataset that will be produced
       type: double
       attrs:
         long_name: Average Wave Height
+        comment: Wave height, average calculated from timeseries
         units: m
         valid_delta: 0.03
         valid_range: [0, 10]
@@ -92,6 +93,7 @@ dataset_definition:  # Describes the dataset that will be produced
       type: double
       attrs:
         long_name: Average Wave Period
+        comment: Wave period, average caculated from timeseries
         units: s
         valid_delta: 0.03
         valid_range: [0, 30]
@@ -104,8 +106,8 @@ dataset_definition:  # Describes the dataset that will be produced
       dims: [time]
       type: double
       attrs:
-        long_name: Average Wave Period from Spectral Moments
-        comment: Wave period, average calculated from the spectral moments
+        long_name: Mean Wave Period from Spectral Moments
+        comment: Wave period, average calculated from the zeroth and first spectral moments
         units: s
         valid_delta: 5
         valid_range: [0, 30]
@@ -171,7 +173,7 @@ dataset_definition:  # Describes the dataset that will be produced
       type: double
       attrs:
         long_name: Significant Wave Height
-        comment: Wave height, significant, average of highest 1/3rd of waves.
+        comment: Wave height, significant, average of highest 1/3rd of waves, calculated from timeseries.
         units: m
         valid_delta: 0.03
         valid_range: [0, 10]
@@ -185,7 +187,7 @@ dataset_definition:  # Describes the dataset that will be produced
       type: double
       attrs:
         long_name: Significant Wave Period
-        comment: Wave period, significant, average of highest 1/3rd of waves.
+        comment: Wave period, significant, average of highest 1/3rd of waves, calculated from timeseries
         units: s
         valid_delta: 0.03
         valid_range: [0, 30]
@@ -219,101 +221,102 @@ dataset_definition:  # Describes the dataset that will be produced
         valid_range: [0, 30]
         _FillValue: -9999
 
-    max_wave_crest:  
+    max_crest_period:
       input: # From waves csv
         name: MaxCrest
         units: m
       dims: [time]
       type: double
       attrs:
-        long_name: Maximum wave height above mean water level
+        long_name: Max Crest Period
+        comment: Wave period between highest wave crests
         units: m
         valid_delta: 1
         valid_range: [0, 30]
         _FillValue: -9999
 
-    wave_peak_period:  
+    peak_wave_period:  
       input: # From waves csv
         name: PeakPeriod
         units: s
       dims: [time]
       type: double
       attrs:
-        long_name: Wave Peak Period
-        comment: Wave period, peak period associated with maximum energy value wave spectrum
+        long_name: Peak wave period
+        comment: Wave period associated with maximum energy found in wave elevation spectrum
         units: s
         valid_delta: 10
-        valid_range: [0, 60]
+        valid_range: [0, 30]
         _FillValue: -9999
 
-    wave_peak_direction:  
+    peak_wave_direction:  
       input: # From waves csv
         name: PeakDirection
         units: degrees
       dims: [time]
       type: double
       attrs:
-        long_name: Wave Peak Direction
+        long_name: Peak Wave Direction
         comment: Wave direction corresponding to peak wave period
         units: degrees
         valid_delta: 15
         valid_range: [0, 360]
         _FillValue: -9999
 
-    wave_peak_spread:  
+    peak_wave_spread:  
       input: # From waves csv
         name: PeakSpread
         units: degrees
       dims: [time]
       type: double
       attrs:
-        long_name: Wave Peak Spread
+        long_name: Peak Wave Spread
         comment: Wave spread corresponding to peak wave period
         units: degrees
         valid_delta: 15
         valid_range: [0, 360]
         _FillValue: -9999
 
-    wave_read_peak_period:  
+    peak_wave_period_read:  
       input: # From waves csv
         name: TP5
         units: s
       dims: [time]
       type: double
       attrs:
-        long_name: Wave Peak Period (Read)
-        comment: Wave period, peak period computed by the Read method
+        long_name: Peak Wave Period (Read)
+        comment: Peak wave period computed by the Read method
         units: s
         valid_delta: 5
-        valid_range: [0, 60]
+        valid_range: [0, 30]
         _FillValue: -9999
 
-    wave_spectral_max_height:  
+    significant_wave_height_m0:  
       input: # From waves csv
         name: HM0
         units: m
       dims: [time]
       type: double
       attrs:
-        long_name: Maximum Wave Height
-        comment: Wave height, significant, estimated from the spectral moment
+        long_name: Significant Wave Height
+        comment: Significant wave height, calculated from the zeroth spectral moment
         units: m
         valid_delta: 3
         valid_range: [0, 30]
         _FillValue: -9999
 
-    wave_spectral_peak_period:  
+    wave_energy_period:  
       input: # From waves csv
         name: Te
         units: s
       dims: [time]
       type: double
       attrs:
-        long_name: Wave Peak Period
-        comment: Wave energy period, calculated from the spectral moments
+        long_name: Wave Energy Period
+        comment: Wave energy period, calculated from the negative first and zeroth spectral moments
         units: s
         valid_delta: 10
-        valid_range: [0, 60]
+        valid_range: [0, 30]
         _FillValue: -9999
 
     wave_duration:  
