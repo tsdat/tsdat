@@ -16,22 +16,22 @@ from tests import (
 )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def pipeline():
     return tsdat.IngestPipeline(PIPELINE_ROBUST_CONFIG, STORAGE_CONFIG)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def config():
     return tsdat.Config.load(PIPELINE_ROBUST_CONFIG)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def dataset():
     return xr.open_dataset(PROCESSED_NC)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def raw_dataset():
     from tsdat.io.filehandlers import FileHandler
 
