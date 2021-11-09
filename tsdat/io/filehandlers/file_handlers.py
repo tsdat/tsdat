@@ -2,7 +2,8 @@ import warnings
 import functools
 import re
 import xarray as xr
-from typing import List, Dict, Union
+from deprecation import deprecated
+from typing import List, Dict, Literal, Union
 from tsdat.config import Config
 
 
@@ -54,31 +55,41 @@ class FileHandler:
     """Class to provide methods to read and write files with a variety of
     extensions."""
 
-    FILEHANDLERS: Dict[str, AbstractFileHandler] = {}
+    FILEREADERS: Dict[str, AbstractFileHandler] = {}
+    FILEWRITERS: Dict[str, AbstractFileHandler] = {}
 
     @staticmethod
-    def _get_handler(filename: str) -> AbstractFileHandler:
-        """Given the name of the file to read or write, this method applies
-        a regular expression to match the name of the file with a handler that
-        has been registered in its internal dictionary of FileHandler objects
-        and returns the appropriate FileHandler, or None if a match is not
-        found.
+    def _get_handler(
+        filename: str, method: Literal["read", "write"]
+    ) -> AbstractFileHandler:
+        """------------------------------------------------------------------------------------
+        Given the filepath of the file to read or write and the FileHandler method to apply to
+        the filepath, this method determines which previously-registered FileHandler should be
+        used on the provided filepath.
 
-        :param filename:
-            The name of the file whose handler should be retrieved.
-        :type filename: str
-        :return:
-            The FileHandler registered for use with the provided filename.
-        :rtype: AbstractFileHandler
-        """
+        Args:
+            filename (str): The path to the file to read or write to.
+            method (Literal[): The method to apply to the file. Must be one of: "read",
+            "write".
+
+        Returns:
+            AbstractFileHandler: The FileHandler that should be applied.
+
+        ------------------------------------------------------------------------------------"""
+        assert method in ["read", "write"]
+
+        handler_dict = FileHandler.FILEREADERS
+        if method == "write":
+            handler_dict = FileHandler.FILEWRITERS
+
         handler = None
 
-        # Iterate through the file handlers, applying their regex to see if
-        # the filename is a match.
-        for pattern in FileHandler.FILEHANDLERS.keys():
+        # Iterate through the file handlers, applying their regex to see if the
+        # filename is a match.
+        for pattern in handler_dict.keys():
             regex = re.compile(pattern)
             if regex.match(filename):
-                handler = FileHandler.FILEHANDLERS[pattern]
+                handler = handler_dict[pattern]
                 break
 
         if handler is None:
@@ -88,57 +99,72 @@ class FileHandler:
 
     @staticmethod
     def write(ds: xr.Dataset, filename: str, config: Config = None, **kwargs) -> None:
-        """Saves the given dataset to file using the registered FileHandler
-        for the provided filename.
+        """------------------------------------------------------------------------------------
+        Calls the appropriate FileHandler to write the dataset to the provided filename.
 
-        :param ds: The dataset ot save.
-        :type ds: xr.Dataset
-        :param filename: The path to where the file should be written to.
-        :type filename: str
-        :param config: Optional Config object, defaults to None
-        :type config: Config, optional
-        """
-        handler = FileHandler._get_handler(filename)
+        Args:
+            ds (xr.Dataset): The dataset to save.
+            filename (str): The path to the file where the dataset should be written.
+            config (Config, optional): Optional Config object. Defaults to None.
+
+        ------------------------------------------------------------------------------------"""
+        handler = FileHandler._get_handler(filename, "write")
         if handler:
             handler.write(ds, filename, config, **kwargs)
 
     @staticmethod
     def read(filename: str, **kwargs) -> xr.Dataset:
-        """Reads in the given file and converts it into an Xarray dataset
-        using the registered FileHandler for the provided filename.
+        """------------------------------------------------------------------------------------
+        Reads in the given file and converts it into an xarray dataset object using the
+        registered FileHandler for the provided filepath.
 
-        :param filename: The path to the file to read in.
-        :type filename: str
-        :return: A xr.Dataset object.
-        :rtype: xr.Dataset
-        """
-        handler = FileHandler._get_handler(filename)
+        Args:
+            filename (str): The path to the file to read in.
+
+        Returns:
+            xr.Dataset: The raw file as an Xarray.Dataset object.
+
+        ------------------------------------------------------------------------------------"""
+        handler = FileHandler._get_handler(filename, "read")
         if handler:
             return handler.read(filename, **kwargs)
 
     @staticmethod
     def register_file_handler(
-        patterns: Union[str, List[str]], handler: AbstractFileHandler
+        method: Literal["read", "write"],
+        patterns: Union[str, List[str]],
+        handler: AbstractFileHandler,
     ):
-        """Static method to register an AbstractFileHandler for one or more
-        file patterns. Once an AbstractFileHandler has been registered it may
-        be used by this class to read or write files whose paths match one or
-        more pattern(s) provided in registration.
+        """------------------------------------------------------------------------------------
+        Method to register a FileHandler for reading from or writing to files matching one or
+        more provided file patterns.
 
-        :param patterns:
-            The patterns (regex) that should be used to match a filepath to
-            the AbstractFileHandler provided.
-        :type patterns: Union[str, List[str]]
-        :param handler: The AbstractFileHandler to register.
-        :type handler: AbstractFileHandler
-        """
-        if isinstance(patterns, List):
-            for pattern in patterns:
-                FileHandler.FILEHANDLERS[pattern] = handler
-        else:
-            FileHandler.FILEHANDLERS[patterns] = handler
+        Args:
+            method ("Literal"): The method the FileHandler should call if the pattern is
+            matched. Must be one of: "read", "write".
+            patterns (Union[str, List[str]]): The file pattern(s) that determine if this
+            FileHandler should be run on a given filepath.
+            handler (AbstractFileHandler): The AbstractFileHandler to register.
+
+        ------------------------------------------------------------------------------------"""
+        assert method in ["read", "write"]
+
+        handler_dict = FileHandler.FILEREADERS
+        if method == "write":
+            handler_dict = FileHandler.FILEWRITERS
+
+        if isinstance(patterns, str):
+            patterns = [patterns]
+
+        for pattern in patterns:
+            handler_dict[pattern] = handler
 
 
+@deprecated(
+    deprecated_in="0.2.8",
+    removed_in="0.3.0",
+    details="This function will be removed in a future release. Use `FileHandler.register_file_handler()` instead.",
+)
 def register_filehandler(patterns: Union[str, List[str]]) -> AbstractFileHandler:
     """Python decorator to register an AbstractFileHandler in the FileHandler
     object. The FileHandler object will be used by tsdat pipelines to read and
@@ -174,7 +200,8 @@ def register_filehandler(patterns: Union[str, List[str]]) -> AbstractFileHandler
     """
 
     def decorator_register(cls):
-        FileHandler.register_file_handler(patterns, cls)
+        FileHandler.register_file_handler("read", patterns, cls)
+        FileHandler.register_file_handler("write", patterns, cls)
 
         @functools.wraps(cls)
         def wrapper_register(*args, **kwargs):

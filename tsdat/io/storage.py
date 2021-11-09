@@ -74,7 +74,9 @@ class DatastreamStorage(abc.ABC):
         input_handlers = storage_dict.get("file_handlers", {}).get("input", {})
         for handler_dict in input_handlers.values():
             handler = instantiate_handler(handler_desc=handler_dict)
-            FileHandler.register_file_handler(handler_dict["file_pattern"], handler)
+            FileHandler.register_file_handler(
+                "read", handler_dict["file_pattern"], handler
+            )
 
         # Now the outputs
         output_handlers = storage_dict.get("file_handlers", {}).get("output", {})
@@ -84,7 +86,7 @@ class DatastreamStorage(abc.ABC):
 
             # First register the writers
             handler = instantiate_handler(handler_desc=handler_dict)
-            FileHandler.register_file_handler(file_pattern, handler)
+            FileHandler.register_file_handler("write", file_pattern, handler)
 
             # Now register the file patterns for finding files in the store
             regex = re.compile(file_pattern)
