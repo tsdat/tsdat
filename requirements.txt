@@ -10,4 +10,3 @@ boto3 >= 1.17
 cmocean >= 2.0
 seaborn >= 0.11
 deprecation >= 2.1
-dunamai >= 1.6

@@ -2,6 +2,7 @@
 pytest
 coverage
 black
+dunamai
 flake8
 sphinx
 sphinx-autoapi
