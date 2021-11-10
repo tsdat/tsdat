@@ -1,7 +1,6 @@
 import os
 import pathlib
 import setuptools
-from dunamai import Style, Version
 
 # The directory containing this file
 CWD = pathlib.Path(__file__).parent
@@ -18,7 +17,7 @@ with open(os.path.join(CWD, "requirements.txt")) as requirements_file:
         if not line.startswith("#")
     ]
 
-version = Version.from_git().serialize(metadata=False, style=Style.SemVer)
+version = os.environ["TSDAT_VERSION"]
 assert "." in version
 
 setuptools.setup(
