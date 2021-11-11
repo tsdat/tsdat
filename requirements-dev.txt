@@ -2,8 +2,8 @@
 pytest
 coverage
 black
-flake8
 dunamai
+flake8
 sphinx
 sphinx-autoapi
 sphinx-rtd-theme

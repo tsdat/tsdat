@@ -1,5 +1,6 @@
 import os
 import act
+import tsdat
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -7,10 +8,6 @@ import matplotlib.pyplot as plt
 
 from typing import List, Dict, Tuple, Optional
 from tsdat.constants import ATTS
-
-# Note that we can't use these in the type hints because
-# importing them here causes a circular dependency
-# from tsdat.config import Config, VariableDefinition
 
 
 class DSUtil:
@@ -121,7 +118,9 @@ class DSUtil:
         return [var for var in ds.data_vars.keys() if not var.startswith("qc_")]
 
     @staticmethod
-    def get_raw_end_time(raw_ds: xr.Dataset, time_var_definition) -> Tuple[str, str]:
+    def get_raw_end_time(
+        raw_ds: xr.Dataset, time_var_definition: "tsdat.VariableDefinition"
+    ) -> Tuple[str, str]:
         """Convenience method to get the end date and time from a raw xarray
         dataset. This uses `time_var_definition.get_input_name()` as the
         dataset key for the time variable and additionally uses the input's
@@ -146,7 +145,9 @@ class DSUtil:
         return DSUtil.datetime64_to_string(end_datetime64)
 
     @staticmethod
-    def get_raw_start_time(raw_ds: xr.Dataset, time_var_definition) -> Tuple[str, str]:
+    def get_raw_start_time(
+        raw_ds: xr.Dataset, time_var_definition: "tsdat.config.VariableDefinition"
+    ) -> Tuple[str, str]:
         """Convenience method to get the start date and time from a raw xarray
         dataset. This uses `time_var_definition.get_input_name()` as the
         dataset key for the time variable and additionally uses the input's

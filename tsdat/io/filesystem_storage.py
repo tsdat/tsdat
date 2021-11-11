@@ -10,7 +10,7 @@ import os
 import shutil
 from typing import List, Union, Any, Dict
 
-from tsdat.io import (
+from . import (
     DatastreamStorage,
     TemporaryStorage,
     DisposableLocalTempFile,

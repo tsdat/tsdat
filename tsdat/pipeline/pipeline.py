@@ -376,6 +376,9 @@ class Pipeline(abc.ABC):
 
         # We are only going to use the first saved path to fetch and re-load
         with self.storage.tmp.fetch(saved_paths[0]) as tmp_path:
-            reopened_dataset = FileHandler.read(tmp_path)
+            # Need to read using the FileHandler registered for writing output because
+            # we are re-opening the output dataset
+            handler = FileHandler._get_handler(tmp_path, "write")
+            reopened_dataset = handler.read(tmp_path)
 
         return reopened_dataset
