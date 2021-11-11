@@ -95,8 +95,8 @@ class WaveIngestPipeline(IngestPipeline):
             ds.significant_wave_period.plot(
                 ax=axs[1], c=cmap(0.5), linewidth=2, label=r"T$_{sig}$"
             )
-            ds.mean_wave_period.plot(
-                ax=axs[1], c=cmap(0.8), linewidth=2, label=r"$\overline{T}_{mean}$"
+            ds.peak_wave_period.plot(
+                ax=axs[1], c=cmap(0.8), linewidth=2, label=r"T$_{peak}$"
             )
             axs[1].set_ylabel("Wave Period (s)")
             axs[1].legend(bbox_to_anchor=(1, -0.10), ncol=3)
@@ -104,9 +104,9 @@ class WaveIngestPipeline(IngestPipeline):
             # Plot mean direction
             cmap = cmocean.cm.haline
             ds.mean_wave_direction.plot(
-                ax=axs[2], c=cmap(0.4), linewidth=2, label=r"$\overline{\phi}_{mean}$"
+                ax=axs[2], c=cmap(0.4), linewidth=2, label=r"$\theta_{mean}$"
             )
-            axs[2].set_ylabel(r"Wave $\overline{\phi}$ (deg)")
+            axs[2].set_ylabel(r"Wave Direction (deg)")
             axs[2].legend(bbox_to_anchor=(1, -0.10))
 
             # Set xlabels and ticks
