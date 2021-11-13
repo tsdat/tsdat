@@ -1,15 +1,15 @@
 # Time Series Data Analytical Toolkit (TSDAT)
 
 
-[![PyPI version](https://badge.fury.io/py/tsdat.svg)](https://badge.fury.io/py/tsdat)
-[![DOI](https://zenodo.org/badge/306085871.svg)](https://zenodo.org/badge/latestdoi/306085871)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
 [![main](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml/badge.svg)](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml)
 [![Documentation Status](https://readthedocs.org/projects/tsdat/badge/?version=latest)](https://tsdat.readthedocs.io/en/latest/?badge=latest)
+[![PyPI version](https://badge.fury.io/py/tsdat.svg)](https://badge.fury.io/py/tsdat)
+[![PyPi downloads](https://img.shields.io/pypi/dm/tsdat)](https://pypistats.org/packages/tsdat)
+
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![codecov](https://codecov.io/gh/tsdat/tsdat/branch/main/graph/badge.svg?token=W2FHMSQLEH)](https://codecov.io/gh/tsdat/tsdat)
 [![Maintainability](https://api.codeclimate.com/v1/badges/e82e8c5103f4eb3a5686/maintainability)](https://codeclimate.com/github/tsdat/tsdat/maintainability)
-
+[![DOI](https://zenodo.org/badge/306085871.svg)](https://zenodo.org/badge/latestdoi/306085871)
 
 
 The Time Series Data Analytical Toolkit (TSDAT) is an open-source python framework
@@ -27,15 +27,13 @@ any dimensionality for use in scalable applications and data repositories.
 
 ## Getting Started
 
-
 We recommend starting by [reading the docs](https://tsdat.readthedocs.io) to get a
 high-level overview of `tsdat`. 
 
-After you have a basic understanding of the various tsdat components, we recommend 
-using the [local ingest template](https://github.com/tsdat/ingest-template-local) to 
-create a data ingestion pipeline that runs on your computer. Follow the instructions 
-outlined there to install the dependencies and run the included example.
-
+After you have a basic understanding of the various tsdat components, we recommend
+checking out the available [templates](https://github.com/tsdat/template-repositories)
+to see example `tsdat` use-cases and find a template that best suits your needs. Each
+template repository will come with its own instructions for getting started.
 
 
 ## Contributing
