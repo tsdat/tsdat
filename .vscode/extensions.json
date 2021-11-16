@@ -6,5 +6,6 @@
         "eamodio.gitlens",
         "GitHub.vscode-pull-request-github",
         "Gruntfuggly.todo-tree",
+        "redhat.vscode-yaml",
     ]
 }
