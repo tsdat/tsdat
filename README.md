@@ -46,8 +46,9 @@ if you are willing to provide feedback or even help contribute to the tsdat core
 enthusiastically welcome all contributions), however most users should start with a
 [template repository](https://github.com/tsdat/template-repositories) to generate
 nearly all of the code and configurations you need to create a declarative data
-pipeline with tsdat. We recommend **[this template](https://github.com/ingest-template)**
-to start with, as it is the most flexible and well-supported template that we offer.
+pipeline with tsdat. We recommend **[this template](
+https://github.com/tsdat/ingest-template)** to start with, as it is the most flexible
+and well-supported template that we offer.
 
 
 # Development setup
