@@ -13,7 +13,7 @@ class IngestPipeline(Pipeline):
     applying quality checks and quality controls, and by saving the
     now-processed data in a standard file format."""
 
-    def run(self, filepath: Union[str, List[str]]) -> None:
+    def run(self, filepath: Union[str, List[str]]) -> xr.Dataset:
         """Runs the IngestPipeline from start to finish.
 
         :param filepath:
@@ -47,6 +47,8 @@ class IngestPipeline(Pipeline):
 
             # Hook to generate custom plots
             self.hook_generate_and_persist_plots(dataset)
+
+        return dataset
 
     def hook_customize_dataset(
         self, dataset: xr.Dataset, raw_mapping: Dict[str, xr.Dataset]

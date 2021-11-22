@@ -67,25 +67,21 @@ def pipeline_produced_expected_directory_tree(pipeline: IngestPipeline) -> bool:
     return True
 
 
-def pipeline_produced_expected_data(
-    pipeline: IngestPipeline, expected_data_file: str
-) -> bool:
-    filename = os.path.basename(expected_data_file)
+def execute_test(
+    storage_config: str,
+    pipeline_config: str,
+    pipeline: IngestPipeline,
+    input_filepath: str,
+    expected_filepath: str,
+):
+    delete_existing_outputs(storage_config)
+    add_pipeline_module_to_path(storage_config)
 
-    # Retrieve the output data file
-    loc_id = pipeline.config.pipeline_definition.location_id
-    datastream = DSUtil.get_datastream_name(config=pipeline.config)
-    root: str = pipeline.storage._root
-    output_file = os.path.join(root, loc_id, datastream, filename)
-
-    # Assert that the basename of the processed file and expected file match
-    assert os.path.isfile(output_file)
-
-    # Compare data and optionally attributes to ensure everything matches.
-    ds_out: xr.Dataset = xr.open_dataset(output_file)
-    ds_exp: xr.Dataset = xr.open_dataset(expected_data_file)
-
-    return ds_out.equals(ds_exp)
+    _pipeline = pipeline(pipeline_config, storage_config)
+    ds = _pipeline.run(input_filepath)
+    expected_ds = xr.open_dataset(expected_filepath)
+    xr.testing.assert_allclose(ds, expected_ds)
+    assert pipeline_produced_expected_directory_tree(_pipeline)
 
 
 def test_a2e_buoy_ingest_example():
@@ -98,23 +94,20 @@ def test_a2e_buoy_ingest_example():
         STORAGE_CONFIG,
     )
 
-    delete_existing_outputs(STORAGE_CONFIG)
-
-    add_pipeline_module_to_path(STORAGE_CONFIG)
-
-    humboldt_pipeline = BuoyIngestPipeline(HUMBOLDT_CONFIG, STORAGE_CONFIG)
-    morro_pipeline = BuoyIngestPipeline(MORRO_CONFIG, STORAGE_CONFIG)
-
-    humboldt_pipeline.run(HUMBOLDT_FILE)
-    morro_pipeline.run(MORRO_FILE)
-
-    assert pipeline_produced_expected_directory_tree(humboldt_pipeline)
-    assert pipeline_produced_expected_directory_tree(morro_pipeline)
-
-    assert pipeline_produced_expected_data(
-        humboldt_pipeline, EXPECTED_HUMBOLDT_BUOY_FILE
+    execute_test(
+        storage_config=STORAGE_CONFIG,
+        pipeline_config=HUMBOLDT_CONFIG,
+        pipeline=BuoyIngestPipeline,
+        input_filepath=HUMBOLDT_FILE,
+        expected_filepath=EXPECTED_HUMBOLDT_BUOY_FILE,
     )
-    assert pipeline_produced_expected_data(morro_pipeline, EXPECTED_MORRO_BUOY_FILE)
+    execute_test(
+        storage_config=STORAGE_CONFIG,
+        pipeline_config=MORRO_CONFIG,
+        pipeline=BuoyIngestPipeline,
+        input_filepath=MORRO_FILE,
+        expected_filepath=EXPECTED_MORRO_BUOY_FILE,
+    )
 
 
 def test_a2e_imu_ingest_example():
@@ -127,23 +120,20 @@ def test_a2e_imu_ingest_example():
         STORAGE_CONFIG,
     )
 
-    delete_existing_outputs(STORAGE_CONFIG)
-
-    add_pipeline_module_to_path(STORAGE_CONFIG)
-
-    humboldt_pipeline = ImuIngestPipeline(HUMBOLDT_CONFIG, STORAGE_CONFIG)
-    morro_pipeline = ImuIngestPipeline(MORRO_CONFIG, STORAGE_CONFIG)
-
-    humboldt_pipeline.run(HUMBOLDT_FILE)
-    morro_pipeline.run(MORRO_FILE)
-
-    assert pipeline_produced_expected_directory_tree(humboldt_pipeline)
-    assert pipeline_produced_expected_directory_tree(morro_pipeline)
-
-    assert pipeline_produced_expected_data(
-        humboldt_pipeline, EXPECTED_HUMBOLDT_IMU_FILE
+    execute_test(
+        storage_config=STORAGE_CONFIG,
+        pipeline_config=HUMBOLDT_CONFIG,
+        pipeline=ImuIngestPipeline,
+        input_filepath=HUMBOLDT_FILE,
+        expected_filepath=EXPECTED_HUMBOLDT_IMU_FILE,
     )
-    assert pipeline_produced_expected_data(morro_pipeline, EXPECTED_MORRO_IMU_FILE)
+    execute_test(
+        storage_config=STORAGE_CONFIG,
+        pipeline_config=MORRO_CONFIG,
+        pipeline=ImuIngestPipeline,
+        input_filepath=MORRO_FILE,
+        expected_filepath=EXPECTED_MORRO_IMU_FILE,
+    )
 
 
 def test_a2e_lidar_ingest_example():
@@ -156,23 +146,20 @@ def test_a2e_lidar_ingest_example():
         STORAGE_CONFIG,
     )
 
-    delete_existing_outputs(STORAGE_CONFIG)
-
-    add_pipeline_module_to_path(STORAGE_CONFIG)
-
-    humboldt_pipeline = LidarIngestPipeline(HUMBOLDT_CONFIG, STORAGE_CONFIG)
-    morro_pipeline = LidarIngestPipeline(MORRO_CONFIG, STORAGE_CONFIG)
-
-    humboldt_pipeline.run(HUMBOLDT_FILE)
-    morro_pipeline.run(MORRO_FILE)
-
-    assert pipeline_produced_expected_directory_tree(humboldt_pipeline)
-    assert pipeline_produced_expected_directory_tree(morro_pipeline)
-
-    assert pipeline_produced_expected_data(
-        humboldt_pipeline, EXPECTED_HUMBOLDT_LIDAR_FILE
+    execute_test(
+        storage_config=STORAGE_CONFIG,
+        pipeline_config=HUMBOLDT_CONFIG,
+        pipeline=LidarIngestPipeline,
+        input_filepath=HUMBOLDT_FILE,
+        expected_filepath=EXPECTED_HUMBOLDT_LIDAR_FILE,
     )
-    assert pipeline_produced_expected_data(morro_pipeline, EXPECTED_MORRO_LIDAR_FILE)
+    execute_test(
+        storage_config=STORAGE_CONFIG,
+        pipeline_config=MORRO_CONFIG,
+        pipeline=LidarIngestPipeline,
+        input_filepath=MORRO_FILE,
+        expected_filepath=EXPECTED_MORRO_LIDAR_FILE,
+    )
 
 
 def test_a2e_waves_ingest_example():
@@ -185,20 +172,17 @@ def test_a2e_waves_ingest_example():
         STORAGE_CONFIG,
     )
 
-    delete_existing_outputs(STORAGE_CONFIG)
-
-    add_pipeline_module_to_path(STORAGE_CONFIG)
-
-    humboldt_pipeline = WaveIngestPipeline(HUMBOLDT_CONFIG, STORAGE_CONFIG)
-    morro_pipeline = WaveIngestPipeline(MORRO_CONFIG, STORAGE_CONFIG)
-
-    humboldt_pipeline.run(HUMBOLDT_FILE)
-    morro_pipeline.run(MORRO_FILE)
-
-    assert pipeline_produced_expected_directory_tree(humboldt_pipeline)
-    assert pipeline_produced_expected_directory_tree(morro_pipeline)
-
-    assert pipeline_produced_expected_data(
-        humboldt_pipeline, EXPECTED_HUMBOLDT_WAVES_FILE
+    execute_test(
+        storage_config=STORAGE_CONFIG,
+        pipeline_config=HUMBOLDT_CONFIG,
+        pipeline=WaveIngestPipeline,
+        input_filepath=HUMBOLDT_FILE,
+        expected_filepath=EXPECTED_HUMBOLDT_WAVES_FILE,
     )
-    assert pipeline_produced_expected_data(morro_pipeline, EXPECTED_MORRO_WAVES_FILE)
+    execute_test(
+        storage_config=STORAGE_CONFIG,
+        pipeline_config=MORRO_CONFIG,
+        pipeline=WaveIngestPipeline,
+        input_filepath=MORRO_FILE,
+        expected_filepath=EXPECTED_MORRO_WAVES_FILE,
+    )
