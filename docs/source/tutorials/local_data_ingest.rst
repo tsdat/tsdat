@@ -106,7 +106,7 @@ can work in for this example.
 Go ahead and clone the repository to your local machine and open it up in 
 whatever IDE you prefer.
 
-Next install Python 3.7+ if you haven’t already done so and create an 
+Next install Python 3.8+ if you haven’t already done so and create an 
 environment in which to manage your project’s dependencies. You can download 
 and install Python here: https://www.python.org. When developing with intent to
 deploy to a production system, we recommend managing your environment using a 
@@ -115,9 +115,9 @@ I will just be using Python’s built-in venv tool to manage python dependencies
 
 .. code-block:: bash
 
-    python3 -m venv ncei_env/
+    python3.8 -m venv ncei_env/
     source ncei_env/bin/activate
-    pip install tsdat
+    pip install -r requirements.txt
 
 This will install tsdat into our `ncei_env` virtual environment. 
 
@@ -125,7 +125,7 @@ We now have everything we need to run the example ingest. Go ahead and do that:
 
 .. code-block:: bash
 
-    python3 run_pipeline.py
+    python3.8 run_pipeline.py
 
 
 Notice that a new ``storage/`` folder is created with the following contents:
@@ -142,8 +142,8 @@ level” and indicates the level of processing of the data, with “00”
 representing raw data that has been renamed according to the data standards 
 that tsdat was developed under, and “a1” representing data that has been 
 ingested, standardized, and optionally quality-controlled. For more information
-on the standards used to develop tsdat, please consult https://github.com/ME-
-Data-Pipeline-Software/data_standards.
+on the standards used to develop tsdat, please consult [our data standards](
+https://github.com/tsdat/data_standards).
 
 Customizing the template repository
 ===================================
@@ -170,26 +170,28 @@ storage config file looks like this:
     :linenos:
 
     storage:
-        classname:  tsdat.io.FilesystemStorage
-        parameters:
-            retain_input_files: True
-            root_dir: ${CONFIG_DIR}/../storage/root
+      classname: tsdat.io.FilesystemStorage
+      parameters:
+        retain_input_files: True
+        root_dir: ${CONFIG_DIR}/../storage/root
 
-        file_handlers:
-            input:
-            csv:
-                file_pattern: '.*\.csv'
-                classname: pipeline.filehandlers.CsvHandler
-                parameters:
-                    read:
-                        sep: " *, *"
-                        engine: "python"
-                        index_col: False
+      file_handlers:
+        input:
+          csv:
+            file_pattern: '.*\.csv'
+            classname: tsdat.io.filehandlers.CsvHandler
+            parameters:
+              read:
+                read_csv:
+                  sep: ", *"
+                  engine: "python"
+                  index_col: False
 
-            output:
-            netcdf:
-                file_extension: '.nc'
-                classname: tsdat.io.filehandlers.NetCdfHandler
+        output:
+          netcdf:
+            file_extension: ".nc"
+            classname: tsdat.io.filehandlers.NetCdfHandler
+
 
 We’ll then need to modify the pipeline configuration file to capture the 
 variables and metadata we want to retain in this ingest. This part of the 
@@ -204,66 +206,75 @@ changes I have made here:
     :linenos:
 
     pipeline:
-        type: Ingest
-        location_id: arctic
-        dataset_name: ice_accretion
-        qualifier: ship_001
-        data_level: a1
+      type: Ingest
+      location_id: arctic
+      dataset_name: ice_accretion
+      qualifier: ship_001
+      data_level: a1
 
     dataset_definition:
-        attributes:
-            title: "Marine Meteorolical Measurements (Example Ingest)"
-            description: "Historical marine data are comprised of ship, buoy, and platform observations."
-            conventions: "ME Data Pipeline Standards: Version 1.0"
-            institution: "National Oceanic and Atmospheric Administration"
-            code_url: "https://github.com/maxwellevin/ncei-global-marine-data-ingest"
+      attributes:
+        title: "Marine Meteorolical Measurements (Example Ingest)"
+        description: "Historical marine data are comprised of ship, buoy, and platform observations."
+        conventions: "ME Data Pipeline Standards: Version 1.0"
+        institution: "National Oceanic and Atmospheric Administration"
+        code_url: "https://github.com/maxwellevin/ncei-global-marine-data-ingest"
 
-        dimensions:
-            time:
-                length: unlimited
+      dimensions:
+        time:
+          length: unlimited
 
+      variables:
+        time:
+          input:
+            name: Time of Observation
+            converter:
+              classname: tsdat.utils.converters.StringTimeConverter
+              parameters:
+                time_format: "%Y-%m-%dT%H:%M:%S"
+          dims: [time]
+          type: long
+          attrs:
+            long_name: Time of Observation (UTC)
+            standard_name: time
+            units: seconds since 1970-01-01T00:00:00
+
+        pressure:
+          input:
+            name: Sea Level Pressure
+          dims: [time]
+          type: float
+          attrs:
+            long_name: Pressure at Sea Level
+            units: hPa
+    
+        pressure_tendency_characteristics:
+          input:
+            name: Characteristics of Pressure Tendency
+          dims: [time]
+          type: int
+          attrs:
+            long_name: Characteristics of Pressure Tendency
+            comment: "-1=Data is missing, 0=Increasing, then decreasing, 1=Increasing steadily or unsteadily, 2=Increasing steadily or unsteadily, 3=Decreasing or steady then increasing OR increasing then increasing more rapidly, 4=Steady. Pressure same as 3 hrs. ago, 5=Decreasing then increasing OR decreasing then decreasing more slowly, 6=Decreasing, then steady OR decreasing, then decreasing more slowly, 7=Decreasing steadily or unsteadily, 8=Steady or increasing then decreasing OR decreasing then decreasing more rapidly"
+            _FillValue: -1
+
+    quality_management:
+    
+      manage_missing_coordinates:
+        checker:
+          classname: tsdat.qc.checkers.CheckMissing
+        handlers:
+          - classname: tsdat.qc.handlers.FailPipeline
         variables:
-            time:
-                input:
-                    name: Time of Observation
-                    converter:
-                    classname: tsdat.utils.converters.StringTimeConverter
-                    parameters:
-                        time_format: "%Y-%m-%dT%H:%M:%S"
-                dims: [time]
-                type: long
-                attrs:
-                    long_name: Time of Observation (UTC)
-                    standard_name: time
-                    units: seconds since 1970-01-01T00:00:00
-
-            ice_accretion_source:
-                input:
-                    name: Ice Accretion On Ship
-                dims: [time]
-                type: int
-                attrs:
-                    long_name: Ice Accretion Source
-                    comment: "1=Icing from ocean spray, 2=Icing from fog, 3=Icing from spray and fog, 4=Icing 
-                    from rain, 5=Icing from spray and rain"
-            
-            ice_accretion_thickness:
-                input:
-                    name: Thickness of Ice Accretion On Ship
-                dims: [time]
-                type: int
-                attrs:
-                    long_name: Ice Accretion Thickness
-                    units: cm
-
-            pressure:
-                input:
-                    name: Sea Level Pressure
-                dims: [time]
-                type: float
-                attrs:
-                    long_name: Pressure at Sea Level
-                    units: hPa
+          - COORDS
+    
+      manage_coordinate_monotonicity:
+        checker:
+          classname: tsdat.qc.checkers.CheckMonotonic
+        handlers:
+          - classname: tsdat.qc.handlers.FailPipeline
+        variables:
+          - COORDS
 
 
 Finally, we will work on updating the customized pipeline that was written for 
