@@ -159,7 +159,7 @@ class IngestPipeline(Pipeline):
 
             # read the raw file into a dataset
             with self.storage.tmp.fetch(file_path) as tmp_path:
-                dataset = FileHandler.read(tmp_path)
+                dataset = self.storage.filehandler.read(tmp_path)
 
                 # Don't use dataset if no FileHandler is registered for it
                 if dataset is not None:

@@ -235,7 +235,9 @@ class Pipeline(abc.ABC):
             datastream_name, f"{start_date}.{start_time}"
         ) as netcdf_file:
             if netcdf_file:
-                prev_dataset = FileHandler.read(netcdf_file, config=self.config)
+                prev_dataset = self.storage.filehandler.read(
+                    netcdf_file, config=self.config
+                )
 
         return prev_dataset
 
@@ -378,7 +380,7 @@ class Pipeline(abc.ABC):
         with self.storage.tmp.fetch(saved_paths[0]) as tmp_path:
             # Need to read using the FileHandler registered for writing output because
             # we are re-opening the output dataset
-            handler = FileHandler._get_handler(tmp_path, "write")
+            handler = self.storage.filehandler._get_handler(tmp_path, "write")
             reopened_dataset = handler.read(tmp_path)
 
         return reopened_dataset
