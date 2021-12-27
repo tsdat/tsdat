@@ -35,6 +35,9 @@ class DatastreamStorage(abc.ABC):
 
     default_file_type = None
 
+    # Object to hold filehandlers registered for this storage object.
+    filehandler = FileHandler()
+
     # Stores the map of file types to filter functions that will
     # be loaded from the storage config file and is used to
     # find specific files in the store.
@@ -45,7 +48,7 @@ class DatastreamStorage(abc.ABC):
     output_file_extensions = {}
 
     @staticmethod
-    def from_config(storage_config_file: str):
+    def from_config(storage_config_file: str) -> "DatastreamStorage":
         """Load a yaml config file which provides the storage constructor
         parameters.
 
@@ -67,14 +70,14 @@ class DatastreamStorage(abc.ABC):
             storage_dict = yaml.load(file, Loader=yaml.SafeLoader).get("storage", {})
 
         # Now instantiate the storage
-        storage = instantiate_handler(handler_desc=storage_dict)
+        storage: "DatastreamStorage" = instantiate_handler(handler_desc=storage_dict)
 
         # Now we need to register all the file handlers
         # First do the inputs
         input_handlers = storage_dict.get("file_handlers", {}).get("input", {})
         for handler_dict in input_handlers.values():
             handler = instantiate_handler(handler_desc=handler_dict)
-            FileHandler.register_file_handler(
+            storage.filehandler.register_file_handler(
                 "read", handler_dict["file_pattern"], handler
             )
 
@@ -86,7 +89,7 @@ class DatastreamStorage(abc.ABC):
 
             # First register the writers
             handler = instantiate_handler(handler_desc=handler_dict)
-            FileHandler.register_file_handler("write", file_pattern, handler)
+            storage.filehandler.register_file_handler("write", file_pattern, handler)
 
             # Now register the file patterns for finding files in the store
             regex = re.compile(file_pattern)
@@ -223,7 +226,7 @@ class DatastreamStorage(abc.ABC):
                     dataset, file_extension=file_extension
                 )
                 with self.tmp.get_temp_filepath(dataset_filename) as tmp_path:
-                    FileHandler.write(dataset, tmp_path)
+                    self.filehandler.write(dataset, tmp_path)
                     saved_paths.append(self.save_local_path(tmp_path, new_filename))
 
         else:
