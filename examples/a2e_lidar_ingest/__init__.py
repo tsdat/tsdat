@@ -1,5 +1,5 @@
 import os
-from .pipeline import LidarIngestPipeline, StaFileHandler
+from .pipeline import LidarIngestPipeline, StaReader
 from . import pipeline
 
 

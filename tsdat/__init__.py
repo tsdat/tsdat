@@ -21,8 +21,8 @@ from tsdat.io import (
     AwsStorage,
     S3Path,
     FilesystemStorage,
-    AbstractFileHandler,
-    FileHandler,
+    DataHandler,
+    HandlerRegistry,
     CsvHandler,
     NetCdfHandler,
 )

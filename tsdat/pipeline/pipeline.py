@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Union
 
 from tsdat.utils import DSUtil
 from tsdat.config import Config, DatasetDefinition, VariableDefinition
-from tsdat.io import DatastreamStorage, FileHandler
+from tsdat.io import DatastreamStorage
 
 
 class Pipeline(abc.ABC):
@@ -235,7 +235,7 @@ class Pipeline(abc.ABC):
             datastream_name, f"{start_date}.{start_time}"
         ) as netcdf_file:
             if netcdf_file:
-                prev_dataset = self.storage.filehandler.read(
+                prev_dataset = self.storage.handlers.read(
                     netcdf_file, config=self.config
                 )
 
@@ -380,7 +380,7 @@ class Pipeline(abc.ABC):
         with self.storage.tmp.fetch(saved_paths[0]) as tmp_path:
             # Need to read using the FileHandler registered for writing output because
             # we are re-opening the output dataset
-            handler = self.storage.filehandler._get_handler(tmp_path, "write")
+            handler = self.storage.handlers._get_handler(tmp_path, "write")
             reopened_dataset = handler.read(tmp_path)
 
         return reopened_dataset

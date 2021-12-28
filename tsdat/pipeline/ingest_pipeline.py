@@ -1,7 +1,6 @@
 import warnings
 import xarray as xr
 from typing import Dict, List, Union
-from tsdat.io.filehandlers import FileHandler
 from tsdat.qc import QualityManagement
 from tsdat.utils import DSUtil
 from .pipeline import Pipeline
@@ -159,7 +158,7 @@ class IngestPipeline(Pipeline):
 
             # read the raw file into a dataset
             with self.storage.tmp.fetch(file_path) as tmp_path:
-                dataset = self.storage.filehandler.read(tmp_path)
+                dataset = self.storage.handlers.read(tmp_path)
 
                 # Don't use dataset if no FileHandler is registered for it
                 if dataset is not None:

@@ -5,7 +5,7 @@ from typing import List, Dict, Literal, Union
 from tsdat.config import Config
 
 
-class AbstractFileHandler:
+class DataHandler:
     """Abstract class to define methods required by all FileHandlers. Classes
     derived from AbstractFileHandler should implement one or more of the
     following methods:
@@ -49,12 +49,12 @@ class AbstractFileHandler:
         pass
 
 
-class FileHandler:
+class HandlerRegistry:
     """Class to provide methods to read and write files with a variety of
     extensions."""
 
-    READERS: Dict[str, AbstractFileHandler] = None
-    WRITERS: Dict[str, AbstractFileHandler] = None
+    READERS: Dict[str, DataHandler] = None
+    WRITERS: Dict[str, DataHandler] = None
 
     def __init__(self) -> None:
         self.READERS = dict()
@@ -62,7 +62,7 @@ class FileHandler:
 
     def _get_handler(
         self, filename: str, method: Literal["read", "write"]
-    ) -> AbstractFileHandler:
+    ) -> DataHandler:
         """------------------------------------------------------------------------------------
         Given the filepath of the file to read or write and the FileHandler method to apply to
         the filepath, this method determines which previously-registered FileHandler should be
@@ -134,7 +134,7 @@ class FileHandler:
         self,
         method: Literal["read", "write"],
         patterns: Union[str, List[str]],
-        handler: AbstractFileHandler,
+        handler: DataHandler,
     ):
         """------------------------------------------------------------------------------------
         Method to register a FileHandler for reading from or writing to files matching one or
