@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import List, Union, Any, Dict
 
 from tsdat.config.utils import instantiate_handler, configure_yaml
-from tsdat.io import FileHandler
+from tsdat.io import HandlerRegistry
 from tsdat.utils import DSUtil
 
 
@@ -36,7 +36,7 @@ class DatastreamStorage(abc.ABC):
     default_file_type = None
 
     # Object to hold filehandlers registered for this storage object.
-    filehandler = FileHandler()
+    handlers = HandlerRegistry()
 
     # Stores the map of file types to filter functions that will
     # be loaded from the storage config file and is used to
@@ -77,7 +77,7 @@ class DatastreamStorage(abc.ABC):
         input_handlers = storage_dict.get("file_handlers", {}).get("input", {})
         for handler_dict in input_handlers.values():
             handler = instantiate_handler(handler_desc=handler_dict)
-            storage.filehandler.register_file_handler(
+            storage.handlers.register_file_handler(
                 "read", handler_dict["file_pattern"], handler
             )
 
@@ -89,7 +89,7 @@ class DatastreamStorage(abc.ABC):
 
             # First register the writers
             handler = instantiate_handler(handler_desc=handler_dict)
-            storage.filehandler.register_file_handler("write", file_pattern, handler)
+            storage.handlers.register_file_handler("write", file_pattern, handler)
 
             # Now register the file patterns for finding files in the store
             regex = re.compile(file_pattern)
@@ -226,7 +226,7 @@ class DatastreamStorage(abc.ABC):
                     dataset, file_extension=file_extension
                 )
                 with self.tmp.get_temp_filepath(dataset_filename) as tmp_path:
-                    self.filehandler.write(dataset, tmp_path)
+                    self.handlers.write(dataset, tmp_path)
                     saved_paths.append(self.save_local_path(tmp_path, new_filename))
 
         else:

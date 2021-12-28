@@ -1,6 +1,5 @@
-
 storage:
-  classname:  tsdat.io.FilesystemStorage
+  classname: tsdat.io.FilesystemStorage
   parameters:
     retain_input_files: True
     root_dir: ${CONFIG_DIR}/../storage/root
@@ -9,9 +8,9 @@ storage:
     input:
       imu:
         file_pattern: '.*\.bin'
-        classname: examples.a2e_imu_ingest.pipeline.filehandlers.ImuFileHandler
+        classname: examples.a2e_imu_ingest.pipeline.handlers.ImuReader
 
     output:
       netcdf:
-        file_extension: '.nc'
-        classname: tsdat.io.filehandlers.NetCdfHandler
+        file_extension: ".nc"
+        classname: tsdat.io.handlers.NetCdfHandler

@@ -1,6 +1,5 @@
-
 storage:
-  classname:  tsdat.io.FilesystemStorage
+  classname: tsdat.io.FilesystemStorage
   parameters:
     retain_input_files: True
     root_dir: ${CONFIG_DIR}/../storage/root
@@ -9,12 +8,12 @@ storage:
     input:
       csv:
         file_pattern: ['.*\.csv']
-        classname: tsdat.io.filehandlers.CsvHandler
+        classname: tsdat.io.handlers.CsvHandler
 
     output:
       netcdf:
-        file_extension: '.nc'
-        classname: tsdat.io.filehandlers.NetCdfHandler
+        file_extension: ".nc"
+        classname: tsdat.io.handlers.NetCdfHandler
       csv:
-        file_extension: '.csv'
-        classname: tsdat.io.filehandlers.CsvHandler
+        file_extension: ".csv"
+        classname: tsdat.io.handlers.CsvHandler

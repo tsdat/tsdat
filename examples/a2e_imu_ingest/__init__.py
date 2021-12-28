@@ -1,5 +1,5 @@
 import os
-from .pipeline import ImuIngestPipeline, ImuFileHandler
+from .pipeline import ImuIngestPipeline, ImuReader
 from . import pipeline
 
 
