@@ -1,3 +1,3 @@
-from .filehandlers import StaFileHandler
+from .handlers import StaReader
 from .pipeline import LidarIngestPipeline
-from . import filehandlers, pipeline
+from . import handlers, pipeline

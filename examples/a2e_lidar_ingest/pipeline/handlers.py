@@ -1,33 +1,17 @@
 import lzma
 import xarray as xr
 import pandas as pd
-from tsdat.io import AbstractFileHandler
+from tsdat.io import DataHandler
 from tsdat import Config
 
 
-class StaFileHandler(AbstractFileHandler):
+class StaReader(DataHandler):
     """-------------------------------------------------------------------
     Custom file handler for reading custom *.sta.7z files. These files are
-    encoded using cp1252 and the lzma algorithm
+    encoded using cp1252 and the lzma algorithm.
 
-    See https://tsdat.readthedocs.io/ for more file handler examples.
+    See https://tsdat.readthedocs.io/ for more `FileHandler` examples.
     -------------------------------------------------------------------"""
-
-    def write(self, ds: xr.Dataset, filename: str, config: Config, **kwargs):
-        """-------------------------------------------------------------------
-        Classes derived from the FileHandler class can implement this method
-        to save to a custom file format.
-
-        Args:
-            ds (xr.Dataset): The dataset to save.
-            filename (str): An absolute or relative path to the file including
-                            filename.
-            config (Config, optional):  Optional Config object. Defaults to
-                                        None.
-        -------------------------------------------------------------------"""
-        raise NotImplementedError(
-            "Error: this file format should not be used to write to."
-        )
 
     def read(self, filename: str, **kwargs) -> xr.Dataset:
         """-------------------------------------------------------------------

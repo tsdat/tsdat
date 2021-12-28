@@ -2,10 +2,10 @@ import numpy as np
 import xarray as xr
 from tsdat.config import Config
 
-from .file_handlers import AbstractFileHandler
+from .handlers import DataHandler
 
 
-class NetCdfHandler(AbstractFileHandler):
+class NetCdfHandler(DataHandler):
     """FileHandler to read from and write to netCDF files. Takes a number of
     parameters that are passed in from the storage config file. Parameters
     specified in the config file should follow the following example:

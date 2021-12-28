@@ -33,7 +33,7 @@ def dataset():
 
 @pytest.fixture(scope="session", autouse=True)
 def raw_dataset():
-    from tsdat.io.filehandlers import CsvHandler
+    from tsdat.io.handlers import CsvHandler
 
     return CsvHandler().read(NON_MONOTONIC_CSV)
 

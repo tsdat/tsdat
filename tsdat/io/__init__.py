@@ -9,9 +9,9 @@ uses to manage I/O for the pipeline.  Specifically, it includes:
  We warmly welcome community contribututions to increase the list of
  supported FileHandlers and Storage destinations.
 """
-from .filehandlers import (
-    AbstractFileHandler,
-    FileHandler,
+from .handlers import (
+    DataHandler,
+    HandlerRegistry,
     CsvHandler,
     NetCdfHandler,
 )

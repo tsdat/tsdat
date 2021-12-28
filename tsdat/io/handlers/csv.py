@@ -4,10 +4,10 @@ import pandas as pd
 import xarray as xr
 from tsdat.config import Config
 from tsdat.utils import DSUtil
-from .file_handlers import AbstractFileHandler
+from .handlers import DataHandler
 
 
-class CsvHandler(AbstractFileHandler):
+class CsvHandler(DataHandler):
     """FileHandler to read from and write to CSV files. Takes a number of
     parameters that are passed in from the storage config file. Parameters
     specified in the config file should follow the following example:

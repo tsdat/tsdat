@@ -4,8 +4,7 @@ import numpy as np
 import xarray as xr
 from typing import Dict
 
-from tsdat import Config
-from tsdat.io import AbstractFileHandler
+from tsdat.io import DataHandler
 
 
 class DTYPE:
@@ -148,7 +147,7 @@ def extract_data(filename: str, packet: Dict[str, Dict]) -> xr.Dataset:
                         _data = fread(bfile, dtype)
                         if name:
                             raw_data[category][name].append(_data)
-        except:
+        except BaseException:
             pass
 
     # Convert raw data into numpy arrays
@@ -199,19 +198,14 @@ def extract_data(filename: str, packet: Dict[str, Dict]) -> xr.Dataset:
     return xr.Dataset.from_dict(dictionary)
 
 
-class ImuFileHandler(AbstractFileHandler):
-    def write(self, ds: xr.Dataset, filename: str, config: Config, **kwargs):
-        raise NotImplementedError(
-            "Error: this file format should not be used to write to."
-        )
-
+class ImuReader(DataHandler):
     def read(self, filename: str, **kwargs) -> xr.Dataset:
 
         # Determine which packet to use.
         dataset = None
         try:
             dataset = extract_data(filename, morro_packet)
-        except:
+        except BaseException:
             dataset = extract_data(filename, humbolt_packet)
 
         return dataset
