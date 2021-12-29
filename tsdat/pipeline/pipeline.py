@@ -384,3 +384,34 @@ class Pipeline(abc.ABC):
             reopened_dataset = handler.read(tmp_path)
 
         return reopened_dataset
+
+    def decode_cf(self, dataset: xr.Dataset) -> xr.Dataset:
+        """------------------------------------------------------------------------------------
+        Decodes the dataset according to CF conventions. This helps ensure that the dataset
+        is formatted correctly after it has been constructed from unstandardized sources or
+        heavily modified.
+
+        Args:
+            dataset (xr.Dataset): The dataset to decode.
+
+        Returns:
+            xr.Dataset: The decoded dataset.
+
+        ------------------------------------------------------------------------------------"""
+        # We have to make sure that time variables do not have units set as attrs, and
+        # instead have units set on the encoding or else xarray will crash when trying
+        # to save: https://github.com/pydata/xarray/issues/3739
+        for variable in dataset.variables.values():
+            if variable.data.dtype.type == np.datetime64 and "units" in variable.attrs:
+                units = variable.attrs["units"]
+                del variable.attrs["units"]
+                variable.encoding["units"] = units
+
+        # Leaving the "dtype" entry in the encoding causes a crash when calling
+        # `dataset.to_netcdf`. Related to but not fixed by https://github.com/pydata/xarray/pull/4684
+        ds = xr.decode_cf(dataset)
+        for variable in ds.variables.values():
+            if variable.data.dtype.type == np.datetime64:
+                if "dtype" in variable.encoding:
+                    del variable.encoding["dtype"]
+        return ds

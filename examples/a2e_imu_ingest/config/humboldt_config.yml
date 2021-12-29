@@ -36,7 +36,7 @@ dataset_definition:
       attrs:
         long_name: Time offset from epoch
         standard_name: time
-        units: seconds since 1980-01-06T00:00:00
+        units: microseconds since 1970-01-01T00:00:00
 
     space:
       input:
