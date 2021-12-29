@@ -231,7 +231,7 @@ class Pipeline(abc.ABC):
         start_date, start_time = DSUtil.get_start_time(dataset)
         datastream_name = DSUtil.get_datastream_name(dataset, self.config)
 
-        with self.storage.tmp.fetch_previous_file(
+        with self.storage.fetch_previous_file(
             datastream_name, f"{start_date}.{start_time}"
         ) as netcdf_file:
             if netcdf_file:
