@@ -140,41 +140,36 @@ class IngestPipeline(Pipeline):
         """
         pass
 
-    def read_and_persist_raw_files(self, file_paths: List[str]) -> List[str]:
-        """Renames the provided raw files according to ME Data Standards file
-        naming conventions for raw data files, and returns a list of the paths
-        to the renamed files.
+    def read_and_persist_raw_files(
+        self, filepaths: Union[str, List[str]]
+    ) -> Dict[str, xr.Dataset]:
+        """------------------------------------------------------------------------------------
+        Renames the provided raw files according to our naming conventions and returns a
+        mapping of the renamed filepaths to raw `xr.Dataset` objects.
 
-        :param file_paths: A list of paths to the original raw files.
-        :type file_paths: List[str]
-        :return: A list of paths to the renamed files.
-        :rtype: List[str]
-        """
-        raw_dataset_mapping = {}
+        Args:
+            file_paths (List[str]): The path(s) to the raw file(s).
 
-        if isinstance(file_paths, str):
-            file_paths = [file_paths]
+        Returns:
+            Dict[str, xr.Dataset]: The mapping of raw filepaths to raw xr.Dataset objects.
 
-        for file_path in file_paths:
+        ------------------------------------------------------------------------------------"""
+        raw_mapping: Dict[str, xr.Dataset] = dict()
 
-            # read the raw file into a dataset
-            with self.storage.tmp.fetch(file_path) as tmp_path:
-                dataset = self.storage.handlers.read(tmp_path)
+        if isinstance(filepaths, str):
+            filepaths = [filepaths]
 
-                # Don't use dataset if no FileHandler is registered for it
-                if dataset is not None:
-                    # create the standardized name for raw file
-                    new_filename = DSUtil.get_raw_filename(
-                        dataset, tmp_path, self.config
-                    )
+        for filepath in filepaths:
 
-                    # add the raw dataset to our dictionary
-                    raw_dataset_mapping[new_filename] = dataset
+            dataset = self.storage.handlers.read(filepath)
+            if not dataset:
+                warnings.warn(f"Couldn't use extracted raw file: {filepath}")
+                continue
 
-                    # save the raw data to storage
-                    self.storage.save(tmp_path, new_filename)
+            new_filename = DSUtil.get_raw_filename(dataset, filepath, self.config)
 
-                else:
-                    warnings.warn(f"Couldn't use extracted raw file: {tmp_path}")
+            raw_mapping[new_filename] = dataset
 
-        return raw_dataset_mapping
+            self.storage.save(filepath, new_filename=new_filename)
+
+        return raw_mapping
