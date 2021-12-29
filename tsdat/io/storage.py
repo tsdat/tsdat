@@ -35,9 +35,6 @@ class DatastreamStorage(abc.ABC):
 
     default_file_type = None
 
-    # Object to hold filehandlers registered for this storage object.
-    handlers = HandlerRegistry()
-
     # Stores the map of file types to filter functions that will
     # be loaded from the storage config file and is used to
     # find specific files in the store.
@@ -116,6 +113,8 @@ class DatastreamStorage(abc.ABC):
             )
 
         self.remove_input_files = not retain_input_files
+
+        self.handlers = HandlerRegistry()
 
     @property
     def tmp(self):
