@@ -42,17 +42,6 @@ class NetCdfHandler(DataHandler):
         to_netcdf_kwargs = dict(format="NETCDF4")
         to_netcdf_kwargs.update(write_params.get("to_netcdf", {}))
 
-        # We have to make sure that time variables do not have units set as attrs,
-        # and instead have units set on the encoding or else xarray will crash
-        # when trying to save:
-        # https://github.com/pydata/xarray/issues/3739
-        for variable_name in ds.variables:
-            variable = ds[variable_name]
-            if variable.data.dtype.type == np.datetime64:
-                units = variable.attrs["units"]
-                del variable.attrs["units"]
-                variable.encoding["units"] = units
-
         ds.to_netcdf(filename, **to_netcdf_kwargs)
 
     def read(self, filename: str, **kwargs) -> xr.Dataset:
