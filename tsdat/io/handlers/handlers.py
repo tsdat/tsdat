@@ -70,8 +70,7 @@ class HandlerRegistry:
 
         Args:
             filename (str): The path to the file to read or write to.
-            method (Literal[): The method to apply to the file. Must be one of: "read",
-            "write".
+            method (Literal["read", "write"]): The method to apply to the file.
 
         Returns:
             AbstractFileHandler: The FileHandler that should be applied.
