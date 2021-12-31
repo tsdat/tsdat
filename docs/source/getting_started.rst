@@ -11,7 +11,7 @@
 
 .. _getting-started:
 
-###############
+
 Getting Started
 ###############
 
@@ -30,26 +30,26 @@ Prerequisites
 *************
 Tsdat requires `Python 3.8+ <https://www.python.org/downloads/>`_
 
+
 .. _installation:
 
 Installation
 ************
-You can install tsdat simply by running ``pip install tsdat`` in a console 
-window.  
+You can install tsdat simply by running::
+
+    pip install tsdat
+  
+in a console window.  
+
 
 .. _template:
 
-Getting a Tsdat Pipeline Template
-*********************************
-The quickest way to set up a Tsdat pipeline is to use a GitHub repository template.
+Developing a Tsdat Pipeline
+***************************
+The recommended way to set up a Tsdat pipeline is to use a GitHub repository template.
 You can find a list of template repositories for tsdat at `<https://github.com/tsdat/template-repositories>`_.
 
-.. note::
-   Currently, there are only two ingest templates available, but more will
-   be added over time, including support for VAPs, multi-pipeline templates,
-   and specific data models.
-
-#. `Local Ingest Template <https://github.com/tsdat/ingest-template-local>`_
+#. `Ingest Template <https://github.com/tsdat/ingest-template>`_
 
     Use this template to run ingest pipelines on your local computer.
 
@@ -64,35 +64,33 @@ to create a new repository at your specified location with the template contents
    :alt: Use a GitHub pipeline repository template to jumpstart tsdat development.
 
 Once you have created a new repository from the template, you can clone your 
-repository to your local desktop and start developing.  By default, the repository
-template will come pre-configured to run out-of-the-box on an example dataset.  
+repository to your local desktop and start developing. By default, the repository
+template will come pre-configured to run out-of-the-box on an example dataset.
+
+See the :ref:`pipeline template tutorial<examples_and_tutorials>` walkthroughs for how 
+to set up each of these templates.
 
 See :ref:`configuring your pipeline<configuring_tsdat>` for more information on 
-tsdat-specific configuration file and code customizations.  In addtion, make
+tsdat-specific configuration file and code customizations.  In addition, make
 sure to read the **README.md** file associated with your template for any
 template-specific instructions.
 
 
 .. _running-tsdat:
 
-Running Your tsdat Pipeline
+Running Your Tsdat Pipeline
 ****************************
 
-Once tsdat is installed and your pipeline template is configured, you can run it on 
-your input data using the following code from a terminal window at the top level of your repository::
+Once tsdat is installed and your pipeline template is configured, you can run it locally on 
+your input data using the following code from a terminal window at the top level of your repository:
 
-    python3 run_pipeline.py
+#. `Ingest Template <https://github.com/tsdat/ingest-template>`_::
 
-By default this will run the pipeline on all files in the **data/inputs** folder and it will run in **'dev'
-mode**, with all outputs going to the **storage/root** folder.  To run the pipeline in production mode on
-a specific file, use the following syntax::
+    python ingest/<ingest-name>/runner.py
 
-    python3 run_pipeline.py $PATH_TO_YOUR_FILE --mode prod
+#. `AWS Ingest Template <https://github.com/tsdat/ingest-template-aws>`_::
 
-For command-line help::
-
-    python3 run_pipeline.py -h 
-
+    python tests/test_pipeline.py
 
 For detailed examples of how to set up and use tsdat, consult the 
-:ref:`examples-and-tutorials` section.
+:ref:`examples_and_tutorials` section.
