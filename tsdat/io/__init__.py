@@ -14,6 +14,8 @@ from .handlers import (
     HandlerRegistry,
     CsvHandler,
     NetCdfHandler,
+    ZipHandler,
+    TarHandler,
 )
 from .storage import (
     DatastreamStorage,
