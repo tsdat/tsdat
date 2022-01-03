@@ -16,37 +16,34 @@ class IngestPipeline(Pipeline):
         """Runs the IngestPipeline from start to finish.
 
         :param filepath:
-            The path or list of paths to the file(s) to run the pipeline on.
+            The path(s) to the file(s) to run the pipeline on.
         :type filepath: Union[str, List[str]]
         """
-        # If the file is a zip/tar, then we need to extract the individual files
-        with self.storage.tmp.extract_files(filepath) as file_paths:
+        # Open each raw file into a Dataset, standardize the raw file names and store.
+        raw_dataset_mapping: Dict[str, xr.Dataset] = self.read_and_persist_raw_files(
+            filepath
+        )
 
-            # Open each raw file into a Dataset, standardize the raw file names and store.
-            raw_dataset_mapping: Dict[
-                str, xr.Dataset
-            ] = self.read_and_persist_raw_files(file_paths)
+        # Customize the raw data before it is used as input for standardization
+        raw_dataset_mapping: Dict[str, xr.Dataset] = self.hook_customize_raw_datasets(
+            raw_dataset_mapping
+        )
 
-            # Customize the raw data before it is used as input for standardization
-            raw_dataset_mapping: Dict[
-                str, xr.Dataset
-            ] = self.hook_customize_raw_datasets(raw_dataset_mapping)
+        # Standardize the dataset and apply corrections / customizations
+        dataset = self.standardize_dataset(raw_dataset_mapping)
+        dataset = self.hook_customize_dataset(dataset, raw_dataset_mapping)
 
-            # Standardize the dataset and apply corrections / customizations
-            dataset = self.standardize_dataset(raw_dataset_mapping)
-            dataset = self.hook_customize_dataset(dataset, raw_dataset_mapping)
+        # Apply quality control / quality assurance to the dataset.
+        previous_dataset = self.get_previous_dataset(dataset)
+        dataset = QualityManagement.run(dataset, self.config, previous_dataset)
 
-            # Apply quality control / quality assurance to the dataset.
-            previous_dataset = self.get_previous_dataset(dataset)
-            dataset = QualityManagement.run(dataset, self.config, previous_dataset)
+        # Apply any final touches to the dataset and persist the dataset
+        dataset = self.hook_finalize_dataset(dataset)
+        dataset = self.decode_cf(dataset)
+        self.storage.save(dataset)
 
-            # Apply any final touches to the dataset and persist the dataset
-            dataset = self.hook_finalize_dataset(dataset)
-            dataset = self.decode_cf(dataset)
-            self.storage.save(dataset)
-
-            # Hook to generate custom plots
-            self.hook_generate_and_persist_plots(dataset)
+        # Hook to generate custom plots
+        self.hook_generate_and_persist_plots(dataset)
 
         return dataset
 
