@@ -33,8 +33,53 @@ class ArchiveHandler(DataHandler):
 
 
 class TarHandler(ArchiveHandler):
-    def read(self, filename: str, **kwargs) -> xr.Dataset:
-        return xr.Dataset
+    def read(self, file: Union[Path, BytesIO], **kwargs) -> Dict[str, xr.Dataset]:
+
+        read_params: Dict = self.parameters.get("read", {})
+
+        output: Dict[str, xr.Dataset] = dict()
+
+        f = file
+        if isinstance(file, (Path, str)):
+            open_params = dict(mode="rb")
+            open_params.update(read_params.get("open", {}))
+            f = open(file, **open_params)
+
+        tarfile_params = read_params.get("tarfile", {})
+        tar = tarfile.open(fileobj=f, **tarfile_params)
+
+        for info_obj in tar:
+            filename = info_obj.name
+            handler = self.registry._get_handler(filename=filename, method="read")
+            if handler:
+                # TODO: let handlers take filename and/or bytes. Here we are hacking
+                # the DataHandlers by providing bytes as the filename. This will
+                # inevitably fail when someone writes a handler that uses the filename
+                # to do something incompatible with a BytesIO object – e.g. string
+                # manipulations.
+                bytes = BytesIO(tar.extractfile(filename).read())
+                assert bytes, f"Failed to extract {filename} from archive {tar.name}"
+
+                data = handler.read(bytes)
+
+                # Convert the output to a mapping so it can be combined.
+                if isinstance(data, xr.Dataset):
+                    data = {filename: data}
+
+                # Prepend the keys with the filename (tar file). This is only needed
+                # until handlers are modified to take bytes and/or filename, as they
+                # can define the mapping appropriately at that point.
+                elif isinstance(data, Dict):
+                    data: Dict[str, xr.Dataset] = {
+                        f"{filename}:{k}": v for k, v in data.items()
+                    }
+
+                else:
+                    raise ValueError(f"Unexpected output from {handler}: {data}")
+
+                output.update(data)
+
+        return output
 
 
 class ZipHandler(ArchiveHandler):
@@ -51,7 +96,8 @@ class ZipHandler(ArchiveHandler):
                 # TODO: let handlers take filename and/or bytes. Here we are hacking
                 # the DataHandlers by providing bytes as the filename. This will
                 # inevitably fail when someone writes a handler that uses the filename
-                # to open a file or do string manipulations with it.
+                # to do something incompatible with a BytesIO object – e.g. string
+                # manipulations.
                 bytes = BytesIO(zip.read(filename))
                 data = handler.read(bytes)
 
