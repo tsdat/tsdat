@@ -34,13 +34,13 @@ class Pipeline(abc.ABC):
         config = pipeline_config
         if isinstance(pipeline_config, str):
             config = Config.load(pipeline_config)
-        self.config = config
+        self.config: Config = config
 
         # We can pass either a DatastreamStorage object or the path to a config file
         storage = storage_config
         if isinstance(storage_config, str):
             storage = DatastreamStorage.from_config(storage_config)
-        self.storage = storage
+        self.storage: DatastreamStorage = storage
 
     @abc.abstractmethod
     def run(self, filepath: Union[str, List[str]]):

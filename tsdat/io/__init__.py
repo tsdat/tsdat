@@ -16,6 +16,7 @@ from .handlers import (
     NetCdfHandler,
     ZipHandler,
     TarHandler,
+    ArchiveHandler,
 )
 from .storage import (
     DatastreamStorage,

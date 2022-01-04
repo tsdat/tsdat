@@ -44,6 +44,9 @@ class DatastreamStorage(abc.ABC):
     # from the storage config file.
     output_file_extensions = {}
 
+    # Registry of DataHandlers
+    handlers: HandlerRegistry = None
+
     @staticmethod
     def from_config(storage_config_file: str) -> "DatastreamStorage":
         """Load a yaml config file which provides the storage constructor
