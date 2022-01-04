@@ -1,6 +1,6 @@
+import re
 import tarfile
 import xarray as xr
-
 from io import BytesIO
 from pathlib import Path
 from tsdat.config.utils import instantiate_handler
@@ -14,6 +14,7 @@ class ArchiveHandler(DataHandler):
 
     registry: HandlerRegistry = None
     handlers: List[DataHandler] = None
+    exclude: str = None
 
     def __init__(self, parameters: Dict = None):
         # TODO: Validate parameters
@@ -30,6 +31,12 @@ class ArchiveHandler(DataHandler):
                 patterns=handler_dict["file_pattern"],
                 handler=child,
             )
+
+        # Naively merge a list of regex patterns to exclude certain files from being
+        # read. By default we exclude files that macOS creates when zipping a folder.
+        exclude = [".*\\_\\_MACOSX/.*", ".*\\.DS_Store"]
+        exclude.extend(self.parameters.get("exclude", []))
+        self.exclude = "(?:% s)" % "|".join(exclude)
 
 
 class TarHandler(ArchiveHandler):
@@ -50,6 +57,9 @@ class TarHandler(ArchiveHandler):
 
         for info_obj in tar:
             filename = info_obj.name
+            if re.match(self.exclude, filename):
+                continue
+
             handler = self.registry._get_handler(filename=filename, method="read")
             if handler:
                 # TODO: let handlers take filename and/or bytes. Here we are hacking
@@ -91,6 +101,9 @@ class ZipHandler(ArchiveHandler):
         zip = ZipFile(file, **zipfile_params)
 
         for filename in zip.namelist():
+            if re.match(self.exclude, filename):
+                continue
+
             handler = self.registry._get_handler(filename=filename, method="read")
             if handler:
                 # TODO: let handlers take filename and/or bytes. Here we are hacking
