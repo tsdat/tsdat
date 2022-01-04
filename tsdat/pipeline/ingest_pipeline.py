@@ -158,15 +158,17 @@ class IngestPipeline(Pipeline):
 
         for filepath in filepaths:
 
-            dataset = self.storage.handlers.read(filepath)
-            if not dataset:
+            extracted = self.storage.handlers.read(filepath)
+            if not extracted:
                 warnings.warn(f"Couldn't use extracted raw file: {filepath}")
                 continue
 
-            new_filename = DSUtil.get_raw_filename(dataset, filepath, self.config)
-
-            raw_mapping[new_filename] = dataset
-
+            new_filename = DSUtil.get_raw_filename(extracted, filepath, self.config)
             self.storage.save(filepath, new_filename=new_filename)
+
+            if isinstance(extracted, xr.Dataset):
+                extracted = {new_filename: extracted}
+
+            raw_mapping.update(extracted)
 
         return raw_mapping

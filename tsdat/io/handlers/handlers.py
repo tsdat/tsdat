@@ -37,7 +37,7 @@ class DataHandler:
         """
         pass
 
-    def read(self, filename: str, **kwargs) -> xr.Dataset:
+    def read(self, filename: str, **kwargs) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
         """Reads in the given file and converts it into an Xarray dataset for
         use in the pipeline.
 
@@ -113,7 +113,7 @@ class HandlerRegistry:
         if handler:
             handler.write(ds, filename, config, **kwargs)
 
-    def read(self, filename: str, **kwargs) -> xr.Dataset:
+    def read(self, filename: str, **kwargs) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
         """------------------------------------------------------------------------------------
         Reads in the given file and converts it into an xarray dataset object using the
         registered FileHandler for the provided filepath.
