@@ -236,7 +236,7 @@ class Pipeline(abc.ABC):
         ) as netcdf_file:
             if netcdf_file:
                 prev_dataset = self.storage.handlers.read(
-                    netcdf_file, config=self.config
+                    file=netcdf_file, name=netcdf_file
                 )
 
         return prev_dataset

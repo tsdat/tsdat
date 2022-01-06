@@ -1,13 +1,12 @@
 import re
 import tarfile
 import xarray as xr
+
 from io import BytesIO
-from pathlib import Path
+from typing import Dict, List, Union
 from tsdat.config.utils import instantiate_handler
 from zipfile import ZipFile
 from .handlers import DataHandler, HandlerRegistry
-
-from typing import Dict, List, Union
 
 
 class ArchiveHandler(DataHandler):
@@ -40,52 +39,69 @@ class ArchiveHandler(DataHandler):
 
 
 class TarHandler(ArchiveHandler):
-    def read(self, file: Union[Path, BytesIO], **kwargs) -> Dict[str, xr.Dataset]:
+    def read(
+        self,
+        file: Union[str, BytesIO],
+        name: str = None,
+        **kwargs,
+    ) -> Dict[str, xr.Dataset]:
+        """------------------------------------------------------------------------------------
+        Extracts the file into memory and uses registered `DataHandlers` to read each relevant
+        extracted file into its own xarray Dataset object. Returns a mapping like
+        {filename: xr.Dataset}.
 
-        read_params: Dict = self.parameters.get("read", {})
+        Args:
+            file (Union[str, BytesIO]): The file to read in. Can be provided as a filepath or
+            a bytes-like object. It is used to open the tar file.
+            name (str, optional): A label used to help trace the origin of the data read-in.
+            It is used in the key in the returned dictionary. Must be provided if the `file`
+            argument is not string-like. If `file` is a string and `name` is not specified then
+            the label will be set by `file`. Defaults to None.
+
+        Returns:
+            Dict[str, xr.Dataset]: A mapping of {label: xr.Dataset}.
+
+        ------------------------------------------------------------------------------------"""
+        assert name or isinstance(file, str), "Must provide name if file is not a str."
+
+        label = name if name else file
 
         output: Dict[str, xr.Dataset] = dict()
 
-        f = file
-        if isinstance(file, (Path, str)):
+        read_params: Dict = self.parameters.get("read", {})
+
+        # If we are reading from a string / filepath then add option to specify more
+        # parameters for opening (i.e., mode or encoding options)
+        fileobj = None
+        if isinstance(file, str):
             open_params = dict(mode="rb")
             open_params.update(read_params.get("open", {}))
-            f = open(file, **open_params)
+            fileobj = open(file, **open_params)
+        else:
+            fileobj = file
 
         tarfile_params = read_params.get("tarfile", {})
-        tar = tarfile.open(fileobj=f, **tarfile_params)
+        tar = tarfile.open(fileobj=fileobj, **tarfile_params)
 
         for info_obj in tar:
             filename = info_obj.name
+
+            file_label = f"{label}::{filename}"
+
             if re.match(self.exclude, filename):
                 continue
 
-            handler = self.registry._get_handler(filename=filename, method="read")
+            handler: DataHandler = self.registry._get_handler(
+                name=filename,
+                method="read",
+            )
             if handler:
-                # TODO: let handlers take filename and/or bytes. Here we are hacking
-                # the DataHandlers by providing bytes as the filename. This will
-                # inevitably fail when someone writes a handler that uses the filename
-                # to do something incompatible with a BytesIO object – e.g. string
-                # manipulations.
-                bytes = BytesIO(tar.extractfile(filename).read())
-                assert bytes, f"Failed to extract {filename} from archive {tar.name}"
 
-                data = handler.read(bytes)
+                tar_bytes = BytesIO(tar.extractfile(filename).read())
+                data = handler.read(file=tar_bytes, name=file_label)
 
-                # Convert the output to a mapping so it can be combined.
                 if isinstance(data, xr.Dataset):
-                    data = {filename: data}
-
-                # Prepend the keys with the filename (tar file). This is only needed
-                # until handlers are modified to take bytes and/or filename, as they
-                # can define the mapping appropriately at that point.
-                elif isinstance(data, Dict):
-                    data: Dict[str, xr.Dataset] = {
-                        f"{filename}:{k}": v for k, v in data.items()
-                    }
-
-                else:
-                    raise ValueError(f"Unexpected output from {handler}: {data}")
+                    data = {file_label: data}
 
                 output.update(data)
 
@@ -93,41 +109,66 @@ class TarHandler(ArchiveHandler):
 
 
 class ZipHandler(ArchiveHandler):
-    def read(self, file: Union[Path, BytesIO], **kwargs) -> Dict[str, xr.Dataset]:
+    def read(
+        self,
+        file: Union[str, BytesIO],
+        name: str = None,
+        **kwargs,
+    ) -> Dict[str, xr.Dataset]:
+        """------------------------------------------------------------------------------------
+        Extracts the file into memory and uses registered `DataHandlers` to read each relevant
+        extracted file into its own xarray Dataset object. Returns a mapping like
+        {filename: xr.Dataset}.
+
+        Args:
+            file (Union[str, BytesIO]): The file to read in. Can be provided as a filepath or
+            a bytes-like object. It is used to open the zip file.
+            name (str, optional): A label used to help trace the origin of the data read-in.
+            It is used in the key in the returned dictionary. Must be provided if the `file`
+            argument is not string-like. If `file` is a string and `name` is not specified then
+            the label will be set by `file`. Defaults to None.
+
+        Returns:
+            Dict[str, xr.Dataset]: A mapping of {label: xr.Dataset}.
+
+        ------------------------------------------------------------------------------------"""
+        assert name or isinstance(file, str), "Must provide name if file is not a str."
+
+        label = name if name else file
 
         output: Dict[str, xr.Dataset] = dict()
 
-        zipfile_params = self.parameters.get("read", {}).get("zipfile", {})
-        zip = ZipFile(file, **zipfile_params)
+        read_params = self.parameters.get("read", {})
+
+        # If we are reading from a string / filepath then add option to specify more
+        # parameters for opening (i.e., mode or encoding options)
+        fileobj = None
+        if isinstance(file, str):
+            open_params = dict(mode="rb")
+            open_params.update(read_params.get("open", {}))
+            fileobj = open(file, **open_params)
+        else:
+            fileobj = file
+
+        zipfile_params = read_params.get("zipfile", {})
+        zip = ZipFile(file=fileobj, **zipfile_params)
 
         for filename in zip.namelist():
+            file_label = f"{label}::{filename}"
+
             if re.match(self.exclude, filename):
                 continue
 
-            handler = self.registry._get_handler(filename=filename, method="read")
+            handler: DataHandler = self.registry._get_handler(
+                name=filename,
+                method="read",
+            )
             if handler:
-                # TODO: let handlers take filename and/or bytes. Here we are hacking
-                # the DataHandlers by providing bytes as the filename. This will
-                # inevitably fail when someone writes a handler that uses the filename
-                # to do something incompatible with a BytesIO object – e.g. string
-                # manipulations.
-                bytes = BytesIO(zip.read(filename))
-                data = handler.read(bytes)
+                zip_bytes = BytesIO(zip.read(filename))
+                data = handler.read(file=zip_bytes, name=file_label)
 
-                # Convert the output to a mapping so it can be combined.
                 if isinstance(data, xr.Dataset):
-                    data = {filename: data}
-
-                # Prepend the keys with the filename (zip file). This is only needed
-                # until handlers are modified to take bytes and/or filename, as they
-                # can define the mapping appropriately at that point.
-                elif isinstance(data, Dict):
-                    data: Dict[str, xr.Dataset] = {
-                        f"{filename}:{k}": v for k, v in data.items()
-                    }
-
-                else:
-                    raise ValueError(f"Unexpected output from {handler}: {data}")
+                    data = {file_label: data}
 
                 output.update(data)
 

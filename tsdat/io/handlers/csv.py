@@ -2,6 +2,10 @@ import os
 import yaml
 import pandas as pd
 import xarray as xr
+
+from io import BytesIO
+
+from typing import Union
 from tsdat.config import Config
 from tsdat.utils import DSUtil
 from .handlers import DataHandler
@@ -61,28 +65,41 @@ class CsvHandler(DataHandler):
             metadata = DSUtil.get_metadata(ds)
             yaml.dump(metadata, file)
 
-    def read(self, filename: str, **kwargs) -> xr.Dataset:
-        """Reads in the given file and converts it into an Xarray dataset for
-        use in the pipeline.
+    def read(
+        self,
+        file: Union[str, BytesIO],
+        name: str = None,
+        **kwargs,
+    ) -> xr.Dataset:
+        """------------------------------------------------------------------------------------
+        Reads the given file into a pandas DataFrame before converting it into an xarray
+        Dataset for use in the pipeline.
 
-        :param filename: The path to the file to read in.
-        :type filename: str
-        :return: A xr.Dataset object.
-        :rtype: xr.Dataset
-        """
+        Args:
+            file (Union[str, BytesIO]): The file to read in. Can be provided as a filepath or
+            a bytes-like object. It is passed directly to `pandas.read_csv()` as the first
+            argument.
+            name (str, optional): A label to use for the dataset. The DataHandler does not use
+            this parameter.
+
+        Returns:
+            xr.Dataset: The dataset.
+
+        ------------------------------------------------------------------------------------"""
         read_params = self.parameters.get("read", {})
         read_csv_kwargs = read_params.get("read_csv", {})
         to_xarray_kwargs = read_params.get("to_xarray", {})
 
-        df = pd.read_csv(filename, **read_csv_kwargs)
+        df = pd.read_csv(file, **read_csv_kwargs)
         ds: xr.Dataset = df.to_xarray(**to_xarray_kwargs)
 
-        yaml_filename = f"{filename}.yaml"
-        if os.path.isfile(yaml_filename):
-            with open(yaml_filename, "r") as file:
-                metadata = yaml.safe_load(file)
-                ds.attrs = metadata.get("attributes", {})
-                for variable, attrs in metadata.get("variables", {}).items():
-                    ds[variable].attrs = attrs
+        if isinstance(file, str):
+            yaml_filename = f"{file}.yaml"
+            if os.path.isfile(yaml_filename):
+                with open(yaml_filename, "r") as metadata_file:
+                    metadata = yaml.safe_load(metadata_file)
+                    ds.attrs = metadata.get("attributes", {})
+                    for variable, attrs in metadata.get("variables", {}).items():
+                        ds[variable].attrs = attrs
 
         return ds

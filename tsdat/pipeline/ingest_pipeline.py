@@ -158,7 +158,7 @@ class IngestPipeline(Pipeline):
 
         for filepath in filepaths:
 
-            extracted = self.storage.handlers.read(filepath)
+            extracted = self.storage.handlers.read(file=filepath, name=filepath)
             if not extracted:
                 warnings.warn(f"Couldn't use extracted raw file: {filepath}")
                 continue
