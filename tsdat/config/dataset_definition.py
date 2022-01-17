@@ -104,7 +104,10 @@ class DatasetDefinition:
         """
         # Ensure that there is a time coordinate variable
         if "time" not in self.coords:
-            raise DefinitionError("'time' must be defined as a coordinate variable.")
+            # 'time' can sometimes be a scalar, in which case it doesn't need to be a
+            # coordinate variable. This is hard to check for at this point, so we make
+            # this a warning instead of a DefinitionError.
+            warnings.warn("'time' should be defined as a coordinate variable.")
 
         # Warn if any dimensions do not have an associated coordinate variable
         dims_without_coords = [dim for dim in self.dims if dim not in self.coords]
