@@ -1,6 +1,7 @@
 .. _Xarray: http://xarray.pydata.org/en/stable/
 .. _netCDF: https://www.unidata.ucar.edu/software/netcdf/
 .. _ARM program: https://arm.gov
+.. _start a discussion on GitHub: https://github.com/tsdat/tsdat/discussions
 
 
 .. toctree::
@@ -77,3 +78,12 @@ following data standards and best practices when building data pipelines so
 that your data is clean, easy to understand, more accessible, and ultimately 
 more valuable to your data users. 
 
+.. _contact:
+
+Get in Touch
+************
+
+We would love to hear from you! If you have any feedback, questions, ideas, or
+anything else you would like to share with us, please feel free to
+`start a discussion on GitHub`_ or shoot us an email at tsdat@pnnl.gov and we will
+get back to you as soon as possible.
