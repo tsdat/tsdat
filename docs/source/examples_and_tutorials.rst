@@ -1,39 +1,43 @@
-.. examples_and_tutorials:
-
 .. _GitHub repository: https://github.com/tsdat/tsdat/tree/master/examples
 
-.. _examples-and-tutorials:
+.. _examples_and_tutorials:
 
-Examples and Tutorials
-######################
+Tutorials and Examples
+======================
 
-We understand that many people learn better from examples than large walls of 
-text and API references. That is why we have collected a set of examples and 
-tutorials that we think are helpful for explaining how tsdat can be used to 
-simplify the development of develop data pipelines and to show off some of the
-more advanced features of the library.
-
-
-.. _examples:
-
-Examples
-********
-
-Tsdat hosts several examples on its `GitHub repository`_. 
-
-More examples coming soon.
+The following tutorials show how to set up a tsdat pipeline with the current
+templates. The examples are of existing data pipelines and show off some of 
+the more advanced features of the pipeline library.
 
 
 .. _tutorials:
 
 Tutorials
-*********
+---------
 
 We are starting to develop and collect written and video tutorials that provide
-walkthroughs of common tsdat workflows. See below for a list of tutorials:
+walkthroughs of common tsdat workflows.
 
 .. toctree::
    :maxdepth: 1
    :glob:
 
    tutorials/*
+   
+
+.. _examples:
+
+Examples
+--------
+
+1. Tsdat hosts several examples from a lidar buoy on its `GitHub repository`_
+
+2. Example `ADCP and Spotter wave buoy raw data ingest <https://github.com/jmcvey3/MRE-resource-ingest/tree/main/ingest>`_
+
+3. `Smart buildings data ingest <https://github.com/jmcvey3/ingest-BBD-multiple/tree/main/ingest/seb>`_
+
+
+More examples coming soon.
+
+
+
