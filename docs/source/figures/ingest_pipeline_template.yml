@@ -42,12 +42,12 @@ pipeline:
   # An optional qualifier that distinguishes these data from other
   # data sets produced by the same instrument.  The qualifier
   # must not end with a number.
-  #qualifier: "lidar"
+  qualifier: "lidar"
 
   # A optional description of the data temporal resolution
   # (e.g., 30m, 1h, 200ms, 14d, 10Hz).  All temporal resolution
   # descriptors require a units identifier.
-  #temporal: "10m"
+  temporal: "10m"
 
 ####################################################################
 # PART 1: DATASET DEFINITION
@@ -62,7 +62,7 @@ dataset_definition:
   # if not applicable to your data.
   #
   # You may add any additional attributes as needed to describe your
-  # data collection and processing activities.
+  # data collection and processing activities. All are optional.
   #-----------------------------------------------------------------
   attributes:
 
@@ -83,54 +83,53 @@ dataset_definition:
 
     # The version of the standards document this data conforms to.
     # This attribute is highly recommended but is not required.
-    # conventions: "ME Data Pipeline Standards: Version 1.0"
+    conventions: "ME Data Pipeline Standards: Version 1.0"
 
     # If an optional Digital Object Identifier (DOI) has been obtained
     # for the data, it may be included here.
-    #doi: "10.21947/1671051"
+    doi: "10.21947/1671051"
 
     # The institution who produced the data
-    # institution: "Pacific Northwest National Laboratory"
+    institution: "Pacific Northwest National Laboratory"
 
     # Include the url to the specific tagged release of the code
     # used for this pipeline invocation.
     # Example,  https://github.com/clansing/twrmr/releases/tag/1.0.
-    # Note that MHKiT-Cloud will automatically create a new code
+    # Note that TSDAT will automatically create a new code
     # release whenever the pipeline is deployed to production and
     # record this attribute automatically.
     code_url: "https://github.com/tsdat/tsdat/releases/tag/v0.2.2"
 
     # Published or web-based references that describe the methods
     # algorithms, or third party libraries used to process the data.
-    #references: "https://github.com/MHKiT-Software/MHKiT-Python"
+    references: "https://github.com/MHKiT-Software/MHKiT-Python"
 
     # A more detailed description of the site location.
-    #location_meaning: "Buoy is located of the coast of Humboldt, CA"
+    location_meaning: "Buoy is located of the coast of Humboldt, CA"
 
     # Name of instrument(s) used to collect data.
-    #instrument_name: "Wind Sentinel"
+    instrument_name: "Wind Sentinel"
 
     # Serial number of instrument(s) used to collect data.
-    #serial_number: "000011312"
+    serial_number: "000011312"
 
     # Description of instrument(s) used to collect data.
-    #instrument_meaning: "Self-powered floating buoy hosting a suite of meteorological and marine instruments."
+    instrument_meaning: "Self-powered floating buoy hosting a suite of meteorological and marine instruments."
 
     # Manufacturer of instrument(s) used to collect data.
-    #instrument_manufacturer: "AXYS Technologies Inc."
+    instrument_manufacturer: "AXYS Technologies Inc."
 
     # The date(s) of the last time the instrument(s) was calibrated.
-    #last_calibration_date: "2020-10-01"
+    last_calibration_date: "2020-10-01"
 
     # The expected sampling interval of the instrument (e.g., "400 us")
-    #sampling_interval: "10 min"
+    sampling_interval: "10 min"
 
   #-----------------------------------------------------------------
   # Dimensions (shape)
   #-----------------------------------------------------------------
   dimensions:
     # All time series data must have a "time" dimension
-    # TODO: provide a link to the documentation online
     time:
         length: "unlimited"
   
@@ -285,7 +284,7 @@ dataset_definition:
 
         # A string exactly matching a value in from the CF or MRE
         # Standard Name table, if a match exists
-        #standard_name: time
+        standard_name: time
 
         # A CFUnits-compatible string indicating the units the data
         # are measured in.
@@ -330,7 +329,7 @@ dataset_definition:
       # You may add any additional attributes as needed to describe your
       # variables.
       #
-      # Any metadata used for QC tests will be indicated.
+      # Any metadata used for QC tests will be indicated here.
       #-------------------------------------------------------------
       attrs:
         # A minimal description of what the variable represents.
@@ -338,7 +337,7 @@ dataset_definition:
 
         # An optional attribute to provide human-readable context for what this variable
         # represents, how it was measured, or anything else that would be relevant to end-users.
-        #comment: Rolling 10-minute average sea surface temperature. Aligned such that the temperature reported at time 'n' represents the average across the interval (n-1, n].
+        comment: Rolling 10-minute average sea surface temperature. Aligned such that the temperature reported at time 'n' represents the average across the interval (n-1, n].
 
         # A CFUnits-compatible string indicating the units the data
         # are measured in.
@@ -347,39 +346,39 @@ dataset_definition:
 
         # The value used to initialize the variable’s data. Defaults to -9999.
         # Coordinate variables must not use this attribute.
-        #_FillValue: -9999
+        _FillValue: -9999
 
         # An array of variable names that depend on the values from this variable. This is primarily
         # used to indicate if a variable has an ancillary qc variable.
-        # NOTE: QC ancillary variables will be automatically recorded via the MHKiT-Cloud pipeline engine.
-        #ancillary_variables: []
+        # NOTE: QC ancillary variables will be automatically recorded via the TSDAT pipeline engine.
+        ancillary_variables: []
 
         # A two-element array of [min, max] representing the smallest and largest valid values
         # of a variable.  Values outside valid_range will be filled with _FillValue.
-        #valid_range: [-50, 50]
+        valid_range: [-50, 50]
 
         # The maximum allowed difference between any two consecutive values of a variable,
         # values outside of which should be flagged as "Bad".
         # This attribute is used for the valid_delta QC test.  If not specified, this
         # variable will be omitted from the test.
-        #valid_delta: 0.25
+        valid_delta: 0.25
 
         # A two-element array of [min, max] outside of which the data should be flagged as "Bad".
         # This attribute is used for the fail_min and fail_max QC tests.
         # If not specified, this variable will be omitted from these tests.
-        #fail_range: [0, 40]
+        fail_range: [0, 40]
 
         # A two-element array of [min, max] outside of which the data should be flagged as "Indeterminate".
         # This attribute is used for the warn_min and warn_max QC tests.
         # If not specified, this variable will be omitted from these tests.
-        #warn_range: [0, 30]
+        warn_range: [0, 30]
 
         # An array of strings indicating what corrections, if any, have been applied to the data.
-        #corrections_applied: []
+        corrections_applied: []
 
         # The height of the instrument above ground level (AGL), or in the case of above
         # water, above the surface.
-        #sensor_height: "30m"
+        sensor_height: "30m"
 
     #-----------------------------------------------------------------
     # Example of a variables that hold a single scalar value that
@@ -434,36 +433,20 @@ dataset_definition:
 # PART 2: QC TESTS
 # Define the QC tests that will be applied to variable data.
 ####################################################################
-coordinate_variable_qc_tests:
+quality_management:
   #-----------------------------------------------------------------
   # The following section defines the default qc tests that will be
-  # performed on coordinate variables in a dataset.  Note that by
+  # performed on variables in a dataset. Note that by
   # default, coordinate variable tests will NOT set a QC bit and
   # will trigger a critical pipeline failure.  This is because
   # Problems with coordinate variables are considered to cause
   # the dataset to be unusable and should be manually reviewed.
   #
-  # However, the user may override the default coordinate variable
-  # tests and error handlers if they feel that data correction is
-  # warranted.
-  #
-  # For a complete list of tests provided by MHKiT-Cloud, please see
-  # the tsdat.qc.operators package.
+  # For a complete list of tests provided by TSDAT, please see
+  # the tsdat.qc.checkers package.
   #
   # Users are also free to add custom tests defined by their own
-  # checker classes.
-  #-----------------------------------------------------------------
-
-quality_management:
-  #-----------------------------------------------------------------
-  # The following section defines the default qc tests that will be
-  # performed on variables in a dataset.
-  #
-  # For a complete list of tests provided by MHKiT-Cloud, please see
-  # the tsdat.qc.operators package.
-  #
-  # Users are also free to add custom tests defined by their own
-  # checker classes.
+  # checker and handler classes.
   #-----------------------------------------------------------------
   
   #-----------------------------------------------------------------
@@ -478,17 +461,17 @@ quality_management:
     checker:
       # This quality checker will identify values that are missing,
       # NaN, or equal to each variable's _FillValue
-      classname: "tsdat.qc.operators.CheckMissing"
+      classname: "tsdat.qc.checkers.CheckMissing"
     
     # Quality handler used to manage problematic variable values. 
     # Users can define their own quality handlers and link them here.
     handlers:
       # This quality handler will cause the pipeline to fail
-      - classname: "tsdat.qc.error_handlers.FailPipeline"
+      - classname: "tsdat.qc.handlers.FailPipeline"
     
     # Which variables to apply the test to
     variables:
-      # keyword to apply test to all coordinate variables
+      # Keyword to apply test to all coordinate variables
       - COORDS
 
   manage_coordinate_monotonicity:
@@ -497,13 +480,14 @@ quality_management:
       # This quality checker will identify variables that are not
       # strictly monotonic (That is, it identifies variables whose 
       # values are not strictly increasing or strictly decreasing)
-      classname: "tsdat.qc.operators.CheckMonotonic"
+      classname: "tsdat.qc.checkers.CheckMonotonic"
 
     handlers:
-      - classname: "tsdat.qc.error_handlers.FailPipeline"
+      - classname: "tsdat.qc.handlers.FailPipeline"
 
     variables:
-      - COORDS
+      # Can specify particular coordinates as well
+      - time
 
   #-----------------------------------------------------------------
   # Checks on data variables
@@ -514,7 +498,7 @@ quality_management:
     # to override with their own class if they want to change
     # behavior.
     checker:
-      classname: "tsdat.qc.operators.CheckMissing"
+      classname: "tsdat.qc.checkers.CheckMissing"
 
     # Error handlers are optional and run after the test is
     # performed if any of the values fail the test.  Users
@@ -525,7 +509,7 @@ quality_management:
     handlers:
       
       # This error handler will replace any NaNs with _FillValue
-      - classname: "tsdat.qc.error_handlers.RemoveFailedValues"
+      - classname: "tsdat.qc.handlers.RemoveFailedValues"
         # Quality handlers and all other objects that have a 'classname'
         # property can take a dictionary of parameters. These 
         # parameters are made available to the object or class in the
@@ -545,7 +529,7 @@ quality_management:
       # This quality handler will record the results of the 
       # quality check in the ancillary qc variable for each
       # variable this quality manager is applied to.
-      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+      - classname: "tsdat.qc.handlers.RecordQualityResults"
         parameters:
 
           # The bit (1-32) used to record the results of this test.
@@ -565,9 +549,9 @@ quality_management:
 
   manage_fail_min:
     checker:
-      classname: "tsdat.qc.operators.CheckFailMin"
+      classname: "tsdat.qc.checkers.CheckFailMin"
     handlers: 
-      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+      - classname: "tsdat.qc.handlers.RecordQualityResults"
         parameters:
           bit: 2
           assessment: "Bad"
@@ -577,9 +561,9 @@ quality_management:
 
   manage_fail_max:
     checker:
-      classname: "tsdat.qc.operators.CheckFailMax"
+      classname: "tsdat.qc.checkers.CheckFailMax"
     handlers:
-      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+      - classname: "tsdat.qc.handlers.RecordQualityResults"
         parameters:  
           bit: 3
           assessment: "Bad"
@@ -589,9 +573,9 @@ quality_management:
 
   manage_warn_min:
     checker:
-      classname: "tsdat.qc.operators.CheckWarnMin"
+      classname: "tsdat.qc.checkers.CheckWarnMin"
     handlers:
-      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+      - classname: "tsdat.qc.handlers.RecordQualityResults"
         parameters:  
           bit: 4
           assessment: "Indeterminate"
@@ -601,9 +585,9 @@ quality_management:
 
   manage_warn_max:
     checker:
-      classname: "tsdat.qc.operators.CheckWarnMax"
+      classname: "tsdat.qc.checkers.CheckWarnMax"
     handlers:
-      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+      - classname: "tsdat.qc.handlers.RecordQualityResults"
         parameters:  
           bit: 5
           assessment: "Indeterminate"
@@ -613,52 +597,14 @@ quality_management:
 
   manage_valid_delta:
     checker:
-      classname: "tsdat.qc.operators.CheckValidDelta"
+      classname: "tsdat.qc.checkers.CheckValidDelta"
       parameters:
         dim: time  # specifies the dimension over which to compute the delta
     handlers:
-      - classname: "tsdat.qc.error_handlers.RecordQualityResults"
+      - classname: "tsdat.qc.handlers.RecordQualityResults"
         parameters:
           bit: 6
           assessment: "Indeterminate"
           meaning: "Difference between current and previous values exceeds valid_delta."
     variables:
       - DATA_VARS
-
-    #-----------------------------------------------------------------
-    # Example of a user-created test that shows how to specify
-    # an error handler.  Error handlers may be optionally added to
-    # any of the tests described above.  (Note that this example will
-    # not work, it is just provided as an example of adding a
-    # custom QC test.)
-    #-----------------------------------------------------------------
-    # temp_test:
-
-    #   checker:
-    #     classname: "myproject.qc.operators.TestTemp"
-
-    #   #-------------------------------------------------------------
-    #   # See the tsdat.qc.error_handlers package for a list of
-    #   # available error handlers.
-    #   #-------------------------------------------------------------
-    #   handlers:
-
-    #       # This handler will set bit number 7 on the ancillary qc 
-    #       # variable for the variable(s) this test applies to.
-    #     - classname: "tsdat.qc.error_handlers.RecordQualityResults"
-    #       parameters:
-    #         bit: 7
-    #         assessment: "Indeterminate"
-    #         meaning: "Test for some special condition in temperature."
-
-    #       # This error handler will notify users via email.  The
-    #       # datastream name, variable, and failing values will be
-    #       # included.
-    #     - classname: "tsdat.qc.error_handlers.SendEmailAWS"
-    #       parameters:
-    #         message: "Test failed..."
-    #         recipients: ["carina.lansing@pnnl.gov", "maxwell.levin@pnnl.gov"]
-      
-    #   # Specifies the variable(s) this quality manager applies to
-    #   variables:
-    #     - temp_mean
