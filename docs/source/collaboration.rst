@@ -27,8 +27,8 @@ Software developers interested in contributing to the tsdat open-source software
 to create a `Fork <https://help.github.com/en/github/getting-started-with-github/fork-a-repo>`_ of the repository
 into their GitHub user account.  To include your additions to the tsdat code, please submit a 
 `pull request <https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request>`_ of the modified repository.
-Once reviewed by the tsdat development team, pull requests will be merged into the tsdat master branch,
-and included in future releases.
+Once reviewed by the tsdat development team, pull requests will be merged into the main branch and included in
+future releases.
 
 
 `Submit a pull request <https://github.com/tsdat/tsdat/pulls>`_

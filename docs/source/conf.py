@@ -20,11 +20,11 @@ sys.path.insert(0, project_dir)
 # -- Project information -----------------------------------------------------
 
 project = "tsdat"
-copyright = "2021, Carina Lansing, Maxwell Levin"
+copyright = "2021, Battelle Memorial Institute"
 author = "Carina Lansing, Maxwell Levin"
 
 # The full version, including alpha/beta/rc tags
-release = "0.2.2"
+release = "0.2.10"
 
 
 # -- General configuration ---------------------------------------------------
@@ -32,7 +32,14 @@ release = "0.2.2"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx_rtd_theme"]
+extensions = ["sphinx_rtd_theme",
+              "sphinx.ext.autodoc",
+              "sphinx.ext.autosummary",
+              "sphinx.ext.viewcode",
+              "sphinx.ext.napoleon",
+              "sphinx.ext.doctest",
+              "sphinx.ext.ifconfig",
+              "sphinx.ext.extlinks",]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
