@@ -1,12 +1,13 @@
 import os
 import act
 import tsdat
+import warnings
 import numpy as np
 import pandas as pd
 import xarray as xr
 import matplotlib.pyplot as plt
 
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Union, Optional
 from tsdat.constants import ATTS
 
 
@@ -295,7 +296,9 @@ class DSUtil:
         return f"{datastream_name}.{start_date}.{start_time}{file_extension}"
 
     @staticmethod
-    def get_raw_filename(raw_dataset: xr.Dataset, old_filename: str, config) -> str:
+    def get_raw_filename(
+        raw_data: Union[xr.Dataset, Dict[str, xr.Dataset]], old_filename: str, config
+    ) -> str:
         """Returns the appropriate raw filename of the raw dataset according to
         MHKIT-Cloud naming conventions. Uses the config object to parse the
         start date and time from the raw dataset for use in the new filename.
@@ -304,8 +307,9 @@ class DSUtil:
         filenames, ie: `datastream_name.date.time.raw.old_filename`, where the
         data level used in the datastream_name is `00`.
 
-        :param raw_dataset: The raw data as an xarray dataset.
-        :type raw_dataset: xr.Dataset
+        :param raw_data: The raw data as an xarray dataset or a dictionary
+            of form {str: xr.Dataset}.
+        :type raw_data: Union[xr.Dataset, Dict[str, xr.Dataset]]
         :param old_filename: The name of the original raw file.
         :type old_filename: str
         :param config: The Config object used to assist reading time data from
@@ -317,10 +321,24 @@ class DSUtil:
         original_filename = os.path.basename(old_filename)
         raw_datastream_name = config.pipeline_definition.input_datastream_name
         time_var = config.dataset_definition.get_variable("time")
-        start_date, start_time = DSUtil.get_raw_start_time(raw_dataset, time_var)
-        return (
-            f"{raw_datastream_name}.{start_date}.{start_time}.raw.{original_filename}"
-        )
+
+        if isinstance(raw_data, xr.Dataset):
+            raw_data = {old_filename: raw_data}
+
+        date_times: List[str] = []
+        for filename, ds in raw_data.items():
+            try:
+                start_date, start_time = DSUtil.get_raw_start_time(ds, time_var)
+                date_time = f"{start_date}.{start_time}"
+                date_times.append(date_time)
+            except KeyError:
+                warnings.warn(
+                    f"Could not retrieve `time` from {filename} with retrieval name {time_var}"
+                )
+        assert len(date_times), f"Failed to create new filename from {old_filename}"
+
+        start_date_time = min(date_times)
+        return f"{raw_datastream_name}.{start_date_time}.raw.{original_filename}"
 
     @staticmethod
     def get_date_from_filename(filename: str) -> str:

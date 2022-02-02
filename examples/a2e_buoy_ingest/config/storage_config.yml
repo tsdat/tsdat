@@ -6,9 +6,14 @@ storage:
 
   file_handlers:
     input:
-      csv:
-        file_pattern: '.*\.csv'
-        classname: tsdat.io.handlers.CsvHandler
+      zip:
+        file_pattern: ['.*\.zip']
+        classname: "tsdat.io.handlers.ZipHandler"
+        parameters:
+          handlers:
+            csv:
+              file_pattern: '.*\.csv'
+              classname: tsdat.io.handlers.CsvHandler
 
     output:
       netcdf:

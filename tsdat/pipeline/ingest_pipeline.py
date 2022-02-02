@@ -16,37 +16,34 @@ class IngestPipeline(Pipeline):
         """Runs the IngestPipeline from start to finish.
 
         :param filepath:
-            The path or list of paths to the file(s) to run the pipeline on.
+            The path(s) to the file(s) to run the pipeline on.
         :type filepath: Union[str, List[str]]
         """
-        # If the file is a zip/tar, then we need to extract the individual files
-        with self.storage.tmp.extract_files(filepath) as file_paths:
+        # Open each raw file into a Dataset, standardize the raw file names and store.
+        raw_dataset_mapping: Dict[str, xr.Dataset] = self.read_and_persist_raw_files(
+            filepath
+        )
 
-            # Open each raw file into a Dataset, standardize the raw file names and store.
-            raw_dataset_mapping: Dict[
-                str, xr.Dataset
-            ] = self.read_and_persist_raw_files(file_paths)
+        # Customize the raw data before it is used as input for standardization
+        raw_dataset_mapping: Dict[str, xr.Dataset] = self.hook_customize_raw_datasets(
+            raw_dataset_mapping
+        )
 
-            # Customize the raw data before it is used as input for standardization
-            raw_dataset_mapping: Dict[
-                str, xr.Dataset
-            ] = self.hook_customize_raw_datasets(raw_dataset_mapping)
+        # Standardize the dataset and apply corrections / customizations
+        dataset = self.standardize_dataset(raw_dataset_mapping)
+        dataset = self.hook_customize_dataset(dataset, raw_dataset_mapping)
 
-            # Standardize the dataset and apply corrections / customizations
-            dataset = self.standardize_dataset(raw_dataset_mapping)
-            dataset = self.hook_customize_dataset(dataset, raw_dataset_mapping)
+        # Apply quality control / quality assurance to the dataset.
+        previous_dataset = self.get_previous_dataset(dataset)
+        dataset = QualityManagement.run(dataset, self.config, previous_dataset)
 
-            # Apply quality control / quality assurance to the dataset.
-            previous_dataset = self.get_previous_dataset(dataset)
-            dataset = QualityManagement.run(dataset, self.config, previous_dataset)
+        # Apply any final touches to the dataset and persist the dataset
+        dataset = self.hook_finalize_dataset(dataset)
+        dataset = self.decode_cf(dataset)
+        self.storage.save(dataset)
 
-            # Apply any final touches to the dataset and persist the dataset
-            dataset = self.hook_finalize_dataset(dataset)
-            dataset = self.decode_cf(dataset)
-            self.storage.save(dataset)
-
-            # Hook to generate custom plots
-            self.hook_generate_and_persist_plots(dataset)
+        # Hook to generate custom plots
+        self.hook_generate_and_persist_plots(dataset)
 
         return dataset
 
@@ -140,41 +137,38 @@ class IngestPipeline(Pipeline):
         """
         pass
 
-    def read_and_persist_raw_files(self, file_paths: List[str]) -> List[str]:
-        """Renames the provided raw files according to ME Data Standards file
-        naming conventions for raw data files, and returns a list of the paths
-        to the renamed files.
+    def read_and_persist_raw_files(
+        self, filepaths: Union[str, List[str]]
+    ) -> Dict[str, xr.Dataset]:
+        """------------------------------------------------------------------------------------
+        Renames the provided raw files according to our naming conventions and returns a
+        mapping of the renamed filepaths to raw `xr.Dataset` objects.
 
-        :param file_paths: A list of paths to the original raw files.
-        :type file_paths: List[str]
-        :return: A list of paths to the renamed files.
-        :rtype: List[str]
-        """
-        raw_dataset_mapping = {}
+        Args:
+            file_paths (List[str]): The path(s) to the raw file(s).
 
-        if isinstance(file_paths, str):
-            file_paths = [file_paths]
+        Returns:
+            Dict[str, xr.Dataset]: The mapping of raw filepaths to raw xr.Dataset objects.
 
-        for file_path in file_paths:
+        ------------------------------------------------------------------------------------"""
+        raw_mapping: Dict[str, xr.Dataset] = dict()
 
-            # read the raw file into a dataset
-            with self.storage.tmp.fetch(file_path) as tmp_path:
-                dataset = self.storage.handlers.read(tmp_path)
+        if isinstance(filepaths, str):
+            filepaths = [filepaths]
 
-                # Don't use dataset if no FileHandler is registered for it
-                if dataset is not None:
-                    # create the standardized name for raw file
-                    new_filename = DSUtil.get_raw_filename(
-                        dataset, tmp_path, self.config
-                    )
+        for filepath in filepaths:
 
-                    # add the raw dataset to our dictionary
-                    raw_dataset_mapping[new_filename] = dataset
+            extracted = self.storage.handlers.read(file=filepath, name=filepath)
+            if not extracted:
+                warnings.warn(f"Couldn't use extracted raw file: {filepath}")
+                continue
 
-                    # save the raw data to storage
-                    self.storage.save(tmp_path, new_filename)
+            new_filename = DSUtil.get_raw_filename(extracted, filepath, self.config)
+            self.storage.save(filepath, new_filename=new_filename)
 
-                else:
-                    warnings.warn(f"Couldn't use extracted raw file: {tmp_path}")
+            if isinstance(extracted, xr.Dataset):
+                extracted = {new_filename: extracted}
 
-        return raw_dataset_mapping
+            raw_mapping.update(extracted)
+
+        return raw_mapping

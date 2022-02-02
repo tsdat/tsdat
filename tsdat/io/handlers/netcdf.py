@@ -1,7 +1,8 @@
-import numpy as np
 import xarray as xr
-from tsdat.config import Config
 
+from io import BytesIO
+from typing import Union
+from tsdat.config import Config
 from .handlers import DataHandler
 
 
@@ -44,15 +45,28 @@ class NetCdfHandler(DataHandler):
 
         ds.to_netcdf(filename, **to_netcdf_kwargs)
 
-    def read(self, filename: str, **kwargs) -> xr.Dataset:
-        """Reads in the given file and converts it into an Xarray dataset for
-        use in the pipeline.
+    def read(
+        self,
+        file: Union[str, BytesIO],
+        name: str = None,
+        **kwargs,
+    ) -> xr.Dataset:
+        """------------------------------------------------------------------------------------
+        Reads the given file into a pandas DataFrame before converting it into an xarray
+        Dataset for use in the pipeline.
 
-        :param filename: The path to the file to read in.
-        :type filename: str
-        :return: A xr.Dataset object.
-        :rtype: xr.Dataset
-        """
+        Args:
+            file (Union[str, BytesIO]): The file to read in. Can be provided as a filepath or
+            a bytes-like object. It is passed directly to `xarray.load_dataset()` as the first
+            argument.
+            name (str, optional): A label to use for the dataset. The DataHandler does not use
+            this parameter.
+
+        Returns:
+            xr.Dataset: The dataset.
+
+        ------------------------------------------------------------------------------------"""
         read_params = self.parameters.get("read", {})
         load_dataset_kwargs = read_params.get("load_dataset", {})
-        return xr.load_dataset(filename, **load_dataset_kwargs)
+
+        return xr.load_dataset(file, **load_dataset_kwargs)

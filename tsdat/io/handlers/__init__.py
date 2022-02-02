@@ -5,3 +5,4 @@ from .handlers import HandlerRegistry
 
 from .csv import CsvHandler
 from .netcdf import NetCdfHandler
+from .archive import TarHandler, ZipHandler, ArchiveHandler

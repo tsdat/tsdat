@@ -2,8 +2,9 @@ import struct
 import datetime
 import numpy as np
 import xarray as xr
-from typing import Dict
 
+from io import BytesIO
+from typing import Dict, Union
 from tsdat.io import DataHandler
 
 
@@ -199,13 +200,20 @@ def extract_data(filename: str, packet: Dict[str, Dict]) -> xr.Dataset:
 
 
 class ImuReader(DataHandler):
-    def read(self, filename: str, **kwargs) -> xr.Dataset:
+    def read(
+        self,
+        *,
+        file: Union[str, BytesIO],
+        name: str = None,
+        **kwargs,
+    ) -> xr.Dataset:
+        assert isinstance(file, str), "Arg 'file' must be a str for this DataHandler."
 
         # Determine which packet to use.
         dataset = None
         try:
-            dataset = extract_data(filename, morro_packet)
+            dataset = extract_data(file, morro_packet)
         except BaseException:
-            dataset = extract_data(filename, humbolt_packet)
+            dataset = extract_data(file, humbolt_packet)
 
         return dataset

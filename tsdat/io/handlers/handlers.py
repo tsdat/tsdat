@@ -1,18 +1,23 @@
 import warnings
 import re
 import xarray as xr
+
+from io import BytesIO
 from typing import List, Dict, Literal, Union
 from tsdat.config import Config
 
 
+# TODO: Update the read methods to take file (str/BytesIO) and name (str). The file
+# param will be used to open / read the data, and the name is used both to determine
+# which handler in the registry to use and in individual handlers as a kind of label.
+# For handlers, name should be optional if file is a str (can just set it as the file)
+# and mandatory if file is a BytesIO or other object.
+
+
 class DataHandler:
     """Abstract class to define methods required by all FileHandlers. Classes
-    derived from AbstractFileHandler should implement one or more of the
-    following methods:
-
-    ``write(ds: xr.Dataset, filename: str, config: Config, **kwargs)``
-
-    ``read(filename: str, **kwargs) -> xr.Dataset``
+    derived from `DataHandler` should implement a `read()` or `write()`
+    method.
 
     :param parameters:
         Parameters that were passed to the FileHandler when it was
@@ -37,15 +42,28 @@ class DataHandler:
         """
         pass
 
-    def read(self, filename: str, **kwargs) -> xr.Dataset:
-        """Reads in the given file and converts it into an Xarray dataset for
-        use in the pipeline.
+    def read(
+        self,
+        file: Union[str, BytesIO],
+        name: str = None,
+        **kwargs,
+    ) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
+        """------------------------------------------------------------------------------------
+        Reads the given file and converts it into either an xarray Dataset or mapping like
+        `{label: xarray.Dataset}` for use in the pipeline.
 
-        :param filename: The path to the file to read in.
-        :type filename: str
-        :return: A xr.Dataset object.
-        :rtype: xr.Dataset
-        """
+        Args:
+            file (Union[str, BytesIO]): The file to read in. Can be provided as a filepath or
+            a bytes-like object.
+            name (str, optional): A label used to help trace the origin of the data. Individual
+            `DataHandlers` may choose not to use this, or may choose to make it mandatory.
+            Defaults to None.
+
+        Returns:
+            Union[xr.Dataset, Dict[str, xr.Dataset]]: Returns either an xr.Dataset or a mapping
+            like `{label: xr.Dataset}`, where `label` is typically a filename.
+
+        ------------------------------------------------------------------------------------"""
         pass
 
 
@@ -60,21 +78,18 @@ class HandlerRegistry:
         self.READERS = dict()
         self.WRITERS = dict()
 
-    def _get_handler(
-        self, filename: str, method: Literal["read", "write"]
-    ) -> DataHandler:
+    def _get_handler(self, name: str, method: Literal["read", "write"]) -> DataHandler:
         """------------------------------------------------------------------------------------
-        Given the filepath of the file to read or write and the FileHandler method to apply to
-        the filepath, this method determines which previously-registered FileHandler should be
-        used on the provided filepath.
+        Given the filepath or name of the data to read or write and the method to apply to the
+        data, this method determines which previously-registered DataHandler should be used.
 
         Args:
-            filename (str): The path to the file to read or write to.
-            method (Literal[): The method to apply to the file. Must be one of: "read",
-            "write".
+            name (str): The path to the file to read or write to, or a name that can be used to
+            find the appropriate DataHandler.
+            method (Literal["read", "write"]): The method to apply to the file.
 
         Returns:
-            AbstractFileHandler: The FileHandler that should be applied.
+            DataHandler: The DataHandler that should be applied.
 
         ------------------------------------------------------------------------------------"""
         assert method in ["read", "write"]
@@ -89,12 +104,12 @@ class HandlerRegistry:
         # filename is a match.
         for pattern in handler_dict.keys():
             regex = re.compile(pattern)
-            if regex.match(filename):
+            if regex.match(name):
                 handler = handler_dict[pattern]
                 break
 
         if handler is None:
-            warnings.warn(f"No FileHandler found for file: {filename}")
+            warnings.warn(f"No DataHandler found for: {name}")
 
         return handler
 
@@ -110,11 +125,16 @@ class HandlerRegistry:
             config (Config, optional): Optional Config object. Defaults to None.
 
         ------------------------------------------------------------------------------------"""
-        handler = self._get_handler(filename, "write")
+        handler = self._get_handler(name=filename, method="write")
         if handler:
             handler.write(ds, filename, config, **kwargs)
 
-    def read(self, filename: str, **kwargs) -> xr.Dataset:
+    def read(
+        self,
+        file: Union[str, BytesIO],
+        name: str = None,
+        **kwargs,
+    ) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
         """------------------------------------------------------------------------------------
         Reads in the given file and converts it into an xarray dataset object using the
         registered FileHandler for the provided filepath.
@@ -126,9 +146,14 @@ class HandlerRegistry:
             xr.Dataset: The raw file as an Xarray.Dataset object.
 
         ------------------------------------------------------------------------------------"""
-        handler = self._get_handler(filename, "read")
+
+        assert name or isinstance(file, str), "name is required if file is not a str"
+
+        label: str = name if name else file
+
+        handler = self._get_handler(label, "read")
         if handler:
-            return handler.read(filename, **kwargs)
+            return handler.read(file=file, name=name, **kwargs)
 
     def register_file_handler(
         self,

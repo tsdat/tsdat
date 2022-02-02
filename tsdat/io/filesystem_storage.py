@@ -93,33 +93,6 @@ class FilesystemTemporaryStorage(TemporaryStorage):
 
         return fetched_file
 
-    def fetch_previous_file(
-        self, datastream_name: str, start_time: str
-    ) -> DisposableLocalTempFile:
-
-        # fetch files one day previous and one day after start date (since find is exclusive)
-        date = datetime.datetime.strptime(start_time, "%Y%m%d.%H%M%S")
-        prev_date = (date - datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
-        next_date = (date + datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
-        files = self.datastream_storage.find(
-            datastream_name,
-            prev_date,
-            next_date,
-            filetype=DatastreamStorage.default_file_type,
-        )
-        dates = [DSUtil.get_date_from_filename(_file) for _file in files]
-
-        previous_filepath = None
-        if dates:
-            i = bisect.bisect_left(dates, start_time)
-            if i > 0:
-                previous_filepath = files[i - 1]
-
-        if previous_filepath:
-            return self.fetch(previous_filepath)
-
-        return DisposableLocalTempFile(None)
-
     def delete(self, file_path: str) -> None:
         if os.path.isfile(file_path):
             os.remove(file_path)
@@ -210,6 +183,32 @@ class FilesystemStorage(DatastreamStorage):
             fetched_files.append(fetched_file)
 
         return DisposableLocalTempFileList(fetched_files)
+
+    def fetch_previous_file(
+        self, datastream_name: str, start_time: str
+    ) -> DisposableLocalTempFile:
+        # fetch files one day previous and one day after start date (since find is exclusive)
+        date = datetime.datetime.strptime(start_time, "%Y%m%d.%H%M%S")
+        prev_date = (date - datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
+        next_date = (date + datetime.timedelta(days=1)).strftime("%Y%m%d.%H%M%S")
+        files = self.find(
+            datastream_name,
+            prev_date,
+            next_date,
+            filetype=DatastreamStorage.default_file_type,
+        )
+        dates = [DSUtil.get_date_from_filename(_file) for _file in files]
+
+        previous_filepath = None
+        if dates:
+            i = bisect.bisect_left(dates, start_time)
+            if i > 0:
+                previous_filepath = files[i - 1]
+
+        if previous_filepath is None:
+            return DisposableLocalTempFile(previous_filepath)
+
+        return self._tmp.fetch(previous_filepath)
 
     def save_local_path(self, local_path: str, new_filename: str = None) -> Any:
         # TODO: we should perform a REGEX check to make sure that the filename is valid

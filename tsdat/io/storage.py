@@ -35,9 +35,6 @@ class DatastreamStorage(abc.ABC):
 
     default_file_type = None
 
-    # Object to hold filehandlers registered for this storage object.
-    handlers = HandlerRegistry()
-
     # Stores the map of file types to filter functions that will
     # be loaded from the storage config file and is used to
     # find specific files in the store.
@@ -46,6 +43,9 @@ class DatastreamStorage(abc.ABC):
     # Stores the map of supported file exensions that will be loaded
     # from the storage config file.
     output_file_extensions = {}
+
+    # Registry of DataHandlers
+    handlers: HandlerRegistry = None
 
     @staticmethod
     def from_config(storage_config_file: str) -> "DatastreamStorage":
@@ -117,6 +117,8 @@ class DatastreamStorage(abc.ABC):
 
         self.remove_input_files = not retain_input_files
 
+        self.handlers = HandlerRegistry()
+
     @property
     def tmp(self):
         """Each subclass should define the tmp property, which provides
@@ -187,6 +189,28 @@ class DatastreamStorage(abc.ABC):
         :param filetype: A file type from the DatastreamStorage.file_filters keys
             If no type is specified, all files will be returned. Defaults to None.
         :type filetype: int, optional
+        :return: A list of paths where the retrieved files were stored in local storage.
+            This is a context manager class, so it this method should be called via
+            the 'with' statement and all files referenced by the list will be
+            cleaned up when it goes out of scope.
+        :rtype: DisposableLocalTempFileList:
+        """
+        return
+
+    @abc.abstractmethod
+    def fetch_previous_file(
+        self, datastream_name: str, start_time: str
+    ) -> "DisposableLocalTempFile":
+        """Fetches the previous file from the datastream store using the
+        datastream_name and start_time to specify the file(s) to retrieve. It is up
+        to the subclass to determine where to put the retrieved file(s).
+
+        :param datastream_name: The datastream_name as defined by ME Data Standards.
+        :type datastream_name: str
+        :param start_time: The start time or date to start searching for
+            data (inclusive). Should be like "20210106" to
+            search for data beginning on or after January 6th, 2021.
+        :type start_time: str
         :return: A list of paths where the retrieved files were stored in local storage.
             This is a context manager class, so it this method should be called via
             the 'with' statement and all files referenced by the list will be
@@ -592,25 +616,6 @@ class TemporaryStorage(abc.ABC):
         :return: If disposable, return a DisposableLocalTempFile, otherwise
             return the path to the local file.
         :rtype: Union[DisposableLocalTempFile, str]
-        """
-        pass
-
-    @abc.abstractmethod
-    def fetch_previous_file(
-        self, datastream_name: str, start_time: str
-    ) -> DisposableLocalTempFile:
-        """Look in DatastreamStorage for the first processed file before the given date.
-
-        :param datastream_name: The datastream_name as defined by ME Data Standards.
-        :type datastream_name: str
-        :param start_time: The start time or date to start searching for
-            data (inclusive). Should be like "20210106" to
-            search for data beginning on or after January 6th, 2021.
-        :type start_time: str
-        :return: If a previous file was found, return the local path to the fetched
-            file. Otherwise return None.  (Return value wrapped in DisposableLocalTempFile
-            so it can be auto-deleted if needed.)
-        :rtype: DisposableLocalTempFile
         """
         pass
 

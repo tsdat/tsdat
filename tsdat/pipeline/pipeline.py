@@ -34,13 +34,13 @@ class Pipeline(abc.ABC):
         config = pipeline_config
         if isinstance(pipeline_config, str):
             config = Config.load(pipeline_config)
-        self.config = config
+        self.config: Config = config
 
         # We can pass either a DatastreamStorage object or the path to a config file
         storage = storage_config
         if isinstance(storage_config, str):
             storage = DatastreamStorage.from_config(storage_config)
-        self.storage = storage
+        self.storage: DatastreamStorage = storage
 
     @abc.abstractmethod
     def run(self, filepath: Union[str, List[str]]):
@@ -231,12 +231,12 @@ class Pipeline(abc.ABC):
         start_date, start_time = DSUtil.get_start_time(dataset)
         datastream_name = DSUtil.get_datastream_name(dataset, self.config)
 
-        with self.storage.tmp.fetch_previous_file(
+        with self.storage.fetch_previous_file(
             datastream_name, f"{start_date}.{start_time}"
         ) as netcdf_file:
             if netcdf_file:
                 prev_dataset = self.storage.handlers.read(
-                    netcdf_file, config=self.config
+                    file=netcdf_file, name=netcdf_file
                 )
 
         return prev_dataset
@@ -362,28 +362,6 @@ class Pipeline(abc.ABC):
             "data_vars": data_vars,
         }
         return xr.Dataset.from_dict(reduced_dict)
-
-    def store_and_reopen_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
-        """Uses the DatastreamStorage object to persist the dataset in the
-        format specified by the storage config file.
-
-        :param dataset: The dataset to store.
-        :type dataset: xr.Dataset
-        :return: The dataset after it has been saved to disk and reopened.
-        :rtype: xr.Dataset
-        """
-        reopened_dataset = None
-
-        saved_paths = self.storage.save(dataset)
-
-        # We are only going to use the first saved path to fetch and re-load
-        with self.storage.tmp.fetch(saved_paths[0]) as tmp_path:
-            # Need to read using the FileHandler registered for writing output because
-            # we are re-opening the output dataset
-            handler = self.storage.handlers._get_handler(tmp_path, "write")
-            reopened_dataset = handler.read(tmp_path)
-
-        return reopened_dataset
 
     def decode_cf(self, dataset: xr.Dataset) -> xr.Dataset:
         """------------------------------------------------------------------------------------
