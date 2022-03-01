@@ -1,81 +1,120 @@
-import importlib
-from typing import Dict, List, Tuple, Union
 import yaml
-import re
-import os
+from jsonpointer import set_pointer
+from pathlib import Path
+from pydantic import BaseModel, Extra, Field, StrictStr, validator, FilePath
+from pydantic.utils import import_string
+from pydantic.generics import GenericModel
+from typing import Any, Dict, Generic, List, Protocol, Sequence, Set, TypeVar
+
+__all__ = [
+    "OverrideableModel",
+    "YamlModel",
+    "ParametrizedClass",
+    "find_duplicates",
+    "get_yaml",
+    "Definition",
+]
 
 
-def configure_yaml():
-    """Configure yaml to automatically substitute environment variables
-    referenced by the following syntax: ``${VAR_NAME}``
-    """
-    path_matcher = re.compile(r"\$\{([^}^{]+)\}")
+class YamlModel(BaseModel):
+    @classmethod
+    def from_yaml(cls, filepath: Path, validate: bool = True):
+        with open(filepath, "r") as _config:
+            config = list(yaml.safe_load_all(_config))[0]
+            if not validate:
+                return cls.construct(**config)
+            return cls(**config)
 
-    def path_constructor(loader, node):
-        # Extract the matched value, expand env variable, and replace the match
-        value = node.value
-        match = path_matcher.match(value)
-        env_var = match.group()[2:-1]
-        return os.environ.get(env_var, "") + value[match.end() :]
+    @classmethod
+    def generate_schema(cls, output_file: Path):
+        with open(output_file, "w") as schemafile:
+            schemafile.write(cls.schema_json(indent=4))
 
-    yaml.add_implicit_resolver("!path", path_matcher)
-    yaml.add_constructor("!path", path_constructor)
-
-    yaml.add_implicit_resolver("!path", path_matcher, None, yaml.SafeLoader)
-    yaml.add_constructor("!path", path_constructor, yaml.SafeLoader)
-
-
-def instantiate_handler(
-    *args, handler_desc: Dict = None
-) -> Union[object, List[object]]:
-    """Class to instantiate one or more classes given a dictionary containing
-    the path to the class to instantiate and its parameters (optional). This
-    method returns the handle(s) to the instantiated class(es).
-
-    :param handler_desc:
-        The dictionary containing at least a ``classname`` entry, which should
-        be a str that links to a python module on the PYTHONPATH. The
-        ``handler_desc`` can also contain a ``parameters`` entry, which will
-        is passed as a keyword argument to classes instantiated by this method.
-        This parameter defaults to None.
-    :type handler_desc: Dict, optional
-    :return: The class, or list of classes specified by the handler_desc
-    :rtype: Union[object, List[object]]
-    """
-    handler = None
-
-    if handler_desc:
-        classname = handler_desc.get("classname", None)
-        params = handler_desc.get("parameters", {})
-        handler = _instantiate_class(*args, classname=classname, parameters=params)
-
-    return handler
+    @classmethod
+    def from_override(
+        cls, filepath: Path, overrides: Dict[str, Any], validate: bool = True
+    ):
+        base_dict = list(yaml.safe_load_all(filepath.read_text()))[0]
+        for pointer, new_value in overrides.items():
+            set_pointer(base_dict, pointer, new_value)
+        if not validate:
+            return cls.construct(**base_dict)
+        return cls(**base_dict)
 
 
-def _instantiate_class(*args, **kwargs):
-    """Instantiates a python class given args and kwargs.
-
-    :return: The python class.
-    :rtype: object
-    """
-    classname = kwargs["classname"]
-    parameters = kwargs["parameters"]
-
-    # Convert the class reference to an object
-    module_name, class_name = _parse_fully_qualified_name(classname)
-    module = importlib.import_module(module_name)
-    class_ = getattr(module, class_name)
-    instance = class_(*args, parameters=parameters)
-    return instance
+Definition = TypeVar("Definition", bound=BaseModel)
 
 
-def _parse_fully_qualified_name(fully_qualified_name: str) -> Tuple[str, str]:
-    """Splits a fully qualified name into the module name and the class name.
+class OverrideableModel(
+    YamlModel, GenericModel, Generic[Definition], extra=Extra.forbid
+):
+    path: FilePath
+    overrides: Dict[str, Any] = dict()
 
-    :param fully_qualified_name: The fully qualified classname.
-    :type fully_qualified_name: str
-    :return: Returns the module name and class name.
-    :rtype: Tuple[str, str]
-    """
-    module_name, class_name = fully_qualified_name.rsplit(".", 1)
-    return module_name, class_name
+    def get_defaults_dict(self) -> Dict[Any, Any]:
+        txt = self.path.read_text()
+        return list(yaml.safe_load_all(txt))[0]
+
+    def get_new_config(self) -> Dict[Any, Any]:
+        defaults = self.get_defaults_dict()
+        for pointer, new_value in self.overrides.items():
+            set_pointer(defaults, pointer, new_value)
+        return defaults
+
+
+class ParametrizedClass(BaseModel, extra=Extra.forbid):
+    # Unfortunately, the classname has to be a string type unless PyObject becomes JSON
+    # serializable: https://github.com/samuelcolvin/pydantic/discussions/3842
+    classname: StrictStr = Field(
+        description="The module path to the Python class that should be used, e.g., if"
+        " you would write in your script `from tsdat.config.utils.converters import"
+        " DefaultConverter` then you would put"
+        " `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+    )
+    parameters: Dict[StrictStr, Any] = Field(
+        dict(),
+        description="Optional dictionary that will be passed to the Python class"
+        " specified by 'classname' when it is instantiated. If the object is a tsdat"
+        " class, then the parameters will typically be made accessible under the"
+        " `params` property on an instance of the class. See the documentation for"
+        " individual classes for more information.",
+    )
+
+    @validator("classname")
+    @classmethod
+    def classname_looks_like_a_module(cls, v: StrictStr) -> StrictStr:
+        if "." not in v or not v.replace(".", "").replace("_", "").isalnum():
+            raise ValueError(f"Classname '{v}' is not a valid classname.")
+        return v
+
+    # NOTE: Attaching the instantiated object to the parametrized class model does not
+    # work; the objects are not JSON serializable and the code crashes immediately. I
+    # settled on adding an `instantiate()` method which returns the instantiated object.
+    def instantiate(self) -> Any:
+        _cls = self.get_cls()
+        return _cls(parameters=self.parameters)
+
+    def get_cls(self) -> Any:
+        """Wrapper around `pydantic.utils.import_string(dotted_path)`. Import a dotted
+        module path and return the attribute/class designated by the last name in the
+        path. Raise ImportError if the import fails."""
+        return import_string(self.classname)
+
+
+class _NamedClass(Protocol):
+    name: str
+
+
+def find_duplicates(entries: Sequence[_NamedClass]) -> List[str]:
+    duplicates: List[str] = []
+    seen: Set[str] = set()
+    for entry in entries:
+        if entry.name in seen:
+            duplicates.append(entry.name)
+        else:
+            seen.add(entry.name)
+    return duplicates
+
+
+def get_yaml(filepath: Path) -> Dict[Any, Any]:
+    return list(yaml.safe_load_all(filepath.read_text()))[0]

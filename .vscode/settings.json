@@ -9,12 +9,34 @@
     "terminal.integrated.env.windows": {
         "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"
     },
+    "python.analysis.typeCheckingMode": "strict",
     "python.testing.pytestArgs": [
-        "tests"
+        "-v"
     ],
     "python.testing.pytestEnabled": true,
-    "editor.formatOnSave": true,
+    "python.linting.mypyEnabled": true,
+    "python.linting.flake8Enabled": false,
     "python.linting.lintOnSave": true,
     "python.formatting.provider": "black",
-    "autoDocstring.customTemplatePath": ".vscode/docstring.mustache"
+    "editor.formatOnSave": true,
+    "autoDocstring.customTemplatePath": ".vscode/docstring.mustache",
+    "yaml.format.printWidth": 88,
+    "yaml.format.proseWrap": "always",
+    "yaml.schemas": {
+        "schema/dataset-schema.json": "*dataset*.yaml",
+        "schema/quality-schema.json": "*quality*.yaml",
+        "schema/storage-schema.json": "*storage*.yaml",
+        "schema/pipeline-schema.json": "*pipeline*.yaml",
+    },
+    "errorLens.statusBarIconsEnabled": true,
+    "todo-tree.general.tags": [
+        "BUG",
+        "HACK",
+        "FIXME",
+        "TODO",
+        "TEST",
+        "XXX",
+        "[ ]",
+        "[x]"
+    ]
 }
