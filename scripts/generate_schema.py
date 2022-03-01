@@ -26,11 +26,10 @@ def generate_schema(
         Path(".vscode/schema/"),
         file_okay=False,
         dir_okay=True,
-        exists=True,
-    
     ),
     which: SchemaType = typer.Option(SchemaType.all),
 ):
+    dir.mkdir(exist_ok=True)
     cls_mapping: Dict[str, Any] = {
         "dataset": DatasetDefinition,
         "quality": QualityDefinition,
