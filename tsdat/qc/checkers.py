@@ -1,14 +1,14 @@
-import abc
 import numpy as np
 import xarray as xr
-from typing import List, Optional, Dict, Union
+from abc import ABC, abstractmethod
+from numpy.typing import NDArray
+from typing import Any, List, Optional, Dict, Union
 
-from tsdat.config import QualityManagerDefinition
-from tsdat.constants import ATTS
-from tsdat.utils import DSUtil
+from tsdat import dsutils
+from tsdat.config.quality import ManagerConfig
 
 
-class QualityChecker(abc.ABC):
+class QualityChecker(ABC):
     """Class containing the code to perform a single Quality Check on a
     Dataset variable.
 
@@ -20,27 +20,25 @@ class QualityChecker(abc.ABC):
     :type previous_data: xr.Dataset
     :param definition: The quality manager definition as specified in the
         pipeline config file
-    :type definition: QualityManagerDefinition
+    :type definition: ManagerConfig
     :param parameters: A dictionary of checker-specific parameters specified in the
         pipeline config file.  Defaults to {}
     :type parameters: dict, optional
     """
 
+    # TODO: Add a 'name' parameter here (useful for logging / debugging)
     def __init__(
         self,
         ds: xr.Dataset,
-        previous_data: xr.Dataset,
-        definition: QualityManagerDefinition,
-        parameters: Union[Dict, None] = None,
+        definition: ManagerConfig,
+        parameters: Dict[str, Any],
     ):
+        self.ds: xr.Dataset = ds
+        self.definition: ManagerConfig = definition
+        self.params: Dict[str, Any] = parameters
 
-        self.ds = ds
-        self.previous_data = previous_data
-        self.definition = definition
-        self.params = parameters if parameters is not None else dict()
-
-    @abc.abstractmethod
-    def run(self, variable_name: str) -> Optional[np.ndarray]:
+    @abstractmethod
+    def run(self, variable_name: str) -> Optional[NDArray[Any]]:
         """Check a dataset's variable to see if it passes a quality check.
         These checks can be performed on the entire variable at one time by
         using xarray vectorized numerical operators.
@@ -53,7 +51,7 @@ class QualityChecker(abc.ABC):
             results of the check.  True means the check failed.  False means
             it succeeded.
 
-            Note that we are using an np.ndarray instead of an xr.DataArray
+            Note that we are using an NDArray[Any] instead of an xr.DataArray
             because the DataArray contains coordinate indexes which can
             sometimes get out of sync when performing np arithmectic vector
             operations.  So it's easier to just use numpy arrays.
@@ -61,7 +59,7 @@ class QualityChecker(abc.ABC):
             If the check was skipped for some reason (i.e., it was not
             relevant given the current attributes defined for this dataset),
             then the run method should return None.
-        :rtype: Optional[np.ndarray]
+        :rtype: Optional[NDArray[Any]]
         """
         pass
 
@@ -73,14 +71,15 @@ class CheckMissing(QualityChecker):
     valid_range, as this is considered missing as well.
     """
 
-    def run(self, variable_name: str) -> Optional[np.ndarray]:
+    def run(self, variable_name: str) -> NDArray[Any]:
 
         # If this is a time variable, we check for 'NaT'
         if self.ds[variable_name].data.dtype.type == np.datetime64:
             results_array = np.isnat(self.ds[variable_name].data)
 
         else:
-            fill_value = DSUtil.get_fill_value(self.ds, variable_name)
+            # HACK: until we centralize / construct logic for this
+            fill_value = self.ds[variable_name].attrs["_FillValue"]
 
             # If the variable has no _FillValue attribute, then
             # we select a default value to use
@@ -88,7 +87,7 @@ class CheckMissing(QualityChecker):
                 fill_value = -9999
 
             # Make sure fill value has same data type as the variable
-            fill_value = np.array(
+            fill_value = np.array(  # type: ignore
                 fill_value, dtype=self.ds[variable_name].data.dtype.type
             )
 
@@ -107,6 +106,43 @@ class CheckMissing(QualityChecker):
         return results_array
 
 
+class CheckMonotonic(QualityChecker):
+    """Checks that all values for the specified variable are either
+    strictly increasing or strictly decreasing.
+    """
+
+    def run(self, variable_name: str) -> Optional[NDArray[Any]]:
+
+        results_array: Optional[NDArray[Any]] = None
+        # We need to get the dim to diff on from the parameters
+        # If dim is not specified, then we use the first dim for the variable
+        dim = self.params.get("dim", None)
+
+        if dim is None and len(self.ds[variable_name].dims) > 0:
+            dim = self.ds[variable_name].dims[0]
+
+        if dim is not None:
+
+            # convert to np array
+            variable_data = self.ds[variable_name].data
+            axis = self.ds[variable_name].get_axis_num(dim)
+
+            # If the variable is a time variable, then we convert to nanoseconds before
+            # doing our check.
+            if self.ds[variable_name].data.dtype.type == np.datetime64:
+                variable_data = dsutils.datetime64_to_timestamp(variable_data)
+
+            # Compute the difference between each two numbers and check if they are
+            # either all increasing or all decreasing
+            diff: NDArray[Any] = np.diff(variable_data, axis=axis)  # type: ignore
+            is_monotonic = np.all(diff > 0) | np.all(diff < 0)  # type: ignore # this returns a scalar
+
+            # Create a results array, with all values set to the results of the is_monotonic check
+            results_array = np.full(variable_data.shape, not is_monotonic, dtype=bool)  # type: ignore
+
+        return results_array
+
+
 class CheckMin(QualityChecker):
     """Check that no values for the specified variable are less than
     a specified minimum threshold.  The threshold value is an attribute
@@ -118,16 +154,23 @@ class CheckMin(QualityChecker):
     the specified attribute, this check will be skipped.
     """
 
-    def run(self, variable_name: str) -> Optional[np.ndarray]:
-        # Get the minimum value
-        _min = self.ds[variable_name].attrs.get(self.params["key"], None)
-        if isinstance(_min, List):
-            _min = _min[0]
+    def __init__(
+        self, ds: xr.Dataset, definition: ManagerConfig, parameters: Dict[str, Any]
+    ):
+        super().__init__(ds, definition, parameters)
+        self.key: str = self.params["key"]
 
-        # If no minimum value is available, then we just skip this check
-        results_array = None
-        if _min is not None:
-            results_array = np.less(self.ds[variable_name].data, _min)
+    def run(self, variable_name: str) -> Optional[NDArray[Any]]:
+        results_array: Optional[NDArray[Any]] = None
+        min_value: Optional[Union[float, List[float]]] = self.ds[
+            variable_name
+        ].attrs.get(self.key, None)
+
+        if min_value is not None:
+            if isinstance(min_value, List):
+                min_value = min_value[0]
+
+            results_array = np.less(self.ds[variable_name].data, min_value)
 
         return results_array
 
@@ -143,18 +186,28 @@ class CheckMax(QualityChecker):
     the specified attribute, this check will be skipped.
     """
 
-    def run(self, variable_name: str) -> Optional[np.ndarray]:
-        # Get the maximum value
-        _max = self.ds[variable_name].attrs.get(self.params["key"], None)
-        if isinstance(_max, List):
-            _max = _max[-1]
+    def __init__(
+        self, ds: xr.Dataset, definition: ManagerConfig, parameters: Dict[str, Any]
+    ):
+        super().__init__(ds, definition, parameters)
+        self.key: str = self.params["key"]
 
-        # If no maximum value is available, then we just skip this check
-        results_array = None
-        if _max is not None:
-            results_array = np.greater(self.ds[variable_name].data, _max)
+    def run(self, variable_name: str) -> Optional[NDArray[Any]]:
+        results_array: Optional[NDArray[Any]] = None
+        max_value: Optional[Union[float, List[float]]] = self.ds[
+            variable_name
+        ].attrs.get(self.key, None)
+
+        if max_value is not None:
+            if isinstance(max_value, List):
+                max_value = max_value[1]
+
+            results_array = np.greater(self.ds[variable_name].data, max_value)
 
         return results_array
+
+
+# TODO: Initialize the remaining classes automatically
 
 
 class CheckValidMin(CheckMin):
@@ -167,11 +220,10 @@ class CheckValidMin(CheckMin):
     def __init__(
         self,
         ds: xr.Dataset,
-        previous_data: xr.Dataset,
-        definition: QualityManagerDefinition,
-        parameters,
+        definition: ManagerConfig,
+        parameters: Dict[str, Any],
     ):
-        super().__init__(ds, previous_data, definition, parameters=parameters)
+        super().__init__(ds, definition, parameters=parameters)
         self.params["key"] = "valid_range"
 
 
@@ -185,11 +237,10 @@ class CheckValidMax(CheckMax):
     def __init__(
         self,
         ds: xr.Dataset,
-        previous_data: xr.Dataset,
-        definition: QualityManagerDefinition,
-        parameters,
+        definition: ManagerConfig,
+        parameters: Dict[str, Any],
     ):
-        super().__init__(ds, previous_data, definition, parameters=parameters)
+        super().__init__(ds, definition, parameters=parameters)
         self.params["key"] = "valid_range"
 
 
@@ -203,11 +254,10 @@ class CheckFailMin(CheckMin):
     def __init__(
         self,
         ds: xr.Dataset,
-        previous_data: xr.Dataset,
-        definition: QualityManagerDefinition,
-        parameters,
+        definition: ManagerConfig,
+        parameters: Dict[str, Any],
     ):
-        super().__init__(ds, previous_data, definition, parameters=parameters)
+        super().__init__(ds, definition, parameters=parameters)
         self.params["key"] = "fail_range"
 
 
@@ -221,11 +271,10 @@ class CheckFailMax(CheckMax):
     def __init__(
         self,
         ds: xr.Dataset,
-        previous_data: xr.Dataset,
-        definition: QualityManagerDefinition,
-        parameters,
+        definition: ManagerConfig,
+        parameters: Dict[str, Any],
     ):
-        super().__init__(ds, previous_data, definition, parameters=parameters)
+        super().__init__(ds, definition, parameters=parameters)
         self.params["key"] = "fail_range"
 
 
@@ -239,11 +288,10 @@ class CheckWarnMin(CheckMin):
     def __init__(
         self,
         ds: xr.Dataset,
-        previous_data: xr.Dataset,
-        definition: QualityManagerDefinition,
-        parameters,
+        definition: ManagerConfig,
+        parameters: Dict[str, Any],
     ):
-        super().__init__(ds, previous_data, definition, parameters=parameters)
+        super().__init__(ds, definition, parameters=parameters)
         self.params["key"] = "warn_range"
 
 
@@ -257,11 +305,10 @@ class CheckWarnMax(CheckMax):
     def __init__(
         self,
         ds: xr.Dataset,
-        previous_data: xr.Dataset,
-        definition: QualityManagerDefinition,
-        parameters,
+        definition: ManagerConfig,
+        parameters: Dict[str, Any],
     ):
-        super().__init__(ds, previous_data, definition, parameters=parameters)
+        super().__init__(ds, definition, parameters=parameters)
         self.params["key"] = "warn_range"
 
 
@@ -272,12 +319,12 @@ class CheckValidDelta(QualityChecker):
     does not posess the 'valid_delta' attribute, this check will be skipped.
     """
 
-    def run(self, variable_name: str) -> Optional[np.ndarray]:
+    def run(self, variable_name: str) -> Optional[NDArray[Any]]:
 
-        valid_delta = self.ds[variable_name].attrs.get(ATTS.VALID_DELTA, None)
+        valid_delta = self.ds[variable_name].attrs.get("valid_delta", None)
 
         # If no valid_delta is available, then we just skip this definition
-        results_array = None
+        results_array: Optional[NDArray[Any]] = None
         if valid_delta is not None:
             # We need to get the dim to diff on from the parameters
             # If dim is not specified, then we use the first dim for the variable
@@ -287,103 +334,27 @@ class CheckValidDelta(QualityChecker):
                 dim = self.ds[variable_name].dims[0]
 
             if dim is not None:
-                # If previous data exists, then we must add the last row of
-                # previous data as the first row of the variable's data array.
-                # This is so that the diff function can compare the first value
-                # of the file to make sure it is consistent with the previous file.
-
                 # convert to np array
                 variable_data = self.ds[variable_name].data
                 axis = self.ds[variable_name].get_axis_num(dim)
-                previous_row = None
-
-                # Load the previous row from the other dataset
-                if self.previous_data is not None:
-                    previous_variable_data = self.previous_data.get(variable_name, None)
-                    if previous_variable_data is not None:
-                        # convert to np array
-                        previous_variable_data = previous_variable_data.data
-
-                        # Get the last value from the first axis
-                        previous_row = previous_variable_data[-1]
-
-                        # Insert that value as the first value of the first axis
-                        variable_data = np.insert(
-                            variable_data, 0, previous_row, axis=axis
-                        )
 
                 # If the variable is a time variable, then we convert to nanoseconds before doing our check
                 if self.ds[variable_name].data.dtype.type == np.datetime64:
-                    variable_data = DSUtil.datetime64_to_timestamp(variable_data)
+                    variable_data = dsutils.datetime64_to_timestamp(variable_data)
 
                 # Compute the difference between each two numbers and check if it exceeds valid_delta
-                diff = np.absolute(np.diff(variable_data, axis=axis))
+                diff = np.absolute(np.diff(variable_data, axis=axis))  # type: ignore
                 results_array = np.greater(diff, valid_delta)
 
-                if previous_row is None:
-                    # This means our results array is missing one value for the first row, which is
-                    # not included in the diff computation.
-                    # We need to add False for the first row of results, since it won't fail
-                    # the check.
-                    first_row = np.zeros(results_array[0].size, dtype=bool)
-                    results_array = np.insert(results_array, 0, first_row, axis=axis)
-
-        return results_array
-
-
-class CheckMonotonic(QualityChecker):
-    """Checks that all values for the specified variable are either
-    strictly increasing or strictly decreasing.
-    """
-
-    def run(self, variable_name: str) -> Optional[np.ndarray]:
-
-        results_array = None
-        # We need to get the dim to diff on from the parameters
-        # If dim is not specified, then we use the first dim for the variable
-        dim = self.params.get("dim", None)
-
-        if dim is None and len(self.ds[variable_name].dims) > 0:
-            dim = self.ds[variable_name].dims[0]
-
-        if dim is not None:
-            # If previous data exists, then we must add the last row of
-            # previous data as the first row of the variable's data array.
-            # This is so that the diff function can compare the first value
-            # of the file to make sure it is consistent with the previous file.
-
-            # convert to np array
-            variable_data = self.ds[variable_name].data
-            axis = self.ds[variable_name].get_axis_num(dim)
-            previous_row = None
-
-            # Load the previous row from the other dataset
-            if self.previous_data is not None and dim == "time":
-                previous_variable_data = self.previous_data.get(variable_name, None)
-                if previous_variable_data is not None:
-                    # convert to np array
-                    previous_variable_data = previous_variable_data.data
-
-                    # Get the last value from the first axis
-                    previous_row = previous_variable_data[-1]
-
-                    # Insert that value as the first value of the first axis
-                    variable_data = np.insert(variable_data, 0, previous_row, axis=axis)
-
-            # If the variable is a time variable, then we convert to nanoseconds before doing our check
-            if self.ds[variable_name].data.dtype.type == np.datetime64:
-                variable_data = DSUtil.datetime64_to_timestamp(variable_data)
-
-            # Compute the difference between each two numbers and check if they are either all
-            # increasing or all decreasing
-            diff = np.diff(variable_data, axis=axis)
-            is_monotonic = np.all(diff > 0) | np.all(diff < 0)  # this returns a scalar
-
-            # Create a results array, with all values set to the results of the is_monotonic check
-            results_array = np.full(variable_data.shape, not is_monotonic, dtype=bool)
+                # Our results array is missing one value for the first row, which is not
+                # included in the diff computation. We add False for the first row of
+                # results, since it won't fail the check.
+                first_row = np.zeros(results_array[0].size, dtype=bool)  # type: ignore
+                results_array = np.insert(results_array, 0, first_row, axis=axis)  # type: ignore
 
         return results_array
 
 
 # TODO: Other checks we might implement
 # check_outlier(std_dev)
+# check_time_gap --> parameters: min_time_gap (str), max_time_gap (str)

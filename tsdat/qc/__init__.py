@@ -6,26 +6,25 @@ pipeline config file.
 
 We warmly welcome community contribututions to increase this default list.
 """
-from .qc import QualityManagement, QualityManager
+from .qc import QualityManagement as QualityManagement, QualityManager as QualityManager
 from .checkers import (
-    QualityChecker,
-    CheckWarnMax,
-    CheckFailMax,
-    CheckFailMin,
-    CheckMax,
-    CheckMin,
-    CheckMissing,
-    CheckMonotonic,
-    CheckValidDelta,
-    CheckValidMax,
-    CheckValidMin,
-    CheckWarnMin,
+    QualityChecker as QualityChecker,
+    CheckWarnMax as CheckWarnMax,
+    CheckFailMax as CheckFailMax,
+    CheckFailMin as CheckFailMin,
+    CheckMax as CheckMax,
+    CheckMin as CheckMin,
+    CheckMissing as CheckMissing,
+    CheckMonotonic as CheckMonotonic,
+    CheckValidDelta as CheckValidDelta,
+    CheckValidMax as CheckValidMax,
+    CheckValidMin as CheckValidMin,
+    CheckWarnMin as CheckWarnMin,
 )
 from .handlers import (
-    QualityHandler,
-    QCParamKeys,
-    FailPipeline,
-    RecordQualityResults,
-    RemoveFailedValues,
-    SendEmailAWS,
+    QualityHandler as QualityHandler,
+    QCParamKeys as QCParamKeys,
+    FailPipeline as FailPipeline,
+    RecordQualityResults as RecordQualityResults,
+    RemoveFailedValues as RemoveFailedValues,
 )

@@ -1,12 +1,11 @@
-import abc
-from typing import Union, Dict
+from abc import ABC, abstractmethod
+from typing import Any, Dict
 
 import numpy as np
 import xarray as xr
 
-from tsdat.config import QualityManagerDefinition
-from tsdat.exceptions import QCError
-from tsdat.utils import DSUtil
+from tsdat.config.quality import ManagerConfig
+from tsdat import dsutils
 
 
 class QCParamKeys:
@@ -20,7 +19,11 @@ class QCParamKeys:
     CORRECTION = "correction"
 
 
-class QualityHandler(abc.ABC):
+class DataQualityError(BaseException):
+    pass
+
+
+class QualityHandler(ABC):
     """Class containing code to be executed if a particular quality check fails.
 
     :param ds: The dataset the handler will be applied to
@@ -37,20 +40,19 @@ class QualityHandler(abc.ABC):
     :type parameters: dict, optional
     """
 
+    # TODO: Add a 'name' parameter here (useful for logging / debugging)
     def __init__(
         self,
         ds: xr.Dataset,
-        previous_data: xr.Dataset,
-        quality_manager: QualityManagerDefinition,
-        parameters: Union[Dict, None] = None,
+        quality_manager: ManagerConfig,
+        parameters: Dict[str, Any],
     ):
-        self.ds = ds
-        self.previous_data = previous_data
-        self.quality_manager = quality_manager
-        self.params = parameters if parameters is not None else dict()
+        self.ds: xr.Dataset = ds
+        self.quality_manager: ManagerConfig = quality_manager
+        self.params: Dict[str, Any] = parameters
 
-    @abc.abstractmethod
-    def run(self, variable_name: str, results_array: np.ndarray):
+    @abstractmethod
+    def run(self, variable_name: str, results_array: np.ndarray[Any, Any]):
         """Perform a follow-on action if a quality check fails. This can be used
         to correct data if needed (such as replacing a bad value with missing
         value, emailing a contact persion, or raising an exception if the
@@ -75,14 +77,14 @@ class QualityHandler(abc.ABC):
         :type variable_name: str
         """
         correction = self.params.get("correction", None)
-        if correction is not None:
-            DSUtil.record_corrections_applied(self.ds, variable_name, correction)
+        if correction:
+            dsutils.record_corrections_applied(self.ds, variable_name, correction)
 
 
 class RecordQualityResults(QualityHandler):
     """Record the results of the quality check in an ancillary qc variable."""
 
-    def run(self, variable_name: str, results_array: np.ndarray):
+    def run(self, variable_name: str, results_array: np.ndarray[Any, Any]):
 
         self.ds.qcfilter.add_test(
             variable_name,
@@ -96,13 +98,15 @@ class RecordQualityResults(QualityHandler):
 class RemoveFailedValues(QualityHandler):
     """Replace all the failed values with _FillValue"""
 
-    def run(self, variable_name: str, results_array: np.ndarray):
+    def run(self, variable_name: str, results_array: np.ndarray[Any, Any]):
         if results_array.any():
-            fill_value = DSUtil.get_fill_value(self.ds, variable_name)
+            fill_value = self.ds[variable_name].attrs["_FillValue"] # HACK: until we centralize / construct logic for this
             keep_array = np.logical_not(results_array)
 
             var_values = self.ds[variable_name].data
-            replaced_values = np.where(keep_array, var_values, fill_value)
+            replaced_values: np.ndarray[Any, Any] = np.where(  # type: ignore
+                keep_array, var_values, fill_value
+            )
             self.ds[variable_name].data = replaced_values
 
             self.record_correction(variable_name)
@@ -119,26 +123,18 @@ class SortDatasetByCoordinate(QualityHandler):
           ascending: True
     """
 
-    def run(self, variable_name: str, results_array: np.ndarray):
+    def run(self, variable_name: str, results_array: np.ndarray[Any, Any]):
+
         if results_array.any():
             order = self.params.get("ascending", True)
-            self.ds = self.ds.sortby(self.ds[variable_name], order)
+            self.ds: xr.Dataset = self.ds.sortby(self.ds[variable_name], order)  # type: ignore
             self.record_correction(variable_name)
-
-
-class SendEmailAWS(QualityHandler):
-    """Send an email to the recipients using AWS services."""
-
-    def run(self, variable_name: str, results_array: np.ndarray):
-        # TODO: we will implement this later after we get the cloud
-        # stuff implemented.
-        pass
 
 
 class FailPipeline(QualityHandler):
     """Throw an exception, halting the pipeline & indicating a critical error"""
 
-    def run(self, variable_name: str, results_array: np.ndarray):
+    def run(self, variable_name: str, results_array: np.ndarray[Any, Any]):
         if results_array.any():
             message = f"Quality Manager {self.quality_manager.name} failed for variable {variable_name}"
-            raise QCError(message)
+            raise DataQualityError(message)
