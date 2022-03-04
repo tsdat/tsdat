@@ -4,7 +4,7 @@ from pathlib import Path
 from enum import Enum
 from tsdat.config.dataset import DatasetDefinition
 from tsdat.config.quality import QualityDefinition
-from tsdat.config.storage import StorageDefinition
+from tsdat.config.storage import StorageConfig
 from tsdat.config.pipeline import PipelineDefinition
 from tsdat.config.utils import YamlModel
 
@@ -33,7 +33,7 @@ def generate_schema(
     cls_mapping: Dict[str, Any] = {
         "dataset": DatasetDefinition,
         "quality": QualityDefinition,
-        "storage": StorageDefinition,
+        "storage": StorageConfig,
         "pipeline": PipelineDefinition,
     }
     keys: List[str] = []

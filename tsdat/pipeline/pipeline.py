@@ -1,11 +1,9 @@
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 from pydantic import BaseModel, Extra
 from tsdat.config.pipeline import Config
-from tsdat.io.storage.base import DatastreamStorage
-
-
-from abc import ABC, abstractmethod
+from tsdat.io.storage.storage import AbstractStorage
 
 
 # How to instantiate a Pipeline class:
@@ -17,7 +15,8 @@ from abc import ABC, abstractmethod
 class AbstractPipeline(BaseModel, ABC, extra=Extra.allow):
 
     config: Config
-    storage: DatastreamStorage
+    storage: AbstractStorage
+    # TODO: Add a retriever class
 
     @abstractmethod
     def run(self, inputs: Any) -> Any:

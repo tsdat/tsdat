@@ -2,7 +2,7 @@ import xarray as xr
 
 from typing import Dict, List
 
-from tsdat.pipeline.base import AbstractPipeline
+from tsdat.pipeline.pipeline import AbstractPipeline
 
 
 class TransformationPipeline(AbstractPipeline):

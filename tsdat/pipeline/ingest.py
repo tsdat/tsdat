@@ -2,8 +2,8 @@ import xarray as xr
 
 from typing import Dict, List
 
-from tsdat.pipeline.base import AbstractPipeline
-from tsdat.dsutils import decode_cf_wrapper
+from tsdat.pipeline.pipeline import AbstractPipeline
+from tsdat.utils import decode_cf_wrapper
 
 
 class IngestPipeline(AbstractPipeline):
@@ -20,6 +20,11 @@ class IngestPipeline(AbstractPipeline):
         return dataset
 
     def handle_inputs(self, inputs: List[str]) -> Dict[str, xr.Dataset]:
+        # raw_mapping: Dict[str, xr.Dataset] = {}
+
+        # for input_key in inputs:
+        # self.storage.
+
         # TODO: Implement me
         # Relevant settings in self.settings and self.config.storage
         ...

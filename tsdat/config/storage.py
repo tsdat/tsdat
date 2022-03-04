@@ -1,45 +1,37 @@
 import re
-from pydantic import Field, StrictStr, validator
+from pydantic import BaseModel, Field, validator
 from pydantic.fields import ModelField
 from typing import List, Pattern
-from .utils import ParametrizedClass, YamlModel
+from .utils import ParametrizedClass, YamlModel, find_duplicates
 
 
-class DataHandler(ParametrizedClass):
-    name: StrictStr = Field(
+class DataHandlerConfig(ParametrizedClass):
+    name: str = Field(
         description="A label used internally to distinguish registered DataHandlers."
     )
+
+
+class DataReaderConfig(DataHandlerConfig):
     # HACK: Can't do Pattern[str]: https://github.com/samuelcolvin/pydantic/issues/2636
-    regex: Pattern  # type: ignore
-
-
-class InputDataHandler(DataHandler):
     regex: Pattern = Field(  # type: ignore
         "",
         description="A regex pattern used to map input data keys (e.g., a file path or"
-        " url passed as input from the pipeline runner) to a DataHandler that should be"
-        " used to read that resource. If there are multiple input DataHandlers"
-        " registered, then this field is required. Note that the default pattern is"
-        " '.*' if there is only one registered DataHandler, but no default is set if"
-        " multiple data handlers are registered.",
+        " url passed as input from the pipeline runner) to the DataReader that should"
+        " be used to read that resource. If there are multiple DataReader registered"
+        " and an input data key would be matched by the regex pattern of multiple"
+        " DataReaders, then only the DataReader corresponding with the first match will"
+        " be used. Because of this, we recommend ordering your DataReaders from most"
+        " specific pattern to least specific so that the most specific pattern will be"
+        " matched first.",
     )
 
 
-class OutputDataHandler(DataHandler):
-    regex: Pattern = Field(  # type: ignore
-        "",
-        description="A regex pattern used to map output data keys (e.g., a file path or"
-        " url passed from the storage class's save method) to a DataHandler that should"
-        " be used to write that resource. If there are multiple output DataHandlers"
-        " registered and all of them match this pattern, then by default the storage"
-        " will dispatch all of them for the given key. Note that the default pattern is"
-        " '.*' if there is only one registered DataHandler, but no default is set if"
-        " multiple data handlers are registered.",
-    )
+class DataWriterConfig(DataHandlerConfig):
+    ...
 
 
-class StorageDefinition(ParametrizedClass, YamlModel):
-    input_handlers: List[InputDataHandler] = Field(
+class HandlerRegistryConfig(BaseModel):
+    input_handlers: List[DataReaderConfig] = Field(
         min_items=1,
         title="Input Data Handlers",
         description="Register a list of DataHandler(s) that will be used to read input"
@@ -47,7 +39,7 @@ class StorageDefinition(ParametrizedClass, YamlModel):
         " attribute for each that will be used to map input keys (i.e. file paths) to"
         " the input DataHandler that should be used to read that resource.",
     )
-    output_handlers: List[OutputDataHandler] = Field(
+    output_handlers: List[DataWriterConfig] = Field(
         min_items=1,
         title="Output Data Handlers",
         description="Register a list of DataHandler(s) that will be used to write"
@@ -58,21 +50,40 @@ class StorageDefinition(ParametrizedClass, YamlModel):
 
     @validator("input_handlers", "output_handlers")
     @classmethod
+    def validate_unique_handler_names(
+        cls, v: List[DataHandlerConfig], field: ModelField
+    ) -> List[DataHandlerConfig]:
+        if duplicates := find_duplicates(v):
+            raise ValueError(
+                f"{field.name} contains handlers with duplicate names: {duplicates}"
+            )
+        return v
+
+    @validator("input_handlers", "output_handlers")
+    @classmethod
     def validate_regex_patterns(
-        cls, v: List[DataHandler], field: ModelField
-    ) -> List[DataHandler]:
+        cls, v: List[DataHandlerConfig], field: ModelField
+    ) -> List[DataHandlerConfig]:
         # Set a catch-all default value
         if len(v) == 1:
             if not v[0].regex:  # type: ignore
                 v[0].regex = re.compile(r".*")  # type: ignore
 
-        # Ensure handlers define regex patterns if len > 1
+        # Ensure handlers define regex patterns if len > 1. Note that the regex patterns
+        # DO NOT need to be unique. If multiple regex patterns match an input key, then
+        # the associated handlers should all be used to read/write the data.
         elif any(not dh.regex for dh in v):  # type: ignore
             raise ValueError(
                 f"If len({field.name}) > 1 then all handlers should define a 'regex'"
-                " pattern."
+                " pattern. The patterns do not need to be unique."
             )
-
+            # TODO: regex should be unique and only one match should be used
         return v
 
-    # TODO: require unique InputDataHandler names, OutputDataHandler names
+
+class StorageConfig(ParametrizedClass, YamlModel):
+    registry: HandlerRegistryConfig = Field(
+        title="Handler Registry",
+        description="Register lists of DataReader(s) and DataWriter(s) to be used to"
+        " read and write data from the pipeline.",
+    )

@@ -4,14 +4,15 @@ from pydantic import (
     BaseSettings,
     Extra,
 )
+from pydantic.utils import import_string
 from typing import Any, Dict, List, Optional, Pattern, Protocol
 from .dataset import DatasetDefinition
 from .quality import QualityDefinition
-from .storage import StorageDefinition
+from .storage import StorageConfig
 from .utils import ParametrizedClass, YamlModel, OverrideableModel, get_yaml
 
 
-class PipelineSettings(BaseSettings, extra=Extra.allow):
+class PipelineSettingsConfig(BaseSettings, extra=Extra.allow):
     # FIXME: Add more settings that someone might want to configure here
     persist_inputs: bool = True
     delete_inputs: bool = False
@@ -20,8 +21,8 @@ class PipelineSettings(BaseSettings, extra=Extra.allow):
 class Config(BaseModel, extra=Extra.forbid):
     dataset: DatasetDefinition
     quality: QualityDefinition
-    storage: StorageDefinition
-    settings: PipelineSettings = PipelineSettings()
+    storage: StorageConfig
+    settings: PipelineSettingsConfig = PipelineSettingsConfig()
 
     @classmethod
     def from_yaml(
@@ -34,8 +35,8 @@ class Config(BaseModel, extra=Extra.forbid):
     ):
         ds_def = DatasetDefinition(**get_yaml(dataset_path))
         qc_def = QualityDefinition(**get_yaml(quality_path))
-        st_def = StorageDefinition(**get_yaml(storage_path))
-        p_set = PipelineSettings(**settings)
+        st_def = StorageConfig(**get_yaml(storage_path))
+        p_set = PipelineSettingsConfig(**settings)
 
         values: Dict[str, Any] = dict(
             dataset=ds_def,
@@ -52,11 +53,12 @@ class Config(BaseModel, extra=Extra.forbid):
     # coordinate or variable names
 
 
-class Config_(BaseModel, extra=Extra.forbid):
+class OverrideablePipelineConfig(BaseModel, extra=Extra.forbid):
+    # HACK: We need to use an OverrideableModel class so we can generate json schema
     dataset: OverrideableModel[DatasetDefinition]
     quality: OverrideableModel[QualityDefinition]
-    storage: OverrideableModel[StorageDefinition]
-    settings: PipelineSettings = PipelineSettings()
+    storage: OverrideableModel[StorageConfig]
+    settings: PipelineSettingsConfig = PipelineSettingsConfig()
 
     def merge_overrides(self, validate: bool = True) -> Config:
         ds = self.dataset.get_new_config()
@@ -71,7 +73,7 @@ class Config_(BaseModel, extra=Extra.forbid):
         return Config(**values)
 
 
-class Pipeline(Protocol):
+class PipelineClass(Protocol):
     @property
     def config(self) -> Config:
         ...
@@ -85,15 +87,16 @@ class Pipeline(Protocol):
 
 
 class PipelineDefinition(ParametrizedClass, YamlModel, extra=Extra.allow):
-    # Strategy: This will be used to model the pipeline config file
 
     associations: Optional[List[Pattern]]  # type: ignore
-    config: Config_
-    settings: PipelineSettings = PipelineSettings()
+    config: OverrideablePipelineConfig
+    settings: PipelineSettingsConfig = PipelineSettingsConfig()
 
     # FIXME: This method instantiates a config object twice, which is not optimal
-    def instantiate(self, validate: bool = True, **extra_settings: Any) -> Pipeline:
-        cls = self.get_cls()
+    def instantiate(
+        self, validate: bool = True, **extra_settings: Any
+    ) -> PipelineClass:
+        cls = import_string(self.classname)
         config = self.config.merge_overrides(validate=validate)
 
         for key, value in extra_settings.items():

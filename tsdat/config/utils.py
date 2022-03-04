@@ -4,14 +4,15 @@ from pathlib import Path
 from pydantic import BaseModel, Extra, Field, StrictStr, validator, FilePath
 from pydantic.utils import import_string
 from pydantic.generics import GenericModel
-from typing import Any, Dict, Generic, List, Protocol, Sequence, Set, TypeVar
+from typing import Any, cast, Dict, Generic, List, Protocol, Sequence, Set, TypeVar
 
 __all__ = [
-    "OverrideableModel",
     "YamlModel",
+    "OverrideableModel",
     "ParametrizedClass",
     "find_duplicates",
     "get_yaml",
+    "recusive_instantiate",
     "Definition",
 ]
 
@@ -87,18 +88,59 @@ class ParametrizedClass(BaseModel, extra=Extra.forbid):
             raise ValueError(f"Classname '{v}' is not a valid classname.")
         return v
 
-    # NOTE: Attaching the instantiated object to the parametrized class model does not
-    # work; the objects are not JSON serializable and the code crashes immediately. I
-    # settled on adding an `instantiate()` method which returns the instantiated object.
-    def instantiate(self) -> Any:
-        _cls = self.get_cls()
-        return _cls(parameters=self.parameters)
+    def instantiate(self, validate: bool = True) -> Any:
+        _cls = import_string(self.classname)
+        params: Dict[str, Any] = self.dict(exclude={"classname"})
+        if not validate:
+            return _cls.construct(**params)
+        return _cls(**params)
 
-    def get_cls(self) -> Any:
-        """Wrapper around `pydantic.utils.import_string(dotted_path)`. Import a dotted
-        module path and return the attribute/class designated by the last name in the
-        path. Raise ImportError if the import fails."""
-        return import_string(self.classname)
+
+def recusive_instantiate(model: Any, validate: bool = True) -> Any:
+    """---------------------------------------------------------------------------------
+    Recursively calls model.instantiate() on all ParametrizedClass instances under the
+    the model, resulting in a new model which follows the same general structure as the
+    given model, but possibly containing totally different properties and methods.
+
+    Args:
+        model (Any): The object to recursively instantiate.
+        validate (bool, optional): Validate the instantiated object. Defaults to True.
+
+    Returns:
+        Any: The recusively-instantiated object.
+
+    ---------------------------------------------------------------------------------"""
+    # Case: ParametrizedClass. Want to instantiate any sub-models then return the class
+    # with all submodels recusively instantiated, then statically instantiate the model.
+    # Note: the model is instantiated last so that sub-models are only processed once.
+    if isinstance(model, ParametrizedClass):
+        fields = model.__fields_set__ - {"classname"}  # No point checking classname
+        for field in fields:
+            setattr(model, field, recusive_instantiate(getattr(model, field)))
+        return model.instantiate(validate=validate)
+
+    # Case: BaseModel. Want to instantiate any sub-models then return the model itself.
+    elif isinstance(model, BaseModel):
+        fields = model.__fields_set__
+        assert "classname" not in fields
+        for field in fields:
+            setattr(model, field, recusive_instantiate(getattr(model, field)))
+        return model
+
+    # Case: List. Want to iterate through and recursively instantiate all sub-models in
+    # the list, then return everything as a list.
+    elif isinstance(model, List):
+        return [recusive_instantiate(m) for m in cast(List[Any], model)]
+
+    # Case Dict. Want to iterate through and recursively instantiate all sub-models in
+    # the Dict's values, then return everything as a Dict.
+    elif isinstance(model, Dict):
+        return {
+            k: recusive_instantiate(v) for k, v in cast(Dict[str, Any], model).items()
+        }
+
+    # Base case: Anything else; just return the value
+    return model
 
 
 class _NamedClass(Protocol):

@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from numpy.typing import NDArray
 from typing import Any, List, Optional, Dict, Union
 
-from tsdat import dsutils
+from tsdat import utils
 from tsdat.config.quality import ManagerConfig
 
 
@@ -130,7 +130,7 @@ class CheckMonotonic(QualityChecker):
             # If the variable is a time variable, then we convert to nanoseconds before
             # doing our check.
             if self.ds[variable_name].data.dtype.type == np.datetime64:
-                variable_data = dsutils.datetime64_to_timestamp(variable_data)
+                variable_data = utils.datetime64_to_timestamp(variable_data)
 
             # Compute the difference between each two numbers and check if they are
             # either all increasing or all decreasing
@@ -340,7 +340,7 @@ class CheckValidDelta(QualityChecker):
 
                 # If the variable is a time variable, then we convert to nanoseconds before doing our check
                 if self.ds[variable_name].data.dtype.type == np.datetime64:
-                    variable_data = dsutils.datetime64_to_timestamp(variable_data)
+                    variable_data = utils.datetime64_to_timestamp(variable_data)
 
                 # Compute the difference between each two numbers and check if it exceeds valid_delta
                 diff = np.absolute(np.diff(variable_data, axis=axis))  # type: ignore

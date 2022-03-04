@@ -5,7 +5,7 @@ import numpy as np
 import xarray as xr
 
 from tsdat.config.quality import ManagerConfig
-from tsdat import dsutils
+from tsdat import utils
 
 
 class QCParamKeys:
@@ -78,7 +78,7 @@ class QualityHandler(ABC):
         """
         correction = self.params.get("correction", None)
         if correction:
-            dsutils.record_corrections_applied(self.ds, variable_name, correction)
+            utils.record_corrections_applied(self.ds, variable_name, correction)
 
 
 class RecordQualityResults(QualityHandler):
@@ -100,7 +100,9 @@ class RemoveFailedValues(QualityHandler):
 
     def run(self, variable_name: str, results_array: np.ndarray[Any, Any]):
         if results_array.any():
-            fill_value = self.ds[variable_name].attrs["_FillValue"] # HACK: until we centralize / construct logic for this
+            fill_value = self.ds[variable_name].attrs[
+                "_FillValue"
+            ]  # HACK: until we centralize / construct logic for this
             keep_array = np.logical_not(results_array)
 
             var_values = self.ds[variable_name].data
