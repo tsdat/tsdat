@@ -1,0 +1,113 @@
+{
+    "title": "QualityDefinition",
+    "type": "object",
+    "properties": {
+        "managers": {
+            "title": "Managers",
+            "description": "Register a list of QualityManager(s) that should be used to detect and handle data quality issues. Each QualityManager configuration block must consists of a label, a QualityChecker, at least one QualityHandler, and a list of variables that the manager should be applied to.",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/ManagerConfig"
+            }
+        }
+    },
+    "required": [
+        "managers"
+    ],
+    "definitions": {
+        "CheckerConfig": {
+            "title": "CheckerConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "required": [
+                "classname"
+            ],
+            "additionalProperties": false
+        },
+        "HandlerConfig": {
+            "title": "HandlerConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "required": [
+                "classname"
+            ],
+            "additionalProperties": false
+        },
+        "ManagerConfig": {
+            "title": "ManagerConfig",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "description": "A human-readable label that is used to identify this quality manager.",
+                    "type": "string"
+                },
+                "checker": {
+                    "title": "Checker",
+                    "description": "Register a class to be used to detect and flag quality issues for the quality handler(s) registered below to handle.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/CheckerConfig"
+                        }
+                    ]
+                },
+                "handlers": {
+                    "title": "Handlers",
+                    "description": "Register one or more handlers to take some action given the results of the registered checker. Each handler in this list is defined by a classname (e.g., the python import path to a QualityHandler class), and (optionally) by a parameters dictionary.",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/HandlerConfig"
+                    }
+                },
+                "apply_to": {
+                    "title": "Apply To",
+                    "description": "The variables this quality manager should be applied to. Can be \"COORDS\", \"DATA_VARS\", or any number of individual variable names.",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "exclude": {
+                    "title": "Exclude",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "name",
+                "checker",
+                "handlers",
+                "apply_to"
+            ]
+        }
+    }
+}

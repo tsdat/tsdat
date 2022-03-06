@@ -8,7 +8,7 @@ from typing import Any, cast, Dict, Generic, List, Protocol, Sequence, Set, Type
 
 __all__ = [
     "YamlModel",
-    "OverrideableModel",
+    "Overrideable",
     "ParametrizedClass",
     "find_duplicates",
     "get_yaml",
@@ -20,22 +20,22 @@ __all__ = [
 class YamlModel(BaseModel):
     @classmethod
     def from_yaml(cls, filepath: Path, validate: bool = True):
-        with open(filepath, "r") as _config:
-            config = list(yaml.safe_load_all(_config))[0]
-            if not validate:
-                return cls.construct(**config)
-            return cls(**config)
+        # TODO: Docstring
+        config = get_yaml(filepath)
+        if not validate:
+            return cls.construct(**config)
+        return cls(**config)
 
     @classmethod
     def generate_schema(cls, output_file: Path):
-        with open(output_file, "w") as schemafile:
-            schemafile.write(cls.schema_json(indent=4))
+        output_file.write_text(cls.schema_json(indent=4))
 
     @classmethod
     def from_override(
         cls, filepath: Path, overrides: Dict[str, Any], validate: bool = True
     ):
-        base_dict = list(yaml.safe_load_all(filepath.read_text()))[0]
+        # TODO: Is this used?
+        base_dict = get_yaml(filepath)
         for pointer, new_value in overrides.items():
             set_pointer(base_dict, pointer, new_value)
         if not validate:
@@ -46,9 +46,7 @@ class YamlModel(BaseModel):
 Definition = TypeVar("Definition", bound=BaseModel)
 
 
-class OverrideableModel(
-    YamlModel, GenericModel, Generic[Definition], extra=Extra.forbid
-):
+class Overrideable(YamlModel, GenericModel, Generic[Definition], extra=Extra.forbid):
     path: FilePath
     overrides: Dict[str, Any] = dict()
 
@@ -56,11 +54,15 @@ class OverrideableModel(
         txt = self.path.read_text()
         return list(yaml.safe_load_all(txt))[0]
 
-    def get_new_config(self) -> Dict[Any, Any]:
+    def merge_overrides(self) -> Dict[Any, Any]:
         defaults = self.get_defaults_dict()
         for pointer, new_value in self.overrides.items():
             set_pointer(defaults, pointer, new_value)
         return defaults
+
+
+def matches_overrideable_schema(model_dict: Dict[str, Any]):
+    return "path" in model_dict
 
 
 class ParametrizedClass(BaseModel, extra=Extra.forbid):
@@ -101,6 +103,17 @@ def recusive_instantiate(model: Any, validate: bool = True) -> Any:
     Recursively calls model.instantiate() on all ParametrizedClass instances under the
     the model, resulting in a new model which follows the same general structure as the
     given model, but possibly containing totally different properties and methods.
+
+    Note that this method does a depth-first traversal of the model tree to to
+    instantiate leaf nodes first. Traversing breadth-frist would result in new pydantic
+    models attempting to call the __init__ method of child models, which is not valid
+    because the child models are ParametrizedClass instances. Traversing depth-first
+    allows us to first transform child models into the appropriate type using the
+    classname of the ParametrizedClass.
+
+    This method is primarily used to instantiate a Pipeline subclass and all of its
+    properties from a yaml pipeline config file, but it can be applied to any other
+    pydantic model.
 
     Args:
         model (Any): The object to recursively instantiate.

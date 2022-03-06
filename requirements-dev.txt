@@ -1,5 +1,6 @@
 -r requirements.txt
 devtools
+rich
 pytest
 coverage
 mypy

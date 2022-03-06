@@ -31,6 +31,7 @@ class DataWriterConfig(DataHandlerConfig):
 
 
 class HandlerRegistryConfig(BaseModel):
+    # TODO: rename to readers and writers
     input_handlers: List[DataReaderConfig] = Field(
         min_items=1,
         title="Input Data Handlers",
@@ -59,25 +60,21 @@ class HandlerRegistryConfig(BaseModel):
             )
         return v
 
-    @validator("input_handlers", "output_handlers")
+    @validator("input_handlers")
     @classmethod
     def validate_regex_patterns(
         cls, v: List[DataHandlerConfig], field: ModelField
     ) -> List[DataHandlerConfig]:
-        # Set a catch-all default value
         if len(v) == 1:
             if not v[0].regex:  # type: ignore
                 v[0].regex = re.compile(r".*")  # type: ignore
 
-        # Ensure handlers define regex patterns if len > 1. Note that the regex patterns
-        # DO NOT need to be unique. If multiple regex patterns match an input key, then
-        # the associated handlers should all be used to read/write the data.
+        # Ensure handlers define regex patterns if len > 1.
         elif any(not dh.regex for dh in v):  # type: ignore
             raise ValueError(
                 f"If len({field.name}) > 1 then all handlers should define a 'regex'"
-                " pattern. The patterns do not need to be unique."
+                " pattern."
             )
-            # TODO: regex should be unique and only one match should be used
         return v
 
 

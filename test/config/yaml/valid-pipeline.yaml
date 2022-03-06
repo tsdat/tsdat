@@ -1,0 +1,27 @@
+classname: tsdat.pipeline.ingest.IngestPipeline
+
+associations:
+  - '.*\.csv'
+
+dataset:
+  path: test/config/yaml/valid-dataset.yaml
+  overrides:
+    /attrs/location_id: sgp
+    /coords/0/attrs/units: km
+    /data_vars/0/attrs/new_attribute: please add this attribute
+
+quality:
+  path: test/config/yaml/valid-quality.yaml
+  overrides:
+    /managers/0/exclude: []
+
+storage:
+  classname: tsdat.io.storage.FileSystem
+  registry:
+    input_handlers:
+      - classname: tsdat.io.handlers.CsvReader
+        name: CSV Reader
+        regex: '.*\.csv'
+    output_handlers:
+      - classname: tsdat.io.handlers.NetCDFWriter
+        name: NetCDF Writer

@@ -1,0 +1,7 @@
+managers:
+  - name: Require Valid Coordinate Variables
+    checker:
+      classname: tsdat.qc.checkers.CheckMissing
+    handlers:
+      - classname: tsdat.qc.handlers.FailPipeline
+    apply_to: [COORDS]

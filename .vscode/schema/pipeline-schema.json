@@ -1,0 +1,771 @@
+{
+    "title": "PipelineConfig",
+    "description": "------------------------------------------------------------------------------------\nClass used read in the yaml pipeline config file and to generate its json schema for\nearly validation of its properties.\n------------------------------------------------------------------------------------",
+    "type": "object",
+    "properties": {
+        "classname": {
+            "title": "Classname",
+            "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+            "type": "string"
+        },
+        "parameters": {
+            "title": "Parameters",
+            "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+            "default": {},
+            "type": "object"
+        },
+        "associations": {
+            "title": "Associations",
+            "type": "array",
+            "items": {
+                "type": "string",
+                "format": "regex"
+            }
+        },
+        "settings": {
+            "title": "Settings",
+            "default": {
+                "validate_config_files": true
+            },
+            "allOf": [
+                {
+                    "$ref": "#/definitions/PipelineSettings"
+                }
+            ]
+        },
+        "dataset": {
+            "title": "Dataset",
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/Overrideable_DatasetDefinition_"
+                },
+                {
+                    "$ref": "#/definitions/DatasetDefinition"
+                }
+            ]
+        },
+        "quality": {
+            "title": "Quality",
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/Overrideable_QualityDefinition_"
+                },
+                {
+                    "$ref": "#/definitions/QualityDefinition"
+                }
+            ]
+        },
+        "storage": {
+            "title": "Storage",
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/Overrideable_StorageConfig_"
+                },
+                {
+                    "$ref": "#/definitions/StorageConfig"
+                }
+            ]
+        }
+    },
+    "required": [
+        "classname",
+        "associations",
+        "dataset",
+        "quality",
+        "storage"
+    ],
+    "additionalProperties": false,
+    "definitions": {
+        "PipelineSettings": {
+            "title": "PipelineSettings",
+            "description": "Base class for settings, allowing values to be overridden by environment variables.\n\nThis is useful in production for secrets you do not wish to save in code, it plays nicely with docker(-compose),\nHeroku and any 12 factor app design.",
+            "type": "object",
+            "properties": {
+                "validate_config_files": {
+                    "title": "Validate Config Files",
+                    "default": true,
+                    "env_names": [
+                        "validate_config_files"
+                    ],
+                    "type": "boolean"
+                }
+            }
+        },
+        "Overrideable_DatasetDefinition_": {
+            "title": "Overrideable[DatasetDefinition]",
+            "type": "object",
+            "properties": {
+                "path": {
+                    "title": "Path",
+                    "format": "file-path",
+                    "type": "string"
+                },
+                "overrides": {
+                    "title": "Overrides",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "required": [
+                "path"
+            ],
+            "additionalProperties": false
+        },
+        "GlobalAttributes": {
+            "title": "GlobalAttributes",
+            "description": "Global attributes that will be recorded in the output dataset. These metadata are\nused to record data provenance information (e.g., location, institution, etc),\nconstruct datastream and file names (i.e., location_id, dataset_name, qualifier,\ntemporal, and data_level attributes), as well as provide metadata that is useful for\ndata users (e.g., title, description, ... ).",
+            "type": "object",
+            "properties": {
+                "title": {
+                    "title": "Title",
+                    "description": "A succinct description of the dataset. This value may be similar to a publication title and should be suitable for use as a title in plots or other references to this dataset.",
+                    "minLength": 1,
+                    "type": "string"
+                },
+                "description": {
+                    "title": "Description",
+                    "description": "A user-friendly description of the dataset. It should provide enough context about the data for new users to quickly understand how the data can be used.",
+                    "minLength": 1,
+                    "type": "string"
+                },
+                "code_url": {
+                    "title": "Code Url",
+                    "description": "Where the code is hosted.",
+                    "minLength": 1,
+                    "maxLength": 2083,
+                    "format": "uri",
+                    "type": "string"
+                },
+                "conventions": {
+                    "title": "Conventions",
+                    "description": "The data conventions the dataset follows.",
+                    "type": "string"
+                },
+                "doi": {
+                    "title": "Doi",
+                    "description": "The DOI that has been registered for this dataset, if applicable.",
+                    "type": "string"
+                },
+                "institution": {
+                    "title": "Institution",
+                    "description": "The institution or organization that produces or manages this data.",
+                    "type": "string"
+                },
+                "references": {
+                    "title": "References",
+                    "description": "Optional attribute used to cite other data, algorithms, etc. as needed.",
+                    "type": "string"
+                },
+                "location_id": {
+                    "title": "Location Id",
+                    "description": "A label or acroynm for the location where the data were obtained from. Only lowercase alphanumeric characters and '_' are allowed.",
+                    "minLength": 3,
+                    "pattern": "^[a-z0-9_]+$",
+                    "type": "string"
+                },
+                "dataset_name": {
+                    "title": "Dataset Name",
+                    "description": "A string used to identify the data being produced. Ideally resembles a shortened lowercase version of the title. Only lowercase alphanumeric characters and '_' are allowed.",
+                    "minLength": 3,
+                    "pattern": "^[a-z0-9_]+$",
+                    "type": "string"
+                },
+                "qualifier": {
+                    "title": "Qualifier",
+                    "description": "An optional string which distinguishes these data from other datasets produced by the same instrument. Only lowercase alphanumeric characters and '_' are allowed.",
+                    "minLength": 3,
+                    "pattern": "^[a-z0-9_]+$",
+                    "type": "string"
+                },
+                "temporal": {
+                    "title": "Temporal",
+                    "description": "An optional string which describes the temporal resolution of the data (if it spaced in regular intervals). This string should be formated as a number followed by a unit of measurement, e.g., '10m' would indicate the data is sampled every ten minutes. Only lowercase alphanumeric characters are allowed.",
+                    "minLength": 2,
+                    "pattern": "^[0-9]+[a-z]+$",
+                    "type": "string"
+                },
+                "data_level": {
+                    "title": "Data Level",
+                    "description": "A string used to indicate the level of processing of the output data. It should be formated as a letter followed by a number. Typical values for this include: a1 - data is ingested (no qc), b1 - data is ingested and quality checks applied, c1 (or higher) - one or more a* or b* datastreams used to create a higher-level data product. Only lowercase alphanumeric characters are allowed.",
+                    "maxLength": 3,
+                    "minLength": 2,
+                    "pattern": "^[a-z0-9]+$",
+                    "type": "string"
+                },
+                "datastream": {
+                    "title": "Datastream",
+                    "description": "Typically used as a label that uniquely identifies this data product from any other data product. For file-based storage systems, the datastream attribute is typically used to generate directory structures as f'{location_id}/{datastream}/', with files in that directory typically named as f'{datastream}.{date}.{time}.{ext}'. This attribute is AUTO-GENERATED at run-time, unless it is explicitly set in the config file, in which case the value in the config file will override the default. The default value for 'datastream' is as follows:\n f\"{location_id}.{dataset_name}{_qualifier}{_temporal}.{data_level}\", \nwhere '_qualifier' and '_temporal' are both prepended with a literal '-' character if they are provided. This gives some separation between the 'dataset_name', 'qualifier', and 'temporal' attributes and makes it possible to parse out these specific attributes given a complete datastream label.",
+                    "default": "",
+                    "type": "string"
+                },
+                "history": {
+                    "title": "History",
+                    "description": "Attribute that will be recorded automatically by the pipeline. A warning will be raised if this is set in the config file.",
+                    "default": "",
+                    "type": "string"
+                },
+                "code_version": {
+                    "title": "Code Version",
+                    "description": "Attribute that will be recorded automatically by the pipeline. A warning will be raised if this is set in the config file. The code_version attribute reads the 'CODE_VERSION' environment variable or parses the git history to determine the version of the code. Semantic versioning is used by default (v'major.minor.micro'; e.g., 1.2.3).",
+                    "default": "",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "title",
+                "description",
+                "location_id",
+                "dataset_name",
+                "data_level"
+            ]
+        },
+        "InputConverter": {
+            "title": "InputConverter",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put 'tsdat.config.utils.converters.DefaultConverter' as the classname.",
+                    "default": "tsdat.utils.converters.DefaultConverter",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "additionalProperties": false
+        },
+        "InputVariable": {
+            "title": "InputVariable",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Input Name",
+                    "description": "This is the name of the variable exactly as it appears in the input dataset. More precisely, this is the key tsdat will use to retrieve the variable from the dataset returned by the input DataHandler.",
+                    "type": "string"
+                },
+                "required": {
+                    "title": "Required",
+                    "description": "If True (the default) then the pipeline will fail loudly if tsdat is unable to retrieve the variable from an input source.",
+                    "default": true,
+                    "type": "boolean"
+                },
+                "units": {
+                    "title": "Units",
+                    "description": "This gives tsdat context about the units the input dataset is measured in. If the 'units' property here differs from the 'units' property under the 'attrs' section, then tsdat will automatically perform a unit conversion on the input data.",
+                    "type": "string"
+                },
+                "converter": {
+                    "title": "Converter",
+                    "description": "The converter class that tsdat should use to transform the data from the input source to the output source. Currently only two converters are supported: the 'DefaultConverter', which converts input units to output units using the Python libraries act-atmos and pint, and the 'StringTimeConverter', which is used exclusively for converting string values into Python datetime objects that are timezone-aware. If using the 'StringTimeConverter' class, two parameters are required: 'timezone' - the timezone the data are recorded in (default UTC), and 'time_format' - a string that is passed to the strptime() function as the string format used to create a datetime object.",
+                    "default": {
+                        "classname": "tsdat.utils.converters.DefaultConverter",
+                        "parameters": {}
+                    },
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/InputConverter"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "name"
+            ]
+        },
+        "VariableAttributes": {
+            "title": "VariableAttributes",
+            "description": "Attributes that will be recorded in the output dataset. These metadata are used to\nrecord information about the data properties and related fields (e.g., units,\nancillary_variables, etc), user-facing metadata (e.g., long_name, comment), as well as\nattributes related to quality checks and controls (e.g., valid_*, fail_*, and warn_*\nproperties).",
+            "type": "object",
+            "properties": {
+                "units": {
+                    "title": "Units",
+                    "description": "A string indicating the units the data are measured in. Tsdat uses pint to handle unit conversions, so this string must be compatible with the pint list of units, if provided. A complete list of compatible units can be found here: https://github.com/hgrecco/pint/blob/master/pint/default_en.txt. If the property is unitless, then the string '1' should be used. If the units of the property are not known, then the units attribute should be omitted and the comment attribute should include a note indicating that units are not known. Doing so provides helpful context for data users.",
+                    "type": "string"
+                },
+                "long_name": {
+                    "title": "Long Name",
+                    "description": "A brief label for the name of the measured property. The xarray python library automatically searches for this attribute to use as an axes label in plots, so the value should be suitable for display.",
+                    "type": "string"
+                },
+                "standard_name": {
+                    "title": "Standard Name",
+                    "description": "A string exactly matching a value in the CF Standard Name table which is used to provide a standardized way of identifying variables and measurements across heterogeneous datasets and domains. If a suitable match does not exist, then this attribute should be omitted. The full list of CF Standard Names is at: https://cfconventions.org/Data/cf-standard-names.",
+                    "type": "string"
+                },
+                "comment": {
+                    "title": "Comment",
+                    "description": "A user-friendly description of what the variable represents, how it was measured or derived, or any other relevant information that increases the ability of users to understand and use this data. This field plays a considerable role in creating self-documenting data, so we highly recommend including this field, especially for any variables which are particularly important for your dataset. Additionally, if the units for an attribute are unknown, then this field must include the phrase: 'Unknown units.' so that users know there is some uncertainty around this property. Variables that are unitless (e.g., categorical data or ratios), should set the 'units' to '1'.",
+                    "type": "string"
+                },
+                "valid_range": {
+                    "title": "Valid Range",
+                    "description": "A two-element list of [min, max] values outside of which the data should be treated as missing. If applying QC tests, then users should configure the quality managers to flag values outside of this range as having a 'Bad' assessment and replace those values with the variable's _FillValue.",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "fail_range": {
+                    "title": "Fail Range",
+                    "description": "A two-element list of [min, max] values outside of which the data should be teated with heavy skepticism as missing. If applying QC tests, then users should configure the quality managers to flag values outside of this range as having a 'Bad' assessment.",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "warn_range": {
+                    "title": "Warn Range",
+                    "description": "A two-element list of [min, max] values outside of which the data should be teated with some skepticism as missing. If applying QC tests, then users should configure the quality managers to flag values outside of this range as having an 'Indeterminate' assessment.",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "valid_delta": {
+                    "title": "Valid Delta",
+                    "description": "The largest difference between consecutive values in the data outside of which the data should be treated as missing. If applying QC tests, then users should configure the quality managers to flag values outside of this range as having a 'Bad' assessment and replace those values with the variable's _FillValue.",
+                    "type": "number"
+                },
+                "fail_delta": {
+                    "title": "Fail Delta",
+                    "description": "The largest difference between consecutive values in the data outside of which the data should be teated with heavy skepticism as missing. If applying QC tests, then users should configure the quality managers to flag values outside of this range as having a 'Bad' assessment.",
+                    "type": "number"
+                },
+                "warn_delta": {
+                    "title": "Warn Delta",
+                    "description": "The largest difference between consecutive values in the data outside of which the data should be teated with some skepticism as missing. If applying QC tests, then users should configure the quality managers to flag values outside of this range as having an 'Indeterminate' assessment.",
+                    "type": "number"
+                },
+                "_FillValue": {
+                    "title": " Fillvalue",
+                    "description": "A value used to initialize the variable's data and indicate that the data is missing. Defaults to -9999 for numerical data. If choosing a different value, it is important to use a value that could not reasonably be mistaken for a physical value or data point.",
+                    "default": -9999.0,
+                    "type": "number"
+                }
+            }
+        },
+        "Coordinate": {
+            "title": "Coordinate",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Output Variable Name",
+                    "description": "The name of the variable in the output file. Generally, we recommend only using lowercase alphanumeric and '_' characters to name variables, as uniformly-named variables are easier to sort through and read for users. Spaces and non-ascii characters are explicitly disallowed. The variable name should be consise, yet clear enough for users to know what the property measures. A more descriptive name for a variable (i.e. suitable for a plot title / axis label) should be provided via the 'long_name' attribute in the attrs section, if desired. The 'comment' attribute is also recommended to provide additional context about the variable, if needed.",
+                    "pattern": "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$",
+                    "type": "string"
+                },
+                "input": {
+                    "title": "Input",
+                    "description": "If the variable should be retrieved from the input dataset, then this section should be used to specify how the variable retrieval should be done.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/InputVariable"
+                        }
+                    ]
+                },
+                "data": {
+                    "title": "Data",
+                    "description": "If the variable is not meant to be retrieved from an input dataset and the value is known in advance, then the 'data' property should specify its value exactly as it should appear in the output dataset. This is commonly used for latitude/longitude/altitude data for datasets measured from a specific geographical location."
+                },
+                "dtype": {
+                    "title": "Dtype",
+                    "description": "The numpy dtype of the underlying data. This is passed to numpy as the 'dtype' keyword argument used to initialize an array (e.g., `numpy.array([1.0, 2.0], dtype='float')`). Commonly-used values include 'float', 'int', 'long'.",
+                    "type": "string"
+                },
+                "dims": {
+                    "title": "Dims",
+                    "description": "A list of coordinate variable names that dimension this data variable. Most commonly this will be set to ['time'], but for datasets where there are multiple dimensions (e.g., ADCP data measuring current velocities across time and several depths, it may look like ['time', 'depth']).",
+                    "uniqueItems": true,
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "attrs": {
+                    "title": "Attrs",
+                    "description": "The attrs section is where variable-specific metadata are stored. This metadata is incredibly important for data users, and we recommend including several properties for each variable in order to have the greatest impact. In particular, we recommend adding the 'units', 'long_name', and 'standard_name' attributes, if possible.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/VariableAttributes"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "name",
+                "dtype",
+                "dims",
+                "attrs"
+            ],
+            "additionalProperties": false
+        },
+        "Variable": {
+            "title": "Variable",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Output Variable Name",
+                    "description": "The name of the variable in the output file. Generally, we recommend only using lowercase alphanumeric and '_' characters to name variables, as uniformly-named variables are easier to sort through and read for users. Spaces and non-ascii characters are explicitly disallowed. The variable name should be consise, yet clear enough for users to know what the property measures. A more descriptive name for a variable (i.e. suitable for a plot title / axis label) should be provided via the 'long_name' attribute in the attrs section, if desired. The 'comment' attribute is also recommended to provide additional context about the variable, if needed.",
+                    "pattern": "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$",
+                    "type": "string"
+                },
+                "input": {
+                    "title": "Input",
+                    "description": "If the variable should be retrieved from the input dataset, then this section should be used to specify how the variable retrieval should be done.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/InputVariable"
+                        }
+                    ]
+                },
+                "data": {
+                    "title": "Data",
+                    "description": "If the variable is not meant to be retrieved from an input dataset and the value is known in advance, then the 'data' property should specify its value exactly as it should appear in the output dataset. This is commonly used for latitude/longitude/altitude data for datasets measured from a specific geographical location."
+                },
+                "dtype": {
+                    "title": "Dtype",
+                    "description": "The numpy dtype of the underlying data. This is passed to numpy as the 'dtype' keyword argument used to initialize an array (e.g., `numpy.array([1.0, 2.0], dtype='float')`). Commonly-used values include 'float', 'int', 'long'.",
+                    "type": "string"
+                },
+                "dims": {
+                    "title": "Dims",
+                    "description": "A list of coordinate variable names that dimension this data variable. Most commonly this will be set to ['time'], but for datasets where there are multiple dimensions (e.g., ADCP data measuring current velocities across time and several depths, it may look like ['time', 'depth']).",
+                    "uniqueItems": true,
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "attrs": {
+                    "title": "Attrs",
+                    "description": "The attrs section is where variable-specific metadata are stored. This metadata is incredibly important for data users, and we recommend including several properties for each variable in order to have the greatest impact. In particular, we recommend adding the 'units', 'long_name', and 'standard_name' attributes, if possible.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/VariableAttributes"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "name",
+                "dtype",
+                "dims",
+                "attrs"
+            ],
+            "additionalProperties": false
+        },
+        "DatasetDefinition": {
+            "title": "DatasetDefinition",
+            "description": "Defines the core output dataset structure, including coordinate variables, data\nvariables, and metadata attributes. Quality check variables are not included in this\nstructure.",
+            "type": "object",
+            "properties": {
+                "attrs": {
+                    "$ref": "#/definitions/GlobalAttributes"
+                },
+                "coords": {
+                    "title": "Coords",
+                    "description": "This section defines the coordinate variables that the rest of the data are dimensioned by. Coordinate variable data can either be retrieved from an input data source or defined statically via the 'data' property. Note that tsdat requires the dataset at least be dimensioned by a 'time' variable. Most datasets will only need the 'time' coordinate variable, but multidimensional datasets (e.g., ADCP or Lidar data (time, height)) are well-supported. Note that the 'dims' attribute is still required for coordinate variables, and that this value should be [<name>], where <name> is the name of the coord (e.g., 'time').",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Coordinate"
+                    }
+                },
+                "data_vars": {
+                    "title": "Data Vars",
+                    "description": "This section defines the data variables that the output dataset will contain. Variable data can either be retrieved from an input data source, defined statically via the 'data' property, or initalized to missing and set dynamically via user code in a tsdat pipeline.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Variable"
+                    }
+                }
+            },
+            "required": [
+                "attrs",
+                "coords",
+                "data_vars"
+            ],
+            "additionalProperties": false
+        },
+        "Overrideable_QualityDefinition_": {
+            "title": "Overrideable[QualityDefinition]",
+            "type": "object",
+            "properties": {
+                "path": {
+                    "title": "Path",
+                    "format": "file-path",
+                    "type": "string"
+                },
+                "overrides": {
+                    "title": "Overrides",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "required": [
+                "path"
+            ],
+            "additionalProperties": false
+        },
+        "CheckerConfig": {
+            "title": "CheckerConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "required": [
+                "classname"
+            ],
+            "additionalProperties": false
+        },
+        "HandlerConfig": {
+            "title": "HandlerConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "required": [
+                "classname"
+            ],
+            "additionalProperties": false
+        },
+        "ManagerConfig": {
+            "title": "ManagerConfig",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "description": "A human-readable label that is used to identify this quality manager.",
+                    "type": "string"
+                },
+                "checker": {
+                    "title": "Checker",
+                    "description": "Register a class to be used to detect and flag quality issues for the quality handler(s) registered below to handle.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/CheckerConfig"
+                        }
+                    ]
+                },
+                "handlers": {
+                    "title": "Handlers",
+                    "description": "Register one or more handlers to take some action given the results of the registered checker. Each handler in this list is defined by a classname (e.g., the python import path to a QualityHandler class), and (optionally) by a parameters dictionary.",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/HandlerConfig"
+                    }
+                },
+                "apply_to": {
+                    "title": "Apply To",
+                    "description": "The variables this quality manager should be applied to. Can be \"COORDS\", \"DATA_VARS\", or any number of individual variable names.",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "exclude": {
+                    "title": "Exclude",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "name",
+                "checker",
+                "handlers",
+                "apply_to"
+            ]
+        },
+        "QualityDefinition": {
+            "title": "QualityDefinition",
+            "type": "object",
+            "properties": {
+                "managers": {
+                    "title": "Managers",
+                    "description": "Register a list of QualityManager(s) that should be used to detect and handle data quality issues. Each QualityManager configuration block must consists of a label, a QualityChecker, at least one QualityHandler, and a list of variables that the manager should be applied to.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ManagerConfig"
+                    }
+                }
+            },
+            "required": [
+                "managers"
+            ]
+        },
+        "Overrideable_StorageConfig_": {
+            "title": "Overrideable[StorageConfig]",
+            "type": "object",
+            "properties": {
+                "path": {
+                    "title": "Path",
+                    "format": "file-path",
+                    "type": "string"
+                },
+                "overrides": {
+                    "title": "Overrides",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "required": [
+                "path"
+            ],
+            "additionalProperties": false
+        },
+        "DataReaderConfig": {
+            "title": "DataReaderConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                },
+                "name": {
+                    "title": "Name",
+                    "description": "A label used internally to distinguish registered DataHandlers.",
+                    "type": "string"
+                },
+                "regex": {
+                    "title": "Regex",
+                    "description": "A regex pattern used to map input data keys (e.g., a file path or url passed as input from the pipeline runner) to the DataReader that should be used to read that resource. If there are multiple DataReader registered and an input data key would be matched by the regex pattern of multiple DataReaders, then only the DataReader corresponding with the first match will be used. Because of this, we recommend ordering your DataReaders from most specific pattern to least specific so that the most specific pattern will be matched first.",
+                    "default": "",
+                    "type": "string",
+                    "format": "regex"
+                }
+            },
+            "required": [
+                "classname",
+                "name"
+            ],
+            "additionalProperties": false
+        },
+        "DataWriterConfig": {
+            "title": "DataWriterConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                },
+                "name": {
+                    "title": "Name",
+                    "description": "A label used internally to distinguish registered DataHandlers.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "classname",
+                "name"
+            ],
+            "additionalProperties": false
+        },
+        "HandlerRegistryConfig": {
+            "title": "HandlerRegistryConfig",
+            "type": "object",
+            "properties": {
+                "input_handlers": {
+                    "title": "Input Data Handlers",
+                    "description": "Register a list of DataHandler(s) that will be used to read input data. If multiple input DataHandlers are used, then you must add a 'regex' attribute for each that will be used to map input keys (i.e. file paths) to the input DataHandler that should be used to read that resource.",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DataReaderConfig"
+                    }
+                },
+                "output_handlers": {
+                    "title": "Output Data Handlers",
+                    "description": "Register a list of DataHandler(s) that will be used to write output data. If multiple output DataHandlers are used, then you must add a 'regex' attribute for each that will be used to map output keys (i.e. file paths) to the DataHandler that should be used to write that resource.",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DataWriterConfig"
+                    }
+                }
+            },
+            "required": [
+                "input_handlers",
+                "output_handlers"
+            ]
+        },
+        "StorageConfig": {
+            "title": "StorageConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                },
+                "registry": {
+                    "title": "Handler Registry",
+                    "description": "Register lists of DataReader(s) and DataWriter(s) to be used to read and write data from the pipeline.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/HandlerRegistryConfig"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "classname",
+                "registry"
+            ],
+            "additionalProperties": false
+        }
+    }
+}

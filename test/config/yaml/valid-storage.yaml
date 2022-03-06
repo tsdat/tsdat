@@ -1,0 +1,9 @@
+classname: tsdat.io.storage.FileSystem
+registry:
+  input_handlers:
+    - classname: tsdat.io.handlers.CsvReader
+      name: CSV Reader
+      regex: '.*\.csv'
+  output_handlers:
+    - classname: tsdat.io.handlers.NetCDFWriter
+      name: NetCDF Writer

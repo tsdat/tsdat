@@ -5,7 +5,7 @@ from enum import Enum
 from tsdat.config.dataset import DatasetDefinition
 from tsdat.config.quality import QualityDefinition
 from tsdat.config.storage import StorageConfig
-from tsdat.config.pipeline import PipelineDefinition
+from tsdat.config.pipeline import PipelineConfig
 from tsdat.config.utils import YamlModel
 
 
@@ -34,7 +34,7 @@ def generate_schema(
         "dataset": DatasetDefinition,
         "quality": QualityDefinition,
         "storage": StorageConfig,
-        "pipeline": PipelineDefinition,
+        "pipeline": PipelineConfig,
     }
     keys: List[str] = []
     if which == "all":

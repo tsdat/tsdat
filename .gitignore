@@ -12,5 +12,3 @@ coverage.xml
 .coverage
 typings/
 .mypy_cache/
-yaml/
-schema/

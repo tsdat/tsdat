@@ -1,7 +1,10 @@
-from pathlib import Path, PosixPath
+from pathlib import Path
 import re
 from typing import Any, Dict
-from tsdat.config.pipeline import PipelineDefinition
+from tsdat.config.pipeline import PipelineConfig  # , PipelineDefinition
+from tsdat.config.dataset import DatasetDefinition
+from tsdat.config.storage import StorageConfig
+from tsdat.config.quality import QualityDefinition
 
 
 # The tsdat/config/pipeline.py file supports two different modes:
@@ -19,45 +22,88 @@ from tsdat.config.pipeline import PipelineDefinition
 # TEST: PipelineDefinition 'from_yaml' produces expected model (for valid input)
 
 
-def test_pipeline_definition_from_yaml_produces_expected_model():
+def test_pipeline_config_constructor():
     expected: Dict[str, Any] = {
         "classname": "tsdat.pipeline.ingest.IngestPipeline",
         "parameters": {},
         "associations": [
-            re.compile(".*\\.csv"),
+            ".*\\.csv",
         ],
-        "config": {
-            "dataset": {
-                "path": PosixPath("test/config/yaml/valid-dataset.yaml"),
-                "overrides": {
-                    "/attrs/location_id": "sgp",
-                    "/coords/1/attrs/units": "km",
-                    "/data_vars/0/attrs/new_attribute": "please add this attribute",
-                },
+        "dataset": {
+            "path": "test/config/yaml/valid-dataset.yaml",
+            "overrides": {
+                "/attrs/location_id": "sgp",
+                "/coords/0/attrs/units": "km",
+                "/data_vars/0/attrs/new_attribute": "please add this attribute",
             },
-            "quality": {
-                "path": PosixPath("test/config/yaml/valid-quality.yaml"),
-                "overrides": {
-                    "/managers/0/exclude": [],
-                },
+        },
+        "quality": {
+            "path": "test/config/yaml/valid-quality.yaml",
+            "overrides": {
+                "/managers/0/exclude": [],
             },
-            "storage": {
-                "path": PosixPath("test/config/yaml/valid-storage.yaml"),
-                "overrides": {},
-            },
-            "settings": {
-                "persist_inputs": True,
-                "delete_inputs": False,
+        },
+        "storage": {
+            "classname": "tsdat.io.storage.FileSystem",
+            "registry": {
+                "input_handlers": [
+                    {
+                        "classname": "tsdat.io.handlers.CsvReader",
+                        "name": "CSV Reader",
+                        "regex": ".*\\.csv",
+                    }
+                ],
+                "output_handlers": [
+                    {
+                        "classname": "tsdat.io.handlers.NetCDFWriter",
+                        "name": "NetCDF Writer",
+                    }
+                ],
             },
         },
         "settings": {
-            "persist_inputs": True,
-            "delete_inputs": False,
+            # "validate_config_files": True,
             "retain_input_files": False,
         },
     }
 
-    model = PipelineDefinition.from_yaml(Path("test/config/yaml/valid-pipeline.yaml"))
+    model = PipelineConfig.from_yaml(
+        Path("test/config/yaml/valid-pipeline.yaml"), validate=False
+    )
     model_dict = model.dict(exclude_none=True, by_alias=True)
 
     assert expected == model_dict
+
+
+def test_pipeline_config_from_yaml():
+    # Load the linked config files separately
+    dataset = DatasetDefinition.from_yaml(Path("test/config/yaml/valid-dataset.yaml"))
+    quality = QualityDefinition.from_yaml(Path("test/config/yaml/valid-quality.yaml"))
+    storage = StorageConfig.from_yaml(Path("test/config/yaml/valid-storage.yaml"))
+
+    # Do expected overrides
+    dataset.attrs.location_id = "sgp"
+    dataset.coords[0].attrs.units = "km"
+    dataset.data_vars[0].attrs.new_attribute = "please add this attribute"
+    quality.managers[0].exclude = []
+
+    dict_kwargs: Dict[str, Any] = {"exclude_none": True, "by_alias": True}
+    expected_dict: Dict[str, Any] = {
+        "classname": "tsdat.pipeline.ingest.IngestPipeline",
+        "parameters": {},
+        "associations": re.compile(r".*\.csv"),
+        "settings": {
+            "validate_dataset_config": True,
+            "validate_quality_config": True,
+            "validate_storage_config": True,
+        },
+        "dataset": dataset.dict(**dict_kwargs),
+        "quality": quality.dict(**dict_kwargs),
+        "storage": storage.dict(**dict_kwargs),
+    }
+
+    # Load everything through the PipelineConfig
+    model = PipelineConfig.from_yaml(Path("test/config/yaml/valid-pipeline.yaml"))
+    model_dict = model.dict(**dict_kwargs)
+
+    assert expected_dict == model_dict
