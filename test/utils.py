@@ -1,6 +1,16 @@
 from typing import Any, List
 
 
+
+def get_error_message(error: Any) -> str:
+    return error.getrepr().reprcrash.message
+
+
+def get_warning_message(warning: Any) -> str:
+    warnings: List[str] = [_warning.message.args[0] for _warning in warning.list]
+    return "\n".join(warnings)
+
+
 def compare(*model_dicts: Any):
     """------------------------------------------------------------------------------------
     Method used to compare dictionaries side-by-side in the terminal. Primarily useful for

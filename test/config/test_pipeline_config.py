@@ -1,29 +1,21 @@
 from pathlib import Path
 import re
 from typing import Any, Dict
-from tsdat.config.pipeline import PipelineConfig  # , PipelineDefinition
+from tsdat.config.pipeline import PipelineConfig
 from tsdat.config.dataset import DatasetDefinition
 from tsdat.config.storage import StorageConfig
 from tsdat.config.quality import QualityDefinition
 
 
-# The tsdat/config/pipeline.py file supports two different modes:
-# 1. PipelineConfig - config objects for dataset, quality, storage, and settings,
-# created from paths to files, or dicts of appropriate types.
-# 2. PipelineDefinition - pipeline classname/parameters, associations, and
-# PipelineConfig, created from path to pipeline config yaml file or dictionary. Also
-# provides method to instantiate the pipeline via the classname parameter
+# TEST: PipelineConfig can instantiate a real pipeline object
+# TEST: PipelineConfig settings (validate: dataset/quality/storage) disables / enables
+# validation checks.
+# TEST: PipelineConfig performs appropriate cross-validation of dataset, quality, and
+# storage configurations.
 
 
-# TEST: PipelineConfig
-# TEST: PipelineConfig produces expected model for valid input
-# TEST: PipelineConfig from_yaml produces expected model
-# TEST: PipelineConfig 'from_yaml'
-# TEST: PipelineDefinition 'from_yaml' produces expected model (for valid input)
-
-
-def test_pipeline_config_constructor():
-    expected: Dict[str, Any] = {
+def test_pipeline_config_reads_yaml():
+    expected_dict: Dict[str, Any] = {
         "classname": "tsdat.pipeline.ingest.IngestPipeline",
         "parameters": {},
         "associations": [
@@ -62,8 +54,9 @@ def test_pipeline_config_constructor():
             },
         },
         "settings": {
-            # "validate_config_files": True,
-            "retain_input_files": False,
+            "validate_dataset_config": True,
+            "validate_quality_config": True,
+            "validate_storage_config": True,
         },
     }
 
@@ -72,10 +65,10 @@ def test_pipeline_config_constructor():
     )
     model_dict = model.dict(exclude_none=True, by_alias=True)
 
-    assert expected == model_dict
+    assert expected_dict == model_dict
 
 
-def test_pipeline_config_from_yaml():
+def test_pipeline_config_merges_overrides():
     # Load the linked config files separately
     dataset = DatasetDefinition.from_yaml(Path("test/config/yaml/valid-dataset.yaml"))
     quality = QualityDefinition.from_yaml(Path("test/config/yaml/valid-quality.yaml"))
@@ -83,6 +76,7 @@ def test_pipeline_config_from_yaml():
 
     # Do expected overrides
     dataset.attrs.location_id = "sgp"
+    dataset.attrs.datastream = "sgp.example.b1"
     dataset.coords[0].attrs.units = "km"
     dataset.data_vars[0].attrs.new_attribute = "please add this attribute"
     quality.managers[0].exclude = []
@@ -91,7 +85,7 @@ def test_pipeline_config_from_yaml():
     expected_dict: Dict[str, Any] = {
         "classname": "tsdat.pipeline.ingest.IngestPipeline",
         "parameters": {},
-        "associations": re.compile(r".*\.csv"),
+        "associations": [re.compile(r".*\.csv")],
         "settings": {
             "validate_dataset_config": True,
             "validate_quality_config": True,
