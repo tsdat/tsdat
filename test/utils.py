@@ -2,11 +2,11 @@ from typing import Any, List
 
 
 def compare(*model_dicts: Any):
-    """Compare json mapping files.
+    """------------------------------------------------------------------------------------
+    Method used to compare dictionaries side-by-side in the terminal. Primarily useful for
+    debugging.
 
-    Args:
-        mapping_files (List[Path]): The paths to the files to compare.
-    """
+    ------------------------------------------------------------------------------------"""
     # TODO: highlight differences somehow
 
     from rich.console import Console

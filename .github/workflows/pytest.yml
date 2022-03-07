@@ -20,8 +20,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install pytest coverage netcdf4
+          python -m pip install -r requirements-dev.txt
 
       - name: Run tests
         run: |
