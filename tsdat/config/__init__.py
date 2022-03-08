@@ -1,1 +1,1 @@
-from .dataset import DatasetDefinition as DatasetDefinition
+from .dataset import DatasetConfig as DatasetConfig

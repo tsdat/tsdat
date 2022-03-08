@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from pydantic import ValidationError
 from pathlib import Path
 
-from tsdat.config.dataset import DatasetDefinition
+from tsdat.config.dataset import DatasetConfig
 from tsdat.config.attributes import GlobalAttributes, AttributeModel
 from tsdat.config.variables import (
     InputVariable,
@@ -389,7 +389,7 @@ def test_dataset_definition_from_yaml():
         ],
     }
 
-    model = DatasetDefinition.from_yaml(Path("test/config/yaml/valid-dataset.yaml"))
+    model = DatasetConfig.from_yaml(Path("test/config/yaml/valid-dataset.yaml"))
     model_dict = model.dict(exclude_none=True, by_alias=True)
     model_dict["attrs"]["code_version"] = ""  # Don't care to check this value
 

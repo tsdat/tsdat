@@ -2,9 +2,9 @@ from pathlib import Path
 import re
 from typing import Any, Dict
 from tsdat.config.pipeline import PipelineConfig
-from tsdat.config.dataset import DatasetDefinition
+from tsdat.config.dataset import DatasetConfig
 from tsdat.config.storage import StorageConfig
-from tsdat.config.quality import QualityDefinition
+from tsdat.config.quality import QualityConfig
 
 
 # TEST: PipelineConfig can instantiate a real pipeline object
@@ -70,8 +70,8 @@ def test_pipeline_config_reads_yaml():
 
 def test_pipeline_config_merges_overrides():
     # Load the linked config files separately
-    dataset = DatasetDefinition.from_yaml(Path("test/config/yaml/valid-dataset.yaml"))
-    quality = QualityDefinition.from_yaml(Path("test/config/yaml/valid-quality.yaml"))
+    dataset = DatasetConfig.from_yaml(Path("test/config/yaml/valid-dataset.yaml"))
+    quality = QualityConfig.from_yaml(Path("test/config/yaml/valid-quality.yaml"))
     storage = StorageConfig.from_yaml(Path("test/config/yaml/valid-storage.yaml"))
 
     # Do expected overrides

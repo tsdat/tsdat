@@ -10,7 +10,7 @@ from .utils import YamlModel, find_duplicates
 from .variables import Variable, Coordinate
 
 
-class DatasetDefinition(YamlModel, extra=Extra.forbid):
+class DatasetConfig(YamlModel, extra=Extra.forbid):
     """Defines the core output dataset structure, including coordinate variables, data
     variables, and metadata attributes. Quality check variables are not included in this
     structure."""

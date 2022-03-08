@@ -2,8 +2,8 @@ import typer
 from typing import Any, Dict, List
 from pathlib import Path
 from enum import Enum
-from tsdat.config.dataset import DatasetDefinition
-from tsdat.config.quality import QualityDefinition
+from tsdat.config.dataset import DatasetConfig
+from tsdat.config.quality import QualityConfig
 from tsdat.config.storage import StorageConfig
 from tsdat.config.pipeline import PipelineConfig
 from tsdat.config.utils import YamlModel
@@ -31,8 +31,8 @@ def generate_schema(
 ):
     dir.mkdir(exist_ok=True)
     cls_mapping: Dict[str, Any] = {
-        "dataset": DatasetDefinition,
-        "quality": QualityDefinition,
+        "dataset": DatasetConfig,
+        "quality": QualityConfig,
         "storage": StorageConfig,
         "pipeline": PipelineConfig,
     }

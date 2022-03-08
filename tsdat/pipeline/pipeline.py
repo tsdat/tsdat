@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 from pydantic import BaseModel, BaseSettings, Extra
-from tsdat.config.dataset import DatasetDefinition
+from tsdat.config.dataset import DatasetConfig
 from tsdat.config.pipeline import Config
-from tsdat.config.quality import QualityDefinition
+from tsdat.config.quality import QualityConfig
 from tsdat.io.storage.storage import AbstractStorage
 
 
@@ -22,8 +22,8 @@ class AbstractPipeline(BaseModel, ABC, extra=Extra.allow):
 
     parameters: Any
     associations: List[Pattern] = []  # type: ignore # HACK: Pattern[str] if possible
-    dataset: DatasetDefinition
-    quality: QualityDefinition  # TODO: Parametrize the config class; custom qc dispatch
+    dataset: DatasetConfig
+    quality: QualityConfig  # TODO: Parametrize the config class; custom qc dispatch
     storage: AbstractStorage
     settings: PipelineSettings = PipelineSettings()
 

@@ -37,7 +37,7 @@ class ManagerConfig(BaseModel):
     exclude: List[str] = []
 
 
-class QualityDefinition(YamlModel):
+class QualityConfig(YamlModel):
     managers: List[ManagerConfig] = Field(
         description="Register a list of QualityManager(s) that should be used to detect"
         " and handle data quality issues. Each QualityManager configuration block must"

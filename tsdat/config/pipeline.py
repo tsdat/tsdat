@@ -7,8 +7,8 @@ from pydantic import (
     validator,
 )
 from typing import Any, Dict, List, Pattern, Union
-from .dataset import DatasetDefinition
-from .quality import QualityDefinition
+from .dataset import DatasetConfig
+from .quality import QualityConfig
 from .storage import StorageConfig
 from .utils import (
     ParametrizedClass,
@@ -63,22 +63,27 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
     from the parsed pipeline configuration file.
     ------------------------------------------------------------------------------------"""
 
+    # TODO: Provide a way of instantiating only the associations (so we can quickly
+    # determine which pipeline should be used for a given input)
+    # TODO: Add a root validator to ensure that properties from the quality config align
+    # with dataset config properties -- e.g., includes / excludes are real variables
+
     # HACK: Pattern[str] type is correct, but doesn't work with pydantic v1.9.0
     associations: List[Pattern]  # type: ignore
     settings: ConfigSettings = ConfigSettings()  # type: ignore
 
     # HACK: Overrideable is used to trick pydantic into letting us generate json schema
     # for these objects, but during construction these are converted into the actual
-    # DatasetDefinition, QualityDefinition, and StorageConfig objects.
-    dataset: Union[Overrideable[DatasetDefinition], DatasetDefinition]
-    quality: Union[Overrideable[QualityDefinition], QualityDefinition]
+    # DatasetConfig, QualityConfig, and StorageConfig objects.
+    dataset: Union[Overrideable[DatasetConfig], DatasetConfig]
+    quality: Union[Overrideable[QualityConfig], QualityConfig]
     storage: Union[Overrideable[StorageConfig], StorageConfig]
 
     @validator("dataset", pre=True)
     @classmethod
     def resolve_dataset_configurations(
         cls, v: Dict[str, Any], values: Dict[str, Any], **kwargs: Any
-    ) -> DatasetDefinition:
+    ) -> DatasetConfig:
         # Load YAML, merge overrides
         if matches_overrideable_schema(v):
             defaults = get_yaml(Path(v["path"]))
@@ -92,14 +97,14 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
         settings: ConfigSettings = values["settings"]
         validate = settings.validate_dataset_config
         if not validate:
-            return DatasetDefinition.construct(**v)
-        return DatasetDefinition(**v)
+            return DatasetConfig.construct(**v)
+        return DatasetConfig(**v)
 
     @validator("quality", pre=True)
     @classmethod
     def resolve_quality_configurations(
         cls, v: Dict[str, Any], values: Dict[str, Any], **kwargs: Any
-    ) -> QualityDefinition:
+    ) -> QualityConfig:
         # Load YAML, merge overrides
         if matches_overrideable_schema(v):
             defaults = get_yaml(Path(v["path"]))
@@ -111,8 +116,8 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
         settings: ConfigSettings = values["settings"]
         validate = settings.validate_quality_config
         if not validate:
-            return QualityDefinition.construct(**v)
-        return QualityDefinition(**v)
+            return QualityConfig.construct(**v)
+        return QualityConfig(**v)
 
     @validator("storage", pre=True)
     @classmethod
@@ -133,13 +138,20 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
             return StorageConfig.construct(**v)
         return StorageConfig(**v)
 
-    # TODO: Add a root validator to ensure that properties from the quality config align
-    # with dataset config properties
-
-    # TODO: Provide a way of instantiating only the associations (so we can quickly
-    # determine which pipeline should be used for a given input)
     @classmethod
     def from_yaml(cls, filepath: Path, validate: bool = True):
+        """------------------------------------------------------------------------------------
+        Loads the PipelineConfig from a yaml configuration file.
+
+        Args:
+            filepath (Path): The path to the yaml configuration file.
+            validate (bool, optional): Run PipelineConfig validators on the pipeline config
+            file. This is highly recommended. Defaults to True.
+
+        Returns:
+            PipelineConfig: A PipelineConfig instance.
+
+        ------------------------------------------------------------------------------------"""
 
         yaml_dict = get_yaml(filepath)
         assert all(
@@ -147,25 +159,35 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
             for p in ["classname", "associations", "dataset", "quality", "storage"]
         )
 
-        # dataset_model = cls.resolve_dataset_configurations(
-        #     v=yaml_dict["dataset"], values=yaml_dict
-        # )
-        # quality_model = cls.resolve_quality_configurations(
-        #     v=yaml_dict["quality"], values=yaml_dict
-        # )
-        # storage_model = cls.resolve_storage_configurations(
-        #     v=yaml_dict["storage"], values=yaml_dict
-        # )
-
-        # yaml_dict["dataset"] = dataset_model
-        # yaml_dict["quality"] = quality_model
-        # yaml_dict["storage"] = storage_model
-
+        # TODO: Setting 'validate' to False actually leads to totally different behavior
+        # (the overrides do not get merged). There should be a different option to not
+        # merge the overrides, and 'validate' should only refer to the validation of the
+        # merged final structure.
         if not validate:
             return cls.construct(**yaml_dict)
 
         return cls(**yaml_dict)
 
     def instaniate_pipeline(self, validate: bool = True) -> Any:
-        # TEST: Pipeline instantiation from config file needs to be tested
+        """------------------------------------------------------------------------------------
+        This method instantiates the tsdat.pipeline.BasePipeline subclass referenced by the
+        classname property on the PipelineConfig instance and passes all properties on the
+        PipelineConfig class (except for 'classname') as keyword arguments to the constructor
+        of the tsdat.pipeline.BasePipeline subclass.
+
+        Properties and sub-properties of the PipelineConfig class that are subclasses of
+        tsdat.config.utils.ParametrizedClass (e.g, classes that define a 'classname' and
+        optional 'parameters' properties) will also be instantiated in similar fashion. See
+        tsdat.config.utils.recursive_instantiate for implementation details.
+
+
+        Args:
+            validate (bool, optional): Validate the tsdat.pipeline.BasePipeline subclass and
+            its child classes upon instantiation (i.e. run validators). This is highly
+            recommended. Defaults to True.
+
+        Returns:
+            Any: An instance of a tsdat.pipeline.BasePipeline subclass.
+
+        ------------------------------------------------------------------------------------"""
         return recusive_instantiate(self, validate=validate)
