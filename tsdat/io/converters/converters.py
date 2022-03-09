@@ -4,7 +4,9 @@
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict
+import numpy as np
 from pydantic import BaseModel, Extra
+from tsdat.config.variables import Variable
 
 
 # TODO: Noticing a lot of classes like:
@@ -23,10 +25,12 @@ from pydantic import BaseModel, Extra
 
 
 class BaseConverter(BaseModel, ABC, extra=Extra.forbid):
-    parameters: Dict[str, Any] = {}
+    parameters: Any = {}
 
     @abstractmethod
-    def run(self, *args: Any, **kwargs: Any):
+    def run(
+        self, data: np.ndarray[Any, Any], variable_config: Variable
+    ) -> np.ndarray[Any, Any]:
         ...
 
     # TODO: Think about refactoring the converter interface; previously these defined a
