@@ -2,10 +2,10 @@ import xarray as xr
 
 from typing import Dict, List
 
-from tsdat.pipeline.pipeline import AbstractPipeline
+from tsdat.pipeline.pipeline import BasePipeline
 
 
-class TransformationPipeline(AbstractPipeline):
+class TransformationPipeline(BasePipeline):
     # Support input from multiple sources
     # Support use of multiple datasets throughout pipeline
     # Support output of multiple datasets

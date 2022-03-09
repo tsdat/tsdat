@@ -2,11 +2,11 @@ import xarray as xr
 
 from typing import Dict, List
 
-from tsdat.pipeline.pipeline import AbstractPipeline
+from tsdat.pipeline.pipeline import BasePipeline
 from tsdat.utils import decode_cf_wrapper
 
 
-class IngestPipeline(AbstractPipeline):
+class IngestPipeline(BasePipeline):
     def run(self, inputs: List[str]) -> xr.Dataset:
         raw_dataset_mapping = self.handle_inputs(inputs)
         raw_dataset_mapping = self.hook_customize_raw_datasets(raw_dataset_mapping)
