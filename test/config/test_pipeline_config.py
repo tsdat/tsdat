@@ -1,5 +1,6 @@
-from pathlib import Path
 import re
+import tempfile
+from pathlib import Path
 from typing import Any, Dict
 from tsdat.config.pipeline import PipelineConfig
 from tsdat.config.dataset import DatasetConfig
@@ -101,3 +102,10 @@ def test_pipeline_config_merges_overrides():
     model_dict = model.dict(**dict_kwargs)
 
     assert expected_dict == model_dict
+
+
+def test_pipeline_config_can_generate_schema():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_file = Path(tmpdir) / "pipeline-schema.json"
+        PipelineConfig.generate_schema(tmp_file)
+        assert tmp_file.exists()

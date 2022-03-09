@@ -1,6 +1,7 @@
-from pathlib import Path
 import re
 import pytest
+import tempfile
+from pathlib import Path
 from pydantic import ValidationError
 from typing import Any, Dict
 from test.utils import get_error_message
@@ -69,6 +70,7 @@ def test_writer_config_validates_properties():
     actual_msg = get_error_message(error)
     for expected_msg in expected_error_msgs:
         assert expected_msg in actual_msg
+
 
 def test_handler_registry_produces_expected_dict():
     registry_dict: Dict[str, Any] = {
@@ -201,15 +203,37 @@ def test_handler_registry_validates_properties():
     for expected_msg in expected_error_msgs:
         assert expected_msg in actual_msg
 
+
 def test_storage_config_produces_expected_yaml():
     expected_dict: Dict[str, Any] = {
         "classname": "tsdat.io.storage.FileSystem",
         "parameters": {},
         "registry": {
-            "input_handlers": [{"classname": "tsdat.io.handlers.CsvReader", "parameters": {}, "name": "CSV Reader", "regex": re.compile(r".*\.csv")}],
-            "output_handlers": [{"classname": "tsdat.io.handlers.NetCDFWriter", "parameters": {}, "name": "NetCDF Writer"}],
-            
-        }
+            "input_handlers": [
+                {
+                    "classname": "tsdat.io.handlers.CsvReader",
+                    "parameters": {},
+                    "name": "CSV Reader",
+                    "regex": re.compile(r".*\.csv"),
+                }
+            ],
+            "output_handlers": [
+                {
+                    "classname": "tsdat.io.handlers.NetCDFWriter",
+                    "parameters": {},
+                    "name": "NetCDF Writer",
+                }
+            ],
+        },
     }
-    storage_config_model = StorageConfig.from_yaml(Path("test/config/yaml/valid-storage.yaml"))
+    storage_config_model = StorageConfig.from_yaml(
+        Path("test/config/yaml/valid-storage.yaml")
+    )
     assert storage_config_model.dict() == expected_dict
+
+
+def test_storage_config_can_generate_schema():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_file = Path(tmpdir) / "storage-schema.json"
+        StorageConfig.generate_schema(tmp_file)
+        assert tmp_file.exists()

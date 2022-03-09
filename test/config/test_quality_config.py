@@ -1,4 +1,5 @@
 import pytest
+import tempfile
 from pathlib import Path
 from typing import Any, Dict
 from pydantic import ValidationError
@@ -137,3 +138,10 @@ def test_quality_config_from_yaml():
     }
     qc_model = QualityConfig.from_yaml(Path("test/config/yaml/valid-quality.yaml"))
     assert qc_model.dict() == expected_dict
+
+
+def test_quality_config_can_generate_schema():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_file = Path(tmpdir) / "quality-schema.json"
+        QualityConfig.generate_schema(tmp_file)
+        assert tmp_file.exists()

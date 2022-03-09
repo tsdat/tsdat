@@ -1,4 +1,5 @@
 import pytest
+import tempfile
 from typing import Any, Dict, List
 from pydantic import ValidationError
 from pathlib import Path
@@ -348,13 +349,10 @@ def test_coordinate_requires_self_dims():
     assert good_coord == coord.dict(exclude_none=True, by_alias=True)
 
 
-# TEST: variable can have either input or data but not both
 # TEST: variable dtype is one of allowed types
-# TEST: dataset definition creation from dict matches expected (by_alias=True)
 # TEST: dataset validation of data variable dimensions matching coordinate variable names
 # TEST: dataset validation of data variable, coordinate variable, name uniqueness
 # TEST: dataset validation of time as a required coordinate variable
-# TEST: dataset can create schema?
 
 
 def test_dataset_definition_from_yaml():
@@ -414,3 +412,10 @@ def test_dataset_definition_from_yaml():
     model_dict["attrs"]["code_version"] = ""  # Don't care to check this value
 
     assert expected == model_dict
+
+
+def test_dataset_config_can_generate_schema():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_file = Path(tmpdir) / "dataset-schema.json"
+        DatasetConfig.generate_schema(tmp_file)
+        assert tmp_file.exists()
