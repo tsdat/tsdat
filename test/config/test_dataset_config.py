@@ -327,9 +327,29 @@ def test_variable_retrieval_config():
         Variable(**bad_var)
 
 
+def test_coordinate_requires_self_dims():
+    base_coord: Dict[str, Any] = {
+        "name": "my_coordinate",
+        "data": [1.0, 2.0, 3.0],
+        "dtype": "float",
+        "attrs": {"units": "1", "_FillValue": -9999.0},
+    }
+    bad_coord: Dict[str, Any] = {"dims": ["some_other_var"]}
+    bad_coord.update(base_coord)
+    with pytest.raises(
+        ValidationError,
+        match=r"coord 'my_coordinate' must have dims \['my_coordinate'\]",
+    ):
+        Coordinate(**bad_coord)
+
+    good_coord: Dict[str, Any] = {"dims": ["my_coordinate"]}
+    good_coord.update(base_coord)
+    coord = Coordinate(**good_coord)
+    assert good_coord == coord.dict(exclude_none=True, by_alias=True)
+
+
 # TEST: variable can have either input or data but not both
-# TEST: variable dtype is allowed
-# TEST: coordinate must be dimensioned by itself
+# TEST: variable dtype is one of allowed types
 # TEST: dataset definition creation from dict matches expected (by_alias=True)
 # TEST: dataset validation of data variable dimensions matching coordinate variable names
 # TEST: dataset validation of data variable, coordinate variable, name uniqueness

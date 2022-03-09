@@ -26,9 +26,8 @@ class DataWriter(BaseDataHandler, ABC):
 
 
 class HandlerRegistry(BaseModel, extra=Extra.forbid):
-    # IDEA: Adapt to allow users to plug-in custom Handler registries
-    # E.g., to change how reading / writing dispatch works
-    # parameters: Dict[str, Any] = {}
+    # IDEA: Adapt to allow users to plug-in custom Handler registries (e.g., to allow
+    # users to customize how reading and writing tasks should be done)
 
     input_handlers: List[DataReader]
     output_handlers: List[DataWriter]
