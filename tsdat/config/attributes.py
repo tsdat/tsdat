@@ -1,3 +1,4 @@
+import os
 import warnings
 
 from dunamai import Version, Style
@@ -28,6 +29,23 @@ class AttributeModel(BaseModel, extra=Extra.allow):
                     f"attr '{key}' -> '{value}' contains a non-ascii character."
                 )
         return values
+
+
+def get_code_version() -> str:
+    version = "N/A"
+    try:
+        version = os.environ["CODE_VERSION"]
+    except KeyError:
+        try:
+            version = Version.from_git().serialize(dirty=True, style=Style.SemVer)
+        except BaseException:
+            warnings.warn(
+                "Could not get code_version from either the 'CODE_VERSION' environment"
+                " variable nor from git history. The 'code_version' global attribute"
+                " will be set to 'N/A'.",
+                RuntimeWarning,
+            )
+    return version
 
 
 class GlobalAttributes(AttributeModel):
@@ -129,7 +147,7 @@ class GlobalAttributes(AttributeModel):
         " warning will be raised if this is set in the config file.",
     )
     code_version: StrictStr = Field(
-        "",
+        default_factory=get_code_version,
         description="Attribute that will be recorded automatically by the pipeline. A"
         " warning will be raised if this is set in the config file. The code_version"
         " attribute reads the 'CODE_VERSION' environment variable or parses the git"
@@ -146,15 +164,6 @@ class GlobalAttributes(AttributeModel):
                 f" value of '{v}' will be ignored."
             )
         return ""
-
-    @validator("code_version", always=True)
-    def set_code_version(cls, version: str) -> str:
-        version = "N/A"
-        try:
-            version = Version.from_git().serialize(dirty=True, style=Style.SemVer)
-        except BaseException:
-            warnings.warn("Could not get code_version from git", RuntimeWarning)
-        return version
 
     @root_validator(skip_on_failure=True)
     @classmethod
