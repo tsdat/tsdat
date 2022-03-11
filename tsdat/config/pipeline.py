@@ -163,6 +163,10 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
         # (the overrides do not get merged). There should be a different option to not
         # merge the overrides, and 'validate' should only refer to the validation of the
         # merged final structure.
+        # Maybe the current logic (merging overrides) should actually be a different method and
+        # the from_yaml method can go back to the default behavior from YamlModel; just read in
+        # the yaml file and create a model of it. Validation off by default so we don't merge
+        # stuff in.
         if not validate:
             return cls.construct(**yaml_dict)
 

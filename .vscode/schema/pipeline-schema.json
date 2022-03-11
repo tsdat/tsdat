@@ -1,6 +1,6 @@
 {
     "title": "PipelineConfig",
-    "description": "------------------------------------------------------------------------------------\nClass used read in the yaml pipeline config file and to generate its json schema for\nearly validation of its properties.\n------------------------------------------------------------------------------------",
+    "description": "------------------------------------------------------------------------------------\nClass used read in the yaml pipeline config file and to generate its json schema for\nearly validation of its properties.\n\nThis class also provides a method to instantiate a subclass of tsdat.pipeline.Pipeline\nfrom the parsed pipeline configuration file.\n------------------------------------------------------------------------------------",
     "type": "object",
     "properties": {
         "classname": {
@@ -25,11 +25,13 @@
         "settings": {
             "title": "Settings",
             "default": {
-                "validate_config_files": true
+                "validate_dataset_config": true,
+                "validate_quality_config": true,
+                "validate_storage_config": true
             },
             "allOf": [
                 {
-                    "$ref": "#/definitions/PipelineSettings"
+                    "$ref": "#/definitions/ConfigSettings"
                 }
             ]
         },
@@ -37,10 +39,10 @@
             "title": "Dataset",
             "anyOf": [
                 {
-                    "$ref": "#/definitions/Overrideable_DatasetDefinition_"
+                    "$ref": "#/definitions/Overrideable_DatasetConfig_"
                 },
                 {
-                    "$ref": "#/definitions/DatasetDefinition"
+                    "$ref": "#/definitions/DatasetConfig"
                 }
             ]
         },
@@ -48,10 +50,10 @@
             "title": "Quality",
             "anyOf": [
                 {
-                    "$ref": "#/definitions/Overrideable_QualityDefinition_"
+                    "$ref": "#/definitions/Overrideable_QualityConfig_"
                 },
                 {
-                    "$ref": "#/definitions/QualityDefinition"
+                    "$ref": "#/definitions/QualityConfig"
                 }
             ]
         },
@@ -76,23 +78,42 @@
     ],
     "additionalProperties": false,
     "definitions": {
-        "PipelineSettings": {
-            "title": "PipelineSettings",
+        "ConfigSettings": {
+            "title": "ConfigSettings",
             "description": "Base class for settings, allowing values to be overridden by environment variables.\n\nThis is useful in production for secrets you do not wish to save in code, it plays nicely with docker(-compose),\nHeroku and any 12 factor app design.",
             "type": "object",
             "properties": {
-                "validate_config_files": {
-                    "title": "Validate Config Files",
+                "validate_dataset_config": {
+                    "title": "Validate Dataset Config",
+                    "description": "Validate the dataset configuration file after any overrides have been merged. Disabling validation is generally 10-30x faster, but comes with some risks and can easily lead to buggy behavior if you are not careful. For example. the dataset configuration model uses validators to set defaults for the 'datastream' attribute based on other global attributes that are set. The 'datastream' attribute is used elsewhere in the pipeline as a label for the dataset, and is used by some storage classes to generate the filepath where the data should be saved. If you disable dataset configuration validation, THIS WILL NOT WORK, so you will need to take care to set the 'datastream' attribute manually in your config file directly. Because of the complicated nature of dataset configuration files, it is almost always better to leave validation ON.",
                     "default": true,
                     "env_names": [
-                        "validate_config_files"
+                        "validate_dataset_config"
+                    ],
+                    "type": "boolean"
+                },
+                "validate_quality_config": {
+                    "title": "Validate Quality Config",
+                    "description": "Validate the quality configuration file after any overrides have been merged. Disabling validation is generally 10-30x faster, but comes with some risks and can easily lead to buggy behavior if you are not careful. For example. the quality configuration model uses validators to set defaults for regex patterns in the registry/readers section. If you disable validation of the quality configuration file, then you must ensure that your regex patterns are set explicitly, as you will not be able to rely on the dynamic defaults.",
+                    "default": true,
+                    "env_names": [
+                        "validate_quality_config"
+                    ],
+                    "type": "boolean"
+                },
+                "validate_storage_config": {
+                    "title": "Validate Storage Config",
+                    "description": "Validate the storage configuration file after any overrides have been merged. Disabling validation is generally 10-30x faster, but comes with some risks and can easily lead to buggy behavior if you are not careful.",
+                    "default": true,
+                    "env_names": [
+                        "validate_storage_config"
                     ],
                     "type": "boolean"
                 }
             }
         },
-        "Overrideable_DatasetDefinition_": {
-            "title": "Overrideable[DatasetDefinition]",
+        "Overrideable_DatasetConfig_": {
+            "title": "Overrideable[DatasetConfig]",
             "type": "object",
             "properties": {
                 "path": {
@@ -464,8 +485,8 @@
             ],
             "additionalProperties": false
         },
-        "DatasetDefinition": {
-            "title": "DatasetDefinition",
+        "DatasetConfig": {
+            "title": "DatasetConfig",
             "description": "Defines the core output dataset structure, including coordinate variables, data\nvariables, and metadata attributes. Quality check variables are not included in this\nstructure.",
             "type": "object",
             "properties": {
@@ -496,8 +517,8 @@
             ],
             "additionalProperties": false
         },
-        "Overrideable_QualityDefinition_": {
-            "title": "Overrideable[QualityDefinition]",
+        "Overrideable_QualityConfig_": {
+            "title": "Overrideable[QualityConfig]",
             "type": "object",
             "properties": {
                 "path": {
@@ -610,8 +631,8 @@
                 "apply_to"
             ]
         },
-        "QualityDefinition": {
-            "title": "QualityDefinition",
+        "QualityConfig": {
+            "title": "QualityConfig",
             "type": "object",
             "properties": {
                 "managers": {
@@ -712,7 +733,7 @@
             "title": "HandlerRegistryConfig",
             "type": "object",
             "properties": {
-                "input_handlers": {
+                "readers": {
                     "title": "Input Data Handlers",
                     "description": "Register a list of DataHandler(s) that will be used to read input data. If multiple input DataHandlers are used, then you must add a 'regex' attribute for each that will be used to map input keys (i.e. file paths) to the input DataHandler that should be used to read that resource.",
                     "minItems": 1,
@@ -721,7 +742,7 @@
                         "$ref": "#/definitions/DataReaderConfig"
                     }
                 },
-                "output_handlers": {
+                "writers": {
                     "title": "Output Data Handlers",
                     "description": "Register a list of DataHandler(s) that will be used to write output data. If multiple output DataHandlers are used, then you must add a 'regex' attribute for each that will be used to map output keys (i.e. file paths) to the DataHandler that should be used to write that resource.",
                     "minItems": 1,
@@ -732,8 +753,8 @@
                 }
             },
             "required": [
-                "input_handlers",
-                "output_handlers"
+                "readers",
+                "writers"
             ]
         },
         "StorageConfig": {

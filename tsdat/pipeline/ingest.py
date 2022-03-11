@@ -33,7 +33,7 @@ class IngestPipeline(BasePipeline):
     retriever: BaseRetriever = SimpleRetriever()
 
     def run(self, inputs: List[str]) -> xr.Dataset:
-        # TODO: Retriever methods must return something, otherwise we must provide a way
+        # HACK: Retriever methods must return something, otherwise we must provide a way
         # to clean up any internal caches in between invocations of pipeline.run().
         self.retriever.fetch_inputs(inputs)
         self.hook_customize_raw_datasets()  # will access raw datasets on self.retriever directly

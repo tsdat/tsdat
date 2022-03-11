@@ -41,7 +41,7 @@ class BaseStorage(BaseModel, ABC, extra=Extra.forbid):
 
     # @contextlib.contextmanager
     # def uploadable_tmp_dir(self, upload: bool = True) -> Generator[Path, None, None]:
-    #     # TEST: This should cleanup
+    #     # TEST: This should cleanup data
     #     tmp_dir = tempfile.TemporaryDirectory()
     #     tmp_dirpath = Path(tmp_dir.name)
     #     try:

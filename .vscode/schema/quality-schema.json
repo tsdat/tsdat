@@ -1,5 +1,5 @@
 {
-    "title": "QualityDefinition",
+    "title": "QualityConfig",
     "type": "object",
     "properties": {
         "managers": {

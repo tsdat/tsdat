@@ -1,5 +1,5 @@
 {
-    "title": "DatasetDefinition",
+    "title": "DatasetConfig",
     "description": "Defines the core output dataset structure, including coordinate variables, data\nvariables, and metadata attributes. Quality check variables are not included in this\nstructure.",
     "type": "object",
     "properties": {

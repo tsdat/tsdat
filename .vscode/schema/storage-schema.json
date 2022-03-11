@@ -94,7 +94,7 @@
             "title": "HandlerRegistryConfig",
             "type": "object",
             "properties": {
-                "input_handlers": {
+                "readers": {
                     "title": "Input Data Handlers",
                     "description": "Register a list of DataHandler(s) that will be used to read input data. If multiple input DataHandlers are used, then you must add a 'regex' attribute for each that will be used to map input keys (i.e. file paths) to the input DataHandler that should be used to read that resource.",
                     "minItems": 1,
@@ -103,7 +103,7 @@
                         "$ref": "#/definitions/DataReaderConfig"
                     }
                 },
-                "output_handlers": {
+                "writers": {
                     "title": "Output Data Handlers",
                     "description": "Register a list of DataHandler(s) that will be used to write output data. If multiple output DataHandlers are used, then you must add a 'regex' attribute for each that will be used to map output keys (i.e. file paths) to the DataHandler that should be used to write that resource.",
                     "minItems": 1,
@@ -114,8 +114,8 @@
                 }
             },
             "required": [
-                "input_handlers",
-                "output_handlers"
+                "readers",
+                "writers"
             ]
         }
     }

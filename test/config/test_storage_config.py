@@ -74,7 +74,7 @@ def test_writer_config_validates_properties():
 
 def test_handler_registry_produces_expected_dict():
     registry_dict: Dict[str, Any] = {
-        "input_handlers": [
+        "readers": [
             {
                 "classname": "tsdat.io.handlers.readers.NetCDFReader",
                 "name": "Read NetCDF",
@@ -86,7 +86,7 @@ def test_handler_registry_produces_expected_dict():
                 "regex": ".*\\.csv",
             },
         ],
-        "output_handlers": [
+        "writers": [
             {
                 "classname": "tsdat.io.handlers.writers.NetCDFWriter",
                 "name": "Write NetCDF",
@@ -95,7 +95,7 @@ def test_handler_registry_produces_expected_dict():
         ],
     }
     expected_dict: Dict[str, Any] = {
-        "input_handlers": [
+        "readers": [
             {
                 "classname": "tsdat.io.handlers.readers.NetCDFReader",
                 "parameters": {},
@@ -109,7 +109,7 @@ def test_handler_registry_produces_expected_dict():
                 "regex": re.compile(".*\\.csv"),
             },
         ],
-        "output_handlers": [
+        "writers": [
             {
                 "classname": "tsdat.io.handlers.writers.NetCDFWriter",
                 "parameters": {},
@@ -128,25 +128,25 @@ def test_handler_registry_produces_expected_dict():
 
 def test_handler_registry_sets_default_regex():
     registry_dict: Dict[str, Any] = {
-        "input_handlers": [
+        "readers": [
             {
                 "classname": "tsdat.io.handlers.readers.NetCDFReader",
                 "name": "Read NetCDF",
             },
         ],
-        "output_handlers": [
+        "writers": [
             {"classname": "tsdat.io.handlers.writers.CSVWriter", "name": "Write CSV"},
         ],
     }
     registry = HandlerRegistryConfig(**registry_dict)
-    assert registry.input_handlers[0].regex == re.compile(".*")  # type: ignore
+    assert registry.readers[0].regex == re.compile(".*")  # type: ignore
 
 
 def test_handler_registry_requires_handler_registration():
-    registry_dict: Dict[str, Any] = {"input_handlers": [], "output_handlers": []}
+    registry_dict: Dict[str, Any] = {"readers": [], "writers": []}
     expected_error_msgs = [
-        "input_handlers\n  ensure this value has at least 1 items",
-        "output_handlers\n  ensure this value has at least 1 items",
+        "readers\n  ensure this value has at least 1 items",
+        "writers\n  ensure this value has at least 1 items",
     ]
     with pytest.raises(ValidationError) as error:
         HandlerRegistryConfig(**registry_dict)
@@ -158,7 +158,7 @@ def test_handler_registry_requires_handler_registration():
 
 def test_handler_registry_validates_properties():
     registry_dict: Dict[str, Any] = {
-        "input_handlers": [
+        "readers": [
             {
                 "name": "duplicate_name",
                 "classname": "tsdat.io.handlers.readers.CSVReader",
@@ -168,7 +168,7 @@ def test_handler_registry_validates_properties():
                 "classname": "tsdat.io.handlers.readers.NetCDFReader",
             },
         ],
-        "output_handlers": [
+        "writers": [
             {
                 "name": "duplicate_name",
                 "classname": "tsdat.io.handlers.writers.CSVWriter",
@@ -180,8 +180,8 @@ def test_handler_registry_validates_properties():
         ],
     }
     expected_error_msgs = [
-        "input_handlers\n  input_handlers contains handlers with duplicate names: ['duplicate_name']",
-        "output_handlers\n  output_handlers contains handlers with duplicate names: ['duplicate_name']",
+        "readers\n  readers contains handlers with duplicate names: ['duplicate_name']",
+        "writers\n  writers contains handlers with duplicate names: ['duplicate_name']",
     ]
     with pytest.raises(ValidationError) as error:
         HandlerRegistryConfig(**registry_dict)
@@ -191,10 +191,10 @@ def test_handler_registry_validates_properties():
         assert expected_msg in actual_msg
 
     # After correcting the error it should give another error due to input regex not set
-    registry_dict["input_handlers"][0]["name"] = "new_name"
-    registry_dict["output_handlers"][0]["name"] = "new_name"
+    registry_dict["readers"][0]["name"] = "new_name"
+    registry_dict["writers"][0]["name"] = "new_name"
     expected_error_msgs = [
-        "If len(input_handlers) > 1 then all handlers should define a 'regex' pattern"
+        "If len(readers) > 1 then all handlers should define a 'regex' pattern"
     ]
     with pytest.raises(ValidationError) as error:
         HandlerRegistryConfig(**registry_dict)
@@ -209,7 +209,7 @@ def test_storage_config_produces_expected_yaml():
         "classname": "tsdat.io.storage.FileSystem",
         "parameters": {},
         "registry": {
-            "input_handlers": [
+            "readers": [
                 {
                     "classname": "tsdat.io.handlers.CsvReader",
                     "parameters": {},
@@ -217,7 +217,7 @@ def test_storage_config_produces_expected_yaml():
                     "regex": re.compile(r".*\.csv"),
                 }
             ],
-            "output_handlers": [
+            "writers": [
                 {
                     "classname": "tsdat.io.handlers.NetCDFWriter",
                     "parameters": {},

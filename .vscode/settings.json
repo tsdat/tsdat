@@ -35,8 +35,9 @@
         "FIXME",
         "TODO",
         "TEST",
+        "IDEA",
         "XXX",
         "[ ]",
         "[x]"
-    ]
+    ],
 }

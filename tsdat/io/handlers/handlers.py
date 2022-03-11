@@ -29,8 +29,8 @@ class HandlerRegistry(BaseModel, extra=Extra.forbid):
     # IDEA: Adapt to allow users to plug-in custom Handler registries (e.g., to allow
     # users to customize how reading and writing tasks should be done)
 
-    input_handlers: List[DataReader]
-    output_handlers: List[DataWriter]
+    readers: List[DataReader]
+    writers: List[DataWriter]
 
     # TODO: Consider how DataWriters should interact with the Storage API, given that
     # the HandlerRegistry is a class / property kept within a Storage instance.
@@ -63,7 +63,7 @@ class HandlerRegistry(BaseModel, extra=Extra.forbid):
 
         ------------------------------------------------------------------------------------"""
         reader: Optional[DataReader] = None
-        for reader in self.input_handlers:
+        for reader in self.readers:
             if reader.regex.match(key):
                 break
         if reader is None:
@@ -110,5 +110,5 @@ class HandlerRegistry(BaseModel, extra=Extra.forbid):
             dataset (xr.Dataset): The dataset to write.
 
         ------------------------------------------------------------------------------------"""
-        for writer in self.output_handlers:
+        for writer in self.writers:
             writer.write(dataset)

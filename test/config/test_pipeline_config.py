@@ -39,14 +39,14 @@ def test_pipeline_config_reads_yaml():
         "storage": {
             "classname": "tsdat.io.storage.FileSystem",
             "registry": {
-                "input_handlers": [
+                "readers": [
                     {
                         "classname": "tsdat.io.handlers.CsvReader",
                         "name": "CSV Reader",
                         "regex": ".*\\.csv",
                     }
                 ],
-                "output_handlers": [
+                "writers": [
                     {
                         "classname": "tsdat.io.handlers.NetCDFWriter",
                         "name": "NetCDF Writer",

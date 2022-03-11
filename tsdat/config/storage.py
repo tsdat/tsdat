@@ -32,7 +32,7 @@ class DataWriterConfig(DataHandlerConfig):
 
 class HandlerRegistryConfig(BaseModel):
     # TODO: rename to readers and writers
-    input_handlers: List[DataReaderConfig] = Field(
+    readers: List[DataReaderConfig] = Field(
         min_items=1,
         title="Input Data Handlers",
         description="Register a list of DataHandler(s) that will be used to read input"
@@ -40,7 +40,7 @@ class HandlerRegistryConfig(BaseModel):
         " attribute for each that will be used to map input keys (i.e. file paths) to"
         " the input DataHandler that should be used to read that resource.",
     )
-    output_handlers: List[DataWriterConfig] = Field(
+    writers: List[DataWriterConfig] = Field(
         min_items=1,
         title="Output Data Handlers",
         description="Register a list of DataHandler(s) that will be used to write"
@@ -49,7 +49,7 @@ class HandlerRegistryConfig(BaseModel):
         " paths) to the DataHandler that should be used to write that resource.",
     )
 
-    @validator("input_handlers", "output_handlers")
+    @validator("readers", "writers")
     @classmethod
     def validate_unique_handler_names(
         cls, v: List[DataHandlerConfig], field: ModelField
@@ -60,7 +60,7 @@ class HandlerRegistryConfig(BaseModel):
             )
         return v
 
-    @validator("input_handlers")
+    @validator("readers")
     @classmethod
     def validate_regex_patterns(
         cls, v: List[DataHandlerConfig], field: ModelField

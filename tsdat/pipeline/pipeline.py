@@ -14,9 +14,8 @@ class BasePipeline(BaseModel, ABC, extra=Extra.forbid):
 
     parameters: Any
     associations: List[Pattern] = []  # type: ignore # HACK: Pattern[str] when possible
-    dataset_config: DatasetConfig = Field(
-        alias="dataset"
-    )  # TODO: Type hinting for converters
+    # TODO: Type hinting for converters, other objects on instantiated dataset object
+    dataset_config: DatasetConfig = Field(alias="dataset")
     quality: QualityRegistry  # TODO: Make this optional (everywhere)
     storage: BaseStorage
     settings: PipelineSettings = PipelineSettings()
