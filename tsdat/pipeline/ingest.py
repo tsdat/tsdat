@@ -1,57 +1,77 @@
+from abc import ABC, abstractmethod
+from pydantic import BaseModel
 import xarray as xr
 
-from typing import Dict, List
-
+from typing import Any, Dict, List
+from tsdat.config.dataset import DatasetConfig
 from tsdat.pipeline.pipeline import BasePipeline
 from tsdat.utils import decode_cf_wrapper
 
 
+class BaseRetriever(BaseModel, ABC):
+    parameters: Any = {}
+
+    @abstractmethod
+    def fetch_inputs(self, inputs: Any):
+        ...
+
+    @abstractmethod
+    def initialize_dataset(self, config: DatasetConfig) -> xr.Dataset:
+        ...
+
+
+class SimpleRetriever(BaseRetriever):
+    def fetch_inputs(self, inputs: List[str]):
+        print("Retrieving inputs!")
+
+    def initialize_dataset(self, config: DatasetConfig) -> xr.Dataset:
+        return super().initialize_dataset(config)
+
+
 class IngestPipeline(BasePipeline):
+
+    retriever: BaseRetriever = SimpleRetriever()
+
     def run(self, inputs: List[str]) -> xr.Dataset:
-        raw_dataset_mapping = self.handle_inputs(inputs)
-        raw_dataset_mapping = self.hook_customize_raw_datasets(raw_dataset_mapping)
-        dataset = self.standardize_dataset(raw_dataset_mapping)
-        dataset = self.hook_customize_dataset(dataset, raw_dataset_mapping)
+        # TODO: Retriever methods must return something, otherwise we must provide a way
+        # to clean up any internal caches in between invocations of pipeline.run().
+        self.retriever.fetch_inputs(inputs)
+        self.hook_customize_raw_datasets()  # will access raw datasets on self.retriever directly
+        dataset = self.retriever.initialize_dataset(
+            self.dataset_config
+        )  # takes the fetched inputs, uses dataset config
+        # dataset = self.run_converters(dataset)
+        dataset = self.hook_customize_dataset(dataset)
         dataset = self.handle_data_quality(dataset)
-        dataset = self.hook_finalize_dataset(dataset, raw_dataset_mapping)
+        dataset = self.hook_finalize_dataset(dataset)
         dataset = self.handle_dataset_encodings(dataset)
         self.handle_dataset_persistance(dataset)
-        self.hook_make_plots(dataset, raw_dataset_mapping)
+        self.hook_make_plots(dataset)
         return dataset
 
     def handle_inputs(self, inputs: List[str]) -> Dict[str, xr.Dataset]:
-        # raw_mapping: Dict[str, xr.Dataset] = {}
+        return self.storage.registry.read_all(inputs)
 
-        # for input_key in inputs:
-        # self.storage.
+    def hook_customize_raw_datasets(self):
+        # This should customize the raw datasets on self.retriever directly
+        pass
 
-        # TODO: Implement me
-        # Relevant settings in self.settings and self.config.storage
-        ...
-
-    def hook_customize_raw_datasets(
-        self, raw_dataset_mapping: Dict[str, xr.Dataset]
-    ) -> Dict[str, xr.Dataset]:
-        return raw_dataset_mapping
-
-    def standardize_dataset(
-        self, raw_dataset_mapping: Dict[str, xr.Dataset]
-    ) -> xr.Dataset:
-        # TODO: Implement me
-        # we should focus on making this as performant as possible
-        ...
+    # def standardize_dataset(
+    #     self, raw_dataset_mapping: Dict[str, xr.Dataset] = {}
+    # ) -> xr.Dataset:
+    #     # we should focus on making this as performant as possible
+    #     ...
 
     def hook_customize_dataset(
-        self, dataset: xr.Dataset, raw_dataset_mapping: Dict[str, xr.Dataset]
+        self, dataset: xr.Dataset, raw_dataset_mapping: Dict[str, xr.Dataset] = {}
     ) -> xr.Dataset:
         return dataset
 
     def handle_data_quality(self, dataset: xr.Dataset) -> xr.Dataset:
-        # TODO: Implement me
-        ...
+        return self.quality.manage(dataset, self.dataset_config)
 
     def hook_finalize_dataset(
-        self, dataset: xr.Dataset, raw_dataset_mapping: Dict[str, xr.Dataset]
+        self, dataset: xr.Dataset, raw_dataset_mapping: Dict[str, xr.Dataset] = {}
     ) -> xr.Dataset:
         return dataset
 
@@ -63,6 +83,6 @@ class IngestPipeline(BasePipeline):
         ...
 
     def hook_make_plots(
-        self, dataset: xr.Dataset, raw_dataset_mapping: Dict[str, xr.Dataset]
+        self, dataset: xr.Dataset, raw_dataset_mapping: Dict[str, xr.Dataset] = {}
     ):
         pass

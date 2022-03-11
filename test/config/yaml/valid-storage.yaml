@@ -7,3 +7,13 @@ registry:
   output_handlers:
     - classname: tsdat.io.handlers.NetCDFWriter
       name: NetCDF Writer
+# IDEA: This file could become io-config.yaml and host both retrieval & storage configs
+# retriever:
+#   classname: ...
+#   parameters: {}
+#   readers: []
+
+# storage:
+#   classname: tsdat.io.storage.FileSystem
+#   parameters: {}
+#   writers: []

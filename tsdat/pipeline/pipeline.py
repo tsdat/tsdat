@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any
-from pydantic import BaseModel, BaseSettings, Extra
+from pydantic import BaseModel, BaseSettings, Extra, Field
 from tsdat.config.dataset import DatasetConfig
 from tsdat.io.storage.storage import BaseStorage
 from tsdat.qc.qc import QualityRegistry
@@ -14,7 +14,9 @@ class BasePipeline(BaseModel, ABC, extra=Extra.forbid):
 
     parameters: Any
     associations: List[Pattern] = []  # type: ignore # HACK: Pattern[str] when possible
-    dataset: DatasetConfig  # TODO: do I need to replicate this entire structure for the new format?
+    dataset_config: DatasetConfig = Field(
+        alias="dataset"
+    )  # TODO: Type hinting for converters
     quality: QualityRegistry  # TODO: Make this optional (everywhere)
     storage: BaseStorage
     settings: PipelineSettings = PipelineSettings()
