@@ -1,20 +1,13 @@
+import os
 import yaml
+import warnings
+from dunamai import Style, Version
 from jsonpointer import set_pointer
 from pathlib import Path
 from pydantic import BaseModel, Extra, Field, StrictStr, validator, FilePath
 from pydantic.utils import import_string
 from pydantic.generics import GenericModel
 from typing import Any, cast, Dict, Generic, List, Protocol, Sequence, Set, TypeVar
-
-__all__ = [
-    "YamlModel",
-    "Overrideable",
-    "ParametrizedClass",
-    "find_duplicates",
-    "get_yaml",
-    "recusive_instantiate",
-    "Definition",
-]
 
 
 class YamlModel(BaseModel):
@@ -173,3 +166,20 @@ def find_duplicates(entries: Sequence[_NamedClass]) -> List[str]:
 
 def get_yaml(filepath: Path) -> Dict[Any, Any]:
     return list(yaml.safe_load_all(filepath.read_text()))[0]
+
+
+def get_code_version() -> str:
+    version = "N/A"
+    try:
+        version = os.environ["CODE_VERSION"]
+    except KeyError:
+        try:
+            version = Version.from_git().serialize(dirty=True, style=Style.SemVer)
+        except BaseException:
+            warnings.warn(
+                "Could not get code_version from either the 'CODE_VERSION' environment"
+                " variable nor from git history. The 'code_version' global attribute"
+                " will be set to 'N/A'.",
+                RuntimeWarning,
+            )
+    return version

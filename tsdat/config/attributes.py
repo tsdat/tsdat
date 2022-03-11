@@ -1,7 +1,5 @@
-import os
 import warnings
 
-from dunamai import Version, Style
 from pydantic import (
     BaseModel,
     Extra,
@@ -13,6 +11,7 @@ from pydantic import (
 )
 from pydantic.fields import ModelField
 from typing import Any, Dict, Optional
+from .utils import get_code_version
 
 
 class AttributeModel(BaseModel, extra=Extra.allow):
@@ -29,23 +28,6 @@ class AttributeModel(BaseModel, extra=Extra.allow):
                     f"attr '{key}' -> '{value}' contains a non-ascii character."
                 )
         return values
-
-
-def get_code_version() -> str:
-    version = "N/A"
-    try:
-        version = os.environ["CODE_VERSION"]
-    except KeyError:
-        try:
-            version = Version.from_git().serialize(dirty=True, style=Style.SemVer)
-        except BaseException:
-            warnings.warn(
-                "Could not get code_version from either the 'CODE_VERSION' environment"
-                " variable nor from git history. The 'code_version' global attribute"
-                " will be set to 'N/A'.",
-                RuntimeWarning,
-            )
-    return version
 
 
 class GlobalAttributes(AttributeModel):
@@ -157,7 +139,7 @@ class GlobalAttributes(AttributeModel):
 
     @validator("history", "code_version", pre=True)
     @classmethod
-    def warn_if_history_is_set(cls, v: str, field: ModelField) -> str:
+    def warn_if_dynamic_properties_are_set(cls, v: str, field: ModelField) -> str:
         if v:
             warnings.warn(
                 f"The '{field.name}' attribute should not be set explicitly. The current"

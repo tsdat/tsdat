@@ -126,7 +126,6 @@
                 "code_version": {
                     "title": "Code Version",
                     "description": "Attribute that will be recorded automatically by the pipeline. A warning will be raised if this is set in the config file. The code_version attribute reads the 'CODE_VERSION' environment variable or parses the git history to determine the version of the code. Semantic versioning is used by default (v'major.minor.micro'; e.g., 1.2.3).",
-                    "default": "",
                     "type": "string"
                 }
             },
