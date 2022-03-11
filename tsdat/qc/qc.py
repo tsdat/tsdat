@@ -33,12 +33,39 @@ class QualityManager(BaseModel, extra=Extra.forbid):
     exclude: List[str]
 
     def run(self, dataset: xr.Dataset, dataset_config: DatasetConfig) -> xr.Dataset:
-        # TODO:
-        # 1. Resolve the list of variables to run
-        # 2. Call self.QualityChecker.run() with appropriate args
-        # 3. Iteratively call self.QualityHandler[X].run() with appropriate args
-        # 4. Return output dataset
-        ...
+        output = dataset
+        variables = self.get_variables_to_run(
+            apply_to=self.apply_to, exclude=self.exclude, dataset_config=dataset_config
+        )
+        for variable in variables:
+            quality_issues = self.checker.run(dataset=output, variable=variable)
+            for handler in self.handlers:
+                output = handler.run(
+                    dataset=output, variable=variable, results=quality_issues
+                )
+        return output
+
+    def get_variables_to_run(
+        self, apply_to: List[str], exclude: List[str], dataset_config: DatasetConfig
+    ) -> List[str]:
+        # IDEA: This function can be turned into a validator
+
+        keyword_map: Dict[str, List[str]] = {
+            "COORDS": [coord.name for coord in dataset_config.coords],
+            "DATA_VARS": [var.name for var in dataset_config.data_vars],
+        }
+
+        for keyword, variables in keyword_map.items():
+            if keyword in apply_to:
+                apply_to.remove(keyword)
+                apply_to += variables
+
+        apply_to = [name for name in apply_to if name not in exclude]
+
+        # TODO: Remove this when validation of duplicates is done at the config level
+        apply_to = list(dict.fromkeys(apply_to))
+
+        return apply_to
 
 
 class QualityRegistry(BaseModel, extra=Extra.forbid):
