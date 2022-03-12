@@ -6,49 +6,37 @@ attrs:
   data_level: b1
 
 coords:
-  - name: time
+  time:
     input:
-      name: timestamp
-      converter:
-        classname: tsdat.utils.converters.StringTimeConverter
-        parameters:
-          timezone: UTC
-          time_format: "%Y-%m-%d %H:%M:%S"
-    # IDEA: Retrieval logic could live here?
-    # retriever:
-    #   classname: tsdat.io.retrievers.SimpleRetriever
-    #   parameters:
-    #     search_rules:
-    #       - .*currents.*: time
-    #       - .*currents.*: Time
-    #       - .*curent:s: TIME
-    #   # classname: tsdat.io.retrievers.MultiDatastreamRetriever
-    #   # parameters:
-    #   #   search_rules:
-    #   #     - sgpdatastreamC1.c1: [timeStamp]
-    #   #     - sgpdareamC1.c1: [time]
-    #   #     - sgpdatasC1.c1: [TIME]
-
-    #   converters:
-    #     classname: tsdat.utils.converters.StringTimeConverter
-    #     parameters:
-    #       timezone: UTC
-    #       time_format: "%Y-%m-%d %H:%M:%S"
-
+      required: true
+      retrieval_rules:
+        # - regex which matches input key: [list, of, input variable, names]
+        - .*: [time]
+      converters:
+        - classname: tsdat.io.converters.
+          parameters:
+            format: "%Y-%m-%d %H:%M:%S"
+            timezone: UTC
     dtype: long
     dims: [time]
     attrs:
       units: "Time offset from 1970-01-01 00:00:00"
 
 data_vars:
-  - name: first
-    data: [1, 2, 3, 4, 5]
+  first:
+    retrieval_rules:
+      name: first
+      required: true
+      classname: tsdat.io.converters.UnitsConverter
+      parameters:
+        units: degF
+    # data: [1, 2, 3, 4, 5]
     dims: [time]
     dtype: float
     attrs:
       units: degC
 
-  - name: pi
+  pi:
     data: [3.14159]
     dims: []
     dtype: float

@@ -385,7 +385,7 @@ def test_dataset_definition_from_yaml():
                 "dims": ["time"],
                 "attrs": {
                     "units": "Time offset from 1970-01-01 00:00:00",
-                    "_FillValue": -9999.0,
+                    "_FillValue": -9999.0,  # FIXME: _FillValue should not be set on "time" variable
                 },
             }
         ],

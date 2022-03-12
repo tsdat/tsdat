@@ -1,0 +1,54 @@
+# classname: tsdat.io.retrievers.SimpleRetriever
+# parameters: {}
+
+readers:
+  - name: csv
+    classname: tsdat.io.handlers.CsvReader
+    parameters: {}
+# coords:
+#   time:
+#     retrieval_rules:
+#       - .*currents2.*: [timestamp, TimeStamp]
+#       - .*currents.*: [time]
+
+#     converters:
+#       - classname: tsdat.io.converters.StringTimeConverter
+#         parameters:
+
+#     transformer:
+#       classname: tsdat.io.transformers.xarray.resample
+#       parameters:
+#         resample:
+#           time: 10m
+#         function:
+#           mean: kwargs
+
+# data_vars:
+#   first:
+#     retrieval_rules:
+#       - .*: []
+# converter:
+#   classname: tsdat.utils.converters.StringTimeConverter
+#   parameters:
+#     timezone: UTC
+#     time_format: "%Y-%m-%d %H:%M:%S"
+# IDEA: Retrieval logic could live here?
+# retriever:
+#   classname: tsdat.io.retrievers.SimpleRetriever
+#   parameters:
+#     search_rules:
+#       - .*currents.*: time
+#       - .*currents.*: Time
+#       - .*curent:s: TIME
+#   # classname: tsdat.io.retrievers.MultiDatastreamRetriever
+#   # parameters:
+#   #   search_rules:
+#   #     - sgpdatastreamC1.c1: [timeStamp]
+#   #     - sgpdareamC1.c1: [time]
+#   #     - sgpdatasC1.c1: [TIME]
+
+#   converters:
+#     classname: tsdat.utils.converters.StringTimeConverter
+#     parameters:
+#       timezone: UTC
+#       time_format: "%Y-%m-%d %H:%M:%S"
