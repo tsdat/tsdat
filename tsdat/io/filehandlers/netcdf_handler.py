@@ -94,7 +94,7 @@ class SplitNetCDFHandler(NetCdfHandler):
         to_netcdf_kwargs.update(write_params.get("to_netcdf", {}))
 
         interval = write_params.get("time_interval", "1")
-        unit = write_params.get("time_unit", "")
+        unit = write_params.get("time_unit", "D")
 
         t1 = ds.time[0]
         t2 = t1 + np.timedelta64(interval, unit)
