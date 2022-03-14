@@ -93,27 +93,27 @@ class SplitNetCDFHandler(NetCdfHandler):
         to_netcdf_kwargs = dict(format="NETCDF4")
         to_netcdf_kwargs.update(write_params.get("to_netcdf", {}))
 
-        interval = write_params.get("time_interval")
-        unit = write_params.get("time_unit")
+        interval = write_params.get("time_interval", "1")
+        unit = write_params.get("time_unit", "")
 
-        i = 0
-        t1 = []
-        t1.append(ds.time[0])
-        while True:
-            t2 = t1[i] + np.timedelta64(interval, unit)
-            t1.append(t2)
-            ds_temp = ds.sel(time=slice(t1[i], t2))
+        t1 = ds.time[0]
+        t2 = t1 + np.timedelta64(interval, unit)
+        
+        # HACK: The first file is treated differently because FileHandlers are expected
+        # to only write to one output file (the 'filename' provided as an argument).
+        ds_temp = ds.sel(time=slice(t1, t2))
+        ds_temp.to_netcdf(filename, **to_netcdf_kwargs)
+        t1 = t2
+        t2 += np.timedelta64(interval, unit)
+        
+        while t1 < ds.time[-1]:
+            ds_temp = ds.sel(time=slice(t1, t2))
 
-            # Rename dataset using first timestamp of parsed dataset
             new_filename = DSUtil.get_dataset_filename(ds_temp)
             temp_filepath = tempfile.TemporaryFile("w")
 
-            # Save the dataset
             ds_temp.to_netcdf(temp_filepath, **to_netcdf_kwargs)
             storage.save_local_path(temp_filepath, new_filename)
 
-            if t2 >= ds.time[-1]:
-                break
-            else:
-                i += 1
-
+            t1 = t2
+            t2 += np.timedelta64(interval, unit)
