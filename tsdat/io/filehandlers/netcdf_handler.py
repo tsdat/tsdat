@@ -1,3 +1,4 @@
+import tempfile
 import numpy as np
 import xarray as xr
 from tsdat.config import Config
@@ -67,3 +68,52 @@ class NetCdfHandler(AbstractFileHandler):
         read_params = self.parameters.get("read", {})
         load_dataset_kwargs = read_params.get("load_dataset", {})
         return xr.load_dataset(filename, **load_dataset_kwargs)
+
+
+class SplitNetCDFHandler(NetCdfHandler):
+    def read(self, filename: str, **kwargs):
+        raise NotImplementedError("This FileHandler should not be used to read files.")
+    
+    def write(
+        self, ds: xr.Dataset, filename: str, config: Config = None, **kwargs
+    ) -> None:
+        """Saves the given dataset to netCDF file(s) based on the 'time_interval'
+        and 'time_unit' config parameters.
+
+        :param ds: The dataset to save.
+        :type ds: xr.Dataset
+        :param filename: The path to where the file should be written to.
+        :type filename: str
+        :param config: Optional Config object, defaults to None
+        :type config: Config, optional
+        """
+        storage = kwargs["storage"]
+
+        write_params = self.parameters.get("write", {})
+        to_netcdf_kwargs = dict(format="NETCDF4")
+        to_netcdf_kwargs.update(write_params.get("to_netcdf", {}))
+
+        interval = write_params.get("time_interval")
+        unit = write_params.get("time_unit")
+
+        i = 0
+        t1 = []
+        t1.append(ds.time[0])
+        while True:
+            t2 = t1[i] + np.timedelta64(interval, unit)
+            t1.append(t2)
+            ds_temp = ds.sel(time=slice(t1[i], t2))
+
+            # Rename dataset using first timestamp of parsed dataset
+            new_filename = DSUtil.get_dataset_filename(ds_temp)
+            temp_filepath = tempfile.TemporaryFile("w")
+
+            # Save the dataset
+            ds_temp.to_netcdf(temp_filepath, **to_netcdf_kwargs)
+            storage.save_local_path(temp_filepath, new_filename)
+
+            if t2 >= ds.time[-1]:
+                break
+            else:
+                i += 1
+
