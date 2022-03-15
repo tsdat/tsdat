@@ -1,4 +1,3 @@
-import tempfile
 import os
 import numpy as np
 import xarray as xr
@@ -106,19 +105,20 @@ class SplitNetCDFHandler(NetCdfHandler):
         ds_temp = ds.sel(time=slice(t1, t2))
         ds_temp.to_netcdf(filename, **to_netcdf_kwargs)
         t1 = t2
-        t2 += np.timedelta64(interval, unit)
+        t2 = t1 + np.timedelta64(interval, unit)
 
         while t1 < ds.time[-1]:
             ds_temp = ds.sel(time=slice(t1, t2))
 
+            temp_filedir = filename.rsplit("/")[:-1]
             new_filename = DSUtil.get_dataset_filename(ds_temp)
-            temp_filedir = tempfile.NamedTemporaryFile(
-                mode="w", prefix="tsdat_pipeline_"
-            )
-            temp_filepath = os.path.join(temp_filedir.name, new_filename)
+            temp_filedir.append(new_filename)
+            temp_filepath = "/" + os.path.join(
+                *temp_filedir
+            )  # Write permission denied without "/"
 
             ds_temp.to_netcdf(temp_filepath, **to_netcdf_kwargs)
             storage.save_local_path(temp_filepath, new_filename)
 
             t1 = t2
-            t2 += np.timedelta64(interval, unit)
+            t2 = t1 + np.timedelta64(interval, unit)
