@@ -17,8 +17,11 @@ with open(os.path.join(CWD, "requirements.txt")) as requirements_file:
         if not line.startswith("#")
     ]
 
-version = os.environ["TSDAT_VERSION"]
-assert "." in version
+try:
+    version = os.environ["TSDAT_VERSION"]
+    assert "." in version
+except:
+    version = {}
 
 setuptools.setup(
     name="tsdat",

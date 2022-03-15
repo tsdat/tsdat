@@ -94,6 +94,18 @@ class SplitNetCDFHandler(NetCdfHandler):
         to_netcdf_kwargs = dict(format="NETCDF4")
         to_netcdf_kwargs.update(write_params.get("to_netcdf", {}))
 
+        # Option to compress netcdf files
+        compression = write_params.get("compression", False)
+        if compression:
+            enc = dict()
+            for ky in ds.variables:
+                enc[ky] = dict(zlib=True, complevel=1)
+            if "encoding" in to_netcdf_kwargs:
+                # Overwrite ('update') values in enc with whatever is in kwargs['encoding']
+                to_netcdf_kwargs["encoding"] = enc.update(to_netcdf_kwargs["encoding"])
+            else:
+                to_netcdf_kwargs["encoding"] = enc
+
         interval = write_params.get("time_interval", "1")
         unit = write_params.get("time_unit", "D")
 
