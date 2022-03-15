@@ -2,6 +2,7 @@ import tempfile
 import numpy as np
 import xarray as xr
 from tsdat.config import Config
+from tsdat.utils import DSUtil
 
 from .file_handlers import AbstractFileHandler
 
@@ -73,7 +74,7 @@ class NetCdfHandler(AbstractFileHandler):
 class SplitNetCDFHandler(NetCdfHandler):
     def read(self, filename: str, **kwargs):
         raise NotImplementedError("This FileHandler should not be used to read files.")
-    
+
     def write(
         self, ds: xr.Dataset, filename: str, config: Config = None, **kwargs
     ) -> None:
@@ -98,14 +99,14 @@ class SplitNetCDFHandler(NetCdfHandler):
 
         t1 = ds.time[0]
         t2 = t1 + np.timedelta64(interval, unit)
-        
+
         # HACK: The first file is treated differently because FileHandlers are expected
         # to only write to one output file (the 'filename' provided as an argument).
         ds_temp = ds.sel(time=slice(t1, t2))
         ds_temp.to_netcdf(filename, **to_netcdf_kwargs)
         t1 = t2
         t2 += np.timedelta64(interval, unit)
-        
+
         while t1 < ds.time[-1]:
             ds_temp = ds.sel(time=slice(t1, t2))
 
