@@ -361,7 +361,6 @@ class Pipeline(abc.ABC):
         }
         return xr.Dataset.from_dict(reduced_dict)
 
-
     def decode_cf(self, dataset: xr.Dataset) -> xr.Dataset:
         """------------------------------------------------------------------------------------
             Decodes the dataset according to CF conventions. This helps ensure that the dataset

@@ -1,4 +1,5 @@
 import tempfile
+import os
 import numpy as np
 import xarray as xr
 from tsdat.config import Config
@@ -111,7 +112,10 @@ class SplitNetCDFHandler(NetCdfHandler):
             ds_temp = ds.sel(time=slice(t1, t2))
 
             new_filename = DSUtil.get_dataset_filename(ds_temp)
-            temp_filepath = tempfile.TemporaryFile("w")
+            temp_filedir = tempfile.NamedTemporaryFile(
+                mode="w", prefix="tsdat_pipeline_"
+            )
+            temp_filepath = os.path.join(temp_filedir.name, new_filename)
 
             ds_temp.to_netcdf(temp_filepath, **to_netcdf_kwargs)
             storage.save_local_path(temp_filepath, new_filename)
