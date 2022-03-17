@@ -1,0 +1,62 @@
+# retriever = Retriever(*args, **kwargs)
+# retriever.retrieve(input_keys, dataset_config) ==> {
+#   retriever.read_all(input_keys, dataset_config) -> Dict[str, Dataset]
+#   retriever.retrieve_dataset(dataset_dict, dataset_config) -> Dataset
+#   retriever.apply_converters(dataset, dataset_config)
+#   retriever.apply_transformers(dataset, dataset_config) -> Dataset
+# } -> Dataset
+# classname: tsdat.io.retrievers.Retriever
+# parameters: {}
+
+# reader = Reader(*args, **kwargs)
+# reader.read(key, dataset_config, retriever) -> Dataset | Dict[str, Dataset]
+readers:
+  csv:
+    regex: .*\.csv
+    classname: tsdat.io.readers.CSVReader
+    parameters:
+      header: 22
+
+  parquet:
+    regex: .*\.parquet
+    classname: tsdat.io.readers.ParquetReader
+
+# transformer = Transformer(*args, **kwargs)
+# transfomer.transform(dataset, key, dataset_config, retriever) -> Dataset
+transformers:
+  # NOTE: These datasets aren't guaranteed to be standardized so we don't necessarily
+  # know that they have a time variable or if they do, what format it is in. Though we
+  # could also apply Converters here as well and structure it a bit like how we apply
+  # qc (via an apply_to/exclude property)
+
+  resample_time:
+    classname: tsdat.io.transformers.TimeseriesTransformer
+    parameters:
+      time: 5min
+      method: mean
+
+  resample_depth:
+    classname: tsdat.io.transformers.CoordinateTransformer
+    parameters:
+      coord: depth
+      method: nearest
+#
+# converters:
+#   to_datetime:
+#     classname: tsdat.io.converters.StringTimeConverter
+#     parameters:
+#       format: "%Y-%m-%d %H:%M:%S"
+#       timezone: UTC
+#     apply_to:
+#       - .*currents\.csv: [Timestamp (End of Interval)]
+#       - .*: [time]
+
+# For each variable in the output dataset that is retrieved from an input source we care
+# about the following:
+# 1. Is retrieval required?
+# 2. Which input(s) should we use to look for the variable?
+# 3. What variable name(s)/key(s) should we use to look for the variable data in the
+# selected input(s)?
+# 4. What are the properties of the input data (e.g., units), and how should these be
+# used to initialize our output dataset?
+#

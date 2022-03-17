@@ -1,0 +1,35 @@
+# maps to 'input' property on a pipeline?
+retrieval:
+  readers:
+    - name: csv
+      classname: tsdat.io.readers.CsvReader
+      parameters:
+        header: 22
+
+    - name: parquet
+      classname: tsdat.io.readers.ParquetReader
+
+  # Transformers will be called on each input dataset and are responsible for taking
+  # some action (or inaction) on the data given its parameters, the DatasetConfig, and
+  # the input xr.Dataset.
+  transformers:
+    - name: Time to 5min Average
+      classname: tsdat.io.transformers.TimeseriesTransformer
+      parameters:
+        time: 5min
+        method: mean
+
+    - name: Resample Depth
+      classname: tsdat.io.transformers.CoordinateTransformer
+      parameters:
+        coord: depth
+        method: nearest
+
+# maps to 'storage' property on a pipeline
+storage:
+  classname: tsdat.io.storage.FileSystem
+  parameters: {}
+
+  writers:
+    - name: netcdf
+      classname: tsdat.io.storage.writers.NetCDFWriter

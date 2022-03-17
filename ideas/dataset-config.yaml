@@ -1,0 +1,83 @@
+attrs:
+  title: title
+  description: description
+  location_id: abc
+  dataset_name: example
+  data_level: b1
+
+coords:
+  time:
+    input:
+      required: true # this should be the default
+      # input_pattern_to_variable_name_mapping:
+      #   .*currents\.csv: [Timestamp (End of Interval), Some Other variable name]
+      #   .*: [timestamp, Timestamp]
+      input_pattern_to_variable_name_mapping:
+        .*2020010:
+          - name: Timestamp (End of Interval)
+            units: km
+          - name: Some Other variable name
+            units: m
+        .*\.csv:
+          - name: time
+          - name: TIME
+          - name: Time
+        .*:
+          - name: timestamp
+            units: m
+          - name: Timestamp
+            units: km
+
+      data_converters:
+        - classname: tsdat.io.converters.StringToDatetime
+          parameters:
+            format: "%Y-%m-%d %H:%M:%S"
+            timezone: UTC
+
+        - classname: myproject.plugins.CustomUnitsConverter
+
+      transformers:
+        - classname: tsdat.io.transformers.TimeseriesTransformer
+          parameters:
+            time: 5min
+            method: mean
+
+        - classname: tsdat.io.transformers.CoordinateTransformer
+          parameters:
+            coord: depth
+            method: nearest
+
+    # 1. Use the readers to read all the input files into respective dataset mappings
+    # 2. For each raw dataset do the following:
+    #     - Iterate through all the DatasetConfig coords and data vars. For each do the following:
+    #         * if the variable is found in the raw dataset (i.e. via name/pattern mapping), then
+    #         run all the data_converters and transformers that have been defined for that DatasetConfig
+    #         variable on the raw dataset variable
+    # 3. For each transformed dataset (output of #2) iterate through the DatasetConfig coords and data vars
+    # and use our retrieval rules to find the first match for the coord/data_var and move it into the output
+    # dataset
+    # TODO: Performance considerations w/ order of operations (i.e. converters for data_vars that would not be
+    # retrieved may not need to be run)
+
+    dtype: long
+    dims: [time]
+    attrs:
+      units: "Time offset from 1970-01-01 00:00:00"
+
+data_vars:
+  first:
+    input:
+      required: true
+      name: first
+      units: degF
+    dims: [time]
+    dtype: float
+    attrs:
+      units: degC
+
+  pi:
+    data: [3.14159]
+    dims: []
+    dtype: float
+    attrs:
+      units: "1"
