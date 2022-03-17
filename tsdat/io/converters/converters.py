@@ -45,8 +45,11 @@ class BaseConverter(BaseModel, ABC, extra=Extra.forbid):
     # pass the VariableDefinition (Now VariableConfig) itself and the data, and let the
     # converters figure out what to do with it.
 
+    # TODO: 1D to 2D converter
+
 
 class NoConverter(BaseConverter):
+    # TODO: Pass the dataset instead of the data array
     def run(
         self, data: np.ndarray[Any, Any], variable_config: Variable
     ) -> np.ndarray[Any, Any]:
@@ -76,7 +79,7 @@ class UnitsConverter(BaseConverter):
 class StringTimeConverterParameters(BaseModel, extra=Extra.forbid):
     time_format: str
     timezone: Optional[str] = "UTC"
-    np_dtype: str = "datetime64[ns]"
+    dtype: str = "datetime64[ns]"
 
 
 class StringTimeConverter(BaseConverter):

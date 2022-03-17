@@ -19,6 +19,13 @@ class DataReader(BaseDataHandler, ABC):
         ...
 
 
+class MyCustomReader(DataReader):
+    def read(
+        self, key: Union[str, BytesIO], name: Optional[str] = None
+    ) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
+        return super().read(key, name)
+
+
 class DataWriter(BaseDataHandler, ABC):
     @abstractmethod
     def write(self, ds: xr.Dataset, key: Optional[str] = None):
@@ -68,7 +75,8 @@ class HandlerRegistry(BaseModel, extra=Extra.forbid):
                 break
         if reader is None:
             raise ValueError(f"No input_handler match for key: '{key}'")
-        return reader.read(key=key)
+        ds = reader.read(key=key)
+        return ds
 
     def read_all(self, keys: List[str]) -> Dict[str, xr.Dataset]:
         """------------------------------------------------------------------------------------

@@ -211,7 +211,7 @@ def test_storage_config_produces_expected_yaml():
         "registry": {
             "readers": [
                 {
-                    "classname": "tsdat.io.handlers.CsvReader",
+                    "classname": "tsdat.io.handlers.readers.CsvReader",
                     "parameters": {},
                     "name": "CSV Reader",
                     "regex": re.compile(r".*\.csv"),
@@ -219,7 +219,7 @@ def test_storage_config_produces_expected_yaml():
             ],
             "writers": [
                 {
-                    "classname": "tsdat.io.handlers.NetCDFWriter",
+                    "classname": "tsdat.io.handlers.writers.NetCDFWriter",
                     "parameters": {},
                     "name": "NetCDF Writer",
                 }

@@ -8,15 +8,23 @@ attrs:
 coords:
   time:
     input:
-      required: true
-      retrieval_rules:
-        # - regex which matches input key: [list, of, input variable, names]
-        - .*: [time]
-      converters:
-        - classname: tsdat.io.converters.
-          parameters:
-            format: "%Y-%m-%d %H:%M:%S"
-            timezone: UTC
+      # classname: tsdat.io.retrievers.SimpleRetriever
+      parameters:
+        # required: true
+        name: timestamp
+        time_format: "%Y-%m-%d %H:%M:%S"
+        # timezone: UTC
+
+      # classname: tsdat.io.retrievers.MultiDatastreamRetriever
+      # parameters:
+      # retrieval_rules: # TODO: Move this inside of input/parameters
+      #   # - regex-which-matches-input-key(s): [list of possible, input variable, names]
+      #   - .*: [time]
+      # converters:
+      #   - classname: tsdat.io.converters.StringTimeConverter
+      #     parameters:
+      #       format: "%Y-%m-%d %H:%M:%S"
+      #       timezone: UTC
     dtype: long
     dims: [time]
     attrs:
@@ -24,13 +32,11 @@ coords:
 
 data_vars:
   first:
-    retrieval_rules:
-      name: first
-      required: true
-      classname: tsdat.io.converters.UnitsConverter
-      parameters:
-        units: degF
     # data: [1, 2, 3, 4, 5]
+    input:
+      parameters:
+        name: First Data Var
+        units: degF
     dims: [time]
     dtype: float
     attrs:

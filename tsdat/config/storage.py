@@ -31,7 +31,6 @@ class DataWriterConfig(DataHandlerConfig):
 
 
 class HandlerRegistryConfig(BaseModel):
-    # TODO: rename to readers and writers
     readers: List[DataReaderConfig] = Field(
         min_items=1,
         title="Input Data Handlers",

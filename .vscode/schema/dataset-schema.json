@@ -9,17 +9,21 @@
         "coords": {
             "title": "Coords",
             "description": "This section defines the coordinate variables that the rest of the data are dimensioned by. Coordinate variable data can either be retrieved from an input data source or defined statically via the 'data' property. Note that tsdat requires the dataset at least be dimensioned by a 'time' variable. Most datasets will only need the 'time' coordinate variable, but multidimensional datasets (e.g., ADCP or Lidar data (time, height)) are well-supported. Note that the 'dims' attribute is still required for coordinate variables, and that this value should be [<name>], where <name> is the name of the coord (e.g., 'time').",
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/Coordinate"
+            "type": "object",
+            "patternProperties": {
+                "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$": {
+                    "$ref": "#/definitions/Coordinate"
+                }
             }
         },
         "data_vars": {
             "title": "Data Vars",
             "description": "This section defines the data variables that the output dataset will contain. Variable data can either be retrieved from an input data source, defined statically via the 'data' property, or initalized to missing and set dynamically via user code in a tsdat pipeline.",
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/Variable"
+            "type": "object",
+            "patternProperties": {
+                "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$": {
+                    "$ref": "#/definitions/Variable"
+                }
             }
         }
     },
@@ -137,62 +141,56 @@
                 "data_level"
             ]
         },
-        "InputConverter": {
-            "title": "InputConverter",
+        "RetrieverParameters": {
+            "title": "RetrieverParameters",
             "type": "object",
             "properties": {
-                "classname": {
-                    "title": "Classname",
-                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put 'tsdat.config.utils.converters.DefaultConverter' as the classname.",
-                    "default": "tsdat.utils.converters.DefaultConverter",
-                    "type": "string"
-                },
-                "parameters": {
-                    "title": "Parameters",
-                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
-                    "default": {},
-                    "type": "object"
-                }
-            },
-            "additionalProperties": false
-        },
-        "InputVariable": {
-            "title": "InputVariable",
-            "type": "object",
-            "properties": {
-                "name": {
-                    "title": "Input Name",
-                    "description": "This is the name of the variable exactly as it appears in the input dataset. More precisely, this is the key tsdat will use to retrieve the variable from the dataset returned by the input DataHandler.",
-                    "type": "string"
-                },
                 "required": {
                     "title": "Required",
-                    "description": "If True (the default) then the pipeline will fail loudly if tsdat is unable to retrieve the variable from an input source.",
+                    "description": "If True (the default) then the pipeline will fail loudly if it is unable to retrieve the variable from an input source.",
                     "default": true,
                     "type": "boolean"
+                },
+                "name": {
+                    "title": "Input Name",
+                    "description": "The name of the variable as it appears in the input dataset, or more accurately, this is the key tsdat will use to retrieve the variable from the dataset returned by the input DataReader.",
+                    "type": "string"
+                },
+                "retrieval_rules": {
+                    "title": "Retrieval Rules",
+                    "description": "Optional field used to specify how the variable should be retrieved from the input source(s). The format of this field is dependent on the type of retriever specified by the input classname. If not specified then the 'tsdat.io.retrievers.SimpleRetriever' class is used, and this field is not needed."
                 },
                 "units": {
                     "title": "Units",
                     "description": "This gives tsdat context about the units the input dataset is measured in. If the 'units' property here differs from the 'units' property under the 'attrs' section, then tsdat will automatically perform a unit conversion on the input data.",
                     "type": "string"
+                }
+            }
+        },
+        "InputVariable": {
+            "title": "InputVariable",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "default": "tsdat.io.retrievers.SimpleRetriever",
+                    "type": "string"
                 },
-                "converter": {
-                    "title": "Converter",
-                    "description": "The converter class that tsdat should use to transform the data from the input source to the output source. Currently only two converters are supported: the 'DefaultConverter', which converts input units to output units using the Python libraries act-atmos and pint, and the 'StringTimeConverter', which is used exclusively for converting string values into Python datetime objects that are timezone-aware. If using the 'StringTimeConverter' class, two parameters are required: 'timezone' - the timezone the data are recorded in (default UTC), and 'time_format' - a string that is passed to the strptime() function as the string format used to create a datetime object.",
+                "parameters": {
+                    "title": "Parameters",
                     "default": {
-                        "classname": "tsdat.utils.converters.DefaultConverter",
-                        "parameters": {}
+                        "required": true,
+                        "name": null,
+                        "retrieval_rules": null,
+                        "units": null
                     },
                     "allOf": [
                         {
-                            "$ref": "#/definitions/InputConverter"
+                            "$ref": "#/definitions/RetrieverParameters"
                         }
                     ]
                 }
-            },
-            "required": [
-                "name"
-            ]
+            }
         },
         "VariableAttributes": {
             "title": "VariableAttributes",
@@ -277,8 +275,8 @@
             "type": "object",
             "properties": {
                 "name": {
-                    "title": "Output Variable Name",
-                    "description": "The name of the variable in the output file. Generally, we recommend only using lowercase alphanumeric and '_' characters to name variables, as uniformly-named variables are easier to sort through and read for users. Spaces and non-ascii characters are explicitly disallowed. The variable name should be consise, yet clear enough for users to know what the property measures. A more descriptive name for a variable (i.e. suitable for a plot title / axis label) should be provided via the 'long_name' attribute in the attrs section, if desired. The 'comment' attribute is also recommended to provide additional context about the variable, if needed.",
+                    "title": "Name",
+                    "default": "",
                     "pattern": "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$",
                     "type": "string"
                 },
@@ -320,7 +318,6 @@
                 }
             },
             "required": [
-                "name",
                 "dtype",
                 "dims",
                 "attrs"
@@ -332,8 +329,8 @@
             "type": "object",
             "properties": {
                 "name": {
-                    "title": "Output Variable Name",
-                    "description": "The name of the variable in the output file. Generally, we recommend only using lowercase alphanumeric and '_' characters to name variables, as uniformly-named variables are easier to sort through and read for users. Spaces and non-ascii characters are explicitly disallowed. The variable name should be consise, yet clear enough for users to know what the property measures. A more descriptive name for a variable (i.e. suitable for a plot title / axis label) should be provided via the 'long_name' attribute in the attrs section, if desired. The 'comment' attribute is also recommended to provide additional context about the variable, if needed.",
+                    "title": "Name",
+                    "default": "",
                     "pattern": "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$",
                     "type": "string"
                 },
@@ -375,7 +372,6 @@
                 }
             },
             "required": [
-                "name",
                 "dtype",
                 "dims",
                 "attrs"

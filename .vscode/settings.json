@@ -23,9 +23,9 @@
     "yaml.format.printWidth": 88,
     "yaml.format.proseWrap": "always",
     "yaml.schemas": {
-        ".vscode/schema/dataset-schema.json": "*dataset*.yaml",
+        // ".vscode/schema/dataset-schema.json": "*dataset*.yaml",
         ".vscode/schema/quality-schema.json": "*quality*.yaml",
-        ".vscode/schema/storage-schema.json": "*storage*.yaml",
+        // ".vscode/schema/storage-schema.json": "*storage*.yaml",
         ".vscode/schema/pipeline-schema.json": "*pipeline*.yaml",
     },
     "errorLens.statusBarIconsEnabled": true,

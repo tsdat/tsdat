@@ -228,38 +228,30 @@ def test_variable_attrs_allow_extra():
 
 
 def test_input_var_properties():
-    # Input variable requires name
-    invar: Dict[str, Any] = {}
-    expected_error_msg = "name\n  field required"
-    with pytest.raises(ValidationError) as error:
-        InputVariable(**invar)
-    actual_msg = get_error_message(error)
-    assert expected_error_msg in actual_msg
-
     # Input variable can be created, and produces expected result
     invar: Dict[str, Any] = {
-        "name": "Ínpü† √a®îåßlé Ñ∂mé",  # spaces, strange characters are fine here
-        "units": "km",  # doesn't do anything special by itself
-        "extra_property": "hi",  # extra fields are allowed
+        "parameters": {
+            "name": "Ínpü† √a®îåßlé Ñ∂mé",  # spaces, strange characters are fine here
+            "units": "km",  # doesn't do anything special by itself
+            "extra_property": "hi",  # extra fields are allowed\
+        }
     }
     expected: Dict[str, Any] = {
-        "name": "Ínpü† √a®îåßlé Ñ∂mé",
-        "required": True,
-        "units": "km",
-        "extra_property": "hi",
-        "converter": {
-            "classname": "tsdat.utils.converters.DefaultConverter",
-            "parameters": {},
+        "classname": "tsdat.io.retrievers.SimpleRetriever",
+        "parameters": {
+            "required": True,
+            "name": "Ínpü† √a®îåßlé Ñ∂mé",
+            "units": "km",
+            "extra_property": "hi",
         },
     }
     model_dict = InputVariable(**invar).dict(exclude_none=True, by_alias=True)
-    assert expected == model_dict
+    assert model_dict == expected
 
 
 def test_fail_if_missing_required_variable_properties():
     var: Dict[str, Any] = {}
     expected_error_msgs = [
-        "name\n  field required",
         "dtype\n  field required",
         "dims\n  field required",
         "attrs\n  field required",
@@ -305,12 +297,12 @@ def test_variable_retrieval_config():
     }
 
     # Variable retrieved from input
-    retrieved_var: Dict[str, Any] = {"input": {"name": "input name"}}
+    retrieved_var: Dict[str, Any] = {"input": {}}
     retrieved_var.update(base_var)
     assert Variable(**retrieved_var).is_retrieved
 
     # Variable data set directly
-    static_var: Dict[str, Any] = {"data": [1]}
+    static_var: Dict[str, Any] = {"data": []}
     static_var.update(base_var)
     assert Variable(**static_var).is_static
 
@@ -320,7 +312,7 @@ def test_variable_retrieval_config():
     assert Variable(**dynamic_var).is_dynamic
 
     # Variable cannot be both retrieved and set directly
-    bad_var: Dict[str, Any] = {"input": {"name": "input name"}, "data": [1]}
+    bad_var: Dict[str, Any] = {"input": {}, "data": []}
     bad_var.update(base_var)
     with pytest.raises(
         ValidationError, match="cannot be both retrieved from input and set statically"
@@ -367,18 +359,15 @@ def test_dataset_definition_from_yaml():
             "history": "",
             "code_version": "",
         },
-        "coords": [
-            {
+        "coords": {
+            "time": {
                 "name": "time",
                 "input": {
-                    "name": "timestamp",
-                    "required": True,
-                    "converter": {
-                        "classname": "tsdat.utils.converters.StringTimeConverter",
-                        "parameters": {
-                            "timezone": "UTC",
-                            "time_format": "%Y-%m-%d %H:%M:%S",
-                        },
+                    "classname": "tsdat.io.retrievers.SimpleRetriever",
+                    "parameters": {
+                        "required": True,
+                        "name": "timestamp",
+                        "time_format": "%Y-%m-%d %H:%M:%S",
                     },
                 },
                 "dtype": "long",
@@ -388,30 +377,37 @@ def test_dataset_definition_from_yaml():
                     "_FillValue": -9999.0,  # FIXME: _FillValue should not be set on "time" variable
                 },
             }
-        ],
-        "data_vars": [
-            {
+        },
+        "data_vars": {
+            "first": {
                 "name": "first",
-                "data": [1, 2, 3, 4, 5],
+                "input": {
+                    "classname": "tsdat.io.retrievers.SimpleRetriever",
+                    "parameters": {
+                        "required": True,
+                        "name": "First Data Var",
+                        "units": "degF",
+                    },
+                },
                 "dtype": "float",
                 "dims": ["time"],
                 "attrs": {"units": "degC", "_FillValue": -9999.0},
             },
-            {
+            "pi": {
                 "name": "pi",
                 "data": [3.14159],
                 "dtype": "float",
                 "dims": [],
                 "attrs": {"units": "1", "_FillValue": -9999.0},
             },
-        ],
+        },
     }
 
     model = DatasetConfig.from_yaml(Path("test/config/yaml/valid-dataset.yaml"))
     model_dict = model.dict(exclude_none=True, by_alias=True)
     model_dict["attrs"]["code_version"] = ""  # Don't care to check this value
 
-    assert expected == model_dict
+    assert model_dict == expected
 
 
 def test_dataset_config_can_generate_schema():

@@ -11,9 +11,8 @@ dataset:
   path: test/config/yaml/valid-dataset.yaml
   overrides:
     /attrs/location_id: sgp
-    /coords/0/attrs/units: km
-    # /coords/time/attrs/units: km  # TODO: data vars and coords should be lists; easier to override/locate
-    /data_vars/0/attrs/new_attribute: please add this attribute
+    /coords/time/attrs/units: km
+    /data_vars/first/attrs/new_attribute: please add this attribute
 
 quality:
   path: test/config/yaml/valid-quality.yaml
@@ -21,12 +20,4 @@ quality:
     /managers/0/exclude: []
 
 storage:
-  classname: tsdat.io.storage.FileSystem
-  registry:
-    readers:
-      - classname: tsdat.io.handlers.CsvReader
-        name: CSV Reader
-        regex: '.*\.csv'
-    writers:
-      - classname: tsdat.io.handlers.NetCDFWriter
-        name: NetCDF Writer
+  path: test/config/yaml/valid-storage.yaml

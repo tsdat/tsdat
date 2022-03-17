@@ -1,17 +1,10 @@
-# classname: tsdat.io.storage.FileSystem
-# registry:
-#   readers:
-#     - classname: tsdat.io.handlers.CsvReader
-#       name: CSV Reader
-#       regex: '.*\.csv'
-#   writers:
-#     - classname: tsdat.io.handlers.NetCDFWriter
-# name: NetCDF Writer
-# IDEA: This file could become io-config.yaml and host both retrieval & storage configs
-
 classname: tsdat.io.storage.FileSystem
-parameters: {}
 registry:
+  readers:
+    - classname: tsdat.io.handlers.readers.CsvReader
+      name: CSV Reader
+      regex: '.*\.csv'
+
   writers:
-    - name: netcdf
-      classname: tsdat.io.handlers.NetCDFWriter
+    - classname: tsdat.io.handlers.writers.NetCDFWriter
+      name: NetCDF Writer

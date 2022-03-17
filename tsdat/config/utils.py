@@ -67,7 +67,7 @@ class ParametrizedClass(BaseModel, extra=Extra.forbid):
         " DefaultConverter` then you would put"
         " `tsdat.config.utils.converters.DefaultConverter` as the classname.",
     )
-    parameters: Dict[StrictStr, Any] = Field(
+    parameters: Dict[str, Any] = Field(
         dict(),
         description="Optional dictionary that will be passed to the Python class"
         " specified by 'classname' when it is instantiated. If the object is a tsdat"

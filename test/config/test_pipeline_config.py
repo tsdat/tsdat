@@ -26,8 +26,8 @@ def test_pipeline_config_reads_yaml():
             "path": "test/config/yaml/valid-dataset.yaml",
             "overrides": {
                 "/attrs/location_id": "sgp",
-                "/coords/0/attrs/units": "km",
-                "/data_vars/0/attrs/new_attribute": "please add this attribute",
+                "/coords/time/attrs/units": "km",
+                "/data_vars/first/attrs/new_attribute": "please add this attribute",
             },
         },
         "quality": {
@@ -37,22 +37,7 @@ def test_pipeline_config_reads_yaml():
             },
         },
         "storage": {
-            "classname": "tsdat.io.storage.FileSystem",
-            "registry": {
-                "readers": [
-                    {
-                        "classname": "tsdat.io.handlers.CsvReader",
-                        "name": "CSV Reader",
-                        "regex": ".*\\.csv",
-                    }
-                ],
-                "writers": [
-                    {
-                        "classname": "tsdat.io.handlers.NetCDFWriter",
-                        "name": "NetCDF Writer",
-                    }
-                ],
-            },
+            "path": "test/config/yaml/valid-storage.yaml",
         },
         "settings": {
             "validate_dataset_config": True,
@@ -78,8 +63,8 @@ def test_pipeline_config_merges_overrides():
     # Do expected overrides
     dataset.attrs.location_id = "sgp"
     dataset.attrs.datastream = "sgp.example.b1"
-    dataset.coords[0].attrs.units = "km"
-    dataset.data_vars[0].attrs.new_attribute = "please add this attribute"
+    dataset.coords["time"].attrs.units = "km"
+    dataset.data_vars["first"].attrs.new_attribute = "please add this attribute"
     quality.managers[0].exclude = []
 
     dict_kwargs: Dict[str, Any] = {"exclude_none": True, "by_alias": True}
@@ -101,7 +86,7 @@ def test_pipeline_config_merges_overrides():
     model = PipelineConfig.from_yaml(Path("test/config/yaml/valid-pipeline.yaml"))
     model_dict = model.dict(**dict_kwargs)
 
-    assert expected_dict == model_dict
+    assert model_dict == expected_dict
 
 
 def test_pipeline_config_can_generate_schema():

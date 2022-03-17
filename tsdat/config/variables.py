@@ -1,5 +1,11 @@
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Extra, root_validator, Field, StrictStr, validator
+from pydantic import (
+    BaseModel,
+    Extra,
+    root_validator,
+    Field,
+    StrictStr,
+)
 
 from .attributes import AttributeModel
 from .utils import ParametrizedClass
@@ -131,25 +137,32 @@ class VariableAttributes(AttributeModel):
 
 class InputConverter(ParametrizedClass):
     classname: StrictStr = Field(
-        "tsdat.utils.converters.DefaultConverter",
+        "tsdat.utils.converters.UnitsConverter",
         description="The module path to the Python class that should be used, e.g., if"
         " you would write in your script `from tsdat.config.utils.converters import"
-        " DefaultConverter` then you would put"
-        " 'tsdat.config.utils.converters.DefaultConverter' as the classname.",
+        " UnitsConverter` then your classname would be set to"
+        " 'tsdat.config.utils.converters.UnitsConverter'.",
     )
 
 
-class InputVariable(BaseModel, extra=Extra.allow):
-    name: StrictStr = Field(
-        title="Input Name",
-        description="This is the name of the variable exactly as it appears in the"
-        " input dataset. More precisely, this is the key tsdat will use to retrieve the"
-        " variable from the dataset returned by the input DataHandler.",
-    )
+class RetrieverParameters(BaseModel, extra=Extra.allow):
     required: bool = Field(
         True,
-        description="If True (the default) then the pipeline will fail loudly if tsdat"
-        " is unable to retrieve the variable from an input source.",
+        description="If True (the default) then the pipeline will fail loudly if it is"
+        " unable to retrieve the variable from an input source.",
+    )
+    name: Optional[StrictStr] = Field(
+        title="Input Name",
+        description="The name of the variable as it appears in the input dataset, or"
+        " more accurately, this is the key tsdat will use to retrieve the variable"
+        " from the dataset returned by the input DataReader.",
+    )
+    retrieval_rules: Optional[Any] = Field(
+        description="Optional field used to specify how the variable should be"
+        " retrieved from the input source(s). The format of this field is dependent on"
+        " the type of retriever specified by the input classname. If not specified then"
+        " the 'tsdat.io.retrievers.SimpleRetriever' class is used, and this field is"
+        " not needed."
     )
     units: Optional[str] = Field(
         description="This gives tsdat context about the units the input dataset is"
@@ -157,34 +170,39 @@ class InputVariable(BaseModel, extra=Extra.allow):
         " under the 'attrs' section, then tsdat will automatically perform a unit"
         " conversion on the input data."
     )
-    converter: InputConverter = Field(
-        InputConverter(classname="tsdat.utils.converters.DefaultConverter"),  # type: ignore
-        description="The converter class that tsdat should use to transform the data"
-        " from the input source to the output source. Currently only two converters are"
-        " supported: the 'DefaultConverter', which converts input units to output units"
-        " using the Python libraries act-atmos and pint, and the 'StringTimeConverter',"
-        " which is used exclusively for converting string values into Python datetime"
-        " objects that are timezone-aware. If using the 'StringTimeConverter' class,"
-        " two parameters are required: 'timezone' - the timezone the data are recorded"
-        " in (default UTC), and 'time_format' - a string that is passed to the"
-        " strptime() function as the string format used to create a datetime object.",
-    )
+    # converters: Optional[List[InputConverter]] = Field(
+    #     description="A list of converters that tsdat should use to transform the data"
+    #     " from the input source to the output source. Currently only two converters are"
+    #     " provided: the 'UnitsConverter', which converts input units to output units"
+    #     " using the Python libraries act-atmos and pint, and the 'StringTimeConverter',"
+    #     " which is used exclusively for converting string values into Python datetime"
+    #     " objects that are timezone-aware. If using the 'StringTimeConverter' class,"
+    #     " two parameters are required: 'timezone' - the timezone the data are recorded"
+    #     " in (default UTC), and 'time_format' - a string that is passed to the"
+    #     " strptime() function as the string format used to create a datetime object.",
+    # )
+
+
+class InputVariable(ParametrizedClass, extra=Extra.allow):
+    classname: StrictStr = "tsdat.io.retrievers.SimpleRetriever"
+    parameters: RetrieverParameters = RetrieverParameters()  # type: ignore
 
 
 class Variable(BaseModel, extra=Extra.forbid):
-    name: str = Field(
-        title="Output Variable Name",
-        regex=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$",
-        description="The name of the variable in the output file. Generally, we"
-        " recommend only using lowercase alphanumeric and '_' characters to name"
-        " variables, as uniformly-named variables are easier to sort through and read"
-        " for users. Spaces and non-ascii characters are explicitly disallowed. The"
-        " variable name should be consise, yet clear enough for users to know what the"
-        " property measures. A more descriptive name for a variable (i.e. suitable for"
-        " a plot title / axis label) should be provided via the 'long_name' attribute"
-        " in the attrs section, if desired. The 'comment' attribute is also recommended"
-        " to provide additional context about the variable, if needed.",
-    )
+    # name: str = Field(
+    #     title="Output Variable Name",
+    #     regex=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$",
+    #     description="The name of the variable in the output file. Generally, we"
+    #     " recommend only using lowercase alphanumeric and '_' characters to name"
+    #     " variables, as uniformly-named variables are easier to sort through and read"
+    #     " for users. Spaces and non-ascii characters are explicitly disallowed. The"
+    #     " variable name should be consise, yet clear enough for users to know what the"
+    #     " property measures. A more descriptive name for a variable (i.e. suitable for"
+    #     " a plot title / axis label) should be provided via the 'long_name' attribute"
+    #     " in the attrs section, if desired. The 'comment' attribute is also recommended"
+    #     " to provide additional context about the variable, if needed.",
+    # )
+    name: str = Field("", regex=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
     input: Optional[InputVariable] = Field(
         description="If the variable should be retrieved from the input dataset, then"
         " this section should be used to specify how the variable retrieval should be"
@@ -230,19 +248,19 @@ class Variable(BaseModel, extra=Extra.forbid):
     def is_dynamic(self) -> bool:
         return self.data is None and self.input is None
 
-    @validator("name")
-    @classmethod
-    def validate_name_is_ascii(cls, v: str) -> str:
-        if not v.isascii():
-            raise ValueError(f"'{v}' contains a non-ascii character.")
-        return v
+    # @validator("name")
+    # @classmethod
+    # def validate_name_is_ascii(cls, v: str) -> str:
+    #     if not v.isascii():
+    #         raise ValueError(f"'{v}' contains a non-ascii character.")
+    #     return v
 
     @root_validator(skip_on_failure=True)
     @classmethod
     def validate_data_retrival(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if values["input"] is not None and values["data"] is not None:
             raise ValueError(
-                f"'{values['name']}' cannot be both retrieved from input and set"
+                f"{cls.__name__}s cannot be both retrieved from input and set"
                 " statically. Please remove either the 'input' section or the 'data'"
                 " property."
             )
@@ -257,3 +275,7 @@ class Coordinate(Variable):
         if [name] != dims:
             raise ValueError(f"coord '{name}' must have dims ['{name}']. Found: {dims}")
         return values
+
+
+# TODO: Variables/Coordinates via __root__=Dict[str, Variable/Coordinate]
+# TODO: Variables/Coordinates validators; name uniqueness, coords has time, etc
