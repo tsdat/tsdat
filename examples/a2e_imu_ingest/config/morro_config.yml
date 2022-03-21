@@ -37,7 +37,7 @@ dataset_definition:  # Describes the dataset that will be produced
       attrs:
         long_name: Time offset from epoch
         standard_name: time
-        units: seconds since 1980-01-06T00:00:00
+        units: microseconds since 1980-01-06T00:00:00
 
     space:
       input:
