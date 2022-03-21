@@ -44,6 +44,11 @@ class NetCdfHandler(AbstractFileHandler):
         to_netcdf_kwargs = dict(format="NETCDF4")
         to_netcdf_kwargs.update(write_params.get("to_netcdf", {}))
 
+        # Remove _FillValue encoding for variables with object dtypes (e.g., strings)
+        for variable in ds.variables.values():
+            if variable.dtype == np.dtype("O") and "_FillValue" in variable.encoding:
+                del variable.encoding["_FillValue"]
+
         ds.to_netcdf(filename, **to_netcdf_kwargs)
 
     def read(self, filename: str, **kwargs) -> xr.Dataset:
@@ -82,6 +87,11 @@ class SplitNetCDFHandler(NetCdfHandler):
         write_params = self.parameters.get("write", {})
         to_netcdf_kwargs = dict(format="NETCDF4")
         to_netcdf_kwargs.update(write_params.get("to_netcdf", {}))
+
+        # Remove _FillValue encoding for variables with object dtypes (e.g., strings)
+        for variable in ds.variables.values():
+            if variable.dtype == np.dtype("O") and "_FillValue" in variable.encoding:
+                del variable.encoding["_FillValue"]
 
         # Option to compress netcdf files
         compression = write_params.get("compression", False)

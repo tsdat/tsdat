@@ -117,8 +117,8 @@ class VariableDefinition:
         self.name: str = name
         self.input = self._parse_input(dictionary, defaults)
         self.dims = self._parse_dimensions(dictionary, available_dimensions, defaults)
-        self.attrs = self._parse_attributes(dictionary, defaults)
         self.type = self._parse_data_type(dictionary, defaults)
+        self.attrs = self._parse_attributes(dictionary, defaults)
 
         for key in dictionary:
             if not hasattr(self, key):
@@ -169,7 +169,8 @@ class VariableDefinition:
         defaults = defaults if defaults is not None else dict()
         attributes: Dict[str, Any] = {}
         if not self.is_coordinate():
-            attributes = self.add_fillvalue_if_none(attributes)
+            if self.type not in ["str", "char"]:
+                attributes = self.add_fillvalue_if_none(attributes)
             attributes.update(defaults.get(VarKeys.ATTRS, {}))
 
         # Add attributes from the variable's definition and return. This overwrites
