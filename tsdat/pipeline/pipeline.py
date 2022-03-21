@@ -361,24 +361,30 @@ class Pipeline(abc.ABC):
         }
         return xr.Dataset.from_dict(reduced_dict)
 
-    def store_and_reopen_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
-        """Uses the DatastreamStorage object to persist the dataset in the
-        format specified by the storage config file.
+    def decode_cf(self, dataset: xr.Dataset) -> xr.Dataset:
+        """------------------------------------------------------------------------------------
+            Decodes the dataset according to CF conventions. This helps ensure that the dataset
+            is formatted correctly after it has been constructed from unstandardized sources or
+            heavily modified.
+            Args:
+                dataset (xr.Dataset): The dataset to decode.
+            Returns:
+                xr.Dataset: The decoded dataset.
+            ------------------------------------------------------------------------------------"""
+        # We have to make sure that time variables do not have units set as attrs, and
+        # instead have units set on the encoding or else xarray will crash when trying
+        # to save: https://github.com/pydata/xarray/issues/3739
+        for variable in dataset.variables.values():
+            if variable.data.dtype.type == np.datetime64 and "units" in variable.attrs:
+                units = variable.attrs["units"]
+                del variable.attrs["units"]
+                variable.encoding["units"] = units
 
-        :param dataset: The dataset to store.
-        :type dataset: xr.Dataset
-        :return: The dataset after it has been saved to disk and reopened.
-        :rtype: xr.Dataset
-        """
-        reopened_dataset = None
-
-        saved_paths = self.storage.save(dataset)
-
-        # We are only going to use the first saved path to fetch and re-load
-        with self.storage.tmp.fetch(saved_paths[0]) as tmp_path:
-            # Need to read using the FileHandler registered for writing output because
-            # we are re-opening the output dataset
-            handler = FileHandler._get_handler(tmp_path, "write")
-            reopened_dataset = handler.read(tmp_path)
-
-        return reopened_dataset
+        # Leaving the "dtype" entry in the encoding causes a crash when calling
+        # `dataset.to_netcdf`. Related to but not fixed by https://github.com/pydata/xarray/pull/4684
+        ds = xr.decode_cf(dataset)
+        for variable in ds.variables.values():
+            if variable.data.dtype.type == np.datetime64:
+                if "dtype" in variable.encoding:
+                    del variable.encoding["dtype"]
+        return ds

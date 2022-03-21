@@ -43,7 +43,8 @@ class IngestPipeline(Pipeline):
 
             # Apply any final touches to the dataset and persist the dataset
             dataset = self.hook_finalize_dataset(dataset)
-            dataset = self.store_and_reopen_dataset(dataset)
+            dataset = self.decode_cf(dataset)
+            self.storage.save(dataset)
 
             # Hook to generate custom plots
             self.hook_generate_and_persist_plots(dataset)

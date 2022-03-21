@@ -223,7 +223,7 @@ class DatastreamStorage(abc.ABC):
                     dataset, file_extension=file_extension
                 )
                 with self.tmp.get_temp_filepath(dataset_filename) as tmp_path:
-                    FileHandler.write(dataset, tmp_path)
+                    FileHandler.write(dataset, tmp_path, storage=self)
                     saved_paths.append(self.save_local_path(tmp_path, new_filename))
 
         else:
