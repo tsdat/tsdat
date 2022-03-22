@@ -1,6 +1,5 @@
 readers:
   csv:
-    regex: .*\.csv
     classname: tsdat.io.readers.CsvReader
 
 storage:
