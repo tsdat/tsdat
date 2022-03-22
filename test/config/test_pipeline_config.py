@@ -15,43 +15,43 @@ from tsdat.config.quality import QualityConfig
 # storage configurations.
 
 
-def test_pipeline_config_reads_yaml():
-    expected_dict: Dict[str, Any] = {
-        "classname": "tsdat.pipeline.ingest.IngestPipeline",
-        "parameters": {},
-        "associations": [
-            ".*\\.csv",
-        ],
-        "dataset": {
-            "path": "test/config/yaml/valid-dataset.yaml",
-            "overrides": {
-                "/attrs/location_id": "sgp",
-                "/coords/time/attrs/units": "km",
-                "/data_vars/first/attrs/new_attribute": "please add this attribute",
-            },
-        },
-        "quality": {
-            "path": "test/config/yaml/valid-quality.yaml",
-            "overrides": {
-                "/managers/0/exclude": [],
-            },
-        },
-        "storage": {
-            "path": "test/config/yaml/valid-storage.yaml",
-        },
-        "settings": {
-            "validate_dataset_config": True,
-            "validate_quality_config": True,
-            "validate_storage_config": True,
-        },
-    }
+# def test_pipeline_config_reads_raw_yaml():
+#     expected_dict: Dict[str, Any] = {
+#         "classname": "tsdat.pipeline.ingest.IngestPipeline",
+#         "parameters": {},
+#         "associations": [
+#             ".*\\.csv",
+#         ],
+#         "dataset": {
+#             "path": "test/config/yaml/valid-dataset.yaml",
+#             "overrides": {
+#                 "/attrs/location_id": "sgp",
+#                 "/coords/time/attrs/units": "km",
+#                 "/data_vars/first/attrs/new_attribute": "please add this attribute",
+#             },
+#         },
+#         "quality": {
+#             "path": "test/config/yaml/valid-quality.yaml",
+#             "overrides": {
+#                 "/managers/0/exclude": [],
+#             },
+#         },
+#         "storage": {
+#             "path": "test/config/yaml/valid-storage.yaml",
+#         },
+#         "settings": {
+#             "validate_dataset_config": True,
+#             "validate_quality_config": True,
+#             "validate_storage_config": True,
+#         },
+#     }
 
-    model = PipelineConfig.from_yaml(
-        Path("test/config/yaml/valid-pipeline.yaml"), validate=False
-    )
-    model_dict = model.dict(exclude_none=True, by_alias=True)
+#     model = PipelineConfig.from_yaml(
+#         Path("test/config/yaml/valid-pipeline.yaml"), validate=False
+#     )
+#     model_dict = model.dict(exclude_none=True, by_alias=True)
 
-    assert expected_dict == model_dict
+#     assert model_dict == expected_dict
 
 
 def test_pipeline_config_merges_overrides():

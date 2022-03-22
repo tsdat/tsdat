@@ -14,7 +14,7 @@ class YamlModel(BaseModel):
     @classmethod
     def from_yaml(cls, filepath: Path, validate: bool = True):
         # TODO: Docstring
-        config = get_yaml(filepath)
+        config = read_yaml(filepath)
         if not validate:
             return cls.construct(**config)
         return cls(**config)
@@ -28,7 +28,7 @@ class YamlModel(BaseModel):
         cls, filepath: Path, overrides: Dict[str, Any], validate: bool = True
     ):
         # TODO: Is this used?
-        base_dict = get_yaml(filepath)
+        base_dict = read_yaml(filepath)
         for pointer, new_value in overrides.items():
             set_pointer(base_dict, pointer, new_value)
         if not validate:
@@ -164,7 +164,7 @@ def find_duplicates(entries: Sequence[_NamedClass]) -> List[str]:
     return duplicates
 
 
-def get_yaml(filepath: Path) -> Dict[Any, Any]:
+def read_yaml(filepath: Path) -> Dict[Any, Any]:
     return list(yaml.safe_load_all(filepath.read_text()))[0]
 
 

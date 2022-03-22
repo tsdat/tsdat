@@ -1,11 +1,13 @@
 from pathlib import Path
 from jsonpointer import set_pointer
 from pydantic import (
+    BaseModel,
     BaseSettings,
     Extra,
     Field,
     validator,
 )
+from pydantic.fields import ModelField
 from typing import Any, Dict, List, Pattern, Union
 from .dataset import DatasetConfig
 from .quality import QualityConfig
@@ -14,7 +16,7 @@ from .utils import (
     ParametrizedClass,
     YamlModel,
     Overrideable,
-    get_yaml,
+    read_yaml,
     matches_overrideable_schema,
     recusive_instantiate,
 )
@@ -79,64 +81,34 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
     quality: Union[Overrideable[QualityConfig], QualityConfig]
     storage: Union[Overrideable[StorageConfig], StorageConfig]
 
-    @validator("dataset", pre=True)
+    @validator("dataset", "quality", "storage", pre=True)
     @classmethod
-    def resolve_dataset_configurations(
-        cls, v: Dict[str, Any], values: Dict[str, Any], **kwargs: Any
-    ) -> DatasetConfig:
-        # Load YAML, merge overrides
+    def merge_overrideable_yaml(
+        cls, v: Dict[str, Any], values: Dict[str, Any], field: ModelField
+    ):
+
+        object_field_mapping = {
+            "dataset": DatasetConfig,
+            "quality": QualityConfig,
+            "storage": StorageConfig,
+        }
+        config_cls = object_field_mapping[field.name]
+
         if matches_overrideable_schema(v):
-            defaults = get_yaml(Path(v["path"]))
+            defaults = read_yaml(Path(v["path"]))
             overrides = v.get("overrides", {})
             for pointer, new_value in overrides.items():
                 set_pointer(defaults, pointer, new_value)
             v = defaults
+
         # NOTE: values["settings"] is a ConfigSettings object because the settings
-        # property comes before dataset/quality/storage. Order matters for these:
-        # https://pydantic-docs.helpmanual.io/usage/models/#field-ordering
+        # property comes before dataset/quality/storage. Order matters in this case.
         settings: ConfigSettings = values["settings"]
-        validate = settings.validate_dataset_config
+        validate = getattr(settings, f"validate_{field.name}_config")
         if not validate:
-            return DatasetConfig.construct(**v)
-        return DatasetConfig(**v)
+            return config_cls.construct(**v)
 
-    @validator("quality", pre=True)
-    @classmethod
-    def resolve_quality_configurations(
-        cls, v: Dict[str, Any], values: Dict[str, Any], **kwargs: Any
-    ) -> QualityConfig:
-        # Load YAML, merge overrides
-        if matches_overrideable_schema(v):
-            defaults = get_yaml(Path(v["path"]))
-            overrides = v.get("overrides", {})
-            for pointer, new_value in overrides.items():
-                set_pointer(defaults, pointer, new_value)
-            v = defaults
-
-        settings: ConfigSettings = values["settings"]
-        validate = settings.validate_quality_config
-        if not validate:
-            return QualityConfig.construct(**v)
-        return QualityConfig(**v)
-
-    @validator("storage", pre=True)
-    @classmethod
-    def resolve_storage_configurations(
-        cls, v: Dict[str, Any], values: Dict[str, Any], **kwargs: Any
-    ) -> StorageConfig:
-        # Load YAML, merge overrides
-        if matches_overrideable_schema(v):
-            defaults = get_yaml(Path(v["path"]))
-            overrides = v.get("overrides", {})
-            for pointer, new_value in overrides.items():
-                set_pointer(defaults, pointer, new_value)
-            v = defaults
-
-        settings: ConfigSettings = values["settings"]
-        validate = settings.validate_storage_config
-        if not validate:
-            return StorageConfig.construct(**v)
-        return StorageConfig(**v)
+        return config_cls(**v)
 
     @classmethod
     def from_yaml(cls, filepath: Path, validate: bool = True):
@@ -153,23 +125,18 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
 
         ------------------------------------------------------------------------------------"""
 
-        yaml_dict = get_yaml(filepath)
-        assert all(
-            p in yaml_dict
-            for p in ["classname", "associations", "dataset", "quality", "storage"]
-        )
+        yaml_dict = read_yaml(filepath)
 
         # TODO: Setting 'validate' to False actually leads to totally different behavior
         # (the overrides do not get merged). There should be a different option to not
         # merge the overrides, and 'validate' should only refer to the validation of the
         # merged final structure.
-        # Maybe the current logic (merging overrides) should actually be a different method and
-        # the from_yaml method can go back to the default behavior from YamlModel; just read in
-        # the yaml file and create a model of it. Validation off by default so we don't merge
-        # stuff in.
-        if not validate:
-            return cls.construct(**yaml_dict)
-
+        # Maybe the current logic (merging overrides) should actually be a different
+        # method and the from_yaml method can go back to the default behavior from
+        # YamlModel; just read in the yaml file and create a model of it. Validation off
+        # by default so we don't merge stuff in.
+        # if not validate:
+        #     return cls.construct(**yaml_dict)
         return cls(**yaml_dict)
 
     def instaniate_pipeline(self, validate: bool = True) -> Any:

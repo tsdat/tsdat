@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any
-from pydantic import BaseModel, BaseSettings, Extra, Field
+from typing import Any, List
+from pydantic import BaseModel, BaseSettings, Extra, Field, validator
+from pydantic.fields import ModelField
 from tsdat.config.dataset import DatasetConfig
 from tsdat.io.storage.storage import BaseStorage
 from tsdat.qc.qc import QualityRegistry
@@ -17,9 +18,17 @@ class BasePipeline(BaseModel, ABC, extra=Extra.forbid):
     # TODO: Type hinting for converters, other objects on instantiated dataset object
     dataset_config: DatasetConfig = Field(alias="dataset")
     quality: QualityRegistry  # TODO: Make this optional (everywhere)
+    # retriever: BaseRetriever
     storage: BaseStorage
     settings: PipelineSettings = PipelineSettings()
 
     @abstractmethod
     def run(self, inputs: Any) -> Any:
         ...
+
+    @validator("storage")
+    @classmethod
+    def validate_storage(
+        cls, v: BaseStorage, field: ModelField, values: List[Any]
+    ) -> BaseStorage:
+        return v
