@@ -1,0 +1,30 @@
+classname: tsdat.io.retrieval.CommonRetriever
+parameters:
+  attrs:
+    merge_all: true
+
+  coords:
+    time:
+      possible_names:
+        - time
+        - timestamp
+      conversions:
+        string_to_time:
+          classname: tsdat.io.converters.StringToDatetime
+          parameters:
+            format: "%Y-%m-%d %H:%M:%S"
+      transformations:
+        standardize_resolution:
+          classname: tsdat.io.transformers.CoordinateTransformer
+          parameters:
+            time: 5min
+
+  data_vars:
+    wave_height:
+      possible_names:
+        - Wave Height (cm)
+      conversions:
+        to_meters:
+          classname: tsdat.io.converters.UnitsConverter
+          parameters:
+            input_units: cm
