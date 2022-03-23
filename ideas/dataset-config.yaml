@@ -8,25 +8,22 @@ attrs:
 coords:
   time:
     input:
-      required: true # this should be the default
-      # input_pattern_to_variable_name_mapping:
-      #   .*currents\.csv: [Timestamp (End of Interval), Some Other variable name]
-      #   .*: [timestamp, Timestamp]
-      input_pattern_to_variable_name_mapping:
-        .*2020010:
-          - name: Timestamp (End of Interval)
-            units: km
-          - name: Some Other variable name
-            units: m
-        .*\.csv:
-          - name: time
-          - name: TIME
-          - name: Time
-        .*:
-          - name: timestamp
-            units: m
-          - name: Timestamp
-            units: km
+      variable_finder:
+        mapping_of_input_key_to_input_variable:
+          .*2020010:
+            - name: Timestamp (End of Interval)
+              units: km
+            - name: Some Other variable name
+              units: m
+          .*\.csv:
+            - name: time
+            - name: TIME
+            - name: Time
+          .*:
+            - name: timestamp
+              units: m
+            - name: Timestamp
+              units: km
 
       data_converters:
         - classname: tsdat.io.converters.StringToDatetime
@@ -34,35 +31,56 @@ coords:
             format: "%Y-%m-%d %H:%M:%S"
             timezone: UTC
 
-        - classname: myproject.plugins.CustomUnitsConverter
-
-      transformers:
-        - classname: tsdat.io.transformers.TimeseriesTransformer
-          parameters:
-            time: 5min
-            method: mean
-
-        - classname: tsdat.io.transformers.CoordinateTransformer
-          parameters:
-            coord: depth
-            method: nearest
-
-    # 1. Use the readers to read all the input files into respective dataset mappings
-    # 2. For each raw dataset do the following:
-    #     - Iterate through all the DatasetConfig coords and data vars. For each do the following:
-    #         * if the variable is found in the raw dataset (i.e. via name/pattern mapping), then
-    #         run all the data_converters and transformers that have been defined for that DatasetConfig
-    #         variable on the raw dataset variable
-    # 3. For each transformed dataset (output of #2) iterate through the DatasetConfig coords and data vars
-    # and use our retrieval rules to find the first match for the coord/data_var and move it into the output
-    # dataset
-    # TODO: Performance considerations w/ order of operations (i.e. converters for data_vars that would not be
-    # retrieved may not need to be run)
+      transformer:
+        classname: tsdat.io.transformers.TimeseriesTransformer
+        parameters:
+          time: 5min
+          method: mean
 
     dtype: long
     dims: [time]
     attrs:
       units: "Time offset from 1970-01-01 00:00:00"
+
+  depth:
+    input:
+      variable_finder:
+        # name_in_input = variable_finder.get_variable_name(input_dataset, key)
+        # ds = converter.convert(input_dataset, name_in_input, config)
+        # ds = tranformer.transform(ds, name_in_input, ...)
+        classname: tsdat.io.retrievers.finders.MultiSourceVariableFinder
+        parameters:
+          mapping_of_input_key_to_input_variable:
+            .*\.currents\.csv:
+              .*2020010:
+                - name: Depth (End of Interval)
+                  units: km
+                - name: altitude below sea level
+                  units: m
+              .*\.csv:
+                - name: depth
+                  units: m
+                - name: DEPTH
+                  units: km
+                - name: deep
+                  units: m
+              .*:
+                - name: depth
+                  units: m
+
+      data_converters:
+        - classname: tsdat.io.converters.UnitsConverter
+
+      transformer:
+        classname: tsdat.io.transformers.CoordinateTransformer
+        parameters:
+          xarray_resample_args:
+            depth: 10meter
+
+    dims: [time]
+    dtype: float
+    attrs:
+      units: m
 
 data_vars:
   first:

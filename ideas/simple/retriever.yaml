@@ -1,8 +1,12 @@
 classname: tsdat.io.retrieval.SimpleRetriever
+readers:
+  csv:
+    classname: tsdat.io.readers.CsvReader
+
 parameters:
   coords:
     time:
-      conversions:
+      data_converters:
         string_to_time:
           classname: tsdat.io.converters.StringToDatetime
           parameters:
@@ -10,7 +14,7 @@ parameters:
 
   data_vars:
     wave_height:
-      conversions:
+      data_converters:
         to_meters:
           classname: tsdat.io.converters.UnitsConverter
           parameters:
