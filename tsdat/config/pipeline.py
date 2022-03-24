@@ -14,7 +14,7 @@ from .dataset import DatasetConfig
 from .quality import QualityConfig
 from .storage import StorageConfig
 from .utils import (
-    ParametrizedClass,
+    ParametrizedConfigClass,
     YamlModel,
     Overrideable,
     read_yaml,
@@ -61,7 +61,7 @@ class ConfigSettings(BaseSettings, extra=Extra.allow):
     )
 
 
-class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
+class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
     """------------------------------------------------------------------------------------
     Class used read in the yaml pipeline config file and to generate its json schema for
     early validation of its properties.
@@ -125,7 +125,7 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
         of the tsdat.pipeline.BasePipeline subclass.
 
         Properties and sub-properties of the PipelineConfig class that are subclasses of
-        tsdat.config.utils.ParametrizedClass (e.g, classes that define a 'classname' and
+        tsdat.config.utils.ParametrizedConfigClass (e.g, classes that define a 'classname' and
         optional 'parameters' properties) will also be instantiated in similar fashion. See
         tsdat.config.utils.recursive_instantiate for implementation details.
 

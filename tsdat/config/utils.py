@@ -45,7 +45,7 @@ def matches_overrideable_schema(model_dict: Dict[str, Any]):
     return "path" in model_dict
 
 
-class ParametrizedClass(BaseModel, extra=Extra.forbid):
+class ParametrizedConfigClass(BaseModel, extra=Extra.forbid):
     # Unfortunately, the classname has to be a string type unless PyObject becomes JSON
     # serializable: https://github.com/samuelcolvin/pydantic/discussions/3842
     classname: StrictStr = Field(
@@ -80,16 +80,16 @@ class ParametrizedClass(BaseModel, extra=Extra.forbid):
 
 def recusive_instantiate(model: Any) -> Any:
     """---------------------------------------------------------------------------------
-    Recursively calls model.instantiate() on all ParametrizedClass instances under the
-    the model, resulting in a new model which follows the same general structure as the
-    given model, but possibly containing totally different properties and methods.
+    Recursively calls model.instantiate() on all ParametrizedConfigClass instances under
+    the the model, resulting in a new model which follows the same general structure as
+    the given model, but possibly containing totally different properties and methods.
 
     Note that this method does a depth-first traversal of the model tree to to
     instantiate leaf nodes first. Traversing breadth-frist would result in new pydantic
     models attempting to call the __init__ method of child models, which is not valid
-    because the child models are ParametrizedClass instances. Traversing depth-first
-    allows us to first transform child models into the appropriate type using the
-    classname of the ParametrizedClass.
+    because the child models are ParametrizedConfigClass instances. Traversing
+    depth-first allows us to first transform child models into the appropriate type
+    using the classname of the ParametrizedConfigClass.
 
     This method is primarily used to instantiate a Pipeline subclass and all of its
     properties from a yaml pipeline config file, but it can be applied to any other
@@ -97,16 +97,15 @@ def recusive_instantiate(model: Any) -> Any:
 
     Args:
         model (Any): The object to recursively instantiate.
-        validate (bool, optional): Validate the instantiated object. Defaults to True.
 
     Returns:
         Any: The recusively-instantiated object.
 
     ---------------------------------------------------------------------------------"""
-    # Case: ParametrizedClass. Want to instantiate any sub-models then return the class
+    # Case: ParametrizedConfigClass. Want to instantiate any sub-models then return the class
     # with all submodels recusively instantiated, then statically instantiate the model.
     # Note: the model is instantiated last so that sub-models are only processed once.
-    if isinstance(model, ParametrizedClass):
+    if isinstance(model, ParametrizedConfigClass):
         fields = model.__fields_set__ - {"classname"}  # No point checking classname
         for field in fields:
             setattr(model, field, recusive_instantiate(getattr(model, field)))

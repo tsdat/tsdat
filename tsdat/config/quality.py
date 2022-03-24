@@ -1,13 +1,13 @@
 from pydantic import BaseModel, Field, validator
 from typing import List
-from .utils import ParametrizedClass, YamlModel, find_duplicates
+from .utils import ParametrizedConfigClass, YamlModel, find_duplicates
 
 
-class CheckerConfig(ParametrizedClass):
+class CheckerConfig(ParametrizedConfigClass):
     pass
 
 
-class HandlerConfig(ParametrizedClass):
+class HandlerConfig(ParametrizedConfigClass):
     pass
 
 

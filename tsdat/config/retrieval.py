@@ -2,10 +2,10 @@ import re
 from typing import Dict, Pattern
 from pydantic import Field, validator
 from pydantic.fields import ModelField
-from .utils import ParametrizedClass, YamlModel
+from .utils import ParametrizedConfigClass, YamlModel
 
 
-class DataReaderConfig(ParametrizedClass):
+class DataReaderConfig(ParametrizedConfigClass):
     # HACK: Can't do Pattern[str]: https://github.com/samuelcolvin/pydantic/issues/2636
     regex: Pattern = Field(  # type: ignore
         "",
@@ -20,7 +20,7 @@ class DataReaderConfig(ParametrizedClass):
     )
 
 
-# class DataConverter(ParametrizedClass):
+# class DataConverter(ParametrizedConfigClass):
 #     classname: StrictStr = Field(
 #         "tsdat.utils.converters.UnitsConverter",
 #         description="The module path to the Python class that should be used, e.g., if"
@@ -34,7 +34,7 @@ class DataReaderConfig(ParametrizedClass):
 # transformer config
 
 
-class RetrieverConfig(ParametrizedClass, YamlModel):
+class RetrieverConfig(ParametrizedConfigClass, YamlModel):
     readers: Dict[str, DataReaderConfig]
 
     @validator("readers")

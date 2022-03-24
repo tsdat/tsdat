@@ -1,16 +1,16 @@
 from pydantic import Field, validator
 from pydantic.fields import ModelField
 from typing import Dict
-from .utils import ParametrizedClass, YamlModel
+from .utils import ParametrizedConfigClass, YamlModel
 
 
-class DataWriterConfig(ParametrizedClass):
+class DataWriterConfig(ParametrizedConfigClass):
     """Class used to identify a `tsdat.io.writers.DataWriter` object to use for writing
     data to the storage area. Consists of a 'classname' and an optional 'parameters'
     dictionary that is given to the selected DataWriter during instantiation."""
 
 
-class StorageConfig(ParametrizedClass, YamlModel):
+class StorageConfig(ParametrizedConfigClass, YamlModel):
     writers: Dict[str, DataWriterConfig] = Field(
         # min_items=1, # Doesn't work for dictionaries
         title="Output Data Writers",

@@ -168,7 +168,7 @@ class VariableAttributes(AttributeModel):
 # )
 
 
-# class InputVariable(ParametrizedClass, extra=Extra.allow):
+# class InputVariable(ParametrizedConfigClass, extra=Extra.allow):
 #     classname: StrictStr = "tsdat.io.retrievers.SimpleRetriever"
 #     parameters: RetrieverParameters = RetrieverParameters()  # type: ignore
 
