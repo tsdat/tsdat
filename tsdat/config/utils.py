@@ -12,15 +12,14 @@ from typing import Any, cast, Dict, Generic, List, Protocol, Sequence, Set, Type
 
 class YamlModel(BaseModel):
     @classmethod
-    def from_yaml(cls, filepath: Path, validate: bool = True):
-        # TODO: Docstring
+    def from_yaml(cls, filepath: Path):
+        # TODO: Add docstring since this is a public-facing method
         config = read_yaml(filepath)
-        if not validate:
-            return cls.construct(**config)
         return cls(**config)
 
     @classmethod
     def generate_schema(cls, output_file: Path):
+        # TODO: Add docstring since this is a semi-public-facing method
         output_file.write_text(cls.schema_json(indent=4))
 
 
@@ -71,15 +70,15 @@ class ParametrizedClass(BaseModel, extra=Extra.forbid):
             raise ValueError(f"Classname '{v}' is not a valid classname.")
         return v
 
-    def instantiate(self, validate: bool = True) -> Any:
+    def instantiate(self) -> Any:
+        # TODO: Docstring and note that self.dict() includes self.parameters, and also
+        # any other properties that are set on the model
         _cls = import_string(self.classname)
         params: Dict[str, Any] = self.dict(exclude={"classname"})
-        if not validate:
-            return _cls.construct(**params)
         return _cls(**params)
 
 
-def recusive_instantiate(model: Any, validate: bool = True) -> Any:
+def recusive_instantiate(model: Any) -> Any:
     """---------------------------------------------------------------------------------
     Recursively calls model.instantiate() on all ParametrizedClass instances under the
     the model, resulting in a new model which follows the same general structure as the
@@ -111,7 +110,7 @@ def recusive_instantiate(model: Any, validate: bool = True) -> Any:
         fields = model.__fields_set__ - {"classname"}  # No point checking classname
         for field in fields:
             setattr(model, field, recusive_instantiate(getattr(model, field)))
-        return model.instantiate(validate=validate)
+        return model.instantiate()
 
     # Case: BaseModel. Want to instantiate any sub-models then return the model itself.
     elif isinstance(model, BaseModel):
@@ -163,7 +162,7 @@ def get_code_version() -> str:
     except KeyError:
         try:
             version = Version.from_git().serialize(dirty=True, style=Style.SemVer)
-        except BaseException:
+        except RuntimeError:
             warnings.warn(
                 "Could not get code_version from either the 'CODE_VERSION' environment"
                 " variable nor from git history. The 'code_version' global attribute"
