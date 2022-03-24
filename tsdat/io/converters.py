@@ -11,20 +11,6 @@ from tsdat.config.retrieval import RetrieverConfig
 from tsdat.utils import ParametrizedClass
 
 
-class DataConverter(ParametrizedClass, ABC):
-    # TODO: Docstring; this is a public class that people will inherit from
-
-    # TODO: Nail down method signature
-    @abstractmethod
-    def run(
-        self,
-        dataset: xr.Dataset,
-        dataset_config: DatasetConfig,
-        retriever_config: RetrieverConfig,
-    ) -> xr.Dataset:
-        ...
-
-
 # class UnitsConverter(BaseDataConverter):
 #     def run(self, dataset: xr.Dataset, dataset_config: DatasetConfig) -> xr.Dataset:
 #         if (
