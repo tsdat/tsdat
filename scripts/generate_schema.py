@@ -4,6 +4,7 @@ from pathlib import Path
 from enum import Enum
 from tsdat.config.dataset import DatasetConfig
 from tsdat.config.quality import QualityConfig
+from tsdat.config.retrieval import RetrieverConfig
 from tsdat.config.storage import StorageConfig
 from tsdat.config.pipeline import PipelineConfig
 from tsdat.config.utils import YamlModel
@@ -13,6 +14,7 @@ app = typer.Typer(add_completion=False)
 
 
 class SchemaType(str, Enum):
+    retriever = "retriever"
     dataset = "dataset"
     quality = "quality"
     storage = "storage"
@@ -27,26 +29,28 @@ def generate_schema(
         file_okay=False,
         dir_okay=True,
     ),
-    which: SchemaType = typer.Option(SchemaType.all),
+    schema_type: SchemaType = typer.Option(SchemaType.all),
 ):
     dir.mkdir(exist_ok=True)
     cls_mapping: Dict[str, Any] = {
+        "retriever": RetrieverConfig,
         "dataset": DatasetConfig,
         "quality": QualityConfig,
         "storage": StorageConfig,
         "pipeline": PipelineConfig,
     }
+
     keys: List[str] = []
-    if which == "all":
-        keys = ["dataset", "quality", "storage", "pipeline"]
+    if schema_type == "all":
+        keys = list(cls_mapping.keys())
     else:
-        keys = [which]
+        keys = [schema_type]
 
     for key in keys:
         path = dir / f"{key}-schema.json"
         cls: YamlModel = cls_mapping[key]
         cls.generate_schema(path)
-        print(f"Wrote schema file to {path}")
+        print(f"Wrote {key} schema file to {path}")
     print("Done!")
 
 

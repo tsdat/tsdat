@@ -7,42 +7,22 @@ attrs:
 
 coords:
   time:
-    input:
-      # classname: tsdat.io.retrievers.SimpleRetriever
-      parameters:
-        # required: true
-        name: timestamp
-        time_format: "%Y-%m-%d %H:%M:%S"
-        # timezone: UTC
-
-      # classname: tsdat.io.retrievers.MultiDatastreamRetriever
-      # parameters:
-      # retrieval_rules: # TODO: Move this inside of input/parameters
-      #   # - regex-which-matches-input-key(s): [list of possible, input variable, names]
-      #   - .*: [time]
-      # converters:
-      #   - classname: tsdat.io.converters.StringTimeConverter
-      #     parameters:
-      #       format: "%Y-%m-%d %H:%M:%S"
-      #       timezone: UTC
-    dtype: long
+    retrieve: true
     dims: [time]
+    dtype: long
     attrs:
-      units: "Time offset from 1970-01-01 00:00:00"
+      units: Time offset from 1970-01-01 00:00:00
 
 data_vars:
   first:
-    # data: [1, 2, 3, 4, 5]
-    input:
-      parameters:
-        name: First Data Var
-        units: degF
+    retrieve: true
     dims: [time]
     dtype: float
     attrs:
       units: degC
 
   pi:
+    retrieve: false
     data: [3.14159]
     dims: []
     dtype: float

@@ -141,57 +141,6 @@
                 "data_level"
             ]
         },
-        "RetrieverParameters": {
-            "title": "RetrieverParameters",
-            "type": "object",
-            "properties": {
-                "required": {
-                    "title": "Required",
-                    "description": "If True (the default) then the pipeline will fail loudly if it is unable to retrieve the variable from an input source.",
-                    "default": true,
-                    "type": "boolean"
-                },
-                "name": {
-                    "title": "Input Name",
-                    "description": "The name of the variable as it appears in the input dataset, or more accurately, this is the key tsdat will use to retrieve the variable from the dataset returned by the input DataReader.",
-                    "type": "string"
-                },
-                "retrieval_rules": {
-                    "title": "Retrieval Rules",
-                    "description": "Optional field used to specify how the variable should be retrieved from the input source(s). The format of this field is dependent on the type of retriever specified by the input classname. If not specified then the 'tsdat.io.retrievers.SimpleRetriever' class is used, and this field is not needed."
-                },
-                "units": {
-                    "title": "Units",
-                    "description": "This gives tsdat context about the units the input dataset is measured in. If the 'units' property here differs from the 'units' property under the 'attrs' section, then tsdat will automatically perform a unit conversion on the input data.",
-                    "type": "string"
-                }
-            }
-        },
-        "InputVariable": {
-            "title": "InputVariable",
-            "type": "object",
-            "properties": {
-                "classname": {
-                    "title": "Classname",
-                    "default": "tsdat.io.retrievers.SimpleRetriever",
-                    "type": "string"
-                },
-                "parameters": {
-                    "title": "Parameters",
-                    "default": {
-                        "required": true,
-                        "name": null,
-                        "retrieval_rules": null,
-                        "units": null
-                    },
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/RetrieverParameters"
-                        }
-                    ]
-                }
-            }
-        },
         "VariableAttributes": {
             "title": "VariableAttributes",
             "description": "Attributes that will be recorded in the output dataset. These metadata are used to\nrecord information about the data properties and related fields (e.g., units,\nancillary_variables, etc), user-facing metadata (e.g., long_name, comment), as well as\nattributes related to quality checks and controls (e.g., valid_*, fail_*, and warn_*\nproperties).",
@@ -280,14 +229,11 @@
                     "pattern": "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$",
                     "type": "string"
                 },
-                "input": {
-                    "title": "Input",
-                    "description": "If the variable should be retrieved from the input dataset, then this section should be used to specify how the variable retrieval should be done.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/InputVariable"
-                        }
-                    ]
+                "retrieve": {
+                    "title": "Retrieve",
+                    "description": "Indicate if the variable should be retrieved from an input dataset according to the retrieval parameters in the retrieval configuration file. If False then the retriever will not attempt to retrieve this directly from an input dataset. Defaults to True.",
+                    "default": true,
+                    "type": "boolean"
                 },
                 "data": {
                     "title": "Data",
@@ -334,14 +280,11 @@
                     "pattern": "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$",
                     "type": "string"
                 },
-                "input": {
-                    "title": "Input",
-                    "description": "If the variable should be retrieved from the input dataset, then this section should be used to specify how the variable retrieval should be done.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/InputVariable"
-                        }
-                    ]
+                "retrieve": {
+                    "title": "Retrieve",
+                    "description": "Indicate if the variable should be retrieved from an input dataset according to the retrieval parameters in the retrieval configuration file. If False then the retriever will not attempt to retrieve this directly from an input dataset. Defaults to True.",
+                    "default": true,
+                    "type": "boolean"
                 },
                 "data": {
                     "title": "Data",

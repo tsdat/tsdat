@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict
 from tsdat.config.pipeline import PipelineConfig
 from tsdat.config.dataset import DatasetConfig
+from tsdat.config.retrieval import RetrieverConfig
 from tsdat.config.storage import StorageConfig
 from tsdat.config.quality import QualityConfig
 
@@ -56,6 +57,7 @@ from tsdat.config.quality import QualityConfig
 
 def test_pipeline_config_merges_overrides():
     # Load the linked config files separately
+    retriever = RetrieverConfig.from_yaml(Path("test/config/yaml/valid-retriever.yaml"))
     dataset = DatasetConfig.from_yaml(Path("test/config/yaml/valid-dataset.yaml"))
     quality = QualityConfig.from_yaml(Path("test/config/yaml/valid-quality.yaml"))
     storage = StorageConfig.from_yaml(Path("test/config/yaml/valid-storage.yaml"))
@@ -73,10 +75,12 @@ def test_pipeline_config_merges_overrides():
         "parameters": {},
         "associations": [re.compile(r".*\.csv")],
         "settings": {
+            "validate_retriever_config": True,
             "validate_dataset_config": True,
             "validate_quality_config": True,
             "validate_storage_config": True,
         },
+        "retriever": retriever.dict(**dict_kwargs),
         "dataset": dataset.dict(**dict_kwargs),
         "quality": quality.dict(**dict_kwargs),
         "storage": storage.dict(**dict_kwargs),

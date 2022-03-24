@@ -1,7 +1,6 @@
 from pathlib import Path
 from jsonpointer import set_pointer
 from pydantic import (
-    BaseModel,
     BaseSettings,
     Extra,
     Field,
@@ -9,6 +8,8 @@ from pydantic import (
 )
 from pydantic.fields import ModelField
 from typing import Any, Dict, List, Pattern, Union
+
+from tsdat.config.retrieval import RetrieverConfig
 from .dataset import DatasetConfig
 from .quality import QualityConfig
 from .storage import StorageConfig
@@ -23,6 +24,10 @@ from .utils import (
 
 
 class ConfigSettings(BaseSettings, extra=Extra.allow):
+    validate_retriever_config: bool = Field(
+        True,
+        # TODO: description
+    )
     validate_dataset_config: bool = Field(
         True,
         description="Validate the dataset configuration file after any overrides have"
@@ -77,17 +82,19 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
     # HACK: Overrideable is used to trick pydantic into letting us generate json schema
     # for these objects, but during construction these are converted into the actual
     # DatasetConfig, QualityConfig, and StorageConfig objects.
+    retriever: Union[Overrideable[RetrieverConfig], RetrieverConfig]
     dataset: Union[Overrideable[DatasetConfig], DatasetConfig]
     quality: Union[Overrideable[QualityConfig], QualityConfig]
     storage: Union[Overrideable[StorageConfig], StorageConfig]
 
-    @validator("dataset", "quality", "storage", pre=True)
+    @validator("retriever", "dataset", "quality", "storage", pre=True)
     @classmethod
     def merge_overrideable_yaml(
         cls, v: Dict[str, Any], values: Dict[str, Any], field: ModelField
     ):
 
         object_field_mapping = {
+            "retriever": RetrieverConfig,
             "dataset": DatasetConfig,
             "quality": QualityConfig,
             "storage": StorageConfig,
@@ -125,7 +132,7 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
 
         ------------------------------------------------------------------------------------"""
 
-        yaml_dict = read_yaml(filepath)
+        # yaml_dict = read_yaml(filepath)
 
         # TODO: Setting 'validate' to False actually leads to totally different behavior
         # (the overrides do not get merged). There should be a different option to not
@@ -137,7 +144,8 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
         # by default so we don't merge stuff in.
         # if not validate:
         #     return cls.construct(**yaml_dict)
-        return cls(**yaml_dict)
+        # return cls(**yaml_dict)
+        return super().from_yaml(filepath=filepath, validate=True)
 
     def instaniate_pipeline(self, validate: bool = True) -> Any:
         """------------------------------------------------------------------------------------

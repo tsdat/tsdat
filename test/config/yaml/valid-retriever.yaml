@@ -1,0 +1,23 @@
+classname: tsdat.io.retrievers.SimpleRetriever
+
+readers:
+  csv:
+    classname: tsdat.io.readers.CsvReader
+
+parameters:
+  coords:
+    time:
+      name: timestamp
+      data_converters:
+        - classname: tsdat.io.converters.StringTimeConverter
+          parameters:
+            format: "%Y-%m-%d %H:%M:%S"
+            timezone: UTC
+
+  data_vars:
+    first:
+      name: First Data Var
+      data_converters:
+        - classname: tsdat.io.converters.UnitsConverter
+          parameters:
+            input_units: degF

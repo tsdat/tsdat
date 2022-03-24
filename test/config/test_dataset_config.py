@@ -7,7 +7,6 @@ from pathlib import Path
 from tsdat.config.dataset import DatasetConfig
 from tsdat.config.attributes import GlobalAttributes, AttributeModel
 from tsdat.config.variables import (
-    InputVariable,
     VariableAttributes,
     Coordinate,
     Variable,
@@ -227,26 +226,27 @@ def test_variable_attrs_allow_extra():
     assert expected == model_dict
 
 
-def test_input_var_properties():
-    # Input variable can be created, and produces expected result
-    invar: Dict[str, Any] = {
-        "parameters": {
-            "name": "Ínpü† √a®îåßlé Ñ∂mé",  # spaces, strange characters are fine here
-            "units": "km",  # doesn't do anything special by itself
-            "extra_property": "hi",  # extra fields are allowed\
-        }
-    }
-    expected: Dict[str, Any] = {
-        "classname": "tsdat.io.retrievers.SimpleRetriever",
-        "parameters": {
-            "required": True,
-            "name": "Ínpü† √a®îåßlé Ñ∂mé",
-            "units": "km",
-            "extra_property": "hi",
-        },
-    }
-    model_dict = InputVariable(**invar).dict(exclude_none=True, by_alias=True)
-    assert model_dict == expected
+# TODO: Move/modify this test to retriever test area
+# def test_input_var_properties():
+#     # Input variable can be created, and produces expected result
+#     invar: Dict[str, Any] = {
+#         "parameters": {
+#             "name": "Ínpü† √a®îåßlé Ñ∂mé",  # spaces, strange characters are fine here
+#             "units": "km",  # doesn't do anything special by itself
+#             "extra_property": "hi",  # extra fields are allowed\
+#         }
+#     }
+#     expected: Dict[str, Any] = {
+#         "classname": "tsdat.io.retrievers.SimpleRetriever",
+#         "parameters": {
+#             "required": True,
+#             "name": "Ínpü† √a®îåßlé Ñ∂mé",
+#             "units": "km",
+#             "extra_property": "hi",
+#         },
+#     }
+#     model_dict = InputVariable(**invar).dict(exclude_none=True, by_alias=True)
+#     assert model_dict == expected
 
 
 def test_fail_if_missing_required_variable_properties():
@@ -265,6 +265,8 @@ def test_fail_if_missing_required_variable_properties():
 
 
 def test_fail_if_bad_variable_name():
+    # TODO: This test should work at the coords/data_vars level instead of inside a
+    # specific variable.
     names: List[str] = [
         "ñø_åsçîí",
         "no space",
@@ -288,42 +290,38 @@ def test_fail_if_bad_variable_name():
         assert expected_error_msg in actual_msg
 
 
-def test_variable_retrieval_config():
+# TODO: This test needs to be reconsidered
+def test_variable_retrieval_properties():
     base_var: Dict[str, Any] = {
-        "name": "variable_name",
         "dims": ["time"],
         "dtype": "float",
         "attrs": {"units": "1"},
     }
 
-    # Variable retrieved from input
-    retrieved_var: Dict[str, Any] = {"input": {}}
+    retrieved_var: Dict[str, Any] = {"retrieve": True}
     retrieved_var.update(base_var)
     assert Variable(**retrieved_var).is_retrieved
 
-    # Variable data set directly
-    static_var: Dict[str, Any] = {"data": []}
+    static_var: Dict[str, Any] = {"retrieve": False, "data": []}
     static_var.update(base_var)
     assert Variable(**static_var).is_static
 
-    # Variable not retrieved or set directly
-    dynamic_var: Dict[str, Any] = {}
+    dynamic_var: Dict[str, Any] = {"retrieve": False}
     dynamic_var.update(base_var)
     assert Variable(**dynamic_var).is_dynamic
 
-    # Variable cannot be both retrieved and set directly
-    bad_var: Dict[str, Any] = {"input": {}, "data": []}
+    bad_var: Dict[str, Any] = {"retrieve": True, "data": []}
     bad_var.update(base_var)
     with pytest.raises(
-        ValidationError, match="cannot be both retrieved from input and set statically"
+        ValidationError, match="cannot be both retrieved and set statically"
     ):
         Variable(**bad_var)
 
 
-def test_coordinate_requires_self_dims():
+def test_coordinate_dimensioned_by_itself():
     base_coord: Dict[str, Any] = {
+        "retrieve": True,
         "name": "my_coordinate",
-        "data": [1.0, 2.0, 3.0],
         "dtype": "float",
         "attrs": {"units": "1", "_FillValue": -9999.0},
     }
@@ -362,14 +360,7 @@ def test_dataset_definition_from_yaml():
         "coords": {
             "time": {
                 "name": "time",
-                "input": {
-                    "classname": "tsdat.io.retrievers.SimpleRetriever",
-                    "parameters": {
-                        "required": True,
-                        "name": "timestamp",
-                        "time_format": "%Y-%m-%d %H:%M:%S",
-                    },
-                },
+                "retrieve": True,
                 "dtype": "long",
                 "dims": ["time"],
                 "attrs": {
@@ -381,20 +372,14 @@ def test_dataset_definition_from_yaml():
         "data_vars": {
             "first": {
                 "name": "first",
-                "input": {
-                    "classname": "tsdat.io.retrievers.SimpleRetriever",
-                    "parameters": {
-                        "required": True,
-                        "name": "First Data Var",
-                        "units": "degF",
-                    },
-                },
+                "retrieve": True,
                 "dtype": "float",
                 "dims": ["time"],
                 "attrs": {"units": "degC", "_FillValue": -9999.0},
             },
             "pi": {
                 "name": "pi",
+                "retrieve": False,
                 "data": [3.14159],
                 "dtype": "float",
                 "dims": [],

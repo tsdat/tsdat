@@ -23,23 +23,11 @@ class YamlModel(BaseModel):
     def generate_schema(cls, output_file: Path):
         output_file.write_text(cls.schema_json(indent=4))
 
-    @classmethod
-    def from_override(
-        cls, filepath: Path, overrides: Dict[str, Any], validate: bool = True
-    ):
-        # TODO: Is this used?
-        base_dict = read_yaml(filepath)
-        for pointer, new_value in overrides.items():
-            set_pointer(base_dict, pointer, new_value)
-        if not validate:
-            return cls.construct(**base_dict)
-        return cls(**base_dict)
+
+Config = TypeVar("Config", bound=BaseModel)
 
 
-Definition = TypeVar("Definition", bound=BaseModel)
-
-
-class Overrideable(YamlModel, GenericModel, Generic[Definition], extra=Extra.forbid):
+class Overrideable(YamlModel, GenericModel, Generic[Config], extra=Extra.forbid):
     path: FilePath
     overrides: Dict[str, Any] = dict()
 

@@ -25,6 +25,7 @@
         "settings": {
             "title": "Settings",
             "default": {
+                "validate_retriever_config": true,
                 "validate_dataset_config": true,
                 "validate_quality_config": true,
                 "validate_storage_config": true
@@ -32,6 +33,17 @@
             "allOf": [
                 {
                     "$ref": "#/definitions/ConfigSettings"
+                }
+            ]
+        },
+        "retriever": {
+            "title": "Retriever",
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/Overrideable_RetrieverConfig_"
+                },
+                {
+                    "$ref": "#/definitions/RetrieverConfig"
                 }
             ]
         },
@@ -72,6 +84,7 @@
     "required": [
         "classname",
         "associations",
+        "retriever",
         "dataset",
         "quality",
         "storage"
@@ -83,6 +96,14 @@
             "description": "Base class for settings, allowing values to be overridden by environment variables.\n\nThis is useful in production for secrets you do not wish to save in code, it plays nicely with docker(-compose),\nHeroku and any 12 factor app design.",
             "type": "object",
             "properties": {
+                "validate_retriever_config": {
+                    "title": "Validate Retriever Config",
+                    "default": true,
+                    "env_names": [
+                        "validate_retriever_config"
+                    ],
+                    "type": "boolean"
+                },
                 "validate_dataset_config": {
                     "title": "Validate Dataset Config",
                     "description": "Validate the dataset configuration file after any overrides have been merged. Disabling validation is generally 10-30x faster, but comes with some risks and can easily lead to buggy behavior if you are not careful. For example. the dataset configuration model uses validators to set defaults for the 'datastream' attribute based on other global attributes that are set. The 'datastream' attribute is used elsewhere in the pipeline as a label for the dataset, and is used by some storage classes to generate the filepath where the data should be saved. If you disable dataset configuration validation, THIS WILL NOT WORK, so you will need to take care to set the 'datastream' attribute manually in your config file directly. Because of the complicated nature of dataset configuration files, it is almost always better to leave validation ON.",
@@ -111,6 +132,83 @@
                     "type": "boolean"
                 }
             }
+        },
+        "Overrideable_RetrieverConfig_": {
+            "title": "Overrideable[RetrieverConfig]",
+            "type": "object",
+            "properties": {
+                "path": {
+                    "title": "Path",
+                    "format": "file-path",
+                    "type": "string"
+                },
+                "overrides": {
+                    "title": "Overrides",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "required": [
+                "path"
+            ],
+            "additionalProperties": false
+        },
+        "DataReaderConfig": {
+            "title": "DataReaderConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                },
+                "regex": {
+                    "title": "Regex",
+                    "description": "A regex pattern used to map input data keys (e.g., a file path or url passed as input from the pipeline runner) to the DataReader that should be used to read that resource. If there are multiple DataReader registered and an input data key would be matched by the regex pattern of multiple DataReaders, then only the DataReader corresponding with the first match will be used. Because of this, we recommend ordering your DataReaders from most specific pattern to least specific so that the most specific pattern will be matched first.",
+                    "default": "",
+                    "type": "string",
+                    "format": "regex"
+                }
+            },
+            "required": [
+                "classname"
+            ],
+            "additionalProperties": false
+        },
+        "RetrieverConfig": {
+            "title": "RetrieverConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                },
+                "readers": {
+                    "title": "Readers",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/DataReaderConfig"
+                    }
+                }
+            },
+            "required": [
+                "classname",
+                "readers"
+            ],
+            "additionalProperties": false
         },
         "Overrideable_DatasetConfig_": {
             "title": "Overrideable[DatasetConfig]",
@@ -239,57 +337,6 @@
                 "data_level"
             ]
         },
-        "RetrieverParameters": {
-            "title": "RetrieverParameters",
-            "type": "object",
-            "properties": {
-                "required": {
-                    "title": "Required",
-                    "description": "If True (the default) then the pipeline will fail loudly if it is unable to retrieve the variable from an input source.",
-                    "default": true,
-                    "type": "boolean"
-                },
-                "name": {
-                    "title": "Input Name",
-                    "description": "The name of the variable as it appears in the input dataset, or more accurately, this is the key tsdat will use to retrieve the variable from the dataset returned by the input DataReader.",
-                    "type": "string"
-                },
-                "retrieval_rules": {
-                    "title": "Retrieval Rules",
-                    "description": "Optional field used to specify how the variable should be retrieved from the input source(s). The format of this field is dependent on the type of retriever specified by the input classname. If not specified then the 'tsdat.io.retrievers.SimpleRetriever' class is used, and this field is not needed."
-                },
-                "units": {
-                    "title": "Units",
-                    "description": "This gives tsdat context about the units the input dataset is measured in. If the 'units' property here differs from the 'units' property under the 'attrs' section, then tsdat will automatically perform a unit conversion on the input data.",
-                    "type": "string"
-                }
-            }
-        },
-        "InputVariable": {
-            "title": "InputVariable",
-            "type": "object",
-            "properties": {
-                "classname": {
-                    "title": "Classname",
-                    "default": "tsdat.io.retrievers.SimpleRetriever",
-                    "type": "string"
-                },
-                "parameters": {
-                    "title": "Parameters",
-                    "default": {
-                        "required": true,
-                        "name": null,
-                        "retrieval_rules": null,
-                        "units": null
-                    },
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/RetrieverParameters"
-                        }
-                    ]
-                }
-            }
-        },
         "VariableAttributes": {
             "title": "VariableAttributes",
             "description": "Attributes that will be recorded in the output dataset. These metadata are used to\nrecord information about the data properties and related fields (e.g., units,\nancillary_variables, etc), user-facing metadata (e.g., long_name, comment), as well as\nattributes related to quality checks and controls (e.g., valid_*, fail_*, and warn_*\nproperties).",
@@ -378,14 +425,11 @@
                     "pattern": "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$",
                     "type": "string"
                 },
-                "input": {
-                    "title": "Input",
-                    "description": "If the variable should be retrieved from the input dataset, then this section should be used to specify how the variable retrieval should be done.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/InputVariable"
-                        }
-                    ]
+                "retrieve": {
+                    "title": "Retrieve",
+                    "description": "Indicate if the variable should be retrieved from an input dataset according to the retrieval parameters in the retrieval configuration file. If False then the retriever will not attempt to retrieve this directly from an input dataset. Defaults to True.",
+                    "default": true,
+                    "type": "boolean"
                 },
                 "data": {
                     "title": "Data",
@@ -432,14 +476,11 @@
                     "pattern": "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$",
                     "type": "string"
                 },
-                "input": {
-                    "title": "Input",
-                    "description": "If the variable should be retrieved from the input dataset, then this section should be used to specify how the variable retrieval should be done.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/InputVariable"
-                        }
-                    ]
+                "retrieve": {
+                    "title": "Retrieve",
+                    "description": "Indicate if the variable should be retrieved from an input dataset according to the retrieval parameters in the retrieval configuration file. If False then the retriever will not attempt to retrieve this directly from an input dataset. Defaults to True.",
+                    "default": true,
+                    "type": "boolean"
                 },
                 "data": {
                     "title": "Data",
@@ -663,42 +704,9 @@
             ],
             "additionalProperties": false
         },
-        "DataReaderConfig": {
-            "title": "DataReaderConfig",
-            "type": "object",
-            "properties": {
-                "classname": {
-                    "title": "Classname",
-                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
-                    "type": "string"
-                },
-                "parameters": {
-                    "title": "Parameters",
-                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
-                    "default": {},
-                    "type": "object"
-                },
-                "name": {
-                    "title": "Name",
-                    "description": "A label used internally to distinguish registered DataHandlers.",
-                    "type": "string"
-                },
-                "regex": {
-                    "title": "Regex",
-                    "description": "A regex pattern used to map input data keys (e.g., a file path or url passed as input from the pipeline runner) to the DataReader that should be used to read that resource. If there are multiple DataReader registered and an input data key would be matched by the regex pattern of multiple DataReaders, then only the DataReader corresponding with the first match will be used. Because of this, we recommend ordering your DataReaders from most specific pattern to least specific so that the most specific pattern will be matched first.",
-                    "default": "",
-                    "type": "string",
-                    "format": "regex"
-                }
-            },
-            "required": [
-                "classname",
-                "name"
-            ],
-            "additionalProperties": false
-        },
         "DataWriterConfig": {
             "title": "DataWriterConfig",
+            "description": "Class used to identify a `tsdat.io.writers.DataWriter` object to use for writing\ndata to the storage area. Consists of a 'classname' and an optional 'parameters'\ndictionary that is given to the selected DataWriter during instantiation.",
             "type": "object",
             "properties": {
                 "classname": {
@@ -711,46 +719,12 @@
                     "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
                     "default": {},
                     "type": "object"
-                },
-                "name": {
-                    "title": "Name",
-                    "description": "A label used internally to distinguish registered DataHandlers.",
-                    "type": "string"
                 }
             },
             "required": [
-                "classname",
-                "name"
+                "classname"
             ],
             "additionalProperties": false
-        },
-        "HandlerRegistryConfig": {
-            "title": "HandlerRegistryConfig",
-            "type": "object",
-            "properties": {
-                "readers": {
-                    "title": "Input Data Handlers",
-                    "description": "Register a list of DataHandler(s) that will be used to read input data. If multiple input DataHandlers are used, then you must add a 'regex' attribute for each that will be used to map input keys (i.e. file paths) to the input DataHandler that should be used to read that resource.",
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/DataReaderConfig"
-                    }
-                },
-                "writers": {
-                    "title": "Output Data Handlers",
-                    "description": "Register a list of DataHandler(s) that will be used to write output data. If multiple output DataHandlers are used, then you must add a 'regex' attribute for each that will be used to map output keys (i.e. file paths) to the DataHandler that should be used to write that resource.",
-                    "minItems": 1,
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/DataWriterConfig"
-                    }
-                }
-            },
-            "required": [
-                "readers",
-                "writers"
-            ]
         },
         "StorageConfig": {
             "title": "StorageConfig",
@@ -767,19 +741,18 @@
                     "default": {},
                     "type": "object"
                 },
-                "registry": {
-                    "title": "Handler Registry",
-                    "description": "Register lists of DataReader(s) and DataWriter(s) to be used to read and write data from the pipeline.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/HandlerRegistryConfig"
-                        }
-                    ]
+                "writers": {
+                    "title": "Output Data Writers",
+                    "description": "Register DataWriters(s) that will be used to write output data. It is left to the storage class to dispatch the DataWriter(s) on the dataset(s) to store. The built-in storage classes calls all DataWriters on each dataset",
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/DataWriterConfig"
+                    }
                 }
             },
             "required": [
                 "classname",
-                "registry"
+                "writers"
             ],
             "additionalProperties": false
         }

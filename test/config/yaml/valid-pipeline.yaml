@@ -3,9 +3,9 @@ classname: tsdat.pipeline.ingest.IngestPipeline
 associations:
   - '.*\.csv'
 
-# IDEA: Add a retrieval section
-# retriever:
-#   classname: BasicIngestPipelineRetriever
+# TODO: Consider jsonpath-ng for overrides instead of jsonpointer
+retriever:
+  path: test/config/yaml/valid-retriever.yaml
 
 dataset:
   path: test/config/yaml/valid-dataset.yaml

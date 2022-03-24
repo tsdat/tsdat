@@ -6,15 +6,11 @@ from pydantic import (
     Field,
     StrictStr,
 )
-
 from .attributes import AttributeModel
-from .utils import ParametrizedClass
 
 
 __all__ = [
     "VariableAttributes",
-    "InputConverter",
-    "InputVariable",
     "Variable",
     "Coordinate",
 ]
@@ -135,57 +131,47 @@ class VariableAttributes(AttributeModel):
         return values
 
 
-class InputConverter(ParametrizedClass):
-    classname: StrictStr = Field(
-        "tsdat.utils.converters.UnitsConverter",
-        description="The module path to the Python class that should be used, e.g., if"
-        " you would write in your script `from tsdat.config.utils.converters import"
-        " UnitsConverter` then your classname would be set to"
-        " 'tsdat.config.utils.converters.UnitsConverter'.",
-    )
+# class RetrieverParameters(BaseModel, extra=Extra.allow):
+#     required: bool = Field(
+#         True,
+#         description="If True (the default) then the pipeline will fail loudly if it is"
+#         " unable to retrieve the variable from an input source.",
+#     )
+#     name: Optional[StrictStr] = Field(
+#         title="Input Name",
+#         description="The name of the variable as it appears in the input dataset, or"
+#         " more accurately, this is the key tsdat will use to retrieve the variable"
+#         " from the dataset returned by the input DataReader.",
+#     )
+#     retrieval_rules: Optional[Any] = Field(
+#         description="Optional field used to specify how the variable should be"
+#         " retrieved from the input source(s). The format of this field is dependent on"
+#         " the type of retriever specified by the input classname. If not specified then"
+#         " the 'tsdat.io.retrievers.SimpleRetriever' class is used, and this field is"
+#         " not needed."
+#     )
+#     units: Optional[str] = Field(
+#         description="This gives tsdat context about the units the input dataset is"
+#         " measured in. If the 'units' property here differs from the 'units' property"
+#         " under the 'attrs' section, then tsdat will automatically perform a unit"
+#         " conversion on the input data."
+#     )
+# converters: Optional[List[InputConverter]] = Field(
+#     description="A list of converters that tsdat should use to transform the data"
+#     " from the input source to the output source. Currently only two converters are"
+#     " provided: the 'UnitsConverter', which converts input units to output units"
+#     " using the Python libraries act-atmos and pint, and the 'StringTimeConverter',"
+#     " which is used exclusively for converting string values into Python datetime"
+#     " objects that are timezone-aware. If using the 'StringTimeConverter' class,"
+#     " two parameters are required: 'timezone' - the timezone the data are recorded"
+#     " in (default UTC), and 'time_format' - a string that is passed to the"
+#     " strptime() function as the string format used to create a datetime object.",
+# )
 
 
-class RetrieverParameters(BaseModel, extra=Extra.allow):
-    required: bool = Field(
-        True,
-        description="If True (the default) then the pipeline will fail loudly if it is"
-        " unable to retrieve the variable from an input source.",
-    )
-    name: Optional[StrictStr] = Field(
-        title="Input Name",
-        description="The name of the variable as it appears in the input dataset, or"
-        " more accurately, this is the key tsdat will use to retrieve the variable"
-        " from the dataset returned by the input DataReader.",
-    )
-    retrieval_rules: Optional[Any] = Field(
-        description="Optional field used to specify how the variable should be"
-        " retrieved from the input source(s). The format of this field is dependent on"
-        " the type of retriever specified by the input classname. If not specified then"
-        " the 'tsdat.io.retrievers.SimpleRetriever' class is used, and this field is"
-        " not needed."
-    )
-    units: Optional[str] = Field(
-        description="This gives tsdat context about the units the input dataset is"
-        " measured in. If the 'units' property here differs from the 'units' property"
-        " under the 'attrs' section, then tsdat will automatically perform a unit"
-        " conversion on the input data."
-    )
-    # converters: Optional[List[InputConverter]] = Field(
-    #     description="A list of converters that tsdat should use to transform the data"
-    #     " from the input source to the output source. Currently only two converters are"
-    #     " provided: the 'UnitsConverter', which converts input units to output units"
-    #     " using the Python libraries act-atmos and pint, and the 'StringTimeConverter',"
-    #     " which is used exclusively for converting string values into Python datetime"
-    #     " objects that are timezone-aware. If using the 'StringTimeConverter' class,"
-    #     " two parameters are required: 'timezone' - the timezone the data are recorded"
-    #     " in (default UTC), and 'time_format' - a string that is passed to the"
-    #     " strptime() function as the string format used to create a datetime object.",
-    # )
-
-
-class InputVariable(ParametrizedClass, extra=Extra.allow):
-    classname: StrictStr = "tsdat.io.retrievers.SimpleRetriever"
-    parameters: RetrieverParameters = RetrieverParameters()  # type: ignore
+# class InputVariable(ParametrizedClass, extra=Extra.allow):
+#     classname: StrictStr = "tsdat.io.retrievers.SimpleRetriever"
+#     parameters: RetrieverParameters = RetrieverParameters()  # type: ignore
 
 
 class Variable(BaseModel, extra=Extra.forbid):
@@ -203,10 +189,12 @@ class Variable(BaseModel, extra=Extra.forbid):
     #     " to provide additional context about the variable, if needed.",
     # )
     name: str = Field("", regex=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
-    input: Optional[InputVariable] = Field(
-        description="If the variable should be retrieved from the input dataset, then"
-        " this section should be used to specify how the variable retrieval should be"
-        " done.",
+    retrieve: bool = Field(
+        True,
+        description="Indicate if the variable should be retrieved from an input dataset"
+        " according to the retrieval parameters in the retrieval configuration file. If"
+        " False then the retriever will not attempt to retrieve this directly from"
+        " an input dataset. Defaults to True.",
     )
     data: Optional[Any] = Field(
         description="If the variable is not meant to be retrieved from an input dataset"
@@ -237,16 +225,16 @@ class Variable(BaseModel, extra=Extra.forbid):
     )
 
     @property
-    def is_static(self) -> bool:
-        return self.data is not None
+    def is_retrieved(self) -> bool:
+        return self.retrieve
 
     @property
-    def is_retrieved(self) -> bool:
-        return self.input is not None
+    def is_static(self) -> bool:
+        return not self.is_retrieved and self.data is not None
 
     @property
     def is_dynamic(self) -> bool:
-        return self.data is None and self.input is None
+        return not self.is_retrieved and self.data is None
 
     # @validator("name")
     # @classmethod
@@ -258,11 +246,10 @@ class Variable(BaseModel, extra=Extra.forbid):
     @root_validator(skip_on_failure=True)
     @classmethod
     def validate_data_retrival(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if values["input"] is not None and values["data"] is not None:
+        if values["retrieve"] and values["data"] is not None:
             raise ValueError(
-                f"{cls.__name__}s cannot be both retrieved from input and set"
-                " statically. Please remove either the 'input' section or the 'data'"
-                " property."
+                f"{cls.__name__}s cannot be both retrieved and set statically. Please"
+                " either set 'retrieve: False' or remove the 'data' property."
             )
         return values
 
