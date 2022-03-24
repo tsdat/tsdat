@@ -4,7 +4,12 @@ import numpy as np
 import xarray as xr
 import pandas as pd
 from typing import Any, Dict, List, Tuple
+from pydantic import BaseModel, Extra
 from numpy.typing import NDArray
+
+
+class ParametrizedClass(BaseModel, extra=Extra.forbid):
+    parameters: Any = {}
 
 
 def decode_cf_wrapper(dataset: xr.Dataset) -> xr.Dataset:
