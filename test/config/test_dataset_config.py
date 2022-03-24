@@ -388,7 +388,7 @@ def test_dataset_definition_from_yaml():
         },
     }
 
-    model = DatasetConfig.from_yaml(Path("test/config/yaml/valid-dataset.yaml"))
+    model = DatasetConfig.from_yaml(Path("test/config/yaml/dataset.yaml"))
     model_dict = model.dict(exclude_none=True, by_alias=True)
     model_dict["attrs"]["code_version"] = ""  # Don't care to check this value
 

@@ -21,8 +21,7 @@ class VariableAttributes(AttributeModel):
     record information about the data properties and related fields (e.g., units,
     ancillary_variables, etc), user-facing metadata (e.g., long_name, comment), as well as
     attributes related to quality checks and controls (e.g., valid_*, fail_*, and warn_*
-    properties).
-    """
+    properties)."""
 
     units: Optional[str] = Field(
         description="A string indicating the units the data are measured in. Tsdat uses"

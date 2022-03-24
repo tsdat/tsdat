@@ -117,37 +117,7 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
 
         return config_cls(**v)
 
-    @classmethod
-    def from_yaml(cls, filepath: Path, validate: bool = True):
-        """------------------------------------------------------------------------------------
-        Loads the PipelineConfig from a yaml configuration file.
-
-        Args:
-            filepath (Path): The path to the yaml configuration file.
-            validate (bool, optional): Run PipelineConfig validators on the pipeline config
-            file. This is highly recommended. Defaults to True.
-
-        Returns:
-            PipelineConfig: A PipelineConfig instance.
-
-        ------------------------------------------------------------------------------------"""
-
-        # yaml_dict = read_yaml(filepath)
-
-        # TODO: Setting 'validate' to False actually leads to totally different behavior
-        # (the overrides do not get merged). There should be a different option to not
-        # merge the overrides, and 'validate' should only refer to the validation of the
-        # merged final structure.
-        # Maybe the current logic (merging overrides) should actually be a different
-        # method and the from_yaml method can go back to the default behavior from
-        # YamlModel; just read in the yaml file and create a model of it. Validation off
-        # by default so we don't merge stuff in.
-        # if not validate:
-        #     return cls.construct(**yaml_dict)
-        # return cls(**yaml_dict)
-        return super().from_yaml(filepath=filepath, validate=True)
-
-    def instaniate_pipeline(self, validate: bool = True) -> Any:
+    def instaniate_pipeline(self) -> Any:
         """------------------------------------------------------------------------------------
         This method instantiates the tsdat.pipeline.BasePipeline subclass referenced by the
         classname property on the PipelineConfig instance and passes all properties on the
@@ -160,13 +130,8 @@ class PipelineConfig(ParametrizedClass, YamlModel, extra=Extra.forbid):
         tsdat.config.utils.recursive_instantiate for implementation details.
 
 
-        Args:
-            validate (bool, optional): Validate the tsdat.pipeline.BasePipeline subclass and
-            its child classes upon instantiation (i.e. run validators). This is highly
-            recommended. Defaults to True.
-
         Returns:
             Any: An instance of a tsdat.pipeline.BasePipeline subclass.
 
         ------------------------------------------------------------------------------------"""
-        return recusive_instantiate(self, validate=validate)
+        return recusive_instantiate(self)

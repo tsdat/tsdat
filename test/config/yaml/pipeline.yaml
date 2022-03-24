@@ -5,19 +5,19 @@ associations:
 
 # TODO: Consider jsonpath-ng for overrides instead of jsonpointer
 retriever:
-  path: test/config/yaml/valid-retriever.yaml
+  path: test/config/yaml/retriever.yaml
 
 dataset:
-  path: test/config/yaml/valid-dataset.yaml
+  path: test/config/yaml/dataset.yaml
   overrides:
     /attrs/location_id: sgp
     /coords/time/attrs/units: km
     /data_vars/first/attrs/new_attribute: please add this attribute
 
 quality:
-  path: test/config/yaml/valid-quality.yaml
+  path: test/config/yaml/quality.yaml
   overrides:
     /managers/0/exclude: []
 
 storage:
-  path: test/config/yaml/valid-storage.yaml
+  path: test/config/yaml/storage.yaml

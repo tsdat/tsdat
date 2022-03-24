@@ -182,7 +182,7 @@ def test_storage_config_produces_expected_yaml():
         },
     }
     storage_config_model = StorageConfig.from_yaml(
-        Path("test/config/yaml/valid-storage.yaml")
+        Path("test/config/yaml/storage.yaml")
     )
     assert storage_config_model.dict() == expected_dict
 

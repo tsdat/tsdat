@@ -136,7 +136,7 @@ def test_quality_config_from_yaml():
             },
         ]
     }
-    qc_model = QualityConfig.from_yaml(Path("test/config/yaml/valid-quality.yaml"))
+    qc_model = QualityConfig.from_yaml(Path("test/config/yaml/quality.yaml"))
     assert qc_model.dict() == expected_dict
 
 

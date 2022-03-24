@@ -24,7 +24,7 @@ from tsdat.config.quality import QualityConfig
 #             ".*\\.csv",
 #         ],
 #         "dataset": {
-#             "path": "test/config/yaml/valid-dataset.yaml",
+#             "path": "test/config/yaml/dataset.yaml",
 #             "overrides": {
 #                 "/attrs/location_id": "sgp",
 #                 "/coords/time/attrs/units": "km",
@@ -32,13 +32,13 @@ from tsdat.config.quality import QualityConfig
 #             },
 #         },
 #         "quality": {
-#             "path": "test/config/yaml/valid-quality.yaml",
+#             "path": "test/config/yaml/quality.yaml",
 #             "overrides": {
 #                 "/managers/0/exclude": [],
 #             },
 #         },
 #         "storage": {
-#             "path": "test/config/yaml/valid-storage.yaml",
+#             "path": "test/config/yaml/storage.yaml",
 #         },
 #         "settings": {
 #             "validate_dataset_config": True,
@@ -48,7 +48,7 @@ from tsdat.config.quality import QualityConfig
 #     }
 
 #     model = PipelineConfig.from_yaml(
-#         Path("test/config/yaml/valid-pipeline.yaml"), validate=False
+#         Path("test/config/yaml/pipeline.yaml"), validate=False
 #     )
 #     model_dict = model.dict(exclude_none=True, by_alias=True)
 
@@ -57,10 +57,10 @@ from tsdat.config.quality import QualityConfig
 
 def test_pipeline_config_merges_overrides():
     # Load the linked config files separately
-    retriever = RetrieverConfig.from_yaml(Path("test/config/yaml/valid-retriever.yaml"))
-    dataset = DatasetConfig.from_yaml(Path("test/config/yaml/valid-dataset.yaml"))
-    quality = QualityConfig.from_yaml(Path("test/config/yaml/valid-quality.yaml"))
-    storage = StorageConfig.from_yaml(Path("test/config/yaml/valid-storage.yaml"))
+    retriever = RetrieverConfig.from_yaml(Path("test/config/yaml/retriever.yaml"))
+    dataset = DatasetConfig.from_yaml(Path("test/config/yaml/dataset.yaml"))
+    quality = QualityConfig.from_yaml(Path("test/config/yaml/quality.yaml"))
+    storage = StorageConfig.from_yaml(Path("test/config/yaml/storage.yaml"))
 
     # Do expected overrides
     dataset.attrs.location_id = "sgp"
@@ -87,7 +87,7 @@ def test_pipeline_config_merges_overrides():
     }
 
     # Load everything through the PipelineConfig
-    model = PipelineConfig.from_yaml(Path("test/config/yaml/valid-pipeline.yaml"))
+    model = PipelineConfig.from_yaml(Path("test/config/yaml/pipeline.yaml"))
     model_dict = model.dict(**dict_kwargs)
 
     assert model_dict == expected_dict
