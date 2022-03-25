@@ -1,23 +1,30 @@
-# TODO: Implement NetCDFWriter
 # TODO: Implement CSVWriter
 # TODO: Implement ZarrWriter
 # TODO: Implement ParquetWriter
-
-from typing import Any, Dict
+import pandas as pd
 import xarray as xr
+from typing import Any, Dict
 from pathlib import Path
 from pydantic import BaseModel, Extra
 from .base import FileWriter
 
 
-class NetCDFWriterParameters(BaseModel, extra=Extra.forbid):
-    use_compression: bool = True
-    compression_kwargs: Dict[str, Any] = {"zlib": True, "complevel": 1}
-    to_netcdf_kwargs: Dict[str, Any] = {}
-
-
 class NetCDFWriter(FileWriter):
-    parameters: NetCDFWriterParameters = NetCDFWriterParameters()
+    """------------------------------------------------------------------------------------
+    Thin wrapper around xarray's `Dataset.to_netcdf()` function for saving a dataset to a
+    netCDF file. Properties under the `to_netcdf_kwargs` parameter will be passed to
+    `Dataset.to_netcdf()` as keyword arguments.
+
+    File compression is used by default to save disk space. To disable compression set the
+    `use_compression` parameter to `False`.
+    ------------------------------------------------------------------------------------"""
+
+    class Parameters(BaseModel, extra=Extra.forbid):
+        use_compression: bool = True
+        compression_kwargs: Dict[str, Any] = {"zlib": True, "complevel": 1}
+        to_netcdf_kwargs: Dict[str, Any] = {}
+
+    parameters: Parameters = Parameters()
 
     def write(self, dataset: xr.Dataset, filepath: Path) -> None:
         if self.parameters.use_compression:
@@ -30,3 +37,20 @@ class NetCDFWriter(FileWriter):
             self.parameters.to_netcdf_kwargs["encoding"] = encoding
 
         dataset.to_netcdf(filepath, **self.parameters.to_netcdf_kwargs)  # type: ignore
+
+
+class CSVWriter(FileWriter):
+    """------------------------------------------------------------------------------------
+    Converts a `xr.Dataset` object to a pandas `DataFrame` and saves the result to a csv
+    file using `pd.DataFrame.to_csv()`. Properties under the `to_csv_kwargs` parameter are
+    passed to `pd.DataFrame.to_csv()` as keyword arguments.
+    ------------------------------------------------------------------------------------"""
+
+    class Parameters(BaseModel, extra=Extra.forbid):
+        to_csv_kwargs: Dict[str, Any] = {}
+
+    parameters: Parameters = Parameters()
+
+    def write(self, dataset: xr.Dataset, filepath: Path) -> None:
+        df = dataset.to_dataframe(dim_order=list(dataset.dims))
+        df.to_csv(filepath, **self.parameters.to_csv_kwargs)

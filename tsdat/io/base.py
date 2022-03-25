@@ -1,9 +1,10 @@
+import re
+import tempfile
 import contextlib
+import xarray as xr
 from datetime import datetime
 from pathlib import Path
-import tempfile
 from typing import Any, Dict, Generator, List, Pattern, Union
-import xarray as xr
 from abc import ABC, abstractmethod
 from tsdat.utils import ParametrizedClass
 from tsdat.config.dataset import DatasetConfig
@@ -36,7 +37,7 @@ class DataConverter(ParametrizedClass, ABC):
 
 
 class DataReader(ParametrizedClass, ABC):
-    regex: Pattern[str]
+    regex: Pattern = re.compile(r".*")  # type: ignore # HACK: Can't do Pattern[str] yet
 
     @abstractmethod
     def read(

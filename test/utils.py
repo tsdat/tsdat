@@ -1,5 +1,5 @@
+import xarray as xr
 from typing import Any, List
-
 
 
 def get_error_message(error: Any) -> str:
@@ -29,3 +29,7 @@ def compare(*model_dicts: Any):
     renderables: List[Panel] = [Panel(Pretty(model_dict)) for model_dict in model_dicts]
 
     console.print(Columns(renderables, equal=True, expand=True))
+
+
+def assert_close(a: xr.Dataset, b: xr.Dataset, **kwargs: Any) -> None:
+    xr.testing.assert_allclose(a, b, **kwargs)  # type: ignore
