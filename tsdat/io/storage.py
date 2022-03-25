@@ -1,7 +1,6 @@
 # TODO: Implement FileSystem
 # TODO: Implement S3
 
-from abc import ABC
 from datetime import datetime
 from pydantic import BaseSettings
 import xarray as xr
@@ -30,6 +29,7 @@ class FileSystemParameters(BaseSettings):
     # first_interval = [start_time: start_time + file_time_interval]
     # start_time += file_time_interval
     # until start_time + file_time_interval >= timestamp of the last point of the dataset
+
 
 class FileSystem(Storage):
     parameters: FileSystemParameters = FileSystemParameters()

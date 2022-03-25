@@ -1,34 +1,22 @@
 from abc import ABC, abstractmethod
-from typing import Any, List
-from pydantic import BaseModel, BaseSettings, Extra, Field, validator
-from pydantic.fields import ModelField
+from typing import Any, List, Pattern
+from pydantic import Field
 from tsdat.config.dataset import DatasetConfig
-from tsdat.io.storage.storage import BaseStorage
-from tsdat.qc.qc import QualityRegistry
+from tsdat.io.base import Retriever, Storage
+from tsdat.qc.qc import QualityManagement
+from tsdat.utils import ParametrizedClass  # TODO: Quality Management
 
 
-class PipelineSettings(BaseSettings, extra=Extra.allow):
-    retain_input_files: bool = False
-
-
-class BasePipeline(BaseModel, ABC, extra=Extra.forbid):
-
+class Pipeline(ParametrizedClass, ABC):
+    settings: Any
     parameters: Any
-    associations: List[Pattern] = []  # type: ignore # HACK: Pattern[str] when possible
-    # TODO: Type hinting for converters, other objects on instantiated dataset object
+    associations: List[Pattern[str]] = []
+
+    retriever: Retriever
     dataset_config: DatasetConfig = Field(alias="dataset")
-    quality: QualityRegistry  # TODO: Make this optional (everywhere)
-    # retriever: BaseRetriever
-    storage: BaseStorage
-    settings: PipelineSettings = PipelineSettings()
+    quality: QualityManagement
+    storage: Storage
 
     @abstractmethod
-    def run(self, inputs: Any) -> Any:
+    def run(self, inputs: Any, **kwargs: Any) -> Any:
         ...
-
-    @validator("storage")
-    @classmethod
-    def validate_storage(
-        cls, v: BaseStorage, field: ModelField, values: List[Any]
-    ) -> BaseStorage:
-        return v

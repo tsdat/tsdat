@@ -2,7 +2,7 @@ import contextlib
 from datetime import datetime
 from pathlib import Path
 import tempfile
-from typing import Any, Dict, Generator, List, Union
+from typing import Any, Dict, Generator, List, Pattern, Union
 import xarray as xr
 from abc import ABC, abstractmethod
 from tsdat.utils import ParametrizedClass
@@ -14,6 +14,7 @@ __all__ = [
     "DataConverter",
     "DataReader",
     "Retriever",
+    "FileWriter",
     "Storage",
 ]
 
@@ -30,11 +31,13 @@ class DataConverter(ParametrizedClass, ABC):
         ...
 
 
-# TODO: DataFinder
+# TODO: VariableFinder
 # TODO: DataTransformer
 
 
 class DataReader(ParametrizedClass, ABC):
+    regex: Pattern[str]
+
     @abstractmethod
     def read(
         self, input_key: str, dataset_config: DatasetConfig
@@ -46,7 +49,7 @@ class Retriever(ParametrizedClass, ABC):
     readers: Any
 
     @abstractmethod
-    def retrieve_raw_datasets(
+    def read_all(
         self, input_keys: List[str], dataset_config: DatasetConfig
     ) -> Dict[str, xr.Dataset]:
         ...

@@ -101,7 +101,6 @@ class HandlerRegistry(BaseModel, extra=Extra.forbid):
             Dict[str, xr.Dataset]: A dictionary which maps keys to xarray.Dataset objects.
 
         ------------------------------------------------------------------------------------"""
-        # IDEA: Add parallel reading as an optional extra
         output: Dict[str, xr.Dataset] = {}
         for key in keys:
             data = self.read(key=key)

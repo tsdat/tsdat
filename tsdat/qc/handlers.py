@@ -15,45 +15,41 @@ from tsdat.config.quality import ManagerConfig
 from tsdat.utils import ParametrizedClass
 
 
-# TODO: Better docstrings, BaseModel
-class QualityHandler(ParametrizedClass, ABC):
-    """Class containing code to be executed if a particular quality check fails."""
+# class QualityHandler(ParametrizedClass, ABC):
+#     """Class containing code to be executed if a particular quality check fails."""
 
-    def __init__(
-        self,
-        ds: xr.Dataset,
-        quality_manager: ManagerConfig,
-        parameters: Dict[str, Any],
-    ):
-        self.ds: xr.Dataset = ds
-        self.quality_manager: ManagerConfig = quality_manager
-        self.params: Dict[str, Any] = parameters
+#     def __init__(
+#         self,
+#         ds: xr.Dataset,
+#         quality_manager: ManagerConfig,
+#         parameters: Dict[str, Any],
+#     ):
+#         self.ds: xr.Dataset = ds
+#         self.quality_manager: ManagerConfig = quality_manager
+#         self.params: Dict[str, Any] = parameters
+#     @abstractmethod
+#     def run(
+#         self,
+#         dataset: xr.Dataset,
+#         variable_name: str,
+#         quality_results: np.ndarray[Any, Any],
+#         dataset_config: DatasetConfig,
+#     ) -> xr.Dataset:
+#         ...
 
-    # TODO: Solidify method signature
-    @abstractmethod
-    def run(
-        self,
-        dataset: xr.Dataset,
-        variable_name: str,
-        quality_results: np.ndarray[Any, Any],
-        dataset_config: DatasetConfig,
-    ) -> xr.Dataset:
-        # TODO: docstring
-        ...
+# def record_correction(self, variable_name: str):
+#     """If a correction was made to variable data to fix invalid values
+#     as detected by a quality check, this method will record the fix
+#     to the appropriate variable attribute.  The correction description
+#     will come from the handler params which get set in the pipeline config
+#     file.
 
-    # def record_correction(self, variable_name: str):
-    #     """If a correction was made to variable data to fix invalid values
-    #     as detected by a quality check, this method will record the fix
-    #     to the appropriate variable attribute.  The correction description
-    #     will come from the handler params which get set in the pipeline config
-    #     file.
-
-    #     :param variable_name: Name
-    #     :type variable_name: str
-    #     """
-    #     correction = self.params.get("correction", None)
-    #     if correction:
-    #         utils.record_corrections_applied(self.ds, variable_name, correction)
+#     :param variable_name: Name
+#     :type variable_name: str
+#     """
+#     correction = self.params.get("correction", None)
+#     if correction:
+#         utils.record_corrections_applied(self.ds, variable_name, correction)
 
 
 # class QCParamKeys:

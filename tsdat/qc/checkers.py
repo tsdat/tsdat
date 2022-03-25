@@ -1,75 +1,75 @@
-# TODO: Implement CheckMissing
-# TODO: Implement CheckMonotonic
 # TODO: Implement CheckMin/CheckMax & warn/fail/valid
 
 
+import numpy as np
+from pydantic import BaseModel, validator
 import xarray as xr
-from abc import ABC, abstractmethod
 from numpy.typing import NDArray
-from typing import Any, Optional
-
-from tsdat import utils
-from tsdat.config.dataset import DatasetConfig
-from tsdat.config.quality import QualityConfig
+from typing import Any, Dict, Optional
+from .base import QualityChecker
 
 
-# TODO: better docstrings
-class QualityChecker(utils.ParametrizedClass, ABC):
-    """Class containing the code to perform a single Quality Check on a
-    Dataset variable."""
+class CheckMissing(QualityChecker):
+    """------------------------------------------------------------------------------------
+    Checks if any values are missing (i.e. NaN, or NaT for datetime variables).
+    ------------------------------------------------------------------------------------"""
 
-    # TODO: Solidify the method signature
-    @abstractmethod
-    def run(
-        self,
-        variable_name: str,
-        dataset: xr.Dataset,
-        dataset_config: DatasetConfig,
-        quality_config: QualityConfig,
-    ) -> Optional[NDArray[Any]]:
-        ...
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
+        return dataset[variable_name].isnull().data
 
 
-# class CheckMissing(QualityChecker):
-#     """Checks if any values are assigned to _FillValue or 'NaN' (for non-time
-#     variables) or checks if values are assigned to 'NaT' (for time variables).
-#     Also, for non-time variables, checks if values are above or below
-#     valid_range, as this is considered missing as well.
-#     """
+class CheckMonotonic(QualityChecker):
+    """------------------------------------------------------------------------------------
+    Checks if any values are not ordered strictly monotonically (i.e. values must all be
+    increasing or all decreasing). The check marks all values as failed if any data values
+    are not ordered monotonically.
+    ------------------------------------------------------------------------------------"""
 
-#     def run(self, variable_name: str) -> NDArray[Any]:
+    class Parameters(BaseModel):
+        require_decreasing: bool = False
+        require_increasing: bool = False
+        dim: Optional[str] = None
 
-#         # If this is a time variable, we check for 'NaT'
-#         if self.ds[variable_name].data.dtype.type == np.datetime64:
-#             results_array = np.isnat(self.ds[variable_name].data)
+        @validator("require_increasing")
+        @classmethod
+        def monotonic_increasing_xor_decreasing(
+            cls, inc: bool, values: Dict[str, Any]
+        ) -> bool:
+            if inc and values["require_decreasing"]:
+                raise ValueError(
+                    "CheckMonotonic -> Parameters: cannot set both 'require_increasing'"
+                    " and 'require_decreasing'. Please set one or both to False."
+                )
+            return inc
 
-#         else:
-#             # HACK: until we centralize / construct logic for this
-#             fill_value = self.ds[variable_name].attrs["_FillValue"]
+    parameters: Parameters = Parameters()
 
-#             # If the variable has no _FillValue attribute, then
-#             # we select a default value to use
-#             if fill_value is None:
-#                 fill_value = -9999
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
+        variable = dataset[variable_name]
 
-#             # Make sure fill value has same data type as the variable
-#             fill_value = np.array(  # type: ignore
-#                 fill_value, dtype=self.ds[variable_name].data.dtype.type
-#             )
+        axis = self.get_axis(variable)
+        diff: NDArray[Any] = np.diff(variable.data, axis=axis)  # type: ignore
 
-#             # First check if any values are assigned to _FillValue
-#             results_array = np.equal(self.ds[variable_name].data, fill_value)
+        zero: Any = 0
+        if np.issubdtype(variable.data.dtype, (np.datetime64, np.timedelta64)):  # type: ignore
+            zero = np.timedelta64(0)
 
-#             # Then, if the value is numeric, we should also check if any values are assigned to NaN
-#             if self.ds[variable_name].data.dtype.type in (
-#                 type(0.0),
-#                 np.float16,
-#                 np.float32,
-#                 np.float64,
-#             ):
-#                 results_array |= np.isnan(self.ds[variable_name].data)
+        increasing: bool = np.all(diff > zero)  # type: ignore
+        decreasing: bool = np.all(diff < zero)  # type: ignore
 
-#         return results_array
+        if self.parameters.require_increasing:
+            is_monotonic = increasing
+        elif self.parameters.require_decreasing:
+            is_monotonic = decreasing
+        else:
+            is_monotonic = increasing | decreasing
+
+        return np.full(variable_data.shape, not is_monotonic, dtype=np.bool8)  # type: ignore
+
+    def get_axis(self, variable: xr.DataArray) -> int:
+        if not (dim := self.parameters.dim):
+            dim = variable.dims[0]
+        return variable.get_axis_num(dim)  # type: ignore
 
 
 # class CheckMonotonic(QualityChecker):
@@ -78,35 +78,6 @@ class QualityChecker(utils.ParametrizedClass, ABC):
 #     """
 
 #     def run(self, variable_name: str) -> Optional[NDArray[Any]]:
-
-#         results_array: Optional[NDArray[Any]] = None
-#         # We need to get the dim to diff on from the parameters
-#         # If dim is not specified, then we use the first dim for the variable
-#         dim = self.params.get("dim", None)
-
-#         if dim is None and len(self.ds[variable_name].dims) > 0:
-#             dim = self.ds[variable_name].dims[0]
-
-#         if dim is not None:
-
-#             # convert to np array
-#             variable_data = self.ds[variable_name].data
-#             axis = self.ds[variable_name].get_axis_num(dim)
-
-#             # If the variable is a time variable, then we convert to nanoseconds before
-#             # doing our check.
-#             if self.ds[variable_name].data.dtype.type == np.datetime64:
-#                 variable_data = utils.datetime64_to_timestamp(variable_data)
-
-#             # Compute the difference between each two numbers and check if they are
-#             # either all increasing or all decreasing
-#             diff: NDArray[Any] = np.diff(variable_data, axis=axis)  # type: ignore
-#             is_monotonic = np.all(diff > 0) | np.all(diff < 0)  # type: ignore # this returns a scalar
-
-#             # Create a results array, with all values set to the results of the is_monotonic check
-#             results_array = np.full(variable_data.shape, not is_monotonic, dtype=bool)  # type: ignore
-
-#         return results_array
 
 
 # class CheckMin(QualityChecker):
