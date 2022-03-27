@@ -1,9 +1,7 @@
-# TODO: Implement CSVWriter
 # TODO: Implement ZarrWriter
 # TODO: Implement ParquetWriter
-import pandas as pd
 import xarray as xr
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 from pathlib import Path
 from pydantic import BaseModel, Extra
 from .base import FileWriter
@@ -47,10 +45,14 @@ class CSVWriter(FileWriter):
     ------------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel, extra=Extra.forbid):
+        dim_order: Optional[List[str]] = None
         to_csv_kwargs: Dict[str, Any] = {}
 
     parameters: Parameters = Parameters()
 
     def write(self, dataset: xr.Dataset, filepath: Path) -> None:
-        df = dataset.to_dataframe(dim_order=list(dataset.dims))
+        # QUESTION: Can we reliably write the dataset metadata to a separate file such
+        # that it can always be retrieved? If not, should we declare this as a format
+        # incapable of "round-triping" (i.e., ds != read(write(ds)) for csv format)?
+        df = dataset.to_dataframe()
         df.to_csv(filepath, **self.parameters.to_csv_kwargs)
