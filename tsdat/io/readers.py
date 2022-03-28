@@ -2,11 +2,10 @@
 # TODO: Implement ZarrReader
 # TODO: Implement ParquetReader
 
-from pydantic import BaseModel, Extra
-import xarray as xr
 import pandas as pd
+import xarray as xr
+from pydantic import BaseModel, Extra
 from typing import Any, Dict
-from tsdat.config.dataset import DatasetConfig
 from .base import DataReader
 
 
@@ -18,7 +17,7 @@ class NetCDFReader(DataReader):
 
     parameters: Dict[str, Any] = {}
 
-    def read(self, input_key: str, dataset_config: DatasetConfig) -> xr.Dataset:
+    def read(self, input_key: str) -> xr.Dataset:
         return xr.open_dataset(input_key, **self.parameters)  # type: ignore
 
 
@@ -36,6 +35,6 @@ class CSVReader(DataReader):
 
     parameters: Parameters = Parameters()
 
-    def read(self, input_key: str, dataset_config: DatasetConfig) -> xr.Dataset:
+    def read(self, input_key: str) -> xr.Dataset:
         df: pd.DataFrame = pd.read_csv(input_key, **self.parameters.read_csv_kwargs)  # type: ignore
         return xr.Dataset.from_dataframe(df, **self.parameters.from_dataframe_kwargs)

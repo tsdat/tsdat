@@ -40,25 +40,22 @@ class DataReader(ParametrizedClass, ABC):
     regex: Pattern = re.compile(r".*")  # type: ignore # HACK: Can't do Pattern[str] yet
 
     @abstractmethod
-    def read(
-        self, input_key: str, dataset_config: DatasetConfig
-    ) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
+    def read(self, input_key: str) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
         ...
+
+    def matches(self, key: str) -> bool:
+        return bool(self.regex.match(key))  # type: ignore
 
 
 class Retriever(ParametrizedClass, ABC):
     readers: Any
 
     @abstractmethod
-    def read_all(
-        self, input_keys: List[str], dataset_config: DatasetConfig
-    ) -> Dict[str, xr.Dataset]:
+    def retrieve_raw_datasets(self, input_keys: List[str]) -> Dict[str, xr.Dataset]:
         ...
 
     @abstractmethod
-    def merge_raw_datasets(
-        self, raw_dataset_mapping: Dict[str, xr.Dataset], dataset_config: DatasetConfig
-    ) -> xr.Dataset:
+    def merge_raw_datasets(self, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         ...
 
 

@@ -6,14 +6,8 @@ from pathlib import Path
 from pytest import fixture
 from pandas.testing import assert_frame_equal
 from test.utils import assert_close
-from tsdat.config.dataset import DatasetConfig
 from tsdat.io.readers import CSVReader, NetCDFReader
 from tsdat.io.writers import CSVWriter, NetCDFWriter
-
-
-@fixture
-def dataset_config():
-    return DatasetConfig.from_yaml(Path("test/config/yaml/dataset.yaml"))
 
 
 @fixture
@@ -44,17 +38,17 @@ def sample_dataframe() -> pd.DataFrame:
     return pd.DataFrame(data=data)
 
 
-def test_netcdf_reader(sample_dataset: xr.Dataset, dataset_config: DatasetConfig):
+def test_netcdf_reader(sample_dataset: xr.Dataset):
     expected = sample_dataset
     reader = NetCDFReader()
-    dataset = reader.read("test/io/data/input.nc", dataset_config)
+    dataset = reader.read("test/io/data/input.nc")
     assert_close(dataset, expected)
 
 
-def test_csv_reader(sample_dataset: xr.Dataset, dataset_config: DatasetConfig):
+def test_csv_reader(sample_dataset: xr.Dataset):
     expected = sample_dataset
     reader = CSVReader()
-    dataset = reader.read("test/io/data/input.csv", dataset_config)
+    dataset = reader.read("test/io/data/input.csv")
     assert_close(dataset, expected)
 
 
@@ -72,7 +66,7 @@ def test_netcdf_writer(sample_dataset: xr.Dataset):
 
 
 def test_csv_writer(sample_dataset: xr.Dataset, sample_dataframe: pd.DataFrame):
-    expected = sample_dataframe
+    expected = sample_dataframe.copy(deep=True)
     writer = CSVWriter()
     tmp_dir = tempfile.TemporaryDirectory()
 
@@ -82,3 +76,9 @@ def test_csv_writer(sample_dataset: xr.Dataset, sample_dataframe: pd.DataFrame):
     assert_frame_equal(df, expected)
 
     tmp_dir.cleanup()
+
+
+# def test_netcdf_handler(sample_dataset: xr.Dataset):
+#     expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
+
+#     raise NotImplementedError
