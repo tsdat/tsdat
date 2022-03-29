@@ -1,32 +1,21 @@
-from pydantic import Field, validator
-from pydantic.fields import ModelField
-from typing import Dict
+from pydantic import Field
 from .utils import ParametrizedConfigClass, YamlModel
 
 
-class DataWriterConfig(ParametrizedConfigClass):
-    """Class used to identify a `tsdat.io.writers.DataWriter` object to use for writing
-    data to the storage area. Consists of a 'classname' and an optional 'parameters'
-    dictionary that is given to the selected DataWriter during instantiation."""
+class DataHandlerConfig(ParametrizedConfigClass):
+    ...
 
 
 class StorageConfig(ParametrizedConfigClass, YamlModel):
-    writers: Dict[str, DataWriterConfig] = Field(
-        # min_items=1, # Doesn't work for dictionaries
-        title="Output Data Writers",
-        description="Register DataWriters(s) that will be used to write output data. It"
-        " is left to the storage class to dispatch the DataWriter(s) on the dataset(s)"
-        " to store. The built-in storage classes calls all DataWriters on each dataset",
+    handler: DataHandlerConfig = Field(
+        DataHandlerConfig(classname="tsdat.io.handlers.NetCDFHandler", parameters={}),
+        title="Output Data Handler",
+        description="Register a DataHandler for the Storage class to use for reading"
+        " from and writing to the storage area. For most users, the default DataHandler"
+        " ('tsdat.io.handlers.NetCDFHandler') is sufficient. Tsdat strongly encourages"
+        " using the default NetCDFHandler because it is the most well-supported format"
+        " offered out-of-the-box. Other formats are provided, and custom formats can"
+        " also be added to extend the default functionality of tsdat. Note that some"
+        " Storage classes may not support certain DataHandlers (e.g., Storage classes"
+        " targeted at Databases may not support file-based DataHandlers).",
     )
-
-    @validator("writers")
-    @classmethod
-    def validate_unique_handler_names(
-        cls, v: Dict[str, DataWriterConfig], field: ModelField
-    ) -> Dict[str, DataWriterConfig]:
-        # TODO
-        # if duplicates := find_duplicates():
-        #     raise ValueError(
-        #         f"{field.name} contains handlers with duplicate names: {duplicates}"
-        #     )
-        return v

@@ -2,7 +2,6 @@ import os
 import yaml
 import warnings
 from dunamai import Style, Version
-from jsonpointer import set_pointer
 from pathlib import Path
 from pydantic import BaseModel, Extra, Field, StrictStr, validator, FilePath
 from pydantic.utils import import_string
@@ -28,17 +27,17 @@ Config = TypeVar("Config", bound=BaseModel)
 
 class Overrideable(YamlModel, GenericModel, Generic[Config], extra=Extra.forbid):
     path: FilePath
-    overrides: Dict[str, Any] = dict()
+    overrides: Dict[str, Any] = {}
 
-    def get_defaults_dict(self) -> Dict[Any, Any]:
-        txt = self.path.read_text()
-        return list(yaml.safe_load_all(txt))[0]
+    # def get_defaults_dict(self) -> Dict[Any, Any]:
+    #     txt = self.path.read_text()
+    #     return list(yaml.safe_load_all(txt))[0]
 
-    def merge_overrides(self) -> Dict[Any, Any]:
-        defaults = self.get_defaults_dict()
-        for pointer, new_value in self.overrides.items():
-            set_pointer(defaults, pointer, new_value)
-        return defaults
+    # def merge_overrides(self) -> Dict[Any, Any]:
+    #     defaults = self.get_defaults_dict()
+    #     for pointer, new_value in self.overrides.items():
+    #         set_pointer(defaults, pointer, new_value)
+    #     return defaults
 
 
 def matches_overrideable_schema(model_dict: Dict[str, Any]):
@@ -49,13 +48,12 @@ class ParametrizedConfigClass(BaseModel, extra=Extra.forbid):
     # Unfortunately, the classname has to be a string type unless PyObject becomes JSON
     # serializable: https://github.com/samuelcolvin/pydantic/discussions/3842
     classname: StrictStr = Field(
-        description="The module path to the Python class that should be used, e.g., if"
-        " you would write in your script `from tsdat.config.utils.converters import"
-        " DefaultConverter` then you would put"
-        " `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+        description="The import path to the Python class that should be used, e.g., if"
+        " your import statement looks like `from foo.bar import Baz`, then your"
+        " classname would be `foo.bar.Baz`.",
     )
     parameters: Dict[str, Any] = Field(
-        dict(),
+        {},
         description="Optional dictionary that will be passed to the Python class"
         " specified by 'classname' when it is instantiated. If the object is a tsdat"
         " class, then the parameters will typically be made accessible under the"

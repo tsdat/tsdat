@@ -21,7 +21,7 @@
             "properties": {
                 "classname": {
                     "title": "Classname",
-                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
                     "type": "string"
                 },
                 "parameters": {
@@ -42,7 +42,7 @@
             "properties": {
                 "classname": {
                     "title": "Classname",
-                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
                     "type": "string"
                 },
                 "parameters": {

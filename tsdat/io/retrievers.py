@@ -37,6 +37,7 @@ class SimpleRetriever(Retriever):
         return dataset_mapping
 
     def merge_raw_datasets(self, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
+        # TODO: Better name for this function?
         ...
 
     def _match_inputs_with_readers(
@@ -49,3 +50,7 @@ class SimpleRetriever(Retriever):
                     input_reader_mapping[input_key] = reader
                     break
         return input_reader_mapping
+
+    def _convert_raw_dataset(self, raw_dataset: xr.Dataset) -> xr.Dataset:
+        # Applies all registered converters to the dataset
+        ...

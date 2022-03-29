@@ -1,10 +1,11 @@
 import re
 import tempfile
 import contextlib
+from pydantic import BaseModel, Extra
 import xarray as xr
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Pattern, Union
+from typing import Any, Dict, Generator, List, Optional, Pattern, Union
 from abc import ABC, abstractmethod
 from tsdat.utils import ParametrizedClass
 from tsdat.config.dataset import DatasetConfig
@@ -59,16 +60,42 @@ class Retriever(ParametrizedClass, ABC):
         ...
 
 
-class FileWriter(ParametrizedClass, ABC):
+class DataWriter(ParametrizedClass, ABC):
     @abstractmethod
-    def write(self, dataset: xr.Dataset, filepath: Path) -> None:
+    def write(self, dataset: xr.Dataset, **kwargs: Any) -> None:
         ...
+
+
+class DataHandler(ParametrizedClass):
+    parameters: Any
+    reader: DataReader
+    writer: DataWriter
+
+
+class FileWriter(DataWriter, ABC):
+    @abstractmethod
+    def write(self, dataset: xr.Dataset, filepath: Optional[Path] = None) -> None:
+        ...
+
+
+class FileHandler(DataHandler):
+    class Parameters(BaseModel, extra=Extra.forbid):
+        extension: str = ".nc"
+
+    parameters: Parameters = Parameters()
+    reader: DataReader
+    writer: FileWriter
+
+
+class CustomFileHandler(FileHandler):
+
+    reader: DataReader
 
 
 class Storage(ParametrizedClass, ABC):
 
     parameters: Any = {}
-    writers: Any
+    handler: DataHandler
 
     @abstractmethod
     def save_data(self, dataset: xr.Dataset):

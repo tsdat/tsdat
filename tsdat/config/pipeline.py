@@ -70,6 +70,8 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
     from the parsed pipeline configuration file.
     ------------------------------------------------------------------------------------"""
 
+    # TODO: Add descriptions & titles for all properties on this class.
+
     # TODO: Provide a way of instantiating only the associations (so we can quickly
     # determine which pipeline should be used for a given input)
     # TODO: Add a root validator to ensure that properties from the quality config align
@@ -79,8 +81,8 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
     associations: List[Pattern]  # type: ignore
     settings: ConfigSettings = ConfigSettings()  # type: ignore
 
-    # HACK: Overrideable is used to trick pydantic into letting us generate json schema
-    # for these objects, but during construction these are converted into the actual
+    # Overrideable is used to trick pydantic into letting us generate json schema for
+    # these objects, but during construction these are converted into the actual
     # DatasetConfig, QualityConfig, and StorageConfig objects.
     retriever: Union[Overrideable[RetrieverConfig], RetrieverConfig]
     dataset: Union[Overrideable[DatasetConfig], DatasetConfig]

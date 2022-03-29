@@ -5,7 +5,7 @@
     "properties": {
         "classname": {
             "title": "Classname",
-            "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+            "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
             "type": "string"
         },
         "parameters": {
@@ -159,7 +159,7 @@
             "properties": {
                 "classname": {
                     "title": "Classname",
-                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
                     "type": "string"
                 },
                 "parameters": {
@@ -187,7 +187,7 @@
             "properties": {
                 "classname": {
                     "title": "Classname",
-                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
                     "type": "string"
                 },
                 "parameters": {
@@ -579,7 +579,7 @@
             "properties": {
                 "classname": {
                     "title": "Classname",
-                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
                     "type": "string"
                 },
                 "parameters": {
@@ -600,7 +600,7 @@
             "properties": {
                 "classname": {
                     "title": "Classname",
-                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
                     "type": "string"
                 },
                 "parameters": {
@@ -704,14 +704,13 @@
             ],
             "additionalProperties": false
         },
-        "DataWriterConfig": {
-            "title": "DataWriterConfig",
-            "description": "Class used to identify a `tsdat.io.writers.DataWriter` object to use for writing\ndata to the storage area. Consists of a 'classname' and an optional 'parameters'\ndictionary that is given to the selected DataWriter during instantiation.",
+        "DataHandlerConfig": {
+            "title": "DataHandlerConfig",
             "type": "object",
             "properties": {
                 "classname": {
                     "title": "Classname",
-                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
                     "type": "string"
                 },
                 "parameters": {
@@ -732,7 +731,7 @@
             "properties": {
                 "classname": {
                     "title": "Classname",
-                    "description": "The module path to the Python class that should be used, e.g., if you would write in your script `from tsdat.config.utils.converters import DefaultConverter` then you would put `tsdat.config.utils.converters.DefaultConverter` as the classname.",
+                    "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
                     "type": "string"
                 },
                 "parameters": {
@@ -741,18 +740,22 @@
                     "default": {},
                     "type": "object"
                 },
-                "writers": {
-                    "title": "Output Data Writers",
-                    "description": "Register DataWriters(s) that will be used to write output data. It is left to the storage class to dispatch the DataWriter(s) on the dataset(s) to store. The built-in storage classes calls all DataWriters on each dataset",
-                    "type": "object",
-                    "additionalProperties": {
-                        "$ref": "#/definitions/DataWriterConfig"
-                    }
+                "handler": {
+                    "title": "Output Data Handler",
+                    "description": "Register a DataHandler for the Storage class to use for reading from and writing to the storage area. For most users, the default DataHandler ('tsdat.io.handlers.NetCDFHandler') is sufficient. Tsdat strongly encourages using the default NetCDFHandler because it is the most well-supported format offered out-of-the-box. Other formats are provided, and custom formats can also be added to extend the default functionality of tsdat. Note that some Storage classes may not support certain DataHandlers (e.g., Storage classes targeted at Databases may not support file-based DataHandlers).",
+                    "default": {
+                        "classname": "tsdat.io.handlers.NetCDFHandler",
+                        "parameters": {}
+                    },
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/DataHandlerConfig"
+                        }
+                    ]
                 }
             },
             "required": [
-                "classname",
-                "writers"
+                "classname"
             ],
             "additionalProperties": false
         }

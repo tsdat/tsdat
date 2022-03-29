@@ -24,7 +24,7 @@ class NetCDFWriter(FileWriter):
 
     parameters: Parameters = Parameters()
 
-    def write(self, dataset: xr.Dataset, filepath: Path) -> None:
+    def write(self, dataset: xr.Dataset, filepath: Optional[Path] = None) -> None:
         if self.parameters.use_compression:
             compression_dict: Dict[Any, Any] = {
                 variable_name: self.parameters.compression_kwargs
@@ -50,7 +50,7 @@ class CSVWriter(FileWriter):
 
     parameters: Parameters = Parameters()
 
-    def write(self, dataset: xr.Dataset, filepath: Path) -> None:
+    def write(self, dataset: xr.Dataset, filepath: Optional[Path] = None) -> None:
         # QUESTION: Can we reliably write the dataset metadata to a separate file such
         # that it can always be retrieved? If not, should we declare this as a format
         # incapable of "round-triping" (i.e., ds != read(write(ds)) for csv format)?

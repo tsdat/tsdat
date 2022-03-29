@@ -1,41 +1,35 @@
-import pytest
 import tempfile
 from pathlib import Path
-from pydantic import ValidationError
 from typing import Any, Dict
-from test.utils import get_error_message
-from tsdat.config.storage import (
-    DataWriterConfig,
-    StorageConfig,
-)
+from tsdat.config.storage import StorageConfig
 
 
-def test_writer_config_produces_expected_dict():
-    writer_dict: Dict[str, Any] = {
-        # "name": "My Data Writer",
-        "classname": "tsdat.io.writers.NetCDFWriter",
-    }
-    expected_dict: Dict[str, Any] = {
-        # "name": "My Data Writer",
-        "classname": "tsdat.io.writers.NetCDFWriter",
-        "parameters": {},
-    }
-    writer_model = DataWriterConfig(**writer_dict)
-    assert writer_model.dict() == expected_dict
+# def test_writer_config_produces_expected_dict():
+#     writer_dict: Dict[str, Any] = {
+#         # "name": "My Data Writer",
+#         "classname": "tsdat.io.writers.NetCDFWriter",
+#     }
+#     expected_dict: Dict[str, Any] = {
+#         # "name": "My Data Writer",
+#         "classname": "tsdat.io.writers.NetCDFWriter",
+#         "parameters": {},
+#     }
+#     writer_model = DataWriterConfig(**writer_dict)
+#     assert writer_model.dict() == expected_dict
 
 
-def test_writer_config_validates_properties():
-    writer_dict: Dict[str, Any] = {"regex": "abc"}
-    expected_error_msgs = [
-        "\nclassname\n  field required",
-        "\nregex\n  extra fields not permitted",
-    ]
-    with pytest.raises(ValidationError) as error:
-        DataWriterConfig(**writer_dict)
+# def test_writer_config_validates_properties():
+#     writer_dict: Dict[str, Any] = {"regex": "abc"}
+#     expected_error_msgs = [
+#         "\nclassname\n  field required",
+#         "\nregex\n  extra fields not permitted",
+#     ]
+#     with pytest.raises(ValidationError) as error:
+#         DataWriterConfig(**writer_dict)
 
-    actual_msg = get_error_message(error)
-    for expected_msg in expected_error_msgs:
-        assert expected_msg in actual_msg
+#     actual_msg = get_error_message(error)
+#     for expected_msg in expected_error_msgs:
+#         assert expected_msg in actual_msg
 
 
 # def test_handler_registry_produces_expected_dict():
@@ -174,12 +168,7 @@ def test_storage_config_produces_expected_yaml():
     expected_dict: Dict[str, Any] = {
         "classname": "tsdat.io.storage.FileSystem",
         "parameters": {},
-        "writers": {
-            "NetCDF Writer": {
-                "classname": "tsdat.io.writers.NetCDFWriter",
-                "parameters": {},
-            }
-        },
+        "handler": {"classname": "tsdat.io.handlers.NetCDFHandler", "parameters": {}},
     }
     storage_config_model = StorageConfig.from_yaml(
         Path("test/config/yaml/storage.yaml")
