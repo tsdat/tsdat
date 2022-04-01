@@ -93,14 +93,3 @@ Tsdat built-in quality handlers:
 	~tsdat.qc.handlers.SortDatasetByCoordinate
 	~tsdat.qc.handlers.SendEmailAWS
 	~tsdat.qc.handlers.FailPipeline
-
-.. automodule:: tsdat.qc.checkers
-    :members:
-    :undoc-members:
-    :show-inheritance:
-	
-.. automodule:: tsdat.qc.handlers
-    :members:
-    :undoc-members:
-    :show-inheritance:
-	

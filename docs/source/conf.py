@@ -20,11 +20,11 @@ sys.path.insert(0, project_dir)
 # -- Project information -----------------------------------------------------
 
 project = "tsdat"
-copyright = "2021, Battelle Memorial Institute"
-author = "Carina Lansing, Maxwell Levin"
+copyright = "2022, Battelle Memorial Institute"
+author = "Tsdat Developers"
 
 # The full version, including alpha/beta/rc tags
-release = "0.2.12"
+release = "0.2.13"
 
 
 # -- General configuration ---------------------------------------------------

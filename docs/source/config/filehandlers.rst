@@ -14,6 +14,16 @@ desires; the only requirement is that it returns an xarray Dataset.
 For output files, you can specify one or more formats. Tsdat will write 
 processed data files using all the output formats specified.
 
+Tsdat natively handles csv and netcdf file formats:
+
+.. autosummary::
+	:nosignatures:
+	
+  ~tsdat.io.CsvHandler
+	~tsdat.io.NetCdfHandler
+  ~tsdat.io.SplitNetCdfHandler
+  
+
 Custom file handlers are stored in (typically) ``ingest/<ingest_name>/pipeline/filehandler.py``.
 Once written, they must be specified in the ``storage_config.yml`` file 
 like shown:
@@ -31,7 +41,7 @@ like shown:
       # Tsdat built-in csv file handler and parameter keywords 
       csv:
         file_pattern: ".*.csv"
-        classname: tsdat.io.handers.CsvHandler
+        classname: tsdat.io.CsvHandler
         parameters:
           read:
             read_csv: # pandas.read_csv arguments
@@ -42,7 +52,7 @@ like shown:
       # Tsdat built-in netcdf file handler and parameter keywords 
       netcdf:
         file_pattern: ".*.nc"
-        classname: tsdat.io.handers.NetCdfHandler
+        classname: tsdat.io.NetCdfHandler
         parameters:
           read:
             load_dataset: # xarray.load_dataset arguments
@@ -53,28 +63,17 @@ like shown:
     output:
       netcdf:
         file_extension: ".nc"  # Declare the file extension to use when writing output files
-        classname: tsdat.io.handlers.NetCdfHandler
+        classname: tsdat.io.NetCdfHandler
         
+      multiple_files:
+        file_extension: ".nc"
+        classname: tsdat.io.SplitNetCdfHandler
+        parameters:
+          write:
+            compression: True  # flag to compress output file
+            time_interval: 1
+            time_unit: "D"  # numpy.datetime64 shorthand for "day"
+            
       csv:
         file_extension: ".csv"
-        classname: tsdat.io.handers.CsvHandler
-
-
-Tsdat natively handles csv and netcdf file formats:
-
-.. autosummary::
-	:nosignatures:
-	
-  ~tsdat.io.handlers.csv.CsvHandler
-	~tsdat.io.handlers.netcdf.NetCdfHandler
-  
-
-.. automodule:: tsdat.io.handlers.csv
-    :members:
-    :undoc-members:
-    :show-inheritance:
-	
-.. automodule:: tsdat.io.handlers.netcdf
-    :members:
-    :undoc-members:
-    :show-inheritance:
+        classname: tsdat.io.CsvHandler
