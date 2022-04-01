@@ -65,7 +65,7 @@ class NetCdfHandler(AbstractFileHandler):
         return xr.load_dataset(filename, **load_dataset_kwargs)
 
 
-class SplitNetCDFHandler(NetCdfHandler):
+class SplitNetCdfHandler(NetCdfHandler):
     def read(self, filename: str, **kwargs):
         raise NotImplementedError("This FileHandler should not be used to read files.")
 

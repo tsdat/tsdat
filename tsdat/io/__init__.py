@@ -15,6 +15,7 @@ from .filehandlers import (
     register_filehandler,
     CsvHandler,
     NetCdfHandler,
+    SplitNetCdfHandler,
 )
 from .storage import (
     DatastreamStorage,
