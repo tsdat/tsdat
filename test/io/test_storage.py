@@ -1,10 +1,11 @@
-from datetime import datetime
 import os
-from pathlib import Path
+import shutil
 import tempfile
 import xarray as xr
 import pandas as pd
+from pathlib import Path
 from pytest import fixture
+from datetime import datetime
 from tsdat.io.handlers import NetCDFHandler
 from tsdat.io.storage import FileSystem
 from test.utils import assert_close
@@ -38,7 +39,7 @@ def file_storage():
         handler=NetCDFHandler(),
     )
     yield storage
-    # shutil.rmtree(storage.storage_root)
+    shutil.rmtree(storage.parameters.storage_root)
 
 
 def test_filesystem_save_and_fetch_data(
