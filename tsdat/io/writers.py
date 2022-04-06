@@ -23,6 +23,7 @@ class NetCDFWriter(FileWriter):
         to_netcdf_kwargs: Dict[str, Any] = {}
 
     parameters: Parameters = Parameters()
+    file_extension: str = "nc"
 
     def write(self, dataset: xr.Dataset, filepath: Optional[Path] = None) -> None:
         if self.parameters.use_compression:
@@ -49,6 +50,7 @@ class CSVWriter(FileWriter):
         to_csv_kwargs: Dict[str, Any] = {}
 
     parameters: Parameters = Parameters()
+    file_extension: str = "csv"
 
     def write(self, dataset: xr.Dataset, filepath: Optional[Path] = None) -> None:
         # QUESTION: Can we reliably write the dataset metadata to a separate file such

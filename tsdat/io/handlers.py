@@ -2,12 +2,14 @@ from .base import FileHandler
 from .readers import NetCDFReader, CSVReader
 from .writers import NetCDFWriter, CSVWriter
 
+
 class NetCDFHandler(FileHandler):
     extension: str = "nc"
-    reader: NetCDFReader
-    writer: NetCDFWriter
+    reader: NetCDFReader = NetCDFReader()
+    writer: NetCDFWriter = NetCDFWriter()
+
 
 class CSVHandler(FileHandler):
     extension: str = "csv"
-    reader: CSVReader
-    writer: CSVWriter
+    reader: CSVReader = CSVReader()
+    writer: CSVWriter = CSVWriter()

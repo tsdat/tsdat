@@ -6,6 +6,7 @@ from pathlib import Path
 from pytest import fixture
 from pandas.testing import assert_frame_equal
 from test.utils import assert_close
+from tsdat.io.handlers import CSVHandler, NetCDFHandler
 from tsdat.io.readers import CSVReader, NetCDFReader
 from tsdat.io.writers import CSVWriter, NetCDFWriter
 
@@ -78,7 +79,27 @@ def test_csv_writer(sample_dataset: xr.Dataset, sample_dataframe: pd.DataFrame):
     tmp_dir.cleanup()
 
 
-# def test_netcdf_handler(sample_dataset: xr.Dataset):
-#     expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
+def test_netcdf_handler(sample_dataset: xr.Dataset):
+    expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
+    handler = NetCDFHandler()
+    tmp_dir = tempfile.TemporaryDirectory()
 
-#     raise NotImplementedError
+    tmp_file = Path(tmp_dir.name) / "test_dataset.nc"
+    handler.writer.write(sample_dataset, tmp_file)
+    dataset = handler.reader.read(tmp_file.as_posix())
+    assert_close(dataset, expected)
+
+    tmp_dir.cleanup()
+
+
+def test_csv_handler(sample_dataset: xr.Dataset):
+    expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
+    handler = CSVHandler()
+    tmp_dir = tempfile.TemporaryDirectory()
+
+    tmp_file = Path(tmp_dir.name) / "test_dataframe.csv"
+    handler.writer.write(sample_dataset, tmp_file)
+    dataset = handler.reader.read(tmp_file.as_posix())
+    assert_close(dataset, expected, check_attrs=False)
+
+    tmp_dir.cleanup()

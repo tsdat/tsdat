@@ -73,6 +73,9 @@ class DataHandler(ParametrizedClass):
 
 
 class FileWriter(DataWriter, ABC):
+
+    file_extension: str
+
     @abstractmethod
     def write(self, dataset: xr.Dataset, filepath: Optional[Path] = None) -> None:
         ...
@@ -117,7 +120,7 @@ class Storage(ParametrizedClass, ABC):
         ...
 
     @contextlib.contextmanager
-    def uploadable_tmp_dir(self, datastream: str) -> Generator[Path, None, None]:
+    def uploadable_dir(self, datastream: str) -> Generator[Path, None, None]:
         tmp_dir = tempfile.TemporaryDirectory()
         tmp_dirpath = Path(tmp_dir.name)
         try:

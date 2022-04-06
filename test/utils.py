@@ -31,5 +31,17 @@ def compare(*model_dicts: Any):
     console.print(Columns(renderables, equal=True, expand=True))
 
 
-def assert_close(a: xr.Dataset, b: xr.Dataset, **kwargs: Any) -> None:
+def assert_close(
+    a: xr.Dataset, b: xr.Dataset, check_attrs: bool = True, **kwargs: Any
+) -> None:
+    if check_attrs:
+        a = _drop_history_attr(a)
+        b = _drop_history_attr(b)
+        assert a.attrs == b.attrs
     xr.testing.assert_allclose(a, b, **kwargs)  # type: ignore
+
+
+def _drop_history_attr(ds: xr.Dataset) -> xr.Dataset:
+    if "history" in ds.attrs:
+        del ds.attrs["history"]
+    return ds
