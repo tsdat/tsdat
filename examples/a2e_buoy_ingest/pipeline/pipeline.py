@@ -89,20 +89,24 @@ class BuoyIngestPipeline(IngestPipeline):
                     i += 1
 
                 depth = np.array(depth)
-                vel_data = np.array(vel_data).transpose()
-                dir_data = np.array(dir_data).transpose()
+                vel_data = np.array(vel_data)
+                dir_data = np.array(dir_data)
 
                 # Make time.input.name and depth coordinate variables
                 dataset = dataset.set_coords(time_def.get_input_name())
-                dataset["depth"] = xr.DataArray(data=depth, dims=["depth"])
+                dataset["depth"] = (
+                    xr.DataArray(data=depth, dims=["depth"])
+                    + dataset.BlankingDistance.median()
+                    + dataset.HeadDepth.median()
+                )
                 dataset = dataset.set_coords("depth")
 
                 # Add current velocity and direction data to dataset
                 dataset["current_speed"] = xr.DataArray(
-                    data=vel_data, dims=["time", "depth"]
+                    data=vel_data, dims=["depth", "time"]
                 )
                 dataset["current_direction"] = xr.DataArray(
-                    data=dir_data, dims=["time", "depth"]
+                    data=dir_data, dims=["depth", "time"]
                 )
 
                 raw_dataset_mapping[filename] = dataset
@@ -300,54 +304,34 @@ class BuoyIngestPipeline(IngestPipeline):
         with self.storage._tmp.get_temp_filepath(filename) as tmp_path:
 
             # Reduce dimensionality of dataset for plotting
-            ds_1H: xr.Dataset = ds.reindex({"depth": ds.depth.data[::2]})
-            ds_1H: xr.Dataset = ds_1H.resample(time="1H").nearest()
+            # ds_1H: xr.Dataset = ds.reindex({"depth": ds.depth.data[::2]})
+            # ds_1H: xr.Dataset = ds_1H.resample(time="1H").nearest()
 
-            # Calculations for contour plots
-            levels = 30
-
-            # Calculations for quiver plot
-            qv_slice = slice(
-                1, None
-            )  # Skip first to prevent weird overlap with axes borders
-            qv_degrees = ds_1H.current_direction.data[qv_slice, qv_slice].transpose()
-            qv_theta = (qv_degrees + 90) * (np.pi / 180)
-            X, Y = ds_1H.time.data[qv_slice], ds_1H.depth.data[qv_slice]
-            U, V = np.cos(-qv_theta), np.sin(-qv_theta)
-
-            # Create figure and axes objects
-            fig, ax = plt.subplots(figsize=(14, 8), constrained_layout=True)
+            # Create the figure and axes objects
+            fig, ax = plt.subplots(
+                nrows=2, ncols=1, figsize=(14, 8), constrained_layout=True
+            )
             fig.suptitle(
                 f"Current Speed and Direction at {ds.attrs['location_meaning']} on {date}"
             )
-
-            # Make the plots
-            csf = ds.current_speed.plot.contourf(
-                ax=ax,
-                x="time",
-                yincrease=False,
-                levels=levels,
-                cmap=cmocean.cm.deep_r,
-                add_colorbar=False,
+            date = pd.to_datetime(ds["time"].values)
+            magn = ax[0].pcolormesh(
+                date, -ds["depth"], ds["current_speed"], cmap="Blues", shading="nearest"
             )
-            # ds.current_speed.plot.contour(ax=ax, x="time", yincrease=False, levels=levels, colors="lightgray", linewidths=0.5)
-            ax.quiver(
-                X,
-                Y,
-                U,
-                V,
-                width=0.002,
-                scale=60,
-                color="white",
-                pivot="middle",
-                zorder=10,
-            )
-            add_colorbar(ax, csf, r"Current Speed (mm s$^{-1}$)")
+            ax[0].set_xlabel("Time (UTC)")
+            ax[0].set_ylabel(r"Range [m]")
+            add_colorbar(ax[0], magn, r"Current Speed (m s$^{-1}$)")
 
-            # Set the labels and ticks
-            format_time_xticks(ax)
-            ax.set_xlabel("Time (UTC)")
-            ax.set_ylabel("Depth (m)")
+            dirc = ax[1].pcolormesh(
+                date,
+                -ds["depth"],
+                ds["current_direction"],
+                cmap="twilight",
+                shading="nearest",
+            )
+            ax[1].set_xlabel("Time (UTC)")
+            ax[1].set_ylabel(r"Depth [m]")
+            add_colorbar(ax[1], dirc, r"Direction [deg from N]")
 
             # Save the figure
             fig.savefig(tmp_path, dpi=100)
