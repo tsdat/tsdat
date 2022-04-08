@@ -1,5 +1,4 @@
 import os
-import cmocean
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -320,6 +319,7 @@ class BuoyIngestPipeline(IngestPipeline):
             )
             ax[0].set_xlabel("Time (UTC)")
             ax[0].set_ylabel(r"Range [m]")
+            format_time_xticks(ax[0])
             add_colorbar(ax[0], magn, r"Current Speed (m s$^{-1}$)")
 
             dirc = ax[1].pcolormesh(
@@ -331,11 +331,10 @@ class BuoyIngestPipeline(IngestPipeline):
             )
             ax[1].set_xlabel("Time (UTC)")
             ax[1].set_ylabel(r"Depth [m]")
+            format_time_xticks(ax[1])
             add_colorbar(ax[1], dirc, r"Direction [deg from N]")
 
             # Save the figure
             fig.savefig(tmp_path, dpi=100)
             self.storage.save(tmp_path)
-            plt.close()
-
-        return
+            plt.close(fig)

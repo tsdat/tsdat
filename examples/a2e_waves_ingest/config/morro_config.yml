@@ -73,7 +73,7 @@ dataset_definition:  # Describes the dataset that will be produced
         units: "1"
         _FillValue: -9999
 
-    average_wave_height:  
+    mean_wave_height:  
       input: # From waves csv
         name: Havg
         units: m
@@ -87,7 +87,7 @@ dataset_definition:  # Describes the dataset that will be produced
         valid_range: [0, 10]
         _FillValue: -9999
 
-    average_wave_period:  
+    mean_wave_period_ts:  
       input: # From waves csv
         name: Tavg
         units: s
@@ -167,7 +167,7 @@ dataset_definition:  # Describes the dataset that will be produced
         valid_range: [0, 30]
         _FillValue: -9999
 
-    significant_wave_height:  
+    significant_wave_height_ts:  
       input: # From waves csv
         name: Hsig
         units: m
@@ -293,7 +293,7 @@ dataset_definition:  # Describes the dataset that will be produced
         valid_range: [0, 30]
         _FillValue: -9999
 
-    significant_wave_height_m0:  
+    significant_wave_height:  
       input: # From waves csv
         name: HM0
         units: m
