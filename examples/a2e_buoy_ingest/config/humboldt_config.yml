@@ -27,8 +27,7 @@ dataset_definition:  # Describes the dataset that will be produced
 
   dimensions:
     time:
-        length: unlimited
-    
+        length: unlimited    
     depth:
         length: 50
 
@@ -44,7 +43,6 @@ dataset_definition:  # Describes the dataset that will be produced
       _FillValue: -9999
   
   variables:
-
     time:
       input:
         name: DataTimeStamp
@@ -93,29 +91,29 @@ dataset_definition:  # Describes the dataset that will be produced
         units: S/m
         fail_range: [0, 7]
     
-    currents_bin_spacing:  
+    ADCP_bin_size:  
       input: # From currents csv
         file_pattern: "currents"
         name: BinSpacing
       attrs:
-        long_name: Vertical Spacing Between Bins
+        long_name: Spacing between ADCP measurement bins
         units: m
     
-    currents_head_depth:  
+    ADCP_depth:  
       input: # From currents csv
         file_pattern: "currents"
         name: HeadDepth
       attrs:
-        long_name: depth of instrument below ocean surface
+        long_name: Depth of ADCP transducers below ocean surface
         units: m
 
-    currents_blanking_distance:  
+    ADCP_blanking_distance:
       input: # From currents csv
         file_pattern: "currents"
         name: BlankingDistance
       attrs:
         long_name: Blanking Distance
-        comment: a "blind zone" where the instruments do not measure anything. Typically less than 1m.
+        comment: A "blind zone" where ADCPs do not measure anything. Depends on ADCPs carrier frequency.
         units: m
 
     # This is a computed value, but the computation is now done in
@@ -126,11 +124,12 @@ dataset_definition:  # Describes the dataset that will be produced
         file_pattern: "currents"
         name: current_speed
         required: True
-      dims: [time, depth]
+        units: mm/s
+      dims: [depth, time]
       attrs:
         long_name: Current Speed
-        units: mm/s
-        fail_range: [0, 10000]
+        units: m/s
+        fail_range: [0, 5]
 
     # This is a computed value, but the computation is now done in
     # a hook prior to dataset standardization, so it is considered
@@ -140,11 +139,12 @@ dataset_definition:  # Describes the dataset that will be produced
         file_pattern: "currents"
         name: current_direction
         required: True
-      dims: [time, depth]
+      dims: [depth, time]
       attrs:
         long_name: Current Direction
         units: degrees
         fail_range: [0, 360]
+        _FillValue: 225.
 
     gill_wind_speed:  
       input: # From gill csv

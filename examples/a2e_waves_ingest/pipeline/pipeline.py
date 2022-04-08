@@ -1,9 +1,9 @@
 import os
-import cmocean
 import pandas as pd
 import xarray as xr
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from cmocean.cm import amp_r, dense, haline
 
 from tsdat.pipeline import IngestPipeline
 from tsdat.utils import DSUtil
@@ -73,43 +73,29 @@ class WaveIngestPipeline(IngestPipeline):
             fig, axs = plt.subplots(nrows=3, figsize=(14, 8), constrained_layout=True)
             fig.suptitle(f"Wave Statistics at {ds.attrs['location_meaning']} on {date}")
 
-            # Plot wave heights
-            cmap = cmocean.cm.amp_r
-            ds.average_wave_height.plot(
-                ax=axs[0], c=cmap(0.10), linewidth=2, label=r"H$_{avg}$"
-            )
-            ds.significant_wave_height.plot(
-                ax=axs[0], c=cmap(0.5), linewidth=2, label=r"H$_{sig}$"
-            )
-            ds.max_wave_height.plot(
-                ax=axs[0], c=cmap(0.85), linewidth=2, label=r"H$_{max}$"
-            )
-            axs[0].set_ylabel("Wave Height (m)")
+            # Plot Wave Heights
+            c1, c2, c3 = amp_r(0.10), amp_r(0.50), amp_r(0.85)
+            ds.mean_wave_height.plot(ax=axs[0], c=c1, label=r"H$_{mean}$")
+            ds.significant_wave_height.plot(ax=axs[0], c=c2, label=r"H$_{sig}$")
+            ds.max_wave_height.plot(ax=axs[0], c=c3, label=r"H$_{max}$")
             axs[0].legend(bbox_to_anchor=(1, -0.10), ncol=3)
+            axs[0].set_ylabel("Wave Height (m)")
 
-            # Plot wave periods
-            cmap = cmocean.cm.dense
-            ds.average_wave_period.plot(
-                ax=axs[1], c=cmap(0.15), linewidth=2, label=r"T$_{avg}$"
-            )
-            ds.significant_wave_period.plot(
-                ax=axs[1], c=cmap(0.5), linewidth=2, label=r"T$_{sig}$"
-            )
-            ds.peak_wave_period.plot(
-                ax=axs[1], c=cmap(0.8), linewidth=2, label=r"T$_{peak}$"
-            )
-            axs[1].set_ylabel("Wave Period (s)")
+            # Plot Wave Periods
+            c1, c2, c3 = dense(0.15), dense(0.50), dense(0.8)
+            ds.mean_wave_period.plot(ax=axs[1], c=c1, label=r"T$_{mean}$")
+            ds.peak_wave_period.plot(ax=axs[1], c=c2, label=r"T$_{peak}$")
+            ds.max_wave_period.plot(ax=axs[1], c=c3, label=r"T$_{max}$")
             axs[1].legend(bbox_to_anchor=(1, -0.10), ncol=3)
+            axs[1].set_ylabel("Wave Period (s)")
 
-            # Plot mean direction
-            cmap = cmocean.cm.haline
-            ds.mean_wave_direction.plot(
-                ax=axs[2], c=cmap(0.4), linewidth=2, label=r"$\theta_{mean}$"
-            )
-            axs[2].set_ylabel(r"Wave Direction (deg)")
+            # Plot Wave Directions
+            c1, c2 = haline(0.15), haline(0.4)
+            ds.mean_wave_direction.plot(ax=axs[2], c=c1, label=r"$\theta_{mean}$")
+            ds.peak_wave_direction.plot(ax=axs[2], c=c2, label=r"$\theta_{peak}$")
             axs[2].legend(bbox_to_anchor=(1, -0.10))
+            axs[2].set_ylabel("Wave Direction (deg)")
 
-            # Set xlabels and ticks
             for i in range(3):
                 axs[i].set_xlabel("Time (UTC)")
                 format_time_xticks(axs[i])
