@@ -226,13 +226,13 @@ dataset_definition:  # Describes the dataset that will be produced
     max_crest_period:
       input: # From waves csv
         name: MaxCrest
-        units: m
+        units: s
       dims: [time]
       type: double
       attrs:
         long_name: Max Crest Period
         comment: Wave period between highest wave crests
-        units: m
+        units: s
         valid_delta: 1
         valid_range: [0, 30]
         _FillValue: -9999
