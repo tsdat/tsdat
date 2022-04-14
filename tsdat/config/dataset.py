@@ -1,3 +1,4 @@
+import logging
 from pydantic import (
     Extra,
     Field,
@@ -5,10 +6,13 @@ from pydantic import (
     root_validator,
     validator,
 )
-from typing import Any, Dict
+from typing import Any, Dict, Union
 from .attributes import GlobalAttributes
 from .utils import YamlModel
 from .variables import Variable, Coordinate
+
+
+logger = logging.getLogger(__name__)
 
 # TEST: constr actually validates stuff
 # TEST: schema validation for variable names based on this property
@@ -87,3 +91,15 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
                 f" {sorted(list(duplicates))}."
             )
         return values
+
+    def __getitem__(self, name: str) -> Union[Variable, Coordinate]:
+        property: Union[Variable, Coordinate]
+        try:
+            property = self.data_vars[name]
+        except KeyError:
+            try:
+                property = self.coords[name]
+            except KeyError:
+                logging.error("Key '%s' is neither a data_var nor a coord.")
+                raise
+        return property

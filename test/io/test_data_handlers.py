@@ -103,3 +103,8 @@ def test_csv_handler(sample_dataset: xr.Dataset):
     assert_close(dataset, expected, check_attrs=False)
 
     tmp_dir.cleanup()
+
+
+# TEST: ZipFileReader
+# TEST: Instantiate from config object for all readers/writers/handlers
+# These tests can be parametrized

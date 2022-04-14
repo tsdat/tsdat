@@ -8,9 +8,9 @@ from tsdat.utils import decode_cf_wrapper
 
 class IngestPipeline(Pipeline):
     def run(self, inputs: List[str]) -> xr.Dataset:
-        dataset_dict = self.retriever.read_all(inputs, self.dataset_config)
+        dataset_dict = self.retriever.retrieve(inputs, self.dataset_config)
         dataset_dict = self.customize_raw_datasets(dataset_dict)
-        dataset = self.retriever.merge_raw_datasets(dataset_dict, self.dataset_config)
+        dataset = self.retriever.prepare(dataset_dict, self.dataset_config)
 
         dataset = self.customize_retrieved_dataset(dataset, dataset_dict)
         dataset = self.quality.manage(dataset, self.dataset_config)

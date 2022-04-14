@@ -361,7 +361,7 @@ def test_dataset_definition_from_yaml():
             "time": {
                 "name": "time",
                 "retrieve": True,
-                "dtype": "long",
+                "dtype": "datetime64[s]",
                 "dims": ["time"],
                 "attrs": {
                     "units": "Time offset from 1970-01-01 00:00:00",

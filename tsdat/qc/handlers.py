@@ -4,38 +4,13 @@
 # TODO: Implement SortDatasetByCoordinate
 
 
-from abc import ABC, abstractmethod
-from typing import Any, Dict
-
 import numpy as np
 import xarray as xr
-from tsdat.config.dataset import DatasetConfig
+from pydantic import BaseModel, Extra
+from typing import Any, Dict, Literal
+from numpy.typing import NDArray
 
-from tsdat.config.quality import ManagerConfig
-from tsdat.utils import ParametrizedClass
-
-
-# class QualityHandler(ParametrizedClass, ABC):
-#     """Class containing code to be executed if a particular quality check fails."""
-
-#     def __init__(
-#         self,
-#         ds: xr.Dataset,
-#         quality_manager: ManagerConfig,
-#         parameters: Dict[str, Any],
-#     ):
-#         self.ds: xr.Dataset = ds
-#         self.quality_manager: ManagerConfig = quality_manager
-#         self.params: Dict[str, Any] = parameters
-#     @abstractmethod
-#     def run(
-#         self,
-#         dataset: xr.Dataset,
-#         variable_name: str,
-#         quality_results: np.ndarray[Any, Any],
-#         dataset_config: DatasetConfig,
-#     ) -> xr.Dataset:
-#         ...
+from .base import QualityHandler
 
 # def record_correction(self, variable_name: str):
 #     """If a correction was made to variable data to fix invalid values
@@ -66,18 +41,26 @@ from tsdat.utils import ParametrizedClass
 # class DataQualityError(BaseException):
 #     pass
 
-# class RecordQualityResults(QualityHandler):
-#     """Record the results of the quality check in an ancillary qc variable."""
 
-#     def run(self, variable_name: str, results_array: np.ndarray[Any, Any]):
+class RecordQualityResults(QualityHandler):
+    """Record the results of the quality check in an ancillary qc variable."""
 
-#         self.ds.qcfilter.add_test(
-#             variable_name,
-#             index=results_array,
-#             test_number=self.params.get(QCParamKeys.QC_BIT),
-#             test_meaning=self.params.get(QCParamKeys.TEST_MEANING),
-#             test_assessment=self.params.get(QCParamKeys.ASSESSMENT),
-#         )
+    class Parameters(BaseModel, extra=Extra.forbid):
+        bit: int
+        assessment: Literal["bad", "indeterminate"]
+        meaning: str
+
+    parameters: Parameters
+
+    def run(self, dataset: xr.Dataset, variable_name: str, results: NDArray[np.bool8]):
+        dataset.qcfilter.add_test(
+            variable_name,
+            index=results,
+            test_number=self.parameters.bit,
+            test_meaning=self.parameters.meaning,
+            test_assessment=self.parameters.assessment,
+        )
+        return dataset
 
 
 # class RemoveFailedValues(QualityHandler):

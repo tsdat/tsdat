@@ -1,4 +1,3 @@
-# TODO: Implement FileSystem
 # TODO: Implement FileSystemS3
 
 import logging
@@ -46,6 +45,10 @@ class FileSystem(Storage):
 
     class Parameters(BaseSettings):
         storage_root: Path = Path.cwd() / "storage" / "root"
+        """The path on disk where data and ancillary files will be saved to. Defaults to
+        the `storage/root` folder in the active working directory. The directory is
+        created as this parameter is set, if the directory does not already exist."""
+
         tmp_copy_symlinks: bool = True
         file_timespan: Optional[str] = None
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
@@ -75,7 +78,7 @@ class FileSystem(Storage):
         filepath = self._get_dataset_filepath(dataset, datastream)
         filepath.parent.mkdir(exist_ok=True, parents=True)
         self.handler.writer.write(dataset, filepath)
-        logger.info("Saved dataset to %s", filepath.as_posix())
+        logger.info("Saved %s dataset to %s", datastream, filepath.as_posix())
 
     def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
         """------------------------------------------------------------------------------------
@@ -120,7 +123,8 @@ class FileSystem(Storage):
     def _filter_between_dates(
         self, filepaths: List[Path], start: datetime, end: datetime
     ) -> List[Path]:
-        # HACK: Currently can overshoot on both sides of the given range
+        # HACK: Currently can overshoot on both sides of the given range because we only
+        # use the start date from the filename.
         def __get_date_str(file: Path) -> str:
             name_components = file.name.split(".")
             date_components = name_components[3:5]

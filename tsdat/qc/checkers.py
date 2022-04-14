@@ -1,8 +1,7 @@
 # TODO: Implement CheckMin/CheckMax & warn/fail/valid
 
-
 import numpy as np
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Extra, validator
 import xarray as xr
 from numpy.typing import NDArray
 from typing import Any, Dict, Optional
@@ -10,29 +9,42 @@ from .base import QualityChecker
 
 
 class CheckMissing(QualityChecker):
-    """------------------------------------------------------------------------------------
-    Checks if any values are missing (i.e. NaN, or NaT for datetime variables).
-    ------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------------------
+    Checks if any data are missing. A variable's data are considered missing if they are
+    set to the variable's _FillValue (if it has a _FillValue) or NaN (NaT for datetime-
+    like variables).
+    ---------------------------------------------------------------------------------"""
 
     def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
-        return dataset[variable_name].isnull().data
+
+        results: NDArray[np.bool8] = dataset[variable_name].isnull().data
+
+        if "_FillValue" in dataset[variable_name].attrs:
+            fill_value = dataset[variable_name].attrs["_FillValue"]
+            results |= dataset[variable_name].data == fill_value
+
+        elif np.issubdtype(dataset[variable_name].data.dtype, str):  # type: ignore
+            fill_value = ""
+            results |= dataset[variable_name].data == fill_value
+
+        return results
 
 
 class CheckMonotonic(QualityChecker):
-    """------------------------------------------------------------------------------------
+    """---------------------------------------------------------------------------------
     Checks if any values are not ordered strictly monotonically (i.e. values must all be
     increasing or all decreasing). The check marks all values as failed if any data values
     are not ordered monotonically.
-    ------------------------------------------------------------------------------------"""
+    ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel):
+    class Parameters(BaseModel, extra=Extra.forbid):
         require_decreasing: bool = False
         require_increasing: bool = False
         dim: Optional[str] = None
 
         @validator("require_increasing")
         @classmethod
-        def monotonic_increasing_xor_decreasing(
+        def check_monotonic_not_increasing_and_decreasing(
             cls, inc: bool, values: Dict[str, Any]
         ) -> bool:
             if inc and values["require_decreasing"]:
@@ -64,20 +76,12 @@ class CheckMonotonic(QualityChecker):
         else:
             is_monotonic = increasing | decreasing
 
-        return np.full(variable_data.shape, not is_monotonic, dtype=np.bool8)  # type: ignore
+        return np.full(variable.shape, not is_monotonic, dtype=np.bool8)  # type: ignore
 
     def get_axis(self, variable: xr.DataArray) -> int:
         if not (dim := self.parameters.dim):
             dim = variable.dims[0]
         return variable.get_axis_num(dim)  # type: ignore
-
-
-# class CheckMonotonic(QualityChecker):
-#     """Checks that all values for the specified variable are either
-#     strictly increasing or strictly decreasing.
-#     """
-
-#     def run(self, variable_name: str) -> Optional[NDArray[Any]]:
 
 
 # class CheckMin(QualityChecker):

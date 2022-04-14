@@ -56,5 +56,5 @@ class CSVWriter(FileWriter):
         # QUESTION: Can we reliably write the dataset metadata to a separate file such
         # that it can always be retrieved? If not, should we declare this as a format
         # incapable of "round-triping" (i.e., ds != read(write(ds)) for csv format)?
-        df = dataset.to_dataframe()
+        df = dataset.to_dataframe(self.parameters.dim_order)  # type: ignore
         df.to_csv(filepath, **self.parameters.to_csv_kwargs)
