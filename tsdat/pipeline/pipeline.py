@@ -8,15 +8,36 @@ from tsdat.utils import ParametrizedClass  # TODO: Quality Management
 
 
 class Pipeline(ParametrizedClass, ABC):
-    settings: Any
-    parameters: Any
+    settings: Any = None
+
+    parameters: Any = {}
+
     associations: List[Pattern[str]] = []
+    """Regex patterns matching input keys to determine when the pipeline should run."""
 
     retriever: Retriever
+    """Retrieves data from input keys."""
+
     dataset_config: DatasetConfig = Field(alias="dataset")
+    """Describes the structure and metadata of the output dataset."""
+
     quality: QualityManagement
+    """Manages the dataset quality through checks and corrections."""
+
     storage: Storage
+    """Stores the dataset so it can be retrieved later."""
 
     @abstractmethod
     def run(self, inputs: Any, **kwargs: Any) -> Any:
+        """-----------------------------------------------------------------------------
+        Runs the data pipeline on the provided inputs.
+
+        Args:
+            inputs (List[str]): A list of input keys that the pipeline's Retriever class
+            can use to load data into the pipeline.
+
+        Returns:
+            xr.Dataset: The processed dataset.
+
+        -----------------------------------------------------------------------------"""
         ...
