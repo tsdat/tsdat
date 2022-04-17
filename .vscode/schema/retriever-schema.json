@@ -25,7 +25,6 @@
         "classname",
         "readers"
     ],
-    "additionalProperties": false,
     "definitions": {
         "DataReaderConfig": {
             "title": "DataReaderConfig",

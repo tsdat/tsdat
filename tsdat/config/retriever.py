@@ -1,6 +1,6 @@
 import re
 from typing import Dict, Pattern
-from pydantic import Field, validator
+from pydantic import Field, validator, Extra
 from pydantic.fields import ModelField
 from .utils import ParametrizedConfigClass, YamlModel
 
@@ -20,21 +20,7 @@ class DataReaderConfig(ParametrizedConfigClass):
     )
 
 
-# class DataConverter(ParametrizedConfigClass):
-#     classname: StrictStr = Field(
-#         "tsdat.utils.converters.UnitsConverter",
-#         description="The module path to the Python class that should be used, e.g., if"
-#         " you want to use `UnitsConverter` class from the `tsdat.io.converters` module,"
-#         " then you would set `classname: 'tsdat.io.converters.UnitsConverter'`.",
-#     )
-
-# TODO: Implement and test sections for the following:
-# data converter config
-# variable finder config
-# transformer config
-
-
-class RetrieverConfig(ParametrizedConfigClass, YamlModel):
+class RetrieverConfig(ParametrizedConfigClass, YamlModel, extra=Extra.allow):
     readers: Dict[str, DataReaderConfig]
 
     @validator("readers")

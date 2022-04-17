@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 import xarray as xr
 import pandas as pd
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 from pydantic import BaseModel, Extra
 from numpy.typing import NDArray
 
@@ -12,11 +12,11 @@ class ParametrizedClass(BaseModel, extra=Extra.forbid):
     parameters: Any = {}
 
 
-def decode_cf_wrapper(dataset: xr.Dataset) -> xr.Dataset:
+def decode_cf(dataset: xr.Dataset) -> xr.Dataset:
     """---------------------------------------------------------------------------------
     Decodes the dataset according to CF conventions. This helps ensure that the dataset
-    is formatted correctly after it has been constructed from unstandardized sources or
-    heavily modified.
+    is formatted and encoded correctly after it has been constructed or modified. This
+    method is a thin wrapper around `xarray.decode_cf()` which
 
     Args:
         dataset (xr.Dataset): The dataset to decode.
@@ -29,7 +29,10 @@ def decode_cf_wrapper(dataset: xr.Dataset) -> xr.Dataset:
     # instead have units set on the encoding or else xarray will crash when trying
     # to save: https://github.com/pydata/xarray/issues/3739
     for variable in dataset.variables.values():
-        if variable.data.dtype.type == np.datetime64 and "units" in variable.attrs:  # type: ignore
+        if (
+            np.issubdtype(variable.data.dtype, np.np.datetime64)  # type: ignore
+            and "units" in variable.attrs
+        ):
             units = variable.attrs["units"]
             del variable.attrs["units"]
             variable.encoding["units"] = units  # type: ignore
@@ -47,7 +50,7 @@ def decode_cf_wrapper(dataset: xr.Dataset) -> xr.Dataset:
 def record_corrections_applied(
     dataset: xr.Dataset, variable_name: str, correction_msg: str
 ) -> None:
-    """------------------------------------------------------------------------------------
+    """---------------------------------------------------------------------------------
     Records the correction_msg on the 'corrections_applied' attribute of the specified
     data variable
 
@@ -56,37 +59,82 @@ def record_corrections_applied(
         variable_name (str): _description_
         correction_msg (str): _description_
 
-    ------------------------------------------------------------------------------------"""
+    ---------------------------------------------------------------------------------"""
     variable_attrs: Dict[str, Any] = dataset[variable_name].attrs
     corrections: List[str] = variable_attrs.get("corrections_applied", [])
     corrections.append(correction_msg)
     variable_attrs["corrections_applied"] = corrections
 
 
-def datetime64_to_timestamp(variable_data: NDArray[Any]) -> NDArray[np.int64]:
-    """Converts each datetime64 value to a timestamp in same units as
-    the variable (eg., seconds, nanoseconds).
+# def datetime64_to_timestamp(variable_data: NDArray[Any]) -> NDArray[np.int64]:
+#     """Converts each datetime64 value to a timestamp in same units as
+#     the variable (eg., seconds, nanoseconds).
 
-    :param variable_data: ndarray of variable data
-    :type variable_data: np.ndarray
-    :return: An ndarray of the same shape, with time values converted to
-        long timestamps (e.g., int64)
-    :rtype: np.ndarray
-    """
-    return variable_data.astype(pd.Timestamp).astype(np.int64)  # type: ignore
+#     :param variable_data: ndarray of variable data
+#     :type variable_data: np.ndarray
+#     :return: An ndarray of the same shape, with time values converted to
+#         long timestamps (e.g., int64)
+#     :rtype: np.ndarray
+#     """
+#     return variable_data.astype(pd.Timestamp).astype(np.int64)  # type: ignore
 
 
-def datetime64_to_string(datetime64: np.datetime64) -> Tuple[str, str]:
-    """Convert a datetime64 object to formated string.
+# def datetime64_to_string(datetime64: np.datetime64) -> Tuple[str, str]:
+#     """Convert a datetime64 object to formated string.
 
-    :param datetime64: The datetime64 object
-    :type datetime64: Union[np.ndarray, np.datetime64]
-    :return: A tuple of strings representing the formatted date.  The first string is
-        the day in 'yyyymmdd' format.  The second string is the time in 'hhmmss' format.
-    :rtype: Tuple[str, str]
-    """
-    datetime_: datetime.datetime = act.utils.datetime64_to_datetime(datetime64)[0]  # type: ignore
-    return datetime_.strftime("%Y%m%d"), datetime_.strftime("%H%M%S")
+#     :param datetime64: The datetime64 object
+#     :type datetime64: Union[np.ndarray, np.datetime64]
+#     :return: A tuple of strings representing the formatted date.  The first string is
+#         the day in 'yyyymmdd' format.  The second string is the time in 'hhmmss' format.
+#     :rtype: Tuple[str, str]
+#     """
+#     datetime_: datetime.datetime = act.utils.datetime64_to_datetime(datetime64)[0]  # type: ignore
+#     return datetime_.strftime("%Y%m%d"), datetime_.strftime("%H%M%S")
+
+
+def assign_data(
+    dataset: xr.Dataset, data: NDArray[Any], variable_name: str
+) -> xr.Dataset:
+    """---------------------------------------------------------------------------------
+    Assigns the data to the specified variable in the dataset.
+
+    If the variable exists and it is a data variable, then the DataArray for the
+    specified variable in the dataset will simply have its data replaced with the new
+    numpy array. If the variable exists and it is a coordinate variable, then the data
+    will replace the coordinate data. If the variable does not exist in the dataset then
+    a KeyError will be raised.
+
+
+    Args:
+        dataset (xr.Dataset): The dataset where the data should be assigned.
+        data (NDArray[Any]): The data to assign.
+        variable_name (str): The name of the variable in the dataset to assign data to.
+
+    Raises:
+        KeyError: Raises a KeyError if the specified variable is not in the dataset's
+        coords or data_vars dictionary.
+
+    Returns:
+        xr.Dataset: The dataset with data assigned to it.
+
+    ---------------------------------------------------------------------------------"""
+    if variable_name in dataset.data_vars:
+        dataset[variable_name].data = data
+    elif variable_name in dataset.coords:
+        tmp_name = f"__{variable_name}__"
+        # TODO: ensure attrs are copied over too
+        dataset[tmp_name] = xr.zeros_like(dataset[variable_name], dtype=data.dtype)  # type: ignore
+        dataset[tmp_name].data = data
+        dataset = dataset.swap_dims({variable_name: tmp_name})  # type: ignore
+        dataset = dataset.drop_vars(variable_name)
+        dataset = dataset.rename_dims({tmp_name: variable_name})
+        dataset = dataset.rename_vars({tmp_name: variable_name})
+    else:
+        raise KeyError(
+            f"'{variable_name}' must be a coord or a data_var in the dataset to assign"
+            " data to it."
+        )
+    return dataset
 
 
 # def get_datastream_name(ds: xr.Dataset = None, config=None) -> str:

@@ -7,7 +7,7 @@
 import numpy as np
 import xarray as xr
 from pydantic import BaseModel, Extra
-from typing import Any, Dict, Literal
+from typing import Literal
 from numpy.typing import NDArray
 
 from .base import QualityHandler

@@ -5,7 +5,6 @@ import xarray as xr
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Pattern, Union
-from numpy.typing import NDArray
 from abc import ABC, abstractmethod
 from tsdat.utils import ParametrizedClass
 from tsdat.config import DatasetConfig
@@ -15,8 +14,11 @@ from tsdat.config import DatasetConfig
 __all__ = [
     "DataConverter",
     "DataReader",
-    "Retriever",
+    "DataWriter",
     "FileWriter",
+    "DataHandler",
+    "FileHandler",
+    "Retriever",
     "Storage",
 ]
 
@@ -31,35 +33,6 @@ class DataConverter(ParametrizedClass, ABC):
         **kwargs: Any,
     ) -> xr.Dataset:
         ...
-
-    def assign_data(
-        self, dataset: xr.Dataset, data: NDArray[Any], variable_name: str
-    ) -> xr.Dataset:
-        """-----------------------------------------------------------------------------
-        Assigns converted data to the specified variable in the dataset.
-
-        Args:
-            dataset (xr.Dataset): The dataset containing the variable to reassign.
-            data (NDArray[Any]): The converted data to assign.
-            variable_name (str): The name of the variable in the dataset.
-
-        Returns:
-            xr.Dataset: The dataset with the new data assigned to the specified
-            variable.
-
-        -----------------------------------------------------------------------------"""
-        if not variable_name in dataset.coords:
-            dataset[variable_name].data = data
-        else:
-            tmp_name = f"__{variable_name}__"
-            dataset[tmp_name] = xr.zeros_like(dataset[variable_name], dtype=data.dtype)  # type: ignore
-            dataset[tmp_name].data = data
-            dataset = dataset.swap_dims({variable_name: tmp_name})  # type: ignore
-            dataset = dataset.drop_vars(variable_name)
-            dataset = dataset.rename_dims({tmp_name: variable_name})
-            dataset = dataset.rename_vars({tmp_name: variable_name})
-
-        return dataset
 
 
 # TODO: VariableFinder
@@ -105,19 +78,47 @@ class FileHandler(DataHandler):
 
 
 class Retriever(ParametrizedClass, ABC):
-    readers: Any
+    readers: Dict[str, Any]
 
     @abstractmethod
     def retrieve(self, input_keys: List[str], **kwargs: Any) -> Dict[str, xr.Dataset]:
+        """-----------------------------------------------------------------------------
+        Retrieves the dataset(s) as a mapping like {input_key: xr.Dataset} using the
+        registered DataReaders for the retriever.
+
+        Args:
+            input_keys (List[str]): The input keys the registered DataReaders should
+            read from.
+
+        Returns:
+            Dict[str, xr.Dataset]: The raw dataset mapping.
+
+        -----------------------------------------------------------------------------"""
         ...
 
     @abstractmethod
-    def prepare(
+    def extract_dataset(
         self,
         raw_mapping: Dict[str, xr.Dataset],
         dataset_config: DatasetConfig,
         **kwargs: Any,
     ) -> xr.Dataset:
+        """-----------------------------------------------------------------------------
+        Prepares the raw dataset mapping for use in downstream pipeline processes by
+        consolidating the data into a single xr.Dataset object consisting only of
+        variables specified by retriever configurations. Applies input data converters
+        as part of the preparation process.
+
+        Args:
+            raw_mapping (Dict[str, xr.Dataset]): The raw dataset mapping (as returned by
+            the 'retrieve' method.)
+            dataset_config (DatasetConfig): The DatasetConfig used to gather info about
+            the output dataset structure.
+
+        Returns:
+            xr.Dataset: The dataset
+
+        -----------------------------------------------------------------------------"""
         ...
 
 
@@ -155,7 +156,7 @@ class Storage(ParametrizedClass, ABC):
             raise
         else:
             for path in tmp_dirpath.glob("**/*"):
-                if path.is_file:
+                if path.is_file():
                     self.save_ancillary_file(path, datastream)
         finally:
             tmp_dir.cleanup()

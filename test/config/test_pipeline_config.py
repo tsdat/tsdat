@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Dict
 from tsdat.config.pipeline import PipelineConfig
 from tsdat.config.dataset import DatasetConfig
-from tsdat.config.retrieval import RetrieverConfig
+from tsdat.config.retriever import RetrieverConfig
 from tsdat.config.storage import StorageConfig
 from tsdat.config.quality import QualityConfig
 

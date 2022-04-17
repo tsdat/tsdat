@@ -9,7 +9,7 @@ from pydantic import (
 from pydantic.fields import ModelField
 from typing import Any, Dict, List, Pattern, Union
 
-from tsdat.config.retrieval import RetrieverConfig
+from tsdat.config.retriever import RetrieverConfig
 from .dataset import DatasetConfig
 from .quality import QualityConfig
 from .storage import StorageConfig

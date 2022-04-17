@@ -2,4 +2,4 @@
 coverage:
 	@ coverage run -m pytest
 	@ coverage html
-	@ open htmlcov/index.html
+	@ echo "Run 'open htmlcov/index.html' to open it in your browser."

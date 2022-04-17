@@ -49,7 +49,6 @@ class FileSystem(Storage):
         the `storage/root` folder in the active working directory. The directory is
         created as this parameter is set, if the directory does not already exist."""
 
-        tmp_copy_symlinks: bool = True
         file_timespan: Optional[str] = None
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
 
@@ -163,8 +162,18 @@ class FileSystem(Storage):
 
 
 # class S3Storage(FileSystem):
+
+#     class Parameters(FileSystem.Parameters):
+#         bucket: str
+#         region: str = "us-west-2"
+
+#     parameters: Parameters
+
 #     def save_data(self, dataset: xr.Dataset):
-#         # create tmp directories
-#         for writer in self.writers:
-#             writer.write(dataset, Path("some_tmp_file"), DatasetConfig())
-#             self.upload_tmp_file("some tmp file")
+#         return super().save_data(dataset)
+
+#     def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
+#         return super().fetch_data(start, end, datastream)
+
+#     def save_ancillary_file(self, filepath: Path, datastream: str):
+#         return super().save_ancillary_file(filepath, datastream)

@@ -1,5 +1,3 @@
-# TODO: Implement UnitsConverter
-# TODO: Implement StringToDatetime
 # IDEA: Implement MultiDimensionalGrouper (better name needed. goes from collection of 1D
 # variables to one 2D variable)
 # IDEA: Use the flyweight pattern to limit memory usage if identical converters would
@@ -15,6 +13,7 @@ from numpy.typing import NDArray
 from pydantic import BaseModel, Extra, validator
 from tsdat.config.dataset import DatasetConfig
 
+from tsdat import utils
 from .base import DataConverter
 
 logger = logging.getLogger(__name__)
@@ -23,7 +22,7 @@ logger = logging.getLogger(__name__)
 class UnitsConverter(DataConverter):
 
     # IDEA: Validate the literal value of the input units string according to pint
-    input_units: Optional[str]
+    input_units: Optional[str] = None
     """The units of the input data."""
 
     def convert(
@@ -57,7 +56,7 @@ class UnitsConverter(DataConverter):
         -----------------------------------------------------------------------------"""
         input_units = self._get_input_units(dataset, variable_name)
         if not input_units:
-            logging.warn(
+            logger.warn(
                 "Input units for variable '%s' could not be found. Please ensure these"
                 " are set either in the retrieval configuration file, or are set on the"
                 " 'units' attribute of the '%s' variable in the dataset to converted.",
@@ -73,7 +72,7 @@ class UnitsConverter(DataConverter):
             or output_units == "unitless"
             or input_units == output_units
         ):
-            logging.warn(
+            logger.warn(
                 "Output units for variable %s could not be found. Please ensure these"
                 " are set in the dataset configuration file for the specified variable.",
                 variable_name,
@@ -85,8 +84,14 @@ class UnitsConverter(DataConverter):
             in_units=input_units,
             out_units=output_units,
         )
-        dataset = self.assign_data(dataset, data, variable_name)
+        dataset = utils.assign_data(dataset, data, variable_name)
         dataset[variable_name].attrs["units"] = output_units
+        logger.debug(
+            "Converted '%s's units from '%s' to '%s'",
+            variable_name,
+            input_units,
+            output_units,
+        )
         return dataset
 
     def _get_input_units(self, dataset: xr.Dataset, variable_name: str) -> str:
@@ -143,6 +148,6 @@ class StringToDatetime(DataConverter):
         dtype = dataset_config[variable_name].dtype
         data: NDArray[Any] = np.array(dt, dtype=dtype)  # type: ignore
 
-        dataset = self.assign_data(dataset, data, variable_name)
+        dataset = utils.assign_data(dataset, data, variable_name)
 
         return dataset

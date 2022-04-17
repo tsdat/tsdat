@@ -1,10 +1,11 @@
+#!/usr/bin/env python3
 import typer
 from typing import Any, Dict, List
 from pathlib import Path
 from enum import Enum
 from tsdat.config.dataset import DatasetConfig
 from tsdat.config.quality import QualityConfig
-from tsdat.config.retrieval import RetrieverConfig
+from tsdat.config.retriever import RetrieverConfig
 from tsdat.config.storage import StorageConfig
 from tsdat.config.pipeline import PipelineConfig
 from tsdat.config.utils import YamlModel
