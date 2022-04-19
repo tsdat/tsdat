@@ -7,7 +7,13 @@ readers:
 
 coords:
   time:
-    name: timestamp
+    name: timestamp # rename to input_name
+    # # input: timestamp
+    # input_name:
+    #   .*2020010:
+    #     - name: Timestamp (End of Interval)
+    #       various: ""
+    #       other: "properties"
     data_converters:
       - classname: tsdat.io.converters.StringTimeConverter
         format: "%Y-%m-%d %H:%M:%S"

@@ -204,7 +204,6 @@ def test_valid_variable_attrs_adds_fillvalue():
         "valid_delta": 45,
         "fail_delta": 35,
         "warn_delta": 15,
-        "_FillValue": -9999,
     }
     model_dict = VariableAttributes(**attrs).dict(exclude_none=True, by_alias=True)
     assert expected == model_dict
@@ -220,7 +219,6 @@ def test_variable_attrs_allow_extra():
         "units": "1",
         "extra": "some extra text",
         "another attr": 200,
-        "_FillValue": -9999.0,
     }
     model_dict = VariableAttributes(**attrs).dict(exclude_none=True, by_alias=True)
     assert expected == model_dict
@@ -291,36 +289,35 @@ def test_fail_if_bad_variable_name():
 
 
 # TODO: This test needs to be reconsidered
-def test_variable_retrieval_properties():
-    base_var: Dict[str, Any] = {
-        "dims": ["time"],
-        "dtype": "float",
-        "attrs": {"units": "1"},
-    }
+# def test_variable_retrieval_properties():
+#     base_var: Dict[str, Any] = {
+#         "dims": ["time"],
+#         "dtype": "float",
+#         "attrs": {"units": "1"},
+#     }
 
-    retrieved_var: Dict[str, Any] = {"retrieve": True}
-    retrieved_var.update(base_var)
-    assert Variable(**retrieved_var).is_retrieved
+#     retrieved_var: Dict[str, Any] = {"retrieve": True}
+#     retrieved_var.update(base_var)
+#     assert Variable(**retrieved_var).is_retrieved
 
-    static_var: Dict[str, Any] = {"retrieve": False, "data": []}
-    static_var.update(base_var)
-    assert Variable(**static_var).is_static
+#     static_var: Dict[str, Any] = {"retrieve": False, "data": []}
+#     static_var.update(base_var)
+#     assert Variable(**static_var).is_static
 
-    dynamic_var: Dict[str, Any] = {"retrieve": False}
-    dynamic_var.update(base_var)
-    assert Variable(**dynamic_var).is_dynamic
+#     dynamic_var: Dict[str, Any] = {"retrieve": False}
+#     dynamic_var.update(base_var)
+#     assert Variable(**dynamic_var).is_dynamic
 
-    bad_var: Dict[str, Any] = {"retrieve": True, "data": []}
-    bad_var.update(base_var)
-    with pytest.raises(
-        ValidationError, match="cannot be both retrieved and set statically"
-    ):
-        Variable(**bad_var)
+#     bad_var: Dict[str, Any] = {"retrieve": True, "data": []}
+#     bad_var.update(base_var)
+#     with pytest.raises(
+#         ValidationError, match="cannot be both retrieved and set statically"
+#     ):
+#         Variable(**bad_var)
 
 
 def test_coordinate_dimensioned_by_itself():
     base_coord: Dict[str, Any] = {
-        "retrieve": True,
         "name": "my_coordinate",
         "dtype": "float",
         "attrs": {"units": "1", "_FillValue": -9999.0},
@@ -360,26 +357,22 @@ def test_dataset_definition_from_yaml():
         "coords": {
             "time": {
                 "name": "time",
-                "retrieve": True,
                 "dtype": "datetime64[s]",
                 "dims": ["time"],
                 "attrs": {
                     "units": "Time offset from 1970-01-01 00:00:00",
-                    "_FillValue": -9999.0,  # FIXME: _FillValue should not be set on "time" variable
                 },
             }
         },
         "data_vars": {
             "first": {
                 "name": "first",
-                "retrieve": True,
                 "dtype": "float",
                 "dims": ["time"],
                 "attrs": {"units": "degC", "_FillValue": -9999.0},
             },
             "pi": {
                 "name": "pi",
-                "retrieve": False,
                 "data": [3.14159],
                 "dtype": "float",
                 "dims": [],

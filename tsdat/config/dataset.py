@@ -58,6 +58,7 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
             raise ValueError("Required coordinate definition 'time' is missing.")
         return coords
 
+    # TODO
     # @validator("coords", "data_vars")
     # def variable_names_are_legal(
     #     cls, vars: Dict[str, Variable], field: ModelField
@@ -103,3 +104,6 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
                 logger.error("Key '%s' is neither a data_var nor a coord.")
                 raise
         return property
+
+    def __contains__(self, __o: object) -> bool:
+        return (__o in self.coords) or (__o in self.data_vars)

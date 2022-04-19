@@ -1,10 +1,12 @@
 from typing import Any, Dict, List, Optional
+import numpy as np
 from pydantic import (
     BaseModel,
     Extra,
     root_validator,
     Field,
     StrictStr,
+    validator,
 )
 from .attributes import AttributeModel
 
@@ -100,8 +102,7 @@ class VariableAttributes(AttributeModel):
         " flag values outside of this range as having an 'Indeterminate' assessment."
     )
     fill_value: Optional[float] = Field(
-        # TODO: Change the type to Any and use a validator to make it "" for str dtypes
-        -9999.0,
+        None,
         alias="_FillValue",
         description="A value used to initialize the variable's data and indicate that"
         " the data is missing. Defaults to -9999 for numerical data. If choosing a"
@@ -188,13 +189,13 @@ class Variable(BaseModel, extra=Extra.forbid):
     #     " to provide additional context about the variable, if needed.",
     # )
     name: str = Field("", regex=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
-    retrieve: bool = Field(
-        True,
-        description="Indicate if the variable should be retrieved from an input dataset"
-        " according to the retrieval parameters in the retrieval configuration file. If"
-        " False then the retriever will not attempt to retrieve this directly from"
-        " an input dataset. Defaults to True.",
-    )
+    # retrieve: bool = Field(
+    #     True,
+    #     description="Indicate if the variable should be retrieved from an input dataset"
+    #     " according to the retrieval parameters in the retrieval configuration file. If"
+    #     " False then the retriever will not attempt to retrieve this directly from"
+    #     " an input dataset. Defaults to True.",
+    # )
     data: Optional[Any] = Field(
         description="If the variable is not meant to be retrieved from an input dataset"
         " and the value is known in advance, then the 'data' property should specify"
@@ -223,17 +224,17 @@ class Variable(BaseModel, extra=Extra.forbid):
         " 'standard_name' attributes, if possible."
     )
 
-    @property
-    def is_retrieved(self) -> bool:
-        return self.retrieve
+    # @property
+    # def is_retrieved(self) -> bool:
+    #     return self.retrieve
 
-    @property
-    def is_static(self) -> bool:
-        return not self.is_retrieved and self.data is not None
+    # @property
+    # def is_static(self) -> bool:
+    #     return not self.is_retrieved and self.data is not None
 
-    @property
-    def is_dynamic(self) -> bool:
-        return not self.is_retrieved and self.data is None
+    # @property
+    # def is_dynamic(self) -> bool:
+    #     return not self.is_retrieved and self.data is None
 
     # @validator("name")
     # @classmethod
@@ -242,15 +243,25 @@ class Variable(BaseModel, extra=Extra.forbid):
     #         raise ValueError(f"'{v}' contains a non-ascii character.")
     #     return v
 
-    @root_validator(skip_on_failure=True)
-    @classmethod
-    def validate_data_retrival(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if values["retrieve"] and values["data"] is not None:
-            raise ValueError(
-                f"{cls.__name__}s cannot be both retrieved and set statically. Please"
-                " either set 'retrieve: False' or remove the 'data' property."
-            )
-        return values
+    # @root_validator(skip_on_failure=True)
+    # @classmethod
+    # def validate_data_retrival(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    #     if values["retrieve"] and values["data"] is not None:
+    #         raise ValueError(
+    #             f"{cls.__name__}s cannot be both retrieved and set statically. Please"
+    #             " either set 'retrieve: False' or remove the 'data' property."
+    #         )
+    #     return values
+
+    @validator("attrs")
+    def set_default_fill_value(
+        cls, attrs: VariableAttributes, values: Dict[str, Any]
+    ) -> VariableAttributes:
+        dtype: str = values["dtype"]
+        if (attrs.fill_value is not None) or (dtype == "str") or ("datetime" in dtype):
+            return attrs
+        attrs.fill_value = np.array([-9999.0], dtype=dtype)[0]  # type: ignore
+        return attrs
 
 
 class Coordinate(Variable):

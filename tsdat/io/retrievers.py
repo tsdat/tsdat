@@ -2,12 +2,43 @@
 # TODO: Ensure correct data type and add attributes
 # TODO: Variable finders
 
+# Example use cases and logical routes:
+#
+# one file in, one file out
+# data: {timestamp: {str, ["2022-04-18"]}, temp: {int, [80]}}
+#
+# 1. renaming
+#       timestamp --> time,
+#       temp --> temperature
+# 2. converters
+#       time str --> datetime64
+#       temperature degF --> degC
+# 3. xr.merge
+#       [ds1] -> ds1
+# 4. transforms
+#       time (5min) --> 1 min, average
+
+# two files in, one file out
+# data: {timestamp: {str, ["2022-04-18"]}, temp: {int, [80]}}
+# data: {timestamp: {str, ["2022-04-19"]}, temp: {int, [81]}}
+#
+# 1. renaming
+#       timestamp --> time,
+#       temp --> temperature
+# 2. converters
+#       time str --> datetime64
+#       temperature degF --> degC
+# 3. xr.merge
+#       [ds1] -> ds1
+# 4. transforms
+#       time (5min) --> 1 min, average
+
 
 # IDEA: Implement MultiDatastreamRetriever
 import logging
 import xarray as xr
 from pydantic import BaseModel, Extra
-from typing import Any, Dict, List
+from typing import Any, Dict, Hashable, List, cast
 from tsdat.config.dataset import DatasetConfig
 
 from .base import Retriever, DataReader, DataConverter
@@ -21,10 +52,12 @@ class VariableRetriever(BaseModel, extra=Extra.forbid):
     data_converters: List[DataConverter] = []
 
 
-# TODO: Name this retriever something more apt
+# TODO: Name this retriever something more apt -- SingleDatastreamRetriever
 class SimpleRetriever(Retriever):
     class Parameters(BaseModel, extra=Extra.forbid):
-        merge_kwargs: Dict[str, Any] = {}
+        merge_kwargs: Dict[str, Any] = {"compat": "outer"}
+        retain_global_attrs: bool = True
+        retain_variable_attrs: bool = False
         # drop_unused_vars: bool = True
 
     parameters: Parameters = Parameters()
@@ -57,12 +90,14 @@ class SimpleRetriever(Retriever):
     def extract_dataset(
         self, raw_mapping: Dict[str, xr.Dataset], dataset_config: DatasetConfig
     ) -> xr.Dataset:
+        # doing merge first adds new requirement: variables have same data type & units before the merge
         dataset = self._merge_raw_mapping(raw_mapping)
         dataset = self._rename_variables(dataset)
         # Order of the steps below still tbd
         dataset = self._run_data_converters(dataset, dataset_config)
         dataset = self._reindex_dataset_coords(dataset, dataset_config)
         dataset = self._drop_variables(dataset)
+        dataset = self._add_attrs(dataset, dataset_config)
         return dataset
 
     def _match_inputs(self, input_keys: List[str]) -> Dict[str, DataReader]:
@@ -153,10 +188,10 @@ class SimpleRetriever(Retriever):
         SimpleRetriever's coords nor data_vars sections.
 
         Args:
-            dataset (xr.Dataset): The dataset to possibly drop variables from.
+            dataset (xr.Dataset): The dataset to drop variables from.
 
         Returns:
-            xr.Dataset: The dataset with undeclared variables dropped.
+            xr.Dataset: The dataset with undeclared variables and coordinates dropped.
 
         -----------------------------------------------------------------------------"""
         retriever_vars = set(self.coords) | set(self.data_vars)
@@ -216,6 +251,38 @@ class SimpleRetriever(Retriever):
                 )
             dim = actual_dims[0]
             if dim != expected_dim:
-                dataset.rename_dims()
+                # assumes that the existing dim and new dim have same length
+                dataset = dataset.swap_dims({dim: expected_dim})  # type: ignore
+                # dataset = dataset.drop_vars([dim]) # this can be done in the drop vars method
+
+        # for var_name in self.data_vars:
+        #     expected_dims = dataset_config[var_name].dims
+        #     actual_dims = dataset[var_name].dims
+        #     if actual_dims
+
+        return dataset
+
+    def _add_attrs(
+        self, dataset: xr.Dataset, dataset_config: DatasetConfig
+    ) -> xr.Dataset:
+        # Global attrs
+        config_attrs = cast(
+            Dict[Hashable, Any],
+            dataset_config.attrs.dict(exclude_none=True, by_alias=True).copy(),
+        )
+        if self.parameters.retain_global_attrs:
+            config_attrs.update(dataset.attrs)
+            dataset.attrs = {**dataset.attrs, **config_attrs}
+        dataset.attrs = config_attrs
+
+        # Variable attrs
+        for var_name in dataset.variables:
+            if var_name in dataset_config:
+                var_attrs = dataset_config[str(var_name)].attrs.dict(
+                    exclude_none=True, by_alias=True
+                )
+                if self.parameters.retain_variable_attrs:
+                    var_attrs.update(dataset[var_name].attrs)
+                dataset[var_name].attrs = var_attrs
 
         return dataset

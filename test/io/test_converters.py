@@ -66,26 +66,39 @@ def test_units_converter(sample_dataset: xr.Dataset, dataset_config: DatasetConf
 def test_stringtime_converter(
     sample_dataset: xr.Dataset, dataset_config: DatasetConfig
 ):
-    expected = xr.Dataset(
-        coords={
-            "time": (
-                pd.date_range(  # type: ignore
-                    "2022-04-13 14:10:00",
-                    "2022-04-13 14:30:00",
-                    periods=3,
-                )
-            )
-        },
+    expected = sample_dataset.copy(deep=True) # type: ignore
+    expected["_time"] = xr.DataArray(
+        data=pd.date_range(  # type: ignore
+            "2022-04-13 14:10:00",
+            "2022-04-13 14:30:00",
+            periods=3,
+        ),
+        coords={"time": expected["time"]},
     )
+    expected = expected.swap_dims({"time": "_time"}) # type: ignore
+    expected = expected.drop_vars(["time"]).rename({"_time": "time"})
+    # expected = xr.Dataset(
+    #     coords={
+    #         "time": (
+    #             "time",
+    #             pd.date_range(  # type: ignore
+    #                 "2022-04-13 14:10:00",
+    #                 "2022-04-13 14:30:00",
+    #                 periods=3,
+    #             ),
+    #             {"units": "Seconds since 1970-01-01 00:00:00"},
+    #         )
+    #     },
+    # )
     # convert string to datetime with explicit settings
     converter = StringToDatetime(format="%Y-%m-%d %H:%M:%S", timezone="UTC")
     dataset = converter.convert(sample_dataset, dataset_config, "time")
-    assert_close(dataset.time, expected.time)
+    assert_close(dataset, expected)
 
     # no time format
     converter = StringToDatetime()
     dataset = converter.convert(sample_dataset, dataset_config, "time")
-    assert_close(dataset.time, expected.time)
+    assert_close(dataset, expected)
 
     # non-UTC timezone
     converter = StringToDatetime(format="%Y-%m-%d %H:%M:%S", timezone="US/Pacific")

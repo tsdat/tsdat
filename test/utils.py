@@ -1,3 +1,4 @@
+from attr import attrs
 import xarray as xr
 from typing import Any, List
 
@@ -34,14 +35,24 @@ def compare(*model_dicts: Any):
 def assert_close(
     a: xr.Dataset, b: xr.Dataset, check_attrs: bool = True, **kwargs: Any
 ) -> None:
+    xr.testing.assert_allclose(a, b, **kwargs)  # type: ignore
     if check_attrs:
         a = _drop_history_attr(a)
+        a = _drop_code_version_attr(a)
         b = _drop_history_attr(b)
+        b = _drop_code_version_attr(b)
         assert a.attrs == b.attrs
-    xr.testing.assert_allclose(a, b, **kwargs)  # type: ignore
+        for var_name in a.variables:
+            assert a[var_name].attrs == b[var_name].attrs
 
 
 def _drop_history_attr(ds: xr.Dataset) -> xr.Dataset:
     if "history" in ds.attrs:
         del ds.attrs["history"]
+    return ds
+
+
+def _drop_code_version_attr(ds: xr.Dataset) -> xr.Dataset:
+    if "code_version" in ds.attrs:
+        del ds.attrs["code_version"]
     return ds

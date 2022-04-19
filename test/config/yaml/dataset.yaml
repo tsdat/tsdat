@@ -7,7 +7,6 @@ attrs:
 
 coords:
   time:
-    retrieve: true
     dims: [time]
     dtype: datetime64[s]
     attrs:
@@ -15,14 +14,12 @@ coords:
 
 data_vars:
   first:
-    retrieve: true
     dims: [time]
     dtype: float
     attrs:
       units: degC
 
   pi:
-    retrieve: false
     data: [3.14159]
     dims: []
     dtype: float
