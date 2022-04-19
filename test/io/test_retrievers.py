@@ -165,5 +165,4 @@ def test_simple_extract_multifile_dataset(
     dataset = simple_retriever.extract_dataset(
         multifile_single_variable_mapping, dataset_config
     )
-    xr.merge()
     assert_close(dataset, expected)
