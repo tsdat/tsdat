@@ -1,0 +1,25 @@
+attrs:
+  title: Wave Potential Energy
+  description:
+    Basic dataset with observed wave height and calculated wave potential energy.
+  location_id: abc
+  dataset_name: example
+  data_level: b1
+
+coords:
+  time:
+    dtype: long
+    dims: [time]
+    attrs:
+      units: Time offset from 1970-01-01 00:00:00
+
+data_vars:
+  wave_height:
+    dtype: float
+    attrs:
+      units: m
+
+  wave_potential_energy:
+    dtype: float
+    attrs:
+      units: J

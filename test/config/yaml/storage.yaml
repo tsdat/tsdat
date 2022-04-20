@@ -1,0 +1,4 @@
+classname: tsdat.io.storage.FileSystem
+
+handler:
+  classname: tsdat.io.handlers.NetCDFHandler
