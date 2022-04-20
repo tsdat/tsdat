@@ -4,7 +4,7 @@ from pydantic import Field
 from tsdat.config.dataset import DatasetConfig
 from tsdat.io.base import Retriever, Storage
 from tsdat.qc.qc import QualityManagement
-from tsdat.utils import ParametrizedClass  # TODO: Quality Management
+from tsdat.utils import ParametrizedClass
 
 
 class Pipeline(ParametrizedClass, ABC):
@@ -12,7 +12,7 @@ class Pipeline(ParametrizedClass, ABC):
 
     parameters: Any = {}
 
-    associations: List[Pattern[str]] = []
+    triggers: List[Pattern] = []  # type: ignore
     """Regex patterns matching input keys to determine when the pipeline should run."""
 
     retriever: Retriever

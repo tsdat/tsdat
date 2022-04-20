@@ -37,7 +37,7 @@ def test_reader_config_validates_required_properties():
 def test_retriever_config_validates_required_properties():
 
     kwargs: Dict[str, Any] = {
-        "classname": "tsdat.io.retrievers.SimpleRetriever",
+        "classname": "tsdat.io.retrievers.DefaultRetriever",
         "parameters": {},
         "readers": {
             "csv": {"classname": "tsdat.io.readers.CSVReader", "regex": r".*\.csv"},
@@ -59,7 +59,7 @@ def test_retriever_config_validates_required_properties():
 def test_retriever_config_can_be_created_without_errors():
 
     kwargs: Dict[str, Any] = {
-        "classname": "tsdat.io.retrievers.SimpleRetriever",
+        "classname": "tsdat.io.retrievers.DefaultRetriever",
         "parameters": {},
         "readers": {
             "csv": {"classname": "tsdat.io.readers.CSVReader"},
@@ -69,7 +69,7 @@ def test_retriever_config_can_be_created_without_errors():
     assert retriever_config.readers["csv"].regex == re.compile(".*")  # type: ignore
 
     kwargs: Dict[str, Any] = {
-        "classname": "tsdat.io.retrievers.SimpleRetriever",
+        "classname": "tsdat.io.retrievers.DefaultRetriever",
         "parameters": {},
         "readers": {
             "csv": {"classname": "tsdat.io.readers.CSVReader", "regex": r".*\.csv"},

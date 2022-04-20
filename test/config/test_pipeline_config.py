@@ -65,7 +65,6 @@ def test_pipeline_config_merges_overrides():
     # Do expected overrides
     dataset.attrs.location_id = "sgp"
     dataset.attrs.datastream = "sgp.example.b1"
-    dataset.coords["time"].attrs.units = "km"
     dataset.data_vars["first"].attrs.new_attribute = "please add this attribute"
     quality.managers[0].exclude = []
 
@@ -73,7 +72,7 @@ def test_pipeline_config_merges_overrides():
     expected_dict: Dict[str, Any] = {
         "classname": "tsdat.pipeline.ingest.IngestPipeline",
         "parameters": {},
-        "associations": [re.compile(r".*\.csv")],
+        "triggers": [re.compile(r".*\.csv")],
         "settings": {
             "validate_retriever_config": True,
             "validate_dataset_config": True,

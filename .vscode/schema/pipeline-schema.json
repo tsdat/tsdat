@@ -14,8 +14,9 @@
             "default": {},
             "type": "object"
         },
-        "associations": {
-            "title": "Associations",
+        "triggers": {
+            "title": "Triggers",
+            "description": "A list of regex patterns matching input keys to determine if the pipeline should be run. Please ensure these are specific as possible in order to match the desired input keys without any false positive matches (this is more important in repositories with many pipelines).",
             "type": "array",
             "items": {
                 "type": "string",
@@ -38,6 +39,7 @@
         },
         "retriever": {
             "title": "Retriever",
+            "description": "Specify the retrieval configurations that the pipeline should use.",
             "anyOf": [
                 {
                     "$ref": "#/definitions/Overrideable_RetrieverConfig_"
@@ -49,6 +51,7 @@
         },
         "dataset": {
             "title": "Dataset",
+            "description": "Specify the dataset configurations that describe the structure and metadata of the dataset produced by this pipeline.",
             "anyOf": [
                 {
                     "$ref": "#/definitions/Overrideable_DatasetConfig_"
@@ -60,6 +63,7 @@
         },
         "quality": {
             "title": "Quality",
+            "description": "Specify the quality checks and controls that should be applied to the dataset as part of this pipeline.",
             "anyOf": [
                 {
                     "$ref": "#/definitions/Overrideable_QualityConfig_"
@@ -71,6 +75,7 @@
         },
         "storage": {
             "title": "Storage",
+            "description": "Specify the Storage configurations that should be used to save data produced by this pipeline.",
             "anyOf": [
                 {
                     "$ref": "#/definitions/Overrideable_StorageConfig_"
@@ -83,7 +88,7 @@
     },
     "required": [
         "classname",
-        "associations",
+        "triggers",
         "retriever",
         "dataset",
         "quality",
@@ -409,7 +414,6 @@
                 "_FillValue": {
                     "title": " Fillvalue",
                     "description": "A value used to initialize the variable's data and indicate that the data is missing. Defaults to -9999 for numerical data. If choosing a different value, it is important to use a value that could not reasonably be mistaken for a physical value or data point.",
-                    "default": -9999.0,
                     "type": "number"
                 }
             }
@@ -423,12 +427,6 @@
                     "default": "",
                     "pattern": "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$",
                     "type": "string"
-                },
-                "retrieve": {
-                    "title": "Retrieve",
-                    "description": "Indicate if the variable should be retrieved from an input dataset according to the retrieval parameters in the retrieval configuration file. If False then the retriever will not attempt to retrieve this directly from an input dataset. Defaults to True.",
-                    "default": true,
-                    "type": "boolean"
                 },
                 "data": {
                     "title": "Data",
@@ -474,12 +472,6 @@
                     "default": "",
                     "pattern": "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$",
                     "type": "string"
-                },
-                "retrieve": {
-                    "title": "Retrieve",
-                    "description": "Indicate if the variable should be retrieved from an input dataset according to the retrieval parameters in the retrieval configuration file. If False then the retriever will not attempt to retrieve this directly from an input dataset. Defaults to True.",
-                    "default": true,
-                    "type": "boolean"
                 },
                 "data": {
                     "title": "Data",

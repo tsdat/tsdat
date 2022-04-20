@@ -1,19 +1,22 @@
 import re
-from typing import Dict
 import numpy as np
 import pandas as pd
 import xarray as xr
 from pathlib import Path
 from pytest import fixture
 from tsdat.config.dataset import DatasetConfig
+from tsdat.config.retriever import RetrieverConfig
 from tsdat.io.retrievers import DefaultRetriever
 from tsdat.io.readers import CSVReader
 from tsdat.io.converters import StringToDatetime, UnitsConverter
 from test.utils import assert_close
+from tsdat.config.utils import recusive_instantiate
 
 
 @fixture
 def simple_retriever() -> DefaultRetriever:
+    # config = RetrieverConfig.from_yaml(Path("test/config/yaml/retriever.yaml"))
+    # return recusive_instantiate(config)
     return DefaultRetriever(
         readers={"csv": CSVReader()},
         coords={
@@ -35,55 +38,6 @@ def simple_retriever() -> DefaultRetriever:
             }
         },  # type: ignore
     )
-
-
-@fixture
-def single_raw_mapping() -> Dict[str, xr.Dataset]:
-    return {
-        "test/io/data/input.csv": xr.Dataset(
-            coords={"index": ([0, 1, 2])},
-            data_vars={
-                "timestamp": (
-                    "index",
-                    [
-                        "2022-03-24 21:43:00",
-                        "2022-03-24 21:44:00",
-                        "2022-03-24 21:45:00",
-                    ],
-                ),
-                "First Data Var": (
-                    "index",
-                    [71.4, 71.2, 71.1],
-                ),
-            },
-        ),
-    }
-
-
-@fixture
-def multifile_single_variable_mapping(
-    single_raw_mapping: Dict[str, xr.Dataset]
-) -> Dict[str, xr.Dataset]:
-    new_ds_mapping = {
-        "test/io/test_retrievers.py:multifile_mapping": xr.Dataset(
-            coords={"index": ([0, 1, 2])},
-            data_vars={
-                "timestamp": (
-                    "index",
-                    [
-                        "2022-03-24 21:46:00",
-                        "2022-03-24 21:47:00",
-                        "2022-03-24 21:48:00",
-                    ],
-                ),
-                "First Data Var": (
-                    "index",
-                    [71.0, 70.8, 70.6],
-                ),
-            },
-        ),
-    }
-    return {**single_raw_mapping, **new_ds_mapping}
 
 
 @fixture
@@ -140,3 +94,8 @@ def test_simple_extract_multifile_dataset(
         ["test/io/data/input.csv", "test/io/data/input_extended.csv"], dataset_config
     )
     assert_close(dataset, expected)
+
+
+def test_multi_datastream_retrieval():
+    # TODO
+    pass

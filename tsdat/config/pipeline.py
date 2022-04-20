@@ -76,7 +76,7 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
     # with dataset config properties -- e.g., includes / excludes are real variables
 
     # HACK: Pattern[str] type is correct, but doesn't work with pydantic v1.9.0
-    associations: List[Pattern] = Field(  # type: ignore
+    triggers: List[Pattern] = Field(  # type: ignore
         description="A list of regex patterns matching input keys to determine if the"
         " pipeline should be run. Please ensure these are specific as possible in order"
         " to match the desired input keys without any false positive matches (this is"

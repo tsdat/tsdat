@@ -1,16 +1,16 @@
-classname: tsdat.io.retrievers.SimpleRetriever
+classname: tsdat.io.retrievers.DefaultRetriever
 parameters: {}
 
 readers:
   csv:
-    classname: tsdat.io.readers.CsvReader
+    classname: tsdat.io.readers.CSVReader
 
 coords:
   time:
     .*:
       name: timestamp
       data_converters:
-        - classname: tsdat.io.converters.StringTimeConverter
+        - classname: tsdat.io.converters.StringToDatetime
           format: "%Y-%m-%d %H:%M:%S"
           timezone: UTC
 
