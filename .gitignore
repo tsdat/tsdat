@@ -5,8 +5,9 @@
 build/
 dist/
 tsdat.egg-info
-**/storage/**
 .pytest_cache/
 htmlcov/
 coverage.xml
 .coverage
+typings/
+.mypy_cache/

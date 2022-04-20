@@ -1,0 +1,101 @@
+attrs:
+  title: title
+  description: description
+  location_id: abc
+  dataset_name: example
+  data_level: b1
+
+coords:
+  time:
+    input:
+      variable_finder:
+        mapping_of_input_key_to_input_variable:
+          .*2020010:
+            - name: Timestamp (End of Interval)
+              units: km
+            - name: Some Other variable name
+              units: m
+          .*\.csv:
+            - name: time
+            - name: TIME
+            - name: Time
+          .*:
+            - name: timestamp
+              units: m
+            - name: Timestamp
+              units: km
+
+      data_converters:
+        - classname: tsdat.io.converters.StringToDatetime
+          parameters:
+            format: "%Y-%m-%d %H:%M:%S"
+            timezone: UTC
+
+      transformer:
+        classname: tsdat.io.transformers.TimeseriesTransformer
+        parameters:
+          time: 5min
+          method: mean
+
+    dtype: long
+    dims: [time]
+    attrs:
+      units: "Time offset from 1970-01-01 00:00:00"
+
+  depth:
+    input:
+      variable_finder:
+        # name_in_input = variable_finder.get_variable_name(input_dataset, key)
+        # ds = converter.convert(input_dataset, name_in_input, config)
+        # ds = tranformer.transform(ds, name_in_input, ...)
+        classname: tsdat.io.retrievers.finders.MultiSourceVariableFinder
+        parameters:
+          mapping_of_input_key_to_input_variable:
+            .*\.currents\.csv:
+              .*2020010:
+                - name: Depth (End of Interval)
+                  units: km
+                - name: altitude below sea level
+                  units: m
+              .*\.csv:
+                - name: depth
+                  units: m
+                - name: DEPTH
+                  units: km
+                - name: deep
+                  units: m
+              .*:
+                - name: depth
+                  units: m
+
+      data_converters:
+        - classname: tsdat.io.converters.UnitsConverter
+
+      transformer:
+        classname: tsdat.io.transformers.CoordinateTransformer
+        parameters:
+          xarray_resample_args:
+            depth: 10meter
+
+    dims: [time]
+    dtype: float
+    attrs:
+      units: m
+
+data_vars:
+  first:
+    input:
+      required: true
+      name: first
+      units: degF
+    dims: [time]
+    dtype: float
+    attrs:
+      units: degC
+
+  pi:
+    data: [3.14159]
+    dims: []
+    dtype: float
+    attrs:
+      units: "1"

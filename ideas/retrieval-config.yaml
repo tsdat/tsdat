@@ -1,0 +1,43 @@
+# pipeline.retriever = Retriever(parameters)
+# raw_dataset_mapping = pipeline.retriever.read_all(input_keys: List[str], dataset_config, storage:Optional)
+# raw_dataset_mapping = pipeline.hook_customize_raw_dataset_mapping(raw_dataset_mapping)
+# dataset = pipeline.retriever.to_output_structure?(raw_dataset_mapping, dataset_config, storage:Optional)
+#     for input_key, dataset in raw_dataset_mapping.items():
+#       ^ pipeline.retriever.apply_converters()
+#           ^ for config_var in dataset_config.coords/data_vars:
+#               ^ input = config_var.input
+#       ^ pipeline.retriever.apply_transformers()
+#   ^ pipeline.retriever.merge_datasets()
+#
+
+retrieval_rulesets:
+  # Name of the ruleset (for overriability purposes)
+  default:
+    # Specify filter which limits which datasets/input keys this ruleset applies to.
+    # dataset filter defaults to the following:
+    dataset_filter:
+      classname: tsdat.io.retrieval.filters.RegexFilterer
+      parameters:
+        regex: .*
+
+    coords:
+      time:
+        finder:
+          classname: tsdat.io.retrieval.finders.VariableFinder
+          name: timestamp
+
+        data_converters:
+          string_to_time:
+            classname: tsdat.io.converters.StringToDatetime
+            parameters:
+              format: "%Y-%m-%d %H:%M:%S"
+
+        transformer:
+          classname: tsdat.io.transformers.CoordinateTransformer
+          parameters:
+            resample_kwargs:
+              keep_attrs: true
+              time: 5min
+            post_resample: mean
+            post_resample_kwargs:
+              keep_attrs: true

@@ -1,40 +1,9 @@
-from . import (
-    config,
-    constants,
-    exceptions,
-    io,
-    pipeline,
-    qc,
-    utils,
-)
-from tsdat.config import (
-    Config,
-    PipelineDefinition,
-    DatasetDefinition,
-    DimensionDefinition,
-    VariableDefinition,
-)
-from tsdat.constants import ATTS, VARS
-from tsdat.exceptions import DefinitionError, QCError
-from tsdat.io import (
-    DatastreamStorage,
-    AwsStorage,
-    S3Path,
-    FilesystemStorage,
-    DataHandler,
-    HandlerRegistry,
-    CsvHandler,
-    NetCdfHandler,
-)
-from tsdat.pipeline import Pipeline, IngestPipeline
-from tsdat.qc import (
-    QualityChecker,
-    QualityHandler,
-)
-from tsdat.utils import (
-    DSUtil,
-    Converter,
-    DefaultConverter,
-    StringTimeConverter,
-    TimestampTimeConverter,
-)
+# IDEA: Add a typer CLI to do a guided setup of a basic filesystem ingest
+
+# IDEA: Add a __main__.py file parallel with this one which provides a number of typer
+# commands that can be run. Users would invoke it via python -m tsdat, or we could use
+# entrypoints / console scripts in setup.py to export the typer app as it's own thing.
+
+# IDEA: Plugin architecture where we can add high-quality standardization pipelines to
+# our package so users can simply run `tsdat standardize path/to/data.csv` and it will
+# do it's thing with the appropriate plugin that matches the input key
