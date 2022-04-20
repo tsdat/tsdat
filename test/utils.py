@@ -1,4 +1,3 @@
-from attr import attrs
 import xarray as xr
 from typing import Any, List
 

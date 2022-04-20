@@ -73,6 +73,7 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
     #     return vars
 
     @validator("coords", "data_vars", pre=True)
+    @classmethod
     def set_variable_name_property(
         cls, vars: Dict[str, Dict[str, Any]]
     ) -> Dict[str, Dict[str, Any]]:

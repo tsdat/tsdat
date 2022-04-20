@@ -38,7 +38,7 @@
 import logging
 import xarray as xr
 from pydantic import BaseModel, Extra
-from typing import Any, Dict, Hashable, List, cast
+from typing import Any, Dict, List, Pattern
 from tsdat.config.dataset import DatasetConfig
 
 from .base import Retriever, DataReader, DataConverter
@@ -52,10 +52,29 @@ class VariableRetriever(BaseModel, extra=Extra.forbid):
     data_converters: List[DataConverter] = []
 
 
-# TODO: Name this retriever something more apt -- SingleDatastreamRetriever
-class SimpleRetriever(Retriever):
+class InputKeyRetrieverConfig:
+    def __init__(self, input_key: str, retriever: "DefaultRetriever") -> None:
+        self.coords: Dict[str, VariableRetriever] = {}
+        self.data_vars: Dict[str, VariableRetriever] = {}
+
+        def update_mapping(
+            to_update: Dict[str, VariableRetriever],
+            variable_dict: Dict[str, Dict[Pattern[str], VariableRetriever]],
+        ):
+            for name, retriever_dict in variable_dict.items():
+                for pattern, variable_retriever in retriever_dict.items():
+                    if pattern.match(input_key):
+                        to_update[name] = variable_retriever
+                    break
+
+        update_mapping(self.coords, retriever.coords)  # type: ignore
+        update_mapping(self.data_vars, retriever.data_vars)  # type: ignore
+
+
+# TODO: Name this retriever something more apt
+class DefaultRetriever(Retriever):
     class Parameters(BaseModel, extra=Extra.forbid):
-        merge_kwargs: Dict[str, Any] = {"compat": "outer"}
+        merge_kwargs: Dict[str, Any] = {}
         retain_global_attrs: bool = True
         retain_variable_attrs: bool = False
         # drop_unused_vars: bool = True
@@ -66,17 +85,34 @@ class SimpleRetriever(Retriever):
     """A dictionary of DataReaders that should be used to read data provided an input
     key."""
 
-    coords: Dict[str, VariableRetriever]
+    coords: Dict[str, Dict[Pattern, VariableRetriever]]  # type: ignore
     """A dictionary mapping output coordinate names to the retrieval rules and
     preprocessing actions (e.g., DataConverters) that should be applied to each retrieved
     coordinate variable."""
 
-    data_vars: Dict[str, VariableRetriever]
+    data_vars: Dict[str, Dict[Pattern, VariableRetriever]]  # type: ignore
     """A dictionary mapping output data variable names to the retrieval rules and
     preprocessing actions (e.g., DataConverters) that should be applied to each retrieved
     data variable."""
 
-    def retrieve(self, input_keys: List[str]) -> Dict[str, xr.Dataset]:
+    def retrieve(
+        self, input_keys: List[str], dataset_config: DatasetConfig
+    ) -> xr.Dataset:
+        # TODO: Parent docstring
+        raw_mapping = self._get_raw_mapping(input_keys)
+        dataset_mapping: Dict[str, xr.Dataset] = {}
+        for key, dataset in raw_mapping.items():
+            input_config = InputKeyRetrieverConfig(key, self)
+            dataset = self._rename_variables(dataset, input_config)
+            dataset = self._reindex_dataset_coords(
+                dataset, dataset_config, input_config
+            )
+            dataset = self._run_data_converters(dataset, dataset_config, input_config)
+            dataset_mapping[key] = dataset
+        output_dataset = self._merge_raw_mapping(dataset_mapping)
+        return output_dataset
+
+    def _get_raw_mapping(self, input_keys: List[str]) -> Dict[str, xr.Dataset]:
         dataset_mapping: Dict[str, xr.Dataset] = {}
         input_reader_mapping = self._match_inputs(input_keys)
         for input_key, reader in input_reader_mapping.items():  # IDEA: async
@@ -87,18 +123,22 @@ class SimpleRetriever(Retriever):
             dataset_mapping.update(data)
         return dataset_mapping
 
-    def extract_dataset(
-        self, raw_mapping: Dict[str, xr.Dataset], dataset_config: DatasetConfig
-    ) -> xr.Dataset:
-        # doing merge first adds new requirement: variables have same data type & units before the merge
-        dataset = self._merge_raw_mapping(raw_mapping)
-        dataset = self._rename_variables(dataset)
-        # Order of the steps below still tbd
-        dataset = self._run_data_converters(dataset, dataset_config)
-        dataset = self._reindex_dataset_coords(dataset, dataset_config)
-        dataset = self._drop_variables(dataset)
-        dataset = self._add_attrs(dataset, dataset_config)
-        return dataset
+    #     """-----------------------------------------------------------------------------
+    #     Prepares the raw dataset mapping for use in downstream pipeline processes by
+    #     consolidating the data into a single xr.Dataset object consisting only of
+    #     variables specified by retriever configurations. Applies input data converters
+    #     as part of the preparation process.
+
+    #     Args:
+    #         raw_mapping (Dict[str, xr.Dataset]): The raw dataset mapping (as returned by
+    #         the 'retrieve' method.)
+    #         dataset_config (DatasetConfig): The DatasetConfig used to gather info about
+    #         the output dataset structure.
+
+    #     Returns:
+    #         xr.Dataset: The dataset
+
+    #     -----------------------------------------------------------------------------"""
 
     def _match_inputs(self, input_keys: List[str]) -> Dict[str, DataReader]:
         input_reader_mapping: Dict[str, DataReader] = {}
@@ -109,10 +149,11 @@ class SimpleRetriever(Retriever):
                     break
         return input_reader_mapping
 
-    def _merge_raw_mapping(self, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
-        return xr.merge(list(raw_mapping.values()), **self.parameters.merge_kwargs)  # type: ignore
-
-    def _rename_variables(self, raw_dataset: xr.Dataset) -> xr.Dataset:
+    def _rename_variables(
+        self,
+        dataset: xr.Dataset,
+        input_config: InputKeyRetrieverConfig,
+    ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Returns a dataset containing only the variables specified to be retrieved in the
         retrieval config.
@@ -126,17 +167,17 @@ class SimpleRetriever(Retriever):
         -----------------------------------------------------------------------------"""
         to_rename: Dict[str, str] = {}  # {raw_name: output_name}
         coords_to_rename = {
-            c.name: output_name for output_name, c in self.coords.items()
+            c.name: output_name for output_name, c in input_config.coords.items()
         }
         vars_to_rename = {
-            v.name: output_name for output_name, v in self.data_vars.items()
+            v.name: output_name for output_name, v in input_config.data_vars.items()
         }
         to_rename.update(coords_to_rename)
         to_rename.update(vars_to_rename)
 
-        # Error handling
+        # Warning handling
         for raw_name, output_name in coords_to_rename.items():
-            if raw_name not in raw_dataset:
+            if raw_name not in dataset:
                 to_rename.pop(raw_name)
                 logger.warn(
                     "Coordinate variable '%s' could not be retrieved from input. Please"
@@ -147,7 +188,7 @@ class SimpleRetriever(Retriever):
                     output_name,
                 )
         for raw_name, output_name in vars_to_rename.items():
-            if raw_name not in raw_dataset:
+            if raw_name not in dataset:
                 to_rename.pop(raw_name)
                 logger.warn(
                     "Data variable '%s' could not be retrieved from input. Please"
@@ -157,10 +198,13 @@ class SimpleRetriever(Retriever):
                     raw_name,
                     output_name,
                 )
-        return raw_dataset.rename(to_rename)
+        return dataset.rename(to_rename)
 
     def _run_data_converters(
-        self, dataset: xr.Dataset, dataset_config: DatasetConfig
+        self,
+        dataset: xr.Dataset,
+        dataset_config: DatasetConfig,
+        input_config: InputKeyRetrieverConfig,
     ) -> xr.Dataset:
         """------------------------------------------------------------------------------------
         Runs the declared DataConverters on the dataset's coords and data_vars. Returns
@@ -174,32 +218,19 @@ class SimpleRetriever(Retriever):
             xr.Dataset: The converted dataset.
 
         ------------------------------------------------------------------------------------"""
-        for coord_name, coord_config in self.coords.items():
+        for coord_name, coord_config in input_config.coords.items():
             for converter in coord_config.data_converters:
                 dataset = converter.convert(dataset, dataset_config, coord_name)
-        for var_name, var_config in self.data_vars.items():
+        for var_name, var_config in input_config.data_vars.items():
             for converter in var_config.data_converters:
                 dataset = converter.convert(dataset, dataset_config, var_name)
         return dataset
 
-    def _drop_variables(self, dataset: xr.Dataset) -> xr.Dataset:
-        """-----------------------------------------------------------------------------
-        Drops variables from the dataset that are declared in neither the
-        SimpleRetriever's coords nor data_vars sections.
-
-        Args:
-            dataset (xr.Dataset): The dataset to drop variables from.
-
-        Returns:
-            xr.Dataset: The dataset with undeclared variables and coordinates dropped.
-
-        -----------------------------------------------------------------------------"""
-        retriever_vars = set(self.coords) | set(self.data_vars)
-        vars_to_drop = set(dataset.variables) - retriever_vars
-        return dataset.drop_vars(vars_to_drop)
-
     def _reindex_dataset_coords(
-        self, dataset: xr.Dataset, dataset_config: DatasetConfig
+        self,
+        dataset: xr.Dataset,
+        dataset_config: DatasetConfig,
+        input_config: InputKeyRetrieverConfig,
     ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Ensures that the retriever coordinates are set as coordinates in the dataset,
@@ -219,26 +250,7 @@ class SimpleRetriever(Retriever):
             xr.Dataset: The reindexed dataset.
 
         -----------------------------------------------------------------------------"""
-        # Assumptions:
-        # 1.    the variables declared in the retriever have already been named
-        #       correctly in the dataset.
-        # 2.    all the variables declared in the retriever are present in the dataset.
-
-        # For each coordinate in the retriever
-        #
-        # 1. see what its dimension is in the dataset
-        # 1a. if it is dimensioned by itself continue to 2.
-        # 1b. if it is dimensioned by something else, note what that is, as we'll need
-        # to replace everything dimensioned by that as well
-        # 1c. if it has multiple dimensions fail loudly.
-        #
-        # 2. get the names of the retriever variables that should be dimensioned by the
-        # coord. note this involves both the retriever config to get the retriever vars
-        # and the dataset config to know what's dimensioned by what else.
-        #
-        # 3.
-
-        for coord_name in self.coords:
+        for coord_name in input_config.coords:
             expected_dim = dataset_config[coord_name].dims[0]
             actual_dims = dataset[coord_name].dims
             if (ndims := len(actual_dims)) != 1:
@@ -251,38 +263,52 @@ class SimpleRetriever(Retriever):
                 )
             dim = actual_dims[0]
             if dim != expected_dim:
-                # assumes that the existing dim and new dim have same length
                 dataset = dataset.swap_dims({dim: expected_dim})  # type: ignore
-                # dataset = dataset.drop_vars([dim]) # this can be done in the drop vars method
-
-        # for var_name in self.data_vars:
-        #     expected_dims = dataset_config[var_name].dims
-        #     actual_dims = dataset[var_name].dims
-        #     if actual_dims
+                # dataset = dataset.drop_vars([dim])
 
         return dataset
 
-    def _add_attrs(
-        self, dataset: xr.Dataset, dataset_config: DatasetConfig
-    ) -> xr.Dataset:
-        # Global attrs
-        config_attrs = cast(
-            Dict[Hashable, Any],
-            dataset_config.attrs.dict(exclude_none=True, by_alias=True).copy(),
-        )
-        if self.parameters.retain_global_attrs:
-            config_attrs.update(dataset.attrs)
-            dataset.attrs = {**dataset.attrs, **config_attrs}
-        dataset.attrs = config_attrs
+    # TODO: Move these methods into the pipeline class
+    # def _drop_variables(self, dataset: xr.Dataset) -> xr.Dataset:
+    #     """-----------------------------------------------------------------------------
+    #     Drops variables from the dataset that are declared in neither the
+    #     SimpleRetriever's coords nor data_vars sections.
 
-        # Variable attrs
-        for var_name in dataset.variables:
-            if var_name in dataset_config:
-                var_attrs = dataset_config[str(var_name)].attrs.dict(
-                    exclude_none=True, by_alias=True
-                )
-                if self.parameters.retain_variable_attrs:
-                    var_attrs.update(dataset[var_name].attrs)
-                dataset[var_name].attrs = var_attrs
+    #     Args:
+    #         dataset (xr.Dataset): The dataset to drop variables from.
 
-        return dataset
+    #     Returns:
+    #         xr.Dataset: The dataset with undeclared variables and coordinates dropped.
+
+    #     -----------------------------------------------------------------------------"""
+    #     retriever_vars = set(self.coords) | set(self.data_vars)
+    #     vars_to_drop = set(dataset.variables) - retriever_vars
+    #     return dataset.drop_vars(vars_to_drop)
+
+    # def _add_attrs(
+    #     self, dataset: xr.Dataset, dataset_config: DatasetConfig
+    # ) -> xr.Dataset:
+    #     # Global attrs
+    #     config_attrs = cast(
+    #         Dict[Hashable, Any],
+    #         dataset_config.attrs.dict(exclude_none=True, by_alias=True).copy(),
+    #     )
+    #     if self.parameters.retain_global_attrs:
+    #         config_attrs.update(dataset.attrs)
+    #         dataset.attrs = {**dataset.attrs, **config_attrs}
+    #     dataset.attrs = config_attrs
+
+    #     # Variable attrs
+    #     for var_name in dataset.variables:
+    #         if var_name in dataset_config:
+    #             var_attrs = dataset_config[str(var_name)].attrs.dict(
+    #                 exclude_none=True, by_alias=True
+    #             )
+    #             if self.parameters.retain_variable_attrs:
+    #                 var_attrs.update(dataset[var_name].attrs)
+    #             dataset[var_name].attrs = var_attrs
+
+    #     return dataset
+
+    def _merge_raw_mapping(self, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
+        return xr.merge(list(raw_mapping.values()), **self.parameters.merge_kwargs)  # type: ignore

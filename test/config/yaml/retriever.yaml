@@ -7,21 +7,17 @@ readers:
 
 coords:
   time:
-    name: timestamp # rename to input_name
-    # # input: timestamp
-    # input_name:
-    #   .*2020010:
-    #     - name: Timestamp (End of Interval)
-    #       various: ""
-    #       other: "properties"
-    data_converters:
-      - classname: tsdat.io.converters.StringTimeConverter
-        format: "%Y-%m-%d %H:%M:%S"
-        timezone: UTC
+    .*:
+      name: timestamp
+      data_converters:
+        - classname: tsdat.io.converters.StringTimeConverter
+          format: "%Y-%m-%d %H:%M:%S"
+          timezone: UTC
 
 data_vars:
   first:
-    name: First Data Var
-    data_converters:
-      - classname: tsdat.io.converters.UnitsConverter
-        input_units: degF
+    .*:
+      name: First Data Var
+      data_converters:
+        - classname: tsdat.io.converters.UnitsConverter
+          input_units: degF

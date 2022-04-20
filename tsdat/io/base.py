@@ -81,7 +81,9 @@ class Retriever(ParametrizedClass, ABC):
     readers: Dict[str, Any]
 
     @abstractmethod
-    def retrieve(self, input_keys: List[str], **kwargs: Any) -> Dict[str, xr.Dataset]:
+    def retrieve(
+        self, input_keys: List[str], dataset_config: DatasetConfig, **kwargs: Any
+    ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Retrieves the dataset(s) as a mapping like {input_key: xr.Dataset} using the
         registered DataReaders for the retriever.
@@ -89,34 +91,10 @@ class Retriever(ParametrizedClass, ABC):
         Args:
             input_keys (List[str]): The input keys the registered DataReaders should
             read from.
+            dataset_config (DatasetConfig): The specification of the output dataset.
 
         Returns:
             Dict[str, xr.Dataset]: The raw dataset mapping.
-
-        -----------------------------------------------------------------------------"""
-        ...
-
-    @abstractmethod
-    def extract_dataset(
-        self,
-        raw_mapping: Dict[str, xr.Dataset],
-        dataset_config: DatasetConfig,
-        **kwargs: Any,
-    ) -> xr.Dataset:
-        """-----------------------------------------------------------------------------
-        Prepares the raw dataset mapping for use in downstream pipeline processes by
-        consolidating the data into a single xr.Dataset object consisting only of
-        variables specified by retriever configurations. Applies input data converters
-        as part of the preparation process.
-
-        Args:
-            raw_mapping (Dict[str, xr.Dataset]): The raw dataset mapping (as returned by
-            the 'retrieve' method.)
-            dataset_config (DatasetConfig): The DatasetConfig used to gather info about
-            the output dataset structure.
-
-        Returns:
-            xr.Dataset: The dataset
 
         -----------------------------------------------------------------------------"""
         ...

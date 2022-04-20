@@ -122,13 +122,16 @@ def assign_data(
         dataset[variable_name].data = data
     elif variable_name in dataset.coords:
         tmp_name = f"__{variable_name}__"
+        dataset = dataset.rename_vars({variable_name: tmp_name})
+
         # TODO: ensure attrs are copied over too
-        dataset[tmp_name] = xr.zeros_like(dataset[variable_name], dtype=data.dtype)  # type: ignore
-        dataset[tmp_name].data = data
-        dataset = dataset.swap_dims({variable_name: tmp_name})  # type: ignore
-        dataset = dataset.drop_vars(variable_name)
-        dataset = dataset.rename_dims({tmp_name: variable_name})
-        dataset = dataset.rename_vars({tmp_name: variable_name})
+        dataset[variable_name] = xr.zeros_like(dataset[tmp_name], dtype=data.dtype)  # type: ignore
+        dataset[variable_name].data[:] = data[:]
+        # dataset = dataset.swap_dims({tmp_name: variable_name})  # type: ignore
+        dataset = dataset.drop_vars(tmp_name)
+        # dataset = dataset.rename_dims(
+        #     {tmp_name: variable_name}
+        # )  # FIXME: This might drop all dimensions other than the one that was just renamed
     else:
         raise KeyError(
             f"'{variable_name}' must be a coord or a data_var in the dataset to assign"

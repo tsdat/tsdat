@@ -254,6 +254,7 @@ class Variable(BaseModel, extra=Extra.forbid):
     #     return values
 
     @validator("attrs")
+    @classmethod
     def set_default_fill_value(
         cls, attrs: VariableAttributes, values: Dict[str, Any]
     ) -> VariableAttributes:

@@ -70,31 +70,44 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
     from the parsed pipeline configuration file.
     ------------------------------------------------------------------------------------"""
 
-    # TODO: Add descriptions & titles for all properties on this class.
-
     # TODO: Provide a way of instantiating only the associations (so we can quickly
     # determine which pipeline should be used for a given input)
     # TODO: Add a root validator to ensure that properties from the quality config align
     # with dataset config properties -- e.g., includes / excludes are real variables
 
     # HACK: Pattern[str] type is correct, but doesn't work with pydantic v1.9.0
-    associations: List[Pattern]  # type: ignore
+    associations: List[Pattern] = Field(  # type: ignore
+        description="A list of regex patterns matching input keys to determine if the"
+        " pipeline should be run. Please ensure these are specific as possible in order"
+        " to match the desired input keys without any false positive matches (this is"
+        " more important in repositories with many pipelines)."
+    )
     settings: ConfigSettings = ConfigSettings()  # type: ignore
 
     # Overrideable is used to trick pydantic into letting us generate json schema for
     # these objects, but during construction these are converted into the actual
     # DatasetConfig, QualityConfig, and StorageConfig objects.
-    retriever: Union[Overrideable[RetrieverConfig], RetrieverConfig]
-    dataset: Union[Overrideable[DatasetConfig], DatasetConfig]
-    quality: Union[Overrideable[QualityConfig], QualityConfig]
-    storage: Union[Overrideable[StorageConfig], StorageConfig]
+    retriever: Union[Overrideable[RetrieverConfig], RetrieverConfig] = Field(
+        description="Specify the retrieval configurations that the pipeline should use."
+    )
+    dataset: Union[Overrideable[DatasetConfig], DatasetConfig] = Field(
+        description="Specify the dataset configurations that describe the structure and"
+        " metadata of the dataset produced by this pipeline.",
+    )
+    quality: Union[Overrideable[QualityConfig], QualityConfig] = Field(
+        description="Specify the quality checks and controls that should be applied to"
+        " the dataset as part of this pipeline."
+    )
+    storage: Union[Overrideable[StorageConfig], StorageConfig] = Field(
+        description="Specify the Storage configurations that should be used to save"
+        " data produced by this pipeline."
+    )
 
     @validator("retriever", "dataset", "quality", "storage", pre=True)
     @classmethod
     def merge_overrideable_yaml(
         cls, v: Dict[str, Any], values: Dict[str, Any], field: ModelField
     ):
-
         object_field_mapping = {
             "retriever": RetrieverConfig,
             "dataset": DatasetConfig,
@@ -136,4 +149,5 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
             Any: An instance of a tsdat.pipeline.BasePipeline subclass.
 
         ------------------------------------------------------------------------------------"""
+        # TODO: is this an infinite loop?
         return recusive_instantiate(self)
