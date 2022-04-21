@@ -1,7 +1,6 @@
 import xarray as xr
-from typing import List, Set, cast
+from typing import List
 from tsdat.pipeline.pipeline import Pipeline
-from tsdat.utils import decode_cf
 
 
 class IngestPipeline(Pipeline):
@@ -16,11 +15,10 @@ class IngestPipeline(Pipeline):
 
     def run(self, inputs: List[str]) -> xr.Dataset:
         dataset = self.retriever.retrieve(inputs, self.dataset_config)
-        dataset = self.generate_output_structure(dataset)
+        dataset = self.prepare_retrieved_dataset(dataset)
         dataset = self.hook_customize_dataset(dataset)
         dataset = self.quality.manage(dataset)
         dataset = self.hook_finalize_dataset(dataset)
-        dataset = decode_cf(dataset)  # HACK: fixes the encoding on datetime64 variables
         self.storage.save_data(dataset)
         self.hook_plot_dataset(dataset)
         return dataset
@@ -57,33 +55,12 @@ class IngestPipeline(Pipeline):
         return dataset
 
     def hook_plot_dataset(self, dataset: xr.Dataset):
-        """------------------------------------------------------------------------------------
-        User-overrideable code hook that runs after the dataset has been saved by the storage
-        API.
+        """-----------------------------------------------------------------------------
+        User-overrideable code hook that runs after the dataset has been saved by the
+        storage API.
 
         Args:
             dataset (xr.Dataset): The dataset to plot.
 
-        ------------------------------------------------------------------------------------"""
+        -----------------------------------------------------------------------------"""
         pass
-
-    def generate_output_structure(self, dataset: xr.Dataset) -> xr.Dataset:
-        # Drop retrieved variables not in the DatasetConfig
-        # Adds static variables to the dataset
-        # Initializes variables that are not retrieved
-        # Adds variable and global attributes to the dataset
-
-        output_vars = set(self.dataset_config.coords) | set(
-            self.dataset_config.data_vars
-        )
-        retrieved_vars = cast(Set[str], set(dataset.variables))
-
-        vars_to_drop = retrieved_vars - output_vars
-        vars_to_add = output_vars - retrieved_vars
-
-        dataset.drop_vars(vars_to_drop)
-
-        for name in vars_to_add:
-            dims = self.dataset_config[name].dims
-
-        return dataset

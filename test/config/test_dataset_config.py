@@ -343,7 +343,7 @@ def test_coordinate_dimensioned_by_itself():
 
 
 def test_dataset_definition_from_yaml():
-    expected = {
+    expected: Dict[str, Any] = {
         "attrs": {
             "title": "title",
             "description": "description",
@@ -373,10 +373,10 @@ def test_dataset_definition_from_yaml():
             },
             "pi": {
                 "name": "pi",
-                "data": [3.14159],
+                "data": 3.14159,
                 "dtype": "float",
                 "dims": [],
-                "attrs": {"units": "1", "_FillValue": -9999.0},
+                "attrs": {"units": "1"},
             },
         },
     }

@@ -1,10 +1,10 @@
 # TODO: Implement CheckMin/CheckMax & warn/fail/valid
 
 import numpy as np
-from pydantic import BaseModel, Extra, validator
 import xarray as xr
-from numpy.typing import NDArray
+from pydantic import BaseModel, Extra, validator
 from typing import Any, Dict, Optional
+from numpy.typing import NDArray
 from .base import QualityChecker
 
 

@@ -259,7 +259,13 @@ class Variable(BaseModel, extra=Extra.forbid):
         cls, attrs: VariableAttributes, values: Dict[str, Any]
     ) -> VariableAttributes:
         dtype: str = values["dtype"]
-        if (attrs.fill_value is not None) or (dtype == "str") or ("datetime" in dtype):
+        data: Any = values["data"]
+        if (
+            (data is not None)
+            or (attrs.fill_value is not None)
+            or (dtype == "str")
+            or ("datetime" in dtype)
+        ):
             return attrs
         attrs.fill_value = np.array([-9999.0], dtype=dtype)[0]  # type: ignore
         return attrs

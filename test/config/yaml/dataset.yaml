@@ -20,7 +20,7 @@ data_vars:
       units: degC
 
   pi:
-    data: [3.14159]
+    data: 3.14159
     dims: []
     dtype: float
     attrs:

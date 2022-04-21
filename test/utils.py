@@ -34,15 +34,22 @@ def compare(*model_dicts: Any):
 def assert_close(
     a: xr.Dataset, b: xr.Dataset, check_attrs: bool = True, **kwargs: Any
 ) -> None:
+    a, b = a.copy(), b.copy()  # type: ignore
     xr.testing.assert_allclose(a, b, **kwargs)  # type: ignore
     if check_attrs:
         a = _drop_history_attr(a)
         a = _drop_code_version_attr(a)
         b = _drop_history_attr(b)
         b = _drop_code_version_attr(b)
-        assert a.attrs == b.attrs
+        assert (
+            a.attrs == b.attrs
+        ), f"global attributes do not match:\n{a.attrs}\n{b.attrs}"
         for var_name in a.variables:
-            assert a[var_name].attrs == b[var_name].attrs
+            a_attrs = a[var_name].attrs
+            b_attrs = b[var_name].attrs
+            assert (
+                a_attrs == b_attrs
+            ), f"'{var_name}' attributes do not match:\n{a_attrs},\n{b_attrs}"
 
 
 def _drop_history_attr(ds: xr.Dataset) -> xr.Dataset:

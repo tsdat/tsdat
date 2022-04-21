@@ -4,7 +4,6 @@ import xarray as xr
 import pandas as pd
 from test.utils import assert_close
 from tsdat.config.pipeline import PipelineConfig
-from tsdat.config.utils import recusive_instantiate
 from tsdat.pipeline.ingest import IngestPipeline
 
 
@@ -21,14 +20,13 @@ def test_ingest_pipeline():
             "first": (
                 "time",
                 (np.array([71.4, 71.2, 71.1]) - 32) * 5 / 9,  # type: ignore
-                {"units": "degC", "new_attribute": "please add this attribute"},
+                {
+                    "units": "degC",
+                    "_FillValue": -9999.0,
+                    "new_attribute": "please add this attribute",
+                },
             ),
-            "qc_first": (
-                "time",
-                np.array([0, 0, 0], dtype="int"),  # type: ignore
-                {"": ""},  # TODO: Add expected attributes
-            ),
-            # TODO: Add expected 'pi' variable
+            "pi": 3.14159,
         },
         attrs={
             "title": "title",
@@ -36,13 +34,17 @@ def test_ingest_pipeline():
             "location_id": "sgp",  # override from the pipeline
             "dataset_name": "example",
             "data_level": "b1",
+            "datastream": "sgp.example.b1",
         },
     )
+    expected["pi"].attrs = {"units": "1"}
 
-    # config = PipelineConfig.from_yaml(Path("test/config/yaml/pipeline.yaml"))
+    config = PipelineConfig.from_yaml(Path("test/config/yaml/pipeline.yaml"))
+    pipeline: IngestPipeline = config.instaniate_pipeline()
     # pipeline: IngestPipeline = recusive_instantiate(config)
 
-    # dataset = pipeline.run(["test/io/data/input.csv"])
+    dataset = pipeline.run(["test/io/data/input.csv"])
 
-    # assert_close(dataset, expected)
-    pass
+    assert_close(dataset, expected)
+    assert dataset.attrs["code_version"]
+    assert dataset.attrs["history"]

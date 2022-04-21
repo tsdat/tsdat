@@ -4,6 +4,7 @@ import xarray as xr
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 from pydantic import BaseModel, Extra
+from tsdat.utils import decode_cf
 from .base import FileWriter
 
 
@@ -26,6 +27,9 @@ class NetCDFWriter(FileWriter):
     file_extension: str = "nc"
 
     def write(self, dataset: xr.Dataset, filepath: Optional[Path] = None) -> None:
+        # HACK: Fix encoding on datetime64 variables. Use a shallow copy to retain units
+        # on datetime64 variables in the pipeline (but remove with decode_cf())
+        dataset = decode_cf(dataset.copy(deep=False))  # type: ignore
         if self.parameters.use_compression:
             compression_dict: Dict[Any, Any] = {
                 variable_name: self.parameters.compression_kwargs

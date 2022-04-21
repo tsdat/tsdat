@@ -1,6 +1,5 @@
-from copy import copy
 import xarray as xr
-from typing import Dict, List
+from typing import Callable, Dict, List
 from pydantic import BaseModel, Extra
 from .base import QualityChecker, QualityHandler
 
@@ -21,21 +20,25 @@ class QualityManager(BaseModel, extra=Extra.forbid):
         return dataset
 
     def get_variables_to_run(self, dataset: xr.Dataset) -> List[str]:
-        variables: List[str] = copy(self.apply_to)
+        def _get_dataset_coords(dataset: xr.Dataset) -> List[str]:
+            return list(dataset.coords)
 
-        keyword_map: Dict[str, List[str]] = {
-            "COORDS": list(dataset.coords.keys()),
-            "DATA_VARS": list(dataset.data_vars.keys()),
+        def _get_dataset_data_vars(dataset: xr.Dataset) -> List[str]:
+            return [str(v) for v in dataset.data_vars if not str(v).startswith("qc_")]
+
+        keyword_map: Dict[str, Callable[[xr.Dataset], List[str]]] = {
+            "COORDS": _get_dataset_coords,
+            "DATA_VARS": _get_dataset_data_vars,
         }
 
-        n_insertions = 0
-        for i in range(len(self.apply_to)):
-            if self.apply_to[i] in keyword_map:
-                to_insert = keyword_map[self.apply_to[i]]
-                variables[i + n_insertions : i + n_insertions] = to_insert
-                n_insertions += len(to_insert)
+        variables: List[str] = []
+        for key in self.apply_to:
+            if key in keyword_map:
+                variables += keyword_map[key](dataset)
+            else:
+                variables.append(key)
 
-        return [var for var in variables if var not in self.exclude]
+        return [v for v in variables if v not in self.exclude]
 
 
 class QualityManagement(BaseModel, extra=Extra.forbid):
