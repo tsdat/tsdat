@@ -1,12 +1,10 @@
-# TODO: Implement FailPipeline
 # TODO: Implement ReplaceWithFillValue
 # TODO: Implement RecordQualityResults
 # TODO: Implement SortDatasetByCoordinate
 
-
 import numpy as np
 import xarray as xr
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, Field
 from typing import Literal
 from numpy.typing import NDArray
 
@@ -38,21 +36,68 @@ from .base import QualityHandler
 #     CORRECTION = "correction"
 
 
-# class DataQualityError(BaseException):
-#     pass
+class DataQualityError(ValueError):
+    """Raised when the quality of a variable indicates a fatal error has occurred.
+    Manual review of the data in question is often recommended in this case."""
+
+
+class FailPipeline(QualityHandler):
+    """------------------------------------------------------------------------------------
+    Raises a DataQualityError, halting the pipeline, if the data quality are
+    sufficiently bad. This usually indicates that a manual inspection of the data is
+    recommended.
+
+    Raises:
+        DataQualityError: DataQualityError
+
+    ------------------------------------------------------------------------------------"""
+
+    class Parameters(BaseModel, extra=Extra.allow):
+        # IDEA: add threshold of bad values (% or count) above which the error is thrown
+        context: str = ""
+        """Additional context set by users that ends up in the traceback message."""
+
+    parameters: Parameters = Parameters()
+
+    def run(self, dataset: xr.Dataset, variable_name: str, results: NDArray[np.bool8]):
+        if results.any():
+            raise DataQualityError(
+                f"Quality results for variable {variable_name} indicate a fatal error"
+                " has occured and the pipeline should exit. Manual review of the data"
+                " is recommended.\n"
+                f"Extra context: '{self.parameters.context}'\n"
+                f"Quality results array: {results}"
+            )
+
+        return dataset
 
 
 class RecordQualityResults(QualityHandler):
-    """Record the results of the quality check in an ancillary qc variable."""
+    """------------------------------------------------------------------------------------
+    Records the results of the quality check in an ancillary qc variable. Creates the
+    ancillary qc variable if one does not already exist.
+
+    ------------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel, extra=Extra.forbid):
-        bit: int
+        bit: int = Field(ge=0, lt=32)
+        """The bit number (e.g., 0, 1, 2, ...) used to indicate if the check passed.
+        The quality results are bitpacked into an integer array to preserve space. For
+        example, if 'check #0' uses bit 0 and fails, and 'check #1' uses bit 1 and fails
+        then the resulting value on the qc variable would be 2^(0) + 2^(1) = 3. If we
+        had a third check it would be 2^(0) + 2^(1) + 2^(2) = 7."""
+
         assessment: Literal["bad", "indeterminate"]
+        """Indicates the quality of the data if the test results indicate a failure."""
+
         meaning: str
+        """A string that describes the test applied."""
 
     parameters: Parameters
 
-    def run(self, dataset: xr.Dataset, variable_name: str, results: NDArray[np.bool8]):
+    def run(
+        self, dataset: xr.Dataset, variable_name: str, results: NDArray[np.bool8]
+    ) -> xr.Dataset:
         dataset.qcfilter.add_test(
             variable_name,
             index=results,
@@ -99,12 +144,3 @@ class RecordQualityResults(QualityHandler):
 #             order = self.params.get("ascending", True)
 #             self.ds: xr.Dataset = self.ds.sortby(self.ds[variable_name], order)  # type: ignore
 #             self.record_correction(variable_name)
-
-
-# class FailPipeline(QualityHandler):
-#     """Throw an exception, halting the pipeline & indicating a critical error"""
-
-#     def run(self, variable_name: str, results_array: np.ndarray[Any, Any]):
-#         if results_array.any():
-#             message = f"Quality Manager {self.quality_manager.name} failed for variable {variable_name}"
-#             raise DataQualityError(message)

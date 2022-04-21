@@ -69,10 +69,15 @@ class ParametrizedConfigClass(BaseModel, extra=Extra.forbid):
         return v
 
     def instantiate(self) -> Any:
-        # TODO: Docstring and note that self.dict() includes self.parameters, and also
-        # any other properties that are set on the model
-        _cls = import_string(self.classname)
-        params: Dict[str, Any] = self.dict(exclude={"classname"})
+        """------------------------------------------------------------------------------------
+        Instantiates and returns the class specified by the 'classname' parameter.
+
+        Returns:
+            Any: An instance of the specified class.
+
+        ------------------------------------------------------------------------------------"""
+        params = {field: getattr(self, field) for field in self.__fields_set__}
+        _cls = import_string(params.pop("classname"))
         return _cls(**params)
 
 
@@ -123,11 +128,18 @@ def recusive_instantiate(model: Any) -> Any:
         return [recusive_instantiate(m) for m in cast(List[Any], model)]
 
     # Case Dict. Want to iterate through and recursively instantiate all sub-models in
-    # the Dict's values, then return everything as a Dict.
+    # the Dict's values, then return everything as a Dict, unless the dict is meant to
+    # be turned into a parametrized class, in which case we instantiate it as the
+    # intended object
     elif isinstance(model, Dict):
-        return {
+        model = {
             k: recusive_instantiate(v) for k, v in cast(Dict[str, Any], model).items()
         }
+        if "classname" in model:
+            classname: str = model.pop("classname")  # type: ignore
+            _cls = import_string(classname)
+            return _cls(**model)
+        return model
 
     # Base case: Anything else; just return the value
     return model

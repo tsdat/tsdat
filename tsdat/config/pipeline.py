@@ -1,5 +1,5 @@
 from pathlib import Path
-from jsonpointer import set_pointer
+from jsonpointer import set_pointer  # type: ignore
 from pydantic import (
     BaseSettings,
     Extra,
@@ -146,8 +146,7 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
 
 
         Returns:
-            Any: An instance of a tsdat.pipeline.BasePipeline subclass.
+            Pipeline: An instance of a tsdat.pipeline.Pipeline subclass.
 
         ------------------------------------------------------------------------------------"""
-        # TODO: is this an infinite loop?
         return recusive_instantiate(self)

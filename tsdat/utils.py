@@ -1,8 +1,5 @@
-import act
-import datetime
 import numpy as np
 import xarray as xr
-import pandas as pd
 from typing import Any, Dict, List
 from pydantic import BaseModel, Extra
 from numpy.typing import NDArray
@@ -30,7 +27,7 @@ def decode_cf(dataset: xr.Dataset) -> xr.Dataset:
     # to save: https://github.com/pydata/xarray/issues/3739
     for variable in dataset.variables.values():
         if (
-            np.issubdtype(variable.data.dtype, np.np.datetime64)  # type: ignore
+            np.issubdtype(variable.data.dtype, np.datetime64)  # type: ignore
             and "units" in variable.attrs
         ):
             units = variable.attrs["units"]

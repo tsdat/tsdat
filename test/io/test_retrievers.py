@@ -15,29 +15,8 @@ from tsdat.config.utils import recusive_instantiate
 
 @fixture
 def simple_retriever() -> DefaultRetriever:
-    # config = RetrieverConfig.from_yaml(Path("test/config/yaml/retriever.yaml"))
-    # return recusive_instantiate(config)
-    return DefaultRetriever(
-        readers={"csv": CSVReader()},
-        coords={
-            "time": {
-                re.compile(r".*"): {
-                    "name": "timestamp",
-                    "data_converters": [
-                        StringToDatetime(format="%Y-%m-%d %H:%M:%S", timezone="UTC")
-                    ],
-                }
-            }
-        },  # type: ignore
-        data_vars={
-            "first": {
-                re.compile(r".*"): {
-                    "name": "First Data Var",
-                    "data_converters": [UnitsConverter(input_units="degF")],
-                }
-            }
-        },  # type: ignore
-    )
+    config = RetrieverConfig.from_yaml(Path("test/config/yaml/retriever.yaml"))
+    return recusive_instantiate(config)
 
 
 @fixture

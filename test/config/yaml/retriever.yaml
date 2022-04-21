@@ -11,7 +11,7 @@ coords:
       name: timestamp
       data_converters:
         - classname: tsdat.io.converters.StringToDatetime
-          format: "%Y-%m-%d %H:%M:%S"
+          format: "%Y-%m-%d %H:%M:%S" # TODO: This isn't set when instantiating recursively
           timezone: UTC
 
 data_vars:

@@ -128,6 +128,7 @@ class StringToDatetime(DataConverter):
                 " may lead to incorrect behavior in some cases. It is recommended to"
                 " set the 'format' parameter explicitly to prevent ambiguous dates."
             )
+        return format
 
     def convert(
         self,
