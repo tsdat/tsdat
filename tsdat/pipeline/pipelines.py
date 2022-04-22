@@ -1,6 +1,6 @@
 import xarray as xr
 from typing import List
-from tsdat.pipeline.pipeline import Pipeline
+from .base import Pipeline
 
 
 class IngestPipeline(Pipeline):
