@@ -6,8 +6,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Pattern, Union
 from abc import ABC, abstractmethod
-from tsdat.utils import ParametrizedClass
-from tsdat.config import DatasetConfig
+from ..utils import ParametrizedClass
+from ..config.dataset import DatasetConfig
 
 # TODO: Docstrings. These are all public classes
 

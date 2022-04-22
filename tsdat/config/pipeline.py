@@ -9,7 +9,7 @@ from pydantic import (
 from pydantic.fields import ModelField
 from typing import Any, Dict, List, Pattern, Union
 
-from tsdat.config.retriever import RetrieverConfig
+from ..config.retriever import RetrieverConfig
 from .dataset import DatasetConfig
 from .quality import QualityConfig
 from .storage import StorageConfig
@@ -21,6 +21,8 @@ from .utils import (
     matches_overrideable_schema,
     recusive_instantiate,
 )
+
+__all__ = ["PipelineConfig"]
 
 
 class ConfigSettings(BaseSettings, extra=Extra.allow):

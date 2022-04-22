@@ -11,10 +11,12 @@ import numpy as np
 from typing import Any, Optional
 from numpy.typing import NDArray
 from pydantic import BaseModel, Extra, validator
-from tsdat.config.dataset import DatasetConfig
 
-from tsdat import utils
+from ..config.dataset import DatasetConfig
+from ..utils import assign_data
 from .base import DataConverter
+
+__all__ = ["UnitsConverter", "StringToDatetime"]
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +86,7 @@ class UnitsConverter(DataConverter):
             in_units=input_units,
             out_units=output_units,
         )
-        dataset = utils.assign_data(dataset, data, variable_name)
+        dataset = assign_data(dataset, data, variable_name)
         dataset[variable_name].attrs["units"] = output_units
         logger.debug(
             "Converted '%s's units from '%s' to '%s'",
@@ -149,6 +151,6 @@ class StringToDatetime(DataConverter):
         dtype = dataset_config[variable_name].dtype
         data: NDArray[Any] = np.array(dt, dtype=dtype)  # type: ignore
 
-        dataset = utils.assign_data(dataset, data, variable_name)
+        dataset = assign_data(dataset, data, variable_name)
 
         return dataset

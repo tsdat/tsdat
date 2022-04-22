@@ -1,6 +1,8 @@
 from pydantic import Field
 from .utils import ParametrizedConfigClass, YamlModel
 
+__all__ = ["StorageConfig"]
+
 
 class DataHandlerConfig(ParametrizedConfigClass):
     ...

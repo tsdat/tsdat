@@ -2,6 +2,8 @@ from pydantic import BaseModel, Field, validator
 from typing import List
 from .utils import ParametrizedConfigClass, YamlModel, find_duplicates
 
+__all__ = ["QualityConfig"]
+
 
 class CheckerConfig(ParametrizedConfigClass):
     pass

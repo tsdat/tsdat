@@ -4,8 +4,10 @@ import xarray as xr
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 from pydantic import BaseModel, Extra
-from tsdat.utils import decode_cf
+from ..utils import decode_cf
 from .base import FileWriter
+
+__all__ = ["NetCDFWriter", "CSVWriter"]
 
 
 class NetCDFWriter(FileWriter):
@@ -61,4 +63,4 @@ class CSVWriter(FileWriter):
         # that it can always be retrieved? If not, should we declare this as a format
         # incapable of "round-triping" (i.e., ds != read(write(ds)) for csv format)?
         df = dataset.to_dataframe(self.parameters.dim_order)  # type: ignore
-        df.to_csv(filepath, **self.parameters.to_csv_kwargs)
+        df.to_csv(filepath, **self.parameters.to_csv_kwargs)  # type: ignore

@@ -11,6 +11,8 @@ from .attributes import GlobalAttributes
 from .utils import YamlModel
 from .variables import Variable, Coordinate
 
+__all__ = ["DatasetConfig"]
+
 
 logger = logging.getLogger(__name__)
 

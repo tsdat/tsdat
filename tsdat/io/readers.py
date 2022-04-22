@@ -8,6 +8,8 @@ from pydantic import BaseModel, Extra
 from typing import Any, Dict
 from .base import DataReader
 
+__all__ = ["NetCDFReader", "CSVReader"]
+
 
 class NetCDFReader(DataReader):
     """------------------------------------------------------------------------------------

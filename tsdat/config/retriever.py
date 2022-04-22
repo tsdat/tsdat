@@ -4,6 +4,8 @@ from pydantic import Field, validator, Extra
 from pydantic.fields import ModelField
 from .utils import ParametrizedConfigClass, YamlModel
 
+__all__ = ["RetrieverConfig"]
+
 
 class DataReaderConfig(ParametrizedConfigClass):
     # HACK: Can't do Pattern[str]: https://github.com/samuelcolvin/pydantic/issues/2636

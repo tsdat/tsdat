@@ -2,6 +2,8 @@ import xarray as xr
 from typing import List
 from .base import Pipeline
 
+__all__ = ["IngestPipeline"]
+
 
 class IngestPipeline(Pipeline):
     """---------------------------------------------------------------------------------

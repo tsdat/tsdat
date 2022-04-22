@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional
 from .base import Storage
 from .handlers import FileHandler
 
+__all__ = ["FileSystem"]
 
 # TODO: interval / split files apart by some timeframe (e.g., 1 day)
 #

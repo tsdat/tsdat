@@ -1,48 +1,14 @@
 # TODO: Retrieval from S3; another retriever class, or parameters on the default?
-# TODO: Ensure correct data type and add attributes
-# TODO: Variable finders
+# IDEA: Implement MultiDatastreamRetriever & variable finders
 
-# Example use cases and logical routes:
-#
-# one file in, one file out
-# data: {timestamp: {str, ["2022-04-18"]}, temp: {int, [80]}}
-#
-# 1. renaming
-#       timestamp --> time,
-#       temp --> temperature
-# 2. converters
-#       time str --> datetime64
-#       temperature degF --> degC
-# 3. xr.merge
-#       [ds1] -> ds1
-# 4. transforms
-#       time (5min) --> 1 min, average
-
-# two files in, one file out
-# data: {timestamp: {str, ["2022-04-18"]}, temp: {int, [80]}}
-# data: {timestamp: {str, ["2022-04-19"]}, temp: {int, [81]}}
-#
-# 1. renaming
-#       timestamp --> time,
-#       temp --> temperature
-# 2. converters
-#       time str --> datetime64
-#       temperature degF --> degC
-# 3. xr.merge
-#       [ds1] -> ds1
-# 4. transforms
-#       time (5min) --> 1 min, average
-
-
-# IDEA: Implement MultiDatastreamRetriever
 import logging
 import xarray as xr
 from pydantic import BaseModel, Extra
 from typing import Any, Dict, List, Pattern
-from tsdat.config.dataset import DatasetConfig
-
+from ..config.dataset import DatasetConfig
 from .base import Retriever, DataReader, DataConverter
 
+__all__ = ["DefaultRetriever"]
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +37,6 @@ class InputKeyRetrieverConfig:
         update_mapping(self.data_vars, retriever.data_vars)  # type: ignore
 
 
-# TODO: Name this retriever something more apt
 class DefaultRetriever(Retriever):
     class Parameters(BaseModel, extra=Extra.forbid):
         merge_kwargs: Dict[str, Any] = {}
