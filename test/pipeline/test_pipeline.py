@@ -4,7 +4,7 @@ import xarray as xr
 import pandas as pd
 from test.utils import assert_close
 from tsdat.config.pipeline import PipelineConfig
-from tsdat.pipeline.ingest import IngestPipeline
+from tsdat.pipeline.pipelines import IngestPipeline
 
 
 def test_ingest_pipeline():
