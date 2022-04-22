@@ -9,6 +9,24 @@ class DataHandlerConfig(ParametrizedConfigClass):
 
 
 class StorageConfig(ParametrizedConfigClass, YamlModel):
+    """---------------------------------------------------------------------------------
+    Class used to contain configuration parameters for tsdat pipelines. This class will
+    ultimately be converted into a tsdat.pipeline.base.Pipeline subclass for use in
+    tsdat pipelines.
+
+    Provides methods to support yaml parsing and validation, including the generation of
+    json schema for immediate validation. This class also provides a method to
+    instantiate a tsdat.io.base.Storage subclass from a parsed configuration file.
+
+    Args:
+        classname (str): The dotted module path to the storage class that the specified
+        configurations should apply to. To use the built-in FileSystemStorage, for
+        example, you would set 'tsdat.io.storage.FileSystemStorage' as the classname.
+        handler (DataHandlerConfig): Config class that should be used for data I/O
+        within the storage area.
+
+    ---------------------------------------------------------------------------------"""
+
     handler: DataHandlerConfig = Field(
         DataHandlerConfig(classname="tsdat.io.handlers.NetCDFHandler", parameters={}),
         title="Output Data Handler",

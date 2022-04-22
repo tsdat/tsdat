@@ -36,6 +36,15 @@ class FileSystem(Storage):
     """------------------------------------------------------------------------------------
     Handles data storage and retrieval for file-based data formats. Formats that write to
     directories (such as zarr) are not supported by the FileSystem storage class.
+
+    Args:
+        parameters (Parameters): File-system specific parameters, such as the root path to
+        where files should be saved, or additional keyword arguments to specific
+        functions used by the storage API. See the FileSystemStorage.Parameters class for
+        more details.
+        handler (FileHandler): The FileHandler class that should be used to handle data
+        I/O within the storage API.
+
     ------------------------------------------------------------------------------------"""
 
     # TODO: @clansing refactor to use a 'StorageFile' class for custom file naming

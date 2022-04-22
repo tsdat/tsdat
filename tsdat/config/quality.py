@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Extra, Field, validator
 from typing import List
 from .utils import ParametrizedConfigClass, YamlModel, find_duplicates
 
@@ -13,9 +13,8 @@ class HandlerConfig(ParametrizedConfigClass):
     pass
 
 
-class ManagerConfig(BaseModel):
-    # TODO: Validate that apply_to and exclude use valid variable identifiers. This
-    # should be done higher up in the model chain.
+class ManagerConfig(BaseModel, extra=Extra.forbid):
+
     name: str = Field(
         description="A human-readable label that is used to identify this quality"
         " manager."
@@ -39,7 +38,21 @@ class ManagerConfig(BaseModel):
     exclude: List[str] = []
 
 
-class QualityConfig(YamlModel):
+class QualityConfig(YamlModel, extra=Extra.forbid):
+    """---------------------------------------------------------------------------------
+    Class used to contain quality configuration parameters for tsdat pipelines. This
+    class will ultimately be converted into a tsdat.qc.qc.QualityManagement class for
+    use in downstream tsdat pipeline code.
+
+    Provides methods to support yaml parsing and validation, including the generation of
+    json schema for immediate validation.
+
+    Args:
+        managers (List[ManagerConfig]): A list of quality checks and controls that
+        should be applied.
+
+    ---------------------------------------------------------------------------------"""
+
     managers: List[ManagerConfig] = Field(
         description="Register a list of QualityManager(s) that should be used to detect"
         " and handle data quality issues. Each QualityManager configuration block must"

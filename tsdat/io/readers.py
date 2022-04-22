@@ -15,6 +15,7 @@ class NetCDFReader(DataReader):
     """------------------------------------------------------------------------------------
     Thin wrapper around xarray's `open_dataset()` function, with optional parameters used
     as keyword arguments in the function call.
+
     ------------------------------------------------------------------------------------"""
 
     parameters: Dict[str, Any] = {}
@@ -29,6 +30,7 @@ class CSVReader(DataReader):
     xarray Dataset object. Two parameters are supported: `read_csv_kwargs` and
     `from_dataframe_kwargs`, whose contents are passed as keyword arguments to
     `pandas.read_csv()` and `xarray.Dataset.from_dataframe()` respectively.
+
     ------------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel, extra=Extra.forbid):

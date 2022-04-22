@@ -22,17 +22,33 @@ VarName = constr(regex=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
 
 
 class DatasetConfig(YamlModel, extra=Extra.forbid):
+    """---------------------------------------------------------------------------------
+    Class defining the structure and metadata of the dataset produced by a tsdat
+    pipeline.
+
+    Also provides methods to support yaml parsing and validation, including generation
+    of json schema.
+
+    Args:
+        attrs (GlobalAttributes): Attributes that pertain to the dataset as a whole.
+        coords (Dict[str, Coordinate]): The dataset's coordinate variables.
+        data_vars (Dict[str, Variable]): The dataset's data variables.
+
+    ---------------------------------------------------------------------------------"""
+
     """Defines the core output dataset structure, including coordinate variables, data
     variables, and metadata attributes. Quality check variables are not included in this
     structure."""
 
-    # Note: it's not currently possible to define a data model for Coordinates as a dict
+    # NOTE: it's not currently possible to define a data model for Coordinates as a dict
     # *and* enforce in the schema that it contains certain variables (e.g., time). This
-    # gets closest, but not enough: https://stackoverflow.com/a/58641115/15641512, so I
-    # opted to implement these as dictionaries until there's a better solution.
+    # gets close, but not enough: https://stackoverflow.com/a/58641115/15641512, so we
+    # opted to implement these as dictionaries for now.
 
-    # TODO: Describe how coords and data vars should be named
-    attrs: GlobalAttributes
+    attrs: GlobalAttributes = Field(
+        description="Attributes that pertain to the dataset as a whole (as opposed to"
+        " attributes that are specific to individual variables."
+    )
     coords: Dict[VarName, Coordinate] = Field(
         description="This section defines the coordinate variables that the rest of the"
         " data are dimensioned by. Coordinate variable data can either be retrieved"

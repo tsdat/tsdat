@@ -50,7 +50,7 @@ class ConfigSettings(BaseSettings, extra=Extra.allow):
         description="Validate the quality configuration file after any overrides have"
         " been merged. Disabling validation is generally 10-30x faster, but comes with"
         " some risks and can easily lead to buggy behavior if you are not careful. For"
-        " example. the quality configuration model uses validators to set defaults for"
+        " example, the quality configuration model uses validators to set defaults for"
         " regex patterns in the registry/readers section. If you disable validation of"
         " the quality configuration file, then you must ensure that your regex patterns"
         " are set explicitly, as you will not be able to rely on the dynamic defaults.",
@@ -64,20 +64,45 @@ class ConfigSettings(BaseSettings, extra=Extra.allow):
 
 
 class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
-    """------------------------------------------------------------------------------------
-    Class used read in the yaml pipeline config file and to generate its json schema for
-    early validation of its properties.
+    """---------------------------------------------------------------------------------
+    Class used to contain configuration parameters for tsdat pipelines. This class will
+    ultimately be converted into a tsdat.pipeline.base.Pipeline subclass for use in
+    tsdat pipelines.
 
-    This class also provides a method to instantiate a subclass of tsdat.pipeline.Pipeline
-    from the parsed pipeline configuration file.
-    ------------------------------------------------------------------------------------"""
+    Provides methods to support yaml parsing and validation, including the generation of
+    json schema for immediate validation. This class also provides a method to
+    instantiate a tsdat.pipeline.base.Pipeline subclass from a parsed configuration
+    file.
 
-    # TODO: Provide a way of instantiating only the associations (so we can quickly
+    Args:
+        classname (str): The dotted module path to the pipeline that the specified
+        configurations should apply to. To use the built-in IngestPipeline, for example,
+        you would set 'tsdat.pipeline.pipelines.IngestPipeline' as the classname.
+        triggers (List[Pattern[str]]): A list of regex patterns that should trigger this
+        pipeline when matched with an input key.
+        settings (ConfigSettings): Advanced settings for configuring how other
+        configuration arguments are parsed/validated.
+        retriever (Union[Overrideable[RetrieverConfig], RetrieverConfig]): Either the
+        path to the retriever configuration yaml file and any overrides that should be
+        applied, or the retriever configurations themselves.
+        dataset (Union[Overrideable[DatasetConfig], DatasetConfig]): Either the path to
+        the dataset configuration yaml file and any overrides that should be applied, or
+        the dataset configurations themselves.
+        quality (Union[Overrideable[QualityConfig], QualityConfig]): Either the path to
+        the quality configuration yaml file and any overrides that should be applied, or
+        the dataset configurations themselves.
+        storage (Union[Overrideable[StorageConfig], StorageConfig]): Either the path to
+        the storage configuration yaml file and any overrides that should be applied, or
+        the storage configurations themselves.
+
+    ---------------------------------------------------------------------------------"""
+
+    # IDEA: Provide a way of instantiating only the associations (so we can quickly
     # determine which pipeline should be used for a given input)
-    # TODO: Add a root validator to ensure that properties from the quality config align
-    # with dataset config properties -- e.g., includes / excludes are real variables
+    # IDEA: Add a root validator to ensure that properties from the quality config align
+    # with dataset config properties -- e.g., includes / excludes are real variables,
+    # all retrieved variables are defined in the output dataset, etc.
 
-    # HACK: Pattern[str] type is correct, but doesn't work with pydantic v1.9.0
     triggers: List[Pattern] = Field(  # type: ignore
         description="A list of regex patterns matching input keys to determine if the"
         " pipeline should be run. Please ensure these are specific as possible in order"

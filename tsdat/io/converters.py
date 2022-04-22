@@ -8,9 +8,9 @@ import logging
 import xarray as xr
 import pandas as pd
 import numpy as np
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra, validator
+from pydantic import validator
 
 from ..config.dataset import DatasetConfig
 from ..utils import assign_data
@@ -22,6 +22,20 @@ logger = logging.getLogger(__name__)
 
 
 class UnitsConverter(DataConverter):
+    """---------------------------------------------------------------------------------
+    Converts the units of a retrieved variable to the units specified by the variable's
+    specification in the DatasetConfig.
+
+    If the 'input_units' property is set then that string is used to determine the input
+    input units, otherwise the converter will attempt to look up and use the 'units'
+    attribute on the specified variable in the dataset provided to the `convert` method.
+    If the input units cannot be set then a warning is issued and the original dataset
+    is returned.
+
+    Args:
+        input_units (Optional[str]): The units that the retrieved data comes in.
+
+    ---------------------------------------------------------------------------------"""
 
     # IDEA: Validate the literal value of the input units string according to pint
     input_units: Optional[str] = None
@@ -34,31 +48,9 @@ class UnitsConverter(DataConverter):
         variable_name: str,
         **kwargs: Any,
     ) -> xr.Dataset:
-        """-----------------------------------------------------------------------------
-        Converts the units of a specific variable in the dataset to the specified output
-        units, if possible.
-
-        If the 'input_units' property is set then that string is used to determine the
-        input units, otherwise the 'units' attribute on the `dataset[variable_name]`
-        DataArray is used. If neither are set then a warning is issued and the original
-        dataset is returned.
-
-        If the output units are not set in the dataset config then a warning is issued
-        and the original dataset is returned.
-
-        Args:
-            dataset (xr.Dataset): The dataset to convert.
-            dataset_config (DatasetConfig): The dataset configuration.
-            variable_name (str): The name of the variable to convert.
-
-        Returns:
-            xr.Dataset: The dataset with the units for the specified variable possibly
-            converted to the output format.
-
-        -----------------------------------------------------------------------------"""
         input_units = self._get_input_units(dataset, variable_name)
         if not input_units:
-            logger.warn(
+            logger.warning(
                 "Input units for variable '%s' could not be found. Please ensure these"
                 " are set either in the retrieval configuration file, or are set on the"
                 " 'units' attribute of the '%s' variable in the dataset to converted.",
@@ -74,7 +66,7 @@ class UnitsConverter(DataConverter):
             or output_units == "unitless"
             or input_units == output_units
         ):
-            logger.warn(
+            logger.warning(
                 "Output units for variable %s could not be found. Please ensure these"
                 " are set in the dataset configuration file for the specified variable.",
                 variable_name,
@@ -106,10 +98,23 @@ class UnitsConverter(DataConverter):
 
 
 class StringToDatetime(DataConverter):
-    class Parameters(BaseModel, extra=Extra.allow):
-        """Any parameters set here will be passed to `pd.to_datetime` as keyword arguments"""
+    """------------------------------------------------------------------------------------
+    Converts date strings into datetime64 data, accounting for the input format and
+    timezone.
 
-    parameters: Parameters = Parameters()
+    Args:
+        format (Optional[str]): The format of the string data. See strftime.org for more
+        information on what components can be used. If None (the default), then pandas
+        will try to intepret the format and convert it automatically. This can be unsafe
+        but is not explicitly prohibited, so a warning is issued if format is not set
+        explicitly.
+        timezone (Optional[str]): The timezone of the input data. If not specified it is
+        assumed to be UTC.
+        to_datetime_kwargs (Dict[str, Any]): A set of keyword arguments passed to the
+        pandas.to_datetime() function as keyword arguments. Note that 'format' is
+        already included as a keyword argument. Defaults to {}.
+
+    ------------------------------------------------------------------------------------"""
 
     format: Optional[str] = None
     """The date format the string is using (e.g., '%Y-%m-%d %H:%M:%S' for date strings
@@ -121,11 +126,15 @@ class StringToDatetime(DataConverter):
     appropriate offset to convert data from the specified timezone to UTC. The timezone
     of the output data is assumed to always be UTC."""
 
+    to_datetime_kwargs: Dict[str, Any] = {}
+    """Any parameters set here will be passed to `pd.to_datetime` as keyword
+    arguments."""
+
     @validator("format")
     @classmethod
     def warn_if_no_format_set(cls, format: Optional[str]) -> Optional[str]:
         if not format:
-            logger.warn(
+            logger.warning(
                 "No string format was provided for the StringToDatetime converter. This"
                 " may lead to incorrect behavior in some cases. It is recommended to"
                 " set the 'format' parameter explicitly to prevent ambiguous dates."
@@ -140,7 +149,7 @@ class StringToDatetime(DataConverter):
         **kwargs: Any,
     ) -> xr.Dataset:
         dt: NDArray[Any] = dataset[variable_name].data
-        dt = pd.to_datetime(dt, format=self.format, **self.parameters.dict())  # type: ignore
+        dt = pd.to_datetime(dt, format=self.format, **self.to_datetime_kwargs)  # type: ignore
 
         if self.timezone and self.timezone != "UTC":
             dt = dt.tz_localize(self.timezone).tz_convert("UTC")  # type: ignore
