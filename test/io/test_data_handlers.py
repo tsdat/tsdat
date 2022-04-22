@@ -5,7 +5,7 @@ import xarray as xr
 from pathlib import Path
 from pytest import fixture
 from pandas.testing import assert_frame_equal
-from test.utils import assert_close
+from tsdat.testing import assert_close
 from tsdat.io.handlers import CSVHandler, NetCDFHandler
 from tsdat.io.readers import CSVReader, NetCDFReader
 from tsdat.io.writers import CSVWriter, NetCDFWriter

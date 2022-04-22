@@ -21,6 +21,7 @@ from .utils import (
     matches_overrideable_schema,
     recusive_instantiate,
 )
+from ..pipeline.base import Pipeline
 
 __all__ = ["PipelineConfig"]
 
@@ -159,7 +160,7 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
 
         return config_cls(**v)
 
-    def instaniate_pipeline(self) -> Any:
+    def instaniate_pipeline(self) -> Pipeline:
         """------------------------------------------------------------------------------------
         This method instantiates the tsdat.pipeline.BasePipeline subclass referenced by the
         classname property on the PipelineConfig instance and passes all properties on the
@@ -173,7 +174,7 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
 
 
         Returns:
-            Pipeline: An instance of a tsdat.pipeline.Pipeline subclass.
+            Pipeline: An instance of a tsdat.pipeline.base.Pipeline subclass.
 
         ------------------------------------------------------------------------------------"""
         return recusive_instantiate(self)

@@ -31,3 +31,5 @@ from .qc.handlers import *
 from .qc.qc import *
 
 from .utils import *
+
+from .testing import *

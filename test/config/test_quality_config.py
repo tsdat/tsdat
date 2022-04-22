@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Dict
 from pydantic import ValidationError
 
-from test.utils import get_error_message
+from tsdat.testing import get_pydantic_error_message
 from tsdat.config.quality import (
     ManagerConfig,
     QualityConfig,
@@ -46,7 +46,7 @@ def test_manager_config_validates_properties():
     with pytest.raises(ValidationError) as error:
         ManagerConfig(**qc_dict)
 
-    actual_msg = get_error_message(error)
+    actual_msg = get_pydantic_error_message(error)
     for expected_msg in expected_error_msgs:
         assert expected_msg in actual_msg
 

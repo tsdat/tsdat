@@ -1,4 +1,3 @@
-import re
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -7,9 +6,7 @@ from pytest import fixture
 from tsdat.config.dataset import DatasetConfig
 from tsdat.config.retriever import RetrieverConfig
 from tsdat.io.retrievers import DefaultRetriever
-from tsdat.io.readers import CSVReader
-from tsdat.io.converters import StringToDatetime, UnitsConverter
-from test.utils import assert_close
+from tsdat.testing import assert_close
 from tsdat.config.utils import recusive_instantiate
 
 

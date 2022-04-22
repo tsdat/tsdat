@@ -164,7 +164,7 @@ from tsdat.config.storage import StorageConfig
 #         assert expected_msg in actual_msg
 
 
-def test_storage_config_produces_expected_yaml():
+def test_storage_config_produces_expected_dict():
     expected_dict: Dict[str, Any] = {
         "classname": "tsdat.io.storage.FileSystem",
         "parameters": {},
