@@ -8,7 +8,7 @@ from pytest import fixture
 from datetime import datetime
 from tsdat.io.handlers import NetCDFHandler
 from tsdat.io.storage import FileSystem
-from test.utils import assert_close
+from tsdat.testing import assert_close
 
 
 @fixture

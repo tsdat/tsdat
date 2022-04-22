@@ -1,23 +1,33 @@
+"""-------------------------------------------------------------------------------------
+Utility functions used in tsdat tests.
+
+-------------------------------------------------------------------------------------"""
+
 import xarray as xr
 from typing import Any, List
 
+__all__ = [
+    "compare",
+    "assert_close",
+]
 
-def get_error_message(error: Any) -> str:
+
+def get_pydantic_error_message(error: Any) -> str:
     return error.getrepr().reprcrash.message
 
 
-def get_warning_message(warning: Any) -> str:
+def get_pydantic_warning_message(warning: Any) -> str:
     warnings: List[str] = [_warning.message.args[0] for _warning in warning.list]
     return "\n".join(warnings)
 
 
 def compare(*model_dicts: Any):
-    """------------------------------------------------------------------------------------
-    Method used to compare dictionaries side-by-side in the terminal. Primarily useful for
-    debugging.
+    """---------------------------------------------------------------------------------
+    Method used to compare dictionaries side-by-side in the terminal. Primarily useful
+    for debugging.
 
-    ------------------------------------------------------------------------------------"""
-    # TODO: highlight differences somehow
+    ---------------------------------------------------------------------------------"""
+    # IDEA: highlight differences
 
     from rich.console import Console
     from rich.columns import Columns
@@ -25,15 +35,25 @@ def compare(*model_dicts: Any):
     from rich.panel import Panel
 
     console = Console()
-
     renderables: List[Panel] = [Panel(Pretty(model_dict)) for model_dict in model_dicts]
-
     console.print(Columns(renderables, equal=True, expand=True))
 
 
 def assert_close(
     a: xr.Dataset, b: xr.Dataset, check_attrs: bool = True, **kwargs: Any
 ) -> None:
+    """---------------------------------------------------------------------------------
+    Thin wrapper around xarray.assert_allclose which also checks dataset and variable
+    attrs. Removes global attributes that are allowed to be different, which are
+    currently just the 'history' attribute and the 'code_version' attribute.
+
+    Args:
+        a (xr.Dataset): The first dataset to compare.
+        b (xr.Dataset): The secoond dataset to compare.
+        check_attrs (bool, optional): Check global and variable attributes in addition
+        to the data. Defaults to True.
+
+    ---------------------------------------------------------------------------------"""
     a, b = a.copy(), b.copy()  # type: ignore
     xr.testing.assert_allclose(a, b, **kwargs)  # type: ignore
     if check_attrs:

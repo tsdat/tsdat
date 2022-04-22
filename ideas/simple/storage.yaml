@@ -1,4 +1,0 @@
-classname: tsdat.io.storage.FileSystem
-writers:
-  netcdf:
-    classname: tsdat.io.storage.writers.NetCDFWriter

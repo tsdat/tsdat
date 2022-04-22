@@ -12,7 +12,7 @@ from tsdat.config.variables import (
     Variable,
 )
 
-from test.utils import get_error_message, get_warning_message
+from tsdat.testing import get_pydantic_error_message, get_pydantic_warning_message
 
 
 def test_fail_if_non_ascii_attrs():
@@ -27,7 +27,7 @@ def test_fail_if_non_ascii_attrs():
     for attr, expected_error_msg in zip(attrs, expected_error_msgs):
         with pytest.raises(ValidationError) as error:
             AttributeModel(**attr)
-        actual_msg = get_error_message(error)
+        actual_msg = get_pydantic_error_message(error)
         assert expected_error_msg in actual_msg
 
 
@@ -43,7 +43,7 @@ def test_fail_if_missing_required_global_attributes():
     with pytest.raises(ValidationError) as error:
         GlobalAttributes(**attrs)
 
-    actual_msg = get_error_message(error)
+    actual_msg = get_pydantic_error_message(error)
     for expected_msg in expected_error_msgs:
         assert expected_msg in actual_msg
 
@@ -80,7 +80,7 @@ def test_fail_if_invalid_global_attributes():
     with pytest.raises(ValidationError) as error:
         GlobalAttributes(**attrs)
 
-    actual_msg = get_error_message(error)
+    actual_msg = get_pydantic_error_message(error)
     for expected_msg in expected_error_msgs:
         assert expected_msg in actual_msg
 
@@ -104,7 +104,7 @@ def test_warn_if_unexpected_global_attributes():
     with pytest.warns(UserWarning) as warning:
         model_dict = GlobalAttributes(**attrs).dict(exclude_none=True)
 
-    actual_msg = get_warning_message(warning)
+    actual_msg = get_pydantic_warning_message(warning)
     for expected_msg in expected_warning_msgs:
         assert expected_msg in actual_msg
 
@@ -174,7 +174,7 @@ def test_fail_if_bad_variable_attributes():
     with pytest.raises(ValidationError) as error:
         VariableAttributes(**attrs)
 
-    actual_msg = get_error_message(error)
+    actual_msg = get_pydantic_error_message(error)
     for expected_msg in expected_error_msgs:
         assert expected_msg in actual_msg
 
@@ -257,7 +257,7 @@ def test_fail_if_missing_required_variable_properties():
     with pytest.raises(ValidationError) as error:
         Variable(**var)
 
-    actual_msg = get_error_message(error)
+    actual_msg = get_pydantic_error_message(error)
     for expected_msg in expected_error_msgs:
         assert expected_msg in actual_msg
 
@@ -284,7 +284,7 @@ def test_fail_if_bad_variable_name():
         with pytest.raises(ValidationError) as error:
             Variable(**good_defaults)
 
-        actual_msg = get_error_message(error)
+        actual_msg = get_pydantic_error_message(error)
         assert expected_error_msg in actual_msg
 
 

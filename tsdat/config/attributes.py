@@ -87,7 +87,7 @@ class GlobalAttributes(AttributeModel):
     )
     temporal: Optional[str] = Field(
         min_length=2,
-        regex=r"^[0-9]+[a-z]+$",  # FIXME: Allow uppercase letters
+        regex=r"^[0-9]+[a-zA-Z]+$",
         description="An optional string which describes the temporal resolution of the"
         " data (if it spaced in regular intervals). This string should be formated as a"
         " number followed by a unit of measurement, e.g., '10m' would indicate the data"

@@ -1,8 +1,15 @@
 import numpy as np
 import xarray as xr
-from typing import Any, Dict, List
+from typing import Any, List
 from pydantic import BaseModel, Extra
 from numpy.typing import NDArray
+
+__all__ = [
+    "ParametrizedClass",
+    "decode_cf",
+    "record_corrections_applied",
+    "assign_data",
+]
 
 
 class ParametrizedClass(BaseModel, extra=Extra.forbid):
@@ -45,21 +52,21 @@ def decode_cf(dataset: xr.Dataset) -> xr.Dataset:
 
 
 def record_corrections_applied(
-    dataset: xr.Dataset, variable_name: str, correction_msg: str
+    dataset: xr.Dataset, variable_name: str, message: str
 ) -> None:
     """---------------------------------------------------------------------------------
-    Records the correction_msg on the 'corrections_applied' attribute of the specified
-    data variable
+    Records the message on the 'corrections_applied' attribute of the specified variable
+    in the dataset.
 
     Args:
-        dataset (xr.Dataset): _description_
-        variable_name (str): _description_
-        correction_msg (str): _description_
+        dataset (xr.Dataset): The corrected dataset.
+        variable_name (str): The name of the variable in the dataset.
+        message (str): The
 
     ---------------------------------------------------------------------------------"""
-    variable_attrs: Dict[str, Any] = dataset[variable_name].attrs
+    variable_attrs = dataset[variable_name].attrs
     corrections: List[str] = variable_attrs.get("corrections_applied", [])
-    corrections.append(correction_msg)
+    corrections.append(message)
     variable_attrs["corrections_applied"] = corrections
 
 
@@ -487,4 +494,4 @@ def assign_data(
 #     return mimetype and mimetype.split("/")[0] == "image"
 
 
-# # TODO: Maybe we need a method to be able to quickly dump out a summary of the list of problems with the data.
+# IDEA: A method to be able to quickly dump out a summary of the list of problems with the data.

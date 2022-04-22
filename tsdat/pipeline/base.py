@@ -3,12 +3,14 @@ import xarray as xr
 from abc import ABC, abstractmethod
 from getpass import getuser
 from datetime import datetime
-from typing import Any, Iterable, List, Pattern, Set, cast
+from typing import Any, Iterable, List, Pattern, cast
 from pydantic import Field
-from tsdat.config.dataset import DatasetConfig
-from tsdat.io.base import Retriever, Storage
-from tsdat.qc.qc import QualityManagement
-from tsdat.utils import ParametrizedClass
+from ..config.dataset import DatasetConfig
+from ..io.base import Retriever, Storage
+from ..qc.qc import QualityManagement
+from ..utils import ParametrizedClass
+
+__all__ = ["Pipeline"]
 
 
 class Pipeline(ParametrizedClass, ABC):
@@ -18,8 +20,6 @@ class Pipeline(ParametrizedClass, ABC):
     ------------------------------------------------------------------------------------"""
 
     settings: Any = None
-
-    parameters: Any = {}
 
     triggers: List[Pattern] = []  # type: ignore
     """Regex patterns matching input keys to determine when the pipeline should run."""
@@ -68,7 +68,7 @@ class Pipeline(ParametrizedClass, ABC):
         output_vars = set(self.dataset_config.coords) | set(
             self.dataset_config.data_vars
         )
-        retrieved_vars = cast(Set[str], set(dataset.variables))
+        retrieved_vars = cast("set[str]", set(dataset.variables))
         vars_to_drop = retrieved_vars - output_vars
         vars_to_add = output_vars - retrieved_vars
 

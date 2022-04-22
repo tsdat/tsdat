@@ -4,8 +4,10 @@ import xarray as xr
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 from pydantic import BaseModel, Extra
-from tsdat.utils import decode_cf
+from ..utils import decode_cf
 from .base import FileWriter
+
+__all__ = ["NetCDFWriter", "CSVWriter"]
 
 
 class NetCDFWriter(FileWriter):
@@ -16,6 +18,7 @@ class NetCDFWriter(FileWriter):
 
     File compression is used by default to save disk space. To disable compression set the
     `use_compression` parameter to `False`.
+
     ------------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel, extra=Extra.forbid):
@@ -30,6 +33,7 @@ class NetCDFWriter(FileWriter):
         # HACK: Fix encoding on datetime64 variables. Use a shallow copy to retain units
         # on datetime64 variables in the pipeline (but remove with decode_cf())
         dataset = decode_cf(dataset.copy(deep=False))  # type: ignore
+
         if self.parameters.use_compression:
             compression_dict: Dict[Any, Any] = {
                 variable_name: self.parameters.compression_kwargs
@@ -47,6 +51,7 @@ class CSVWriter(FileWriter):
     Converts a `xr.Dataset` object to a pandas `DataFrame` and saves the result to a csv
     file using `pd.DataFrame.to_csv()`. Properties under the `to_csv_kwargs` parameter are
     passed to `pd.DataFrame.to_csv()` as keyword arguments.
+
     ------------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel, extra=Extra.forbid):
@@ -61,4 +66,4 @@ class CSVWriter(FileWriter):
         # that it can always be retrieved? If not, should we declare this as a format
         # incapable of "round-triping" (i.e., ds != read(write(ds)) for csv format)?
         df = dataset.to_dataframe(self.parameters.dim_order)  # type: ignore
-        df.to_csv(filepath, **self.parameters.to_csv_kwargs)
+        df.to_csv(filepath, **self.parameters.to_csv_kwargs)  # type: ignore

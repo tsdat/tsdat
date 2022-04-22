@@ -7,12 +7,15 @@ from typing import Any, Dict, Optional
 from numpy.typing import NDArray
 from .base import QualityChecker
 
+__all__ = ["CheckMissing", "CheckMonotonic"]
+
 
 class CheckMissing(QualityChecker):
     """---------------------------------------------------------------------------------
     Checks if any data are missing. A variable's data are considered missing if they are
     set to the variable's _FillValue (if it has a _FillValue) or NaN (NaT for datetime-
     like variables).
+
     ---------------------------------------------------------------------------------"""
 
     def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
@@ -35,6 +38,7 @@ class CheckMonotonic(QualityChecker):
     Checks if any values are not ordered strictly monotonically (i.e. values must all be
     increasing or all decreasing). The check marks all values as failed if any data values
     are not ordered monotonically.
+
     ---------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel, extra=Extra.forbid):

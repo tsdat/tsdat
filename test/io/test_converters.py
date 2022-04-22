@@ -4,7 +4,7 @@ from pathlib import Path
 from pytest import fixture
 from tsdat.config.dataset import DatasetConfig
 from tsdat.io.converters import StringToDatetime, UnitsConverter
-from test.utils import assert_close
+from tsdat.testing import assert_close
 
 
 @fixture

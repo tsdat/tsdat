@@ -70,7 +70,7 @@ def test_pipeline_config_merges_overrides():
 
     dict_kwargs: Dict[str, Any] = {"exclude_none": True, "by_alias": True}
     expected_dict: Dict[str, Any] = {
-        "classname": "tsdat.pipeline.ingest.IngestPipeline",
+        "classname": "tsdat.pipeline.pipelines.IngestPipeline",
         "parameters": {},
         "triggers": [re.compile(r".*\.csv")],
         "settings": {

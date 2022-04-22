@@ -4,6 +4,9 @@ from pydantic import BaseModel, Extra
 from .base import QualityChecker, QualityHandler
 
 
+__all__ = ["QualityManager", "QualityManagement"]
+
+
 class QualityManager(BaseModel, extra=Extra.forbid):
     name: str
     checker: QualityChecker
