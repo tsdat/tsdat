@@ -20,7 +20,11 @@ def sample_dataset() -> xr.Dataset:
                 "index",
                 ["2022-03-24 21:43:00", "2022-03-24 21:44:00", "2022-03-24 21:45:00"],
             ),
-            "First Data Var": ("index", [71.4, 71.2, 71.1]),
+            "First Data Var": (
+                "index",
+                [71.4, 71.2, 71.1],
+                {"_FillValue": -9999},
+            ),
         },
     )
 
@@ -43,14 +47,14 @@ def test_netcdf_reader(sample_dataset: xr.Dataset):
     expected = sample_dataset
     reader = NetCDFReader()
     dataset = reader.read("test/io/data/input.nc")
-    assert_close(dataset, expected)
+    assert_close(dataset, expected, check_fill_value=False)
 
 
 def test_csv_reader(sample_dataset: xr.Dataset):
     expected = sample_dataset
     reader = CSVReader()
     dataset = reader.read("test/io/data/input.csv")
-    assert_close(dataset, expected)
+    assert_close(dataset, expected, check_fill_value=False)
 
 
 def test_netcdf_writer(sample_dataset: xr.Dataset):
@@ -61,7 +65,7 @@ def test_netcdf_writer(sample_dataset: xr.Dataset):
     tmp_file = Path(tmp_dir.name) / "test_writer.nc"
     writer.write(sample_dataset, tmp_file)
     dataset: xr.Dataset = xr.open_dataset(tmp_file)  # type: ignore
-    assert_close(dataset, expected)
+    assert_close(dataset, expected, check_fill_value=False)
 
     tmp_dir.cleanup()
 
@@ -87,7 +91,7 @@ def test_netcdf_handler(sample_dataset: xr.Dataset):
     tmp_file = Path(tmp_dir.name) / "test_dataset.nc"
     handler.writer.write(sample_dataset, tmp_file)
     dataset = handler.reader.read(tmp_file.as_posix())
-    assert_close(dataset, expected)
+    assert_close(dataset, expected, check_fill_value=False)
 
     tmp_dir.cleanup()
 
