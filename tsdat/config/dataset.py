@@ -36,10 +36,6 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
 
     ---------------------------------------------------------------------------------"""
 
-    """Defines the core output dataset structure, including coordinate variables, data
-    variables, and metadata attributes. Quality check variables are not included in this
-    structure."""
-
     # NOTE: it's not currently possible to define a data model for Coordinates as a dict
     # *and* enforce in the schema that it contains certain variables (e.g., time). This
     # gets close, but not enough: https://stackoverflow.com/a/58641115/15641512, so we

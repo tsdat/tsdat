@@ -73,12 +73,12 @@ def test_pipeline_config_merges_overrides():
         "classname": "tsdat.pipeline.pipelines.IngestPipeline",
         "parameters": {},
         "triggers": [re.compile(r".*\.csv")],
-        "settings": {
-            "validate_retriever_config": True,
-            "validate_dataset_config": True,
-            "validate_quality_config": True,
-            "validate_storage_config": True,
-        },
+        # "settings": {
+        #     "validate_retriever_config": True,
+        #     "validate_dataset_config": True,
+        #     "validate_quality_config": True,
+        #     "validate_storage_config": True,
+        # },
         "retriever": retriever.dict(**dict_kwargs),
         "dataset": dataset.dict(**dict_kwargs),
         "quality": quality.dict(**dict_kwargs),

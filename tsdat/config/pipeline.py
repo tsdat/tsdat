@@ -1,7 +1,6 @@
 from pathlib import Path
 from jsonpointer import set_pointer  # type: ignore
 from pydantic import (
-    BaseSettings,
     Extra,
     Field,
     validator,
@@ -26,45 +25,44 @@ from ..pipeline.base import Pipeline
 __all__ = ["PipelineConfig"]
 
 
-class ConfigSettings(BaseSettings, extra=Extra.allow):
-    validate_retriever_config: bool = Field(
-        True,
-        # TODO: description
-    )
-    validate_dataset_config: bool = Field(
-        True,
-        description="Validate the dataset configuration file after any overrides have"
-        " been merged. Disabling validation is generally 10-30x faster, but comes with"
-        " some risks and can easily lead to buggy behavior if you are not careful. For"
-        " example. the dataset configuration model uses validators to set defaults for"
-        " the 'datastream' attribute based on other global attributes that are set. The"
-        " 'datastream' attribute is used elsewhere in the pipeline as a label for the"
-        " dataset, and is used by some storage classes to generate the filepath where"
-        " the data should be saved. If you disable dataset configuration validation,"
-        " THIS WILL NOT WORK, so you will need to take care to set the 'datastream'"
-        " attribute manually in your config file directly. Because of the complicated"
-        " nature of dataset configuration files, it is almost always better to leave"
-        " validation ON.",
-    )
-    validate_quality_config: bool = Field(
-        True,
-        description="Validate the quality configuration file after any overrides have"
-        " been merged. Disabling validation is generally 10-30x faster, but comes with"
-        " some risks and can easily lead to buggy behavior if you are not careful. For"
-        " example, the quality configuration model uses validators to set defaults for"
-        " regex patterns in the registry/readers section. If you disable validation of"
-        " the quality configuration file, then you must ensure that your regex patterns"
-        " are set explicitly, as you will not be able to rely on the dynamic defaults.",
-    )
-    validate_storage_config: bool = Field(
-        True,
-        description="Validate the storage configuration file after any overrides have"
-        " been merged. Disabling validation is generally 10-30x faster, but comes with"
-        " some risks and can easily lead to buggy behavior if you are not careful.",
-    )
+# class ConfigSettings(BaseSettings, extra=Extra.allow):
+#     validate_retriever_config: bool = Field(
+#         True,
+#     )
+#     validate_dataset_config: bool = Field(
+#         True,
+#         description="Validate the dataset configuration file after any overrides have"
+#         " been merged. Disabling validation is generally 10-30x faster, but comes with"
+#         " some risks and can easily lead to buggy behavior if you are not careful. For"
+#         " example. the dataset configuration model uses validators to set defaults for"
+#         " the 'datastream' attribute based on other global attributes that are set. The"
+#         " 'datastream' attribute is used elsewhere in the pipeline as a label for the"
+#         " dataset, and is used by some storage classes to generate the filepath where"
+#         " the data should be saved. If you disable dataset configuration validation,"
+#         " THIS WILL NOT WORK, so you will need to take care to set the 'datastream'"
+#         " attribute manually in your config file directly. Because of the complicated"
+#         " nature of dataset configuration files, it is almost always better to leave"
+#         " validation ON.",
+#     )
+#     validate_quality_config: bool = Field(
+#         True,
+#         description="Validate the quality configuration file after any overrides have"
+#         " been merged. Disabling validation is generally 10-30x faster, but comes with"
+#         " some risks and can easily lead to buggy behavior if you are not careful. For"
+#         " example, the quality configuration model uses validators to set defaults for"
+#         " regex patterns in the registry/readers section. If you disable validation of"
+#         " the quality configuration file, then you must ensure that your regex patterns"
+#         " are set explicitly, as you will not be able to rely on the dynamic defaults.",
+#     )
+#     validate_storage_config: bool = Field(
+#         True,
+#         description="Validate the storage configuration file after any overrides have"
+#         " been merged. Disabling validation is generally 10-30x faster, but comes with"
+#         " some risks and can easily lead to buggy behavior if you are not careful.",
+#     )
 
 
-class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
+class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.allow):
     """---------------------------------------------------------------------------------
     Class used to contain configuration parameters for tsdat pipelines. This class will
     ultimately be converted into a tsdat.pipeline.base.Pipeline subclass for use in
@@ -81,8 +79,6 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
         you would set 'tsdat.pipeline.pipelines.IngestPipeline' as the classname.
         triggers (List[Pattern[str]]): A list of regex patterns that should trigger this
         pipeline when matched with an input key.
-        settings (ConfigSettings): Advanced settings for configuring how other
-        configuration arguments are parsed/validated.
         retriever (Union[Overrideable[RetrieverConfig], RetrieverConfig]): Either the
         path to the retriever configuration yaml file and any overrides that should be
         applied, or the retriever configurations themselves.
@@ -110,7 +106,6 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
         " to match the desired input keys without any false positive matches (this is"
         " more important in repositories with many pipelines)."
     )
-    settings: ConfigSettings = ConfigSettings()  # type: ignore
 
     # Overrideable is used to trick pydantic into letting us generate json schema for
     # these objects, but during construction these are converted into the actual
@@ -150,13 +145,6 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.forbid):
             for pointer, new_value in overrides.items():
                 set_pointer(defaults, pointer, new_value)
             v = defaults
-
-        # NOTE: values["settings"] is a ConfigSettings object because the settings
-        # property comes before dataset/quality/storage. Order matters in this case.
-        settings: ConfigSettings = values["settings"]
-        validate = getattr(settings, f"validate_{field.name}_config")
-        if not validate:
-            return config_cls.construct(**v)
 
         return config_cls(**v)
 

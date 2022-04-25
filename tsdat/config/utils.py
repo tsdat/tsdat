@@ -1,12 +1,24 @@
 import os
 import yaml
 import warnings
+from jsonpointer import set_pointer
 from dunamai import Style, Version
 from pathlib import Path
 from pydantic import BaseModel, Extra, Field, StrictStr, validator, FilePath
 from pydantic.utils import import_string
 from pydantic.generics import GenericModel
-from typing import Any, cast, Dict, Generic, List, Protocol, Sequence, Set, TypeVar
+from typing import (
+    Any,
+    Optional,
+    cast,
+    Dict,
+    Generic,
+    List,
+    Protocol,
+    Sequence,
+    Set,
+    TypeVar,
+)
 
 
 __all__ = [
@@ -23,9 +35,12 @@ __all__ = [
 
 class YamlModel(BaseModel):
     @classmethod
-    def from_yaml(cls, filepath: Path):
+    def from_yaml(cls, filepath: Path, overrides: Optional[Dict[str, Any]] = None):
         # TODO: Add docstring since this is a public-facing method
         config = read_yaml(filepath)
+        if overrides:
+            for pointer, new_value in overrides.items():
+                set_pointer(config, pointer, new_value)
         return cls(**config)
 
     @classmethod
