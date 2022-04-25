@@ -7,7 +7,7 @@ import xarray as xr
 from typing import Any, List
 
 __all__ = [
-    "compare",
+    # "compare",
     "assert_close",
 ]
 
@@ -21,22 +21,22 @@ def get_pydantic_warning_message(warning: Any) -> str:
     return "\n".join(warnings)
 
 
-def compare(*model_dicts: Any):
-    """---------------------------------------------------------------------------------
-    Method used to compare dictionaries side-by-side in the terminal. Primarily useful
-    for debugging.
+# def compare(*model_dicts: Any):
+#     """---------------------------------------------------------------------------------
+#     Method used to compare dictionaries side-by-side in the terminal. Primarily useful
+#     for debugging.
 
-    ---------------------------------------------------------------------------------"""
-    # IDEA: highlight differences
+#     ---------------------------------------------------------------------------------"""
+#     # IDEA: highlight differences
 
-    from rich.console import Console
-    from rich.columns import Columns
-    from rich.pretty import Pretty
-    from rich.panel import Panel
+#     from rich.console import Console
+#     from rich.columns import Columns
+#     from rich.pretty import Pretty
+#     from rich.panel import Panel
 
-    console = Console()
-    renderables: List[Panel] = [Panel(Pretty(model_dict)) for model_dict in model_dicts]
-    console.print(Columns(renderables, equal=True, expand=True))
+#     console = Console()
+#     renderables: List[Panel] = [Panel(Pretty(model_dict)) for model_dict in model_dicts]
+#     console.print(Columns(renderables, equal=True, expand=True))
 
 
 def assert_close(

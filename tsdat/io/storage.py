@@ -1,10 +1,7 @@
 # TODO: Implement FileSystemS3
-
 import logging
 import os
 import shutil
-import numpy as np
-import pandas as pd
 import xarray as xr
 from datetime import datetime
 from pydantic import BaseSettings, validator
@@ -12,10 +9,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from .base import Storage
 from .handlers import FileHandler
+from ..utils import get_filename
 
 __all__ = ["FileSystem"]
 
-# TODO: interval / split files apart by some timeframe (e.g., 1 day)
+# IDEA: interval / split files apart by some timeframe (e.g., 1 day)
 #
 # Optional:
 # file_timespan: 1D
@@ -82,7 +80,6 @@ class FileSystem(Storage):
             dataset (xr.Dataset): The dataset to save.
 
         ------------------------------------------------------------------------------------"""
-        # TODO: Use file_timespan to save the dataset as multiple files
         datastream = dataset.attrs["datastream"]
         filepath = self._get_dataset_filepath(dataset, datastream)
         filepath.parent.mkdir(exist_ok=True, parents=True)
@@ -160,11 +157,8 @@ class FileSystem(Storage):
 
     def _get_dataset_filepath(self, dataset: xr.Dataset, datastream: str) -> Path:
         datastream_dir = self.parameters.storage_root / "data" / datastream
-        start_datetime64: np.datetime64 = dataset.time.data[0]
-        start_datetime = pd.Timestamp(start_datetime64).to_pydatetime()
-        start_datetime_str = start_datetime.strftime("%Y%m%d.%H%M%S")
-        ext = self.handler.writer.file_extension
-        return datastream_dir / f"{datastream}.{start_datetime_str}.{ext}"
+        extension = self.handler.writer.file_extension
+        return datastream_dir / get_filename(dataset, extension)
 
     def _get_ancillary_filepath(self, filepath: Path, datastream: str) -> Path:
         anc_datastream_dir = self.parameters.storage_root / "ancillary" / datastream

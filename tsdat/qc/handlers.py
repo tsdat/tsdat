@@ -64,14 +64,14 @@ class FailPipeline(QualityHandler):
 
     parameters: Parameters = Parameters()
 
-    def run(self, dataset: xr.Dataset, variable_name: str, results: NDArray[np.bool8]):
-        if results.any():
+    def run(self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool8]):
+        if failures.any():
             raise DataQualityError(
                 f"Quality results for variable {variable_name} indicate a fatal error"
                 " has occured and the pipeline should exit. Manual review of the data"
                 " is recommended.\n"
                 f"Extra context: '{self.parameters.context}'\n"
-                f"Quality results array: {results}"
+                f"Quality results array: {failures}"
             )
 
         return dataset
@@ -101,11 +101,11 @@ class RecordQualityResults(QualityHandler):
     parameters: Parameters
 
     def run(
-        self, dataset: xr.Dataset, variable_name: str, results: NDArray[np.bool8]
+        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool8]
     ) -> xr.Dataset:
         dataset.qcfilter.add_test(
             variable_name,
-            index=results,
+            index=failures,
             test_number=self.parameters.bit,
             test_meaning=self.parameters.meaning,
             test_assessment=self.parameters.assessment,

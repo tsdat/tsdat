@@ -28,7 +28,6 @@ from .pipeline.pipelines import *
 from .qc.base import *
 from .qc.checkers import *
 from .qc.handlers import *
-from .qc.qc import *
 
 from .utils import *
 

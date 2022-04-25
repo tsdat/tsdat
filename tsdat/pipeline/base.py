@@ -7,7 +7,7 @@ from typing import Any, Iterable, List, Pattern, cast
 from pydantic import Field
 from ..config.dataset import DatasetConfig
 from ..io.base import Retriever, Storage
-from ..qc.qc import QualityManagement
+from ..qc.base import QualityManagement
 from ..utils import ParametrizedClass
 
 __all__ = ["Pipeline"]
