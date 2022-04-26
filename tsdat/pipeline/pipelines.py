@@ -1,5 +1,7 @@
 import xarray as xr
 from typing import List
+
+from tsdat.utils import decode_cf
 from .base import Pipeline
 
 __all__ = ["IngestPipeline"]
@@ -21,6 +23,9 @@ class IngestPipeline(Pipeline):
         dataset = self.hook_customize_dataset(dataset)
         dataset = self.quality.manage(dataset)
         dataset = self.hook_finalize_dataset(dataset)
+        # HACK: Fix encoding on datetime64 variables. Use a shallow copy to retain units
+        # on datetime64 variables in the pipeline (but remove with decode_cf())
+        dataset = decode_cf(dataset)
         self.storage.save_data(dataset)
         self.hook_plot_dataset(dataset)
         return dataset
