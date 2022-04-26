@@ -1,8 +1,12 @@
+from typing import Any, Dict
 import xarray as xr
 import pandas as pd
 import numpy as np
+from numpy.typing import NDArray
 from pytest import fixture
 from tsdat.qc.checkers import *
+from tsdat.qc.handlers import *
+from tsdat.testing import assert_close
 
 
 @fixture
@@ -168,3 +172,26 @@ def test_check_delta_classes(sample_dataset: xr.Dataset):
     checker = CheckWarnDelta()
     results = checker.run(sample_dataset, var_name)
     assert np.array_equal(results, expected)  # type: ignore
+
+
+def test_record_quality_results(sample_dataset: xr.Dataset):
+    expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
+    expected["qc_monotonic_var"] = xr.full_like(expected["monotonic_var"], fill_value=0)  # type: ignore
+    expected["qc_monotonic_var"].data[0] = 1
+    expected["monotonic_var"].attrs["ancillary_variables"] = "qc_monotonic_var"
+    expected["qc_monotonic_var"].attrs = {
+        "long_name": "Quality check results for monotonic_var",
+        "units": "1",
+        "flag_masks": [1],
+        "flag_meanings": ["foo bar"],
+        "flag_assessments": ["Bad"],
+        "standard_name": "quality_flag",
+    }
+
+    failures: NDArray[np.bool8] = np.bool8([True, False, False, False])  # type: ignore
+
+    parameters: Dict[str, Any] = {"bit": 0, "assessment": "bad", "meaning": "foo bar"}
+    handler = RecordQualityResults(parameters=parameters)  # type: ignore
+    dataset = handler.run(sample_dataset, "monotonic_var", failures)
+
+    assert_close(dataset, expected)
