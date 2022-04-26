@@ -17,7 +17,7 @@ multiple layers of configuration that Tsdat provides.
 
 Users can customize Tsdat in three ways:
 
-#. **Configuration files** - shown as input to the pipeline on the left
+#. **Configuration files** - shown as input to the pipeline on the top
 #. **Code hooks** - indicated **inside** the pipeline with code (<>) bubbles.  Code hooks are provided by
    extending the IngestPipeline base class to create custom pipeline behavior.
 #. **Helper classes** - indicated **outside** the pipeline with code (<>) bubbles.  Helper classes provide reusable, cross-pipeline functionality such
@@ -30,11 +30,12 @@ Tsdat pipelines produce standardized datasets that follow the conventions and te
    :maxdepth: 1
 
    pipeline_config
+   retriever_config
+   dataset_config
    storage_config
-   filehandlers
-   converters
    quality_control
    hook_functions
+   pydantic
 
 
 .. note::

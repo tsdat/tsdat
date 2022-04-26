@@ -4,8 +4,8 @@
 
 .. _data_ingest: 
 
-Ingest Template Tutorial
-------------------------
+Pipeline Template Tutorial
+---------------------------
 
 In this tutorial we will build a data ingestion pipeline to ingest some global
 marine data hosted by the National Oceanic and Atmospheric Administration’s 
@@ -67,14 +67,14 @@ Now that we have the data and metadata that we will need, let’s move on to
 step #2 and set up a GitHub repository for our work. What we are looking to 
 do is read in the NCEI “raw” data, apply variable names and metadata, 
 apply quality control, and convert it into the netCDF format – an ‘ingest’, 
-in other words. To do this, navigate to https://github.com/tsdat/ingest-template 
+in other words. To do this, navigate to https://github.com/tsdat/pipeline-template
 and click “Use this template” (you must log into github to see this button).
 
 .. figure:: global_marine_data/github1.png
     :alt:
 
 
-This will open https://github.com/tsdat/ingest-template/generate (you can
+This will open https://github.com/tsdat/pipeline-template/generate (you can
 also just open this link directly) which will prompt you to name your 
 repository. Go ahead and fill out the information however you would like and 
 set the visibility to your preference.
@@ -374,7 +374,7 @@ particular dataset you are working on:
       description: "Historical marine data are comprised of ship, buoy, and platform observations."
       conventions: MHKiT-Cloud Data Standards v. 1.0
       institution: Pacific Northwest National Laboratory
-      code_url: https://github.com/tsdat/ingest-template
+      code_url: https://github.com/tsdat/pipeline-template
       location_meaning: "Arctic Ocean"
 
     dimensions:
@@ -661,7 +661,7 @@ In the python shell that opens, we can view the dataset for a quick overview:
       description:       Historical marine data are comprised of ship, buoy, an...
       conventions:       MHKiT-Cloud Data Standards v. 1.0
       institution:       Pacific Northwest National Laboratory
-      code_url:          https://github.com/tsdat/ingest-template
+      code_url:          https://github.com/tsdat/pipeline-template
       location_meaning:  Arctic Ocean
       datastream_name:   arctic.ncei_artic_cruise_example.a1
       input_files:       arctic.ncei_artic_cruise_example.00.20150112.000000.ra...
