@@ -47,7 +47,7 @@ enthusiastically welcome all contributions), however most users should start wit
 [template repository](https://github.com/tsdat/template-repositories) to generate
 nearly all of the code and configurations you need to create a declarative data
 pipeline with tsdat. We recommend **[this template](
-https://github.com/tsdat/ingest-template)** to start with, as it is the most flexible
+https://github.com/tsdat/pipeline-template)** to start with, as it is the most flexible
 and well-supported template that we offer.
 
 
@@ -56,6 +56,10 @@ and well-supported template that we offer.
 We recommend that developers using tsdat or developers working on tsdat set up their
 environment according to the following guidelines:
 
+> **Windows Users** - we strongly recommend developing in a linux environment to help
+mitigate common python packaging and path issues. See
+[this tutorial on WSL](https://tsdat.readthedocs.io/en/latest/tutorials/wsl.html) for
+how to set up a WSL environment and attach VS Code to it.
 
 1. Download and install [VS Code](https://code.visualstudio.com). Make sure to add 
 `code` to your path if prompted.
@@ -68,25 +72,7 @@ environment according to the following guidelines:
 3. The first time you open this project in VS Code you will be prompted to install the
 recommended extensions. Please do so now.
 
-4. **Windows users**: We recommend using
-[Docker](https://www.docker.com/products/docker-desktop) to manage dependencies for
-this project. If you choose to use Docker follow the steps below:
-    - Press `F1` (or `ctrl-shift-p`) to bring up the command pane in VS Code
-    - In the command pane, type: `Remote-Containers: Open Folder in Container...` and
-    hit `return`
-    - You will be prompted to specify which folder should be opened. Select the folder
-    containing this `README` file
-    - Several dialog boxes may appear while the VS Code window is refreshing. Please
-    install the recommended extensions via the dialog box. An additional dialog box
-    should appear asking you to reload the window so Pylance can take effect. Please do
-    this as well.
-    - After the window refreshes your development environment will be set up correctly.
-    You may skip steps 5. and 6.
-
-    You can find more information about VS Code and docker containers
-    [here](https://code.visualstudio.com/docs/remote/containers).
-
-5. We highly recommend using [conda](https://docs.anaconda.com/anaconda/install/) to
+4. We highly recommend using [conda](https://docs.anaconda.com/anaconda/install/) to
 manage dependencies in your development environment. Please install this using the link
 above if you haven't already done so. Then run the following commands to create your
 environment:
@@ -97,7 +83,7 @@ environment:
     (tsdat) $ pip install -r requirements-dev.txt
     ```
 
-6. Tell VS Code to use your new `conda` environment:
+5. Tell VS Code to use your new `conda` environment:
     - Press `F1` (or `ctrl-shift-p`) to bring up the command pane in VS Code
     - In the command pane, type: `Python: Select Interpreter` and hit `return`
     - Select the newly-created `tsdat` conda environment from the list. Note
@@ -136,7 +122,7 @@ description of your work so we can review your changes as efficiently as possibl
     - GitHub: https://github.com/tsdat
     - Documentation: https://tsdat.readthedocs.io
     - Data standards: https://github.com/tsdat/data_standards
-    - Preferred template: https://github.com/tsdat/ingest-template
+    - Preferred template: https://github.com/tsdat/pipeline-template
     - All templates: https://github.com/tsdat/template-repositories
     - Docker Images: https://hub.docker.com/u/tsdat
 - Learn more about `xarray`: 
@@ -145,6 +131,9 @@ description of your work so we can review your changes as efficiently as possibl
 - Learn more about `act-atmos`: 
     - GitHub: https://github.com/arm-doe/act
     - Documentation: https://arm-doe.github.io/ACT/
+- Learn more about 'pydantic':
+    - GitHub: https://github.com/samuelcolvin/pydantic/
+    - Documentation: https://pydantic-docs.helpmanual.io
 - Other useful tools:
     - VS Code: https://code.visualstudio.com/docs
     - Docker: https://docs.docker.com/get-started/
