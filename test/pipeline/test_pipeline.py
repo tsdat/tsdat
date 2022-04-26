@@ -41,6 +41,6 @@ def test_ingest_pipeline():
     pipeline = config.instantiate_pipeline()
     dataset = pipeline.run(["test/io/data/input.csv"])
 
-    assert_close(dataset, expected)
+    assert_close(dataset, expected, check_fill_value=False)
     assert dataset.attrs["code_version"]
     assert dataset.attrs["history"]
