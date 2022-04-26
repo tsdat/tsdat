@@ -43,6 +43,7 @@ def sample_dataset() -> xr.Dataset:
                     "valid_delta": 2,
                     "fail_delta": 2,
                     "warn_delta": 2,
+                    "_FillValue": -9999,
                 },
             ),
             "string_var": (
@@ -193,5 +194,32 @@ def test_record_quality_results(sample_dataset: xr.Dataset):
     parameters: Dict[str, Any] = {"bit": 0, "assessment": "bad", "meaning": "foo bar"}
     handler = RecordQualityResults(parameters=parameters)  # type: ignore
     dataset = handler.run(sample_dataset, "monotonic_var", failures)
+
+    assert_close(dataset, expected)
+
+
+def test_replace_failed_values(sample_dataset: xr.Dataset):
+    expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
+    expected["monotonic_var"].data[0] = -9999
+
+    failures: NDArray[np.bool8] = np.bool8([True, False, False, False])  # type: ignore
+
+    handler = ReplaceFailedValues()
+    dataset = handler.run(sample_dataset, "monotonic_var", failures)
+
+    assert_close(dataset, expected)
+
+
+def test_sortdataset_by_coordinate(sample_dataset: xr.Dataset):
+    expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
+
+    # Sort by time, backwards
+    input_dataset: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
+    input_dataset: xr.Dataset = input_dataset.sortby("time", ascending=False)  # type: ignore
+
+    failures: NDArray[np.bool8] = np.bool8([True, True, True, True])  # type: ignore
+
+    handler = SortDatasetByCoordinate()
+    dataset = handler.run(input_dataset, "time", failures)
 
     assert_close(dataset, expected)
