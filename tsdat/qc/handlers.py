@@ -1,7 +1,3 @@
-# TODO: Implement ReplaceWithFillValue
-# TODO: Implement RecordQualityResults
-# TODO: Implement SortDatasetByCoordinate
-
 import numpy as np
 import xarray as xr
 from pydantic import BaseModel, Extra, Field
@@ -9,10 +5,13 @@ from typing import Literal
 from numpy.typing import NDArray
 from .base import QualityHandler
 
+
 __all__ = [
     "DataQualityError",
     "FailPipeline",
     "RecordQualityResults",
+    "ReplaceFailedValues",
+    "SortDatasetByCoordinate",
 ]
 
 # def record_correction(self, variable_name: str):
@@ -28,17 +27,6 @@ __all__ = [
 #     correction = self.params.get("correction", None)
 #     if correction:
 #         utils.record_corrections_applied(self.ds, variable_name, correction)
-
-
-# class QCParamKeys:
-#     """Symbolic constants used for referencing QC-related
-#     fields in the pipeline config file
-#     """
-
-#     QC_BIT = "bit"
-#     ASSESSMENT = "assessment"
-#     TEST_MEANING = "meaning"
-#     CORRECTION = "correction"
 
 
 class DataQualityError(ValueError):
@@ -58,14 +46,18 @@ class FailPipeline(QualityHandler):
     ------------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel, extra=Extra.allow):
-        # IDEA: add threshold of bad values (% or count) above which the error is thrown
+        tolerance: float = 0
+        """Tolerance for the number of allowable failures as the ratio of allowable
+        failures to the total number of values checked. Defaults to 0, meaning that any
+        failed checks will result in a DataQualityError being raised."""
+
         context: str = ""
         """Additional context set by users that ends up in the traceback message."""
 
     parameters: Parameters = Parameters()
 
     def run(self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool8]):
-        if failures.any():
+        if self._exceeds_tolerance(failures):
             raise DataQualityError(
                 f"Quality results for variable {variable_name} indicate a fatal error"
                 " has occurred and the pipeline should exit. Manual review of the data"
@@ -75,6 +67,10 @@ class FailPipeline(QualityHandler):
             )
 
         return dataset
+
+    def _exceeds_tolerance(self, failures: NDArray[np.bool8]) -> bool:
+        failure_ratio: float = np.average(failures)  # type: ignore
+        return failure_ratio > self.parameters.tolerance
 
 
 class RecordQualityResults(QualityHandler):
@@ -106,46 +102,44 @@ class RecordQualityResults(QualityHandler):
         dataset.qcfilter.add_test(
             variable_name,
             index=failures,
-            test_number=self.parameters.bit,
+            test_number=self.parameters.bit + 1,
             test_meaning=self.parameters.meaning,
             test_assessment=self.parameters.assessment,
         )
         return dataset
 
 
-# class RemoveFailedValues(QualityHandler):
-#     """Replace all the failed values with _FillValue"""
+class ReplaceFailedValues(QualityHandler):
+    """------------------------------------------------------------------------------------
+    Replaces all failed values with the variable's _FillValue. If the variable does not
+    have a _FillValue attribute then nan is used instead
 
-#     def run(self, variable_name: str, results_array: np.ndarray[Any, Any]):
-#         if results_array.any():
-#             fill_value = self.ds[variable_name].attrs[
-#                 "_FillValue"
-#             ]  # HACK: until we centralize / construct logic for this
-#             keep_array = np.logical_not(results_array)
+    ------------------------------------------------------------------------------------"""
 
-#             var_values = self.ds[variable_name].data
-#             replaced_values: np.ndarray[Any, Any] = np.where(  # type: ignore
-#                 keep_array, var_values, fill_value
-#             )
-#             self.ds[variable_name].data = replaced_values
-
-#             self.record_correction(variable_name)
+    def run(
+        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool8]
+    ) -> xr.Dataset:
+        if failures.any():
+            fill_value = dataset[variable_name].attrs.get("_FillValue", None)
+            dataset[variable_name][failures] = fill_value
+        return dataset
 
 
-# class SortDatasetByCoordinate(QualityHandler):
-#     """Sort coordinate data using xr.Dataset.sortby(). Accepts the following
-#     parameters:
+class SortDatasetByCoordinate(QualityHandler):
+    """------------------------------------------------------------------------------------
+    Sorts the dataset by the failed variable, if there are any failures.
 
-#     .. code-block:: yaml
+    ------------------------------------------------------------------------------------"""
 
-#         parameters:
-#           # Whether or not to sort in ascending order. Defaults to True.
-#           ascending: True
-#     """
+    class Parameters(BaseModel, extra=Extra.forbid):
+        ascending: bool = True
+        """Whether to sort the dataset in ascending order. Defaults to True."""
 
-#     def run(self, variable_name: str, results_array: np.ndarray[Any, Any]):
+    parameters: Parameters = Parameters()
 
-#         if results_array.any():
-#             order = self.params.get("ascending", True)
-#             self.ds: xr.Dataset = self.ds.sortby(self.ds[variable_name], order)  # type: ignore
-#             self.record_correction(variable_name)
+    def run(
+        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool8]
+    ) -> xr.Dataset:
+        if failures.any():
+            dataset = dataset.sortby(variable_name, ascending=self.parameters.ascending)  # type: ignore
+        return dataset
