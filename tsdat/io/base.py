@@ -1,4 +1,3 @@
-import re
 import tempfile
 import contextlib
 import xarray as xr
@@ -66,10 +65,6 @@ class DataReader(ParameterizedClass, ABC):
 
     ---------------------------------------------------------------------------------"""
 
-    # HACK: Can't do Pattern[str] yet
-    regex: Pattern = re.compile(r".*")  # type: ignore
-    """The regex pattern associated with the DataReader. Defaults to `.*`."""
-
     @abstractmethod
     def read(self, input_key: str) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
         """-----------------------------------------------------------------------------
@@ -92,9 +87,6 @@ class DataReader(ParameterizedClass, ABC):
 
         -----------------------------------------------------------------------------"""
         ...
-
-    def matches(self, key: str) -> bool:
-        return bool(self.regex.match(key))  # type: ignore
 
 
 class DataWriter(ParameterizedClass, ABC):
