@@ -61,7 +61,7 @@ class FailPipeline(QualityHandler):
         if self._exceeds_tolerance(failures):
             raise DataQualityError(
                 f"Quality results for variable {variable_name} indicate a fatal error"
-                " has occured and the pipeline should exit. Manual review of the data"
+                " has occurred and the pipeline should exit. Manual review of the data"
                 " is recommended.\n"
                 f"Extra context: '{self.parameters.context}'\n"
                 f"Quality results array: {failures}"

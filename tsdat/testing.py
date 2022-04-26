@@ -54,7 +54,7 @@ def assert_close(
 
     Args:
         a (xr.Dataset): The first dataset to compare.
-        b (xr.Dataset): The secoond dataset to compare.
+        b (xr.Dataset): The second dataset to compare.
         check_attrs (bool): Check global and variable attributes in addition to the
         data. Defaults to True.
         check_fill_value (bool): Check the _FillValue attribute. This is a special case

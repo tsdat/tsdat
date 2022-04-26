@@ -68,7 +68,7 @@ class GlobalAttributes(AttributeModel):
     location_id: str = Field(
         min_length=3,
         regex=r"^[a-z0-9_]+$",  # lowercase alphanumeric and '_' characters
-        description="A label or acroynm for the location where the data were obtained"
+        description="A label or acronym for the location where the data were obtained"
         " from. Only lowercase alphanumeric characters and '_' are allowed.",
     )
     dataset_name: str = Field(
@@ -152,9 +152,9 @@ class GlobalAttributes(AttributeModel):
     def add_datastream_field(cls, values: Dict[str, StrictStr]) -> Dict[str, StrictStr]:
         if not values["datastream"]:
             loc = values["location_id"]
-            dname = values["dataset_name"]
+            name = values["dataset_name"]
             qual = "-" + values["qualifier"] if values["qualifier"] else ""
             temp = "-" + values["temporal"] if values["temporal"] else ""
             lvl = values["data_level"]
-            values["datastream"] = f"{loc}.{dname}{qual}{temp}.{lvl}"
+            values["datastream"] = f"{loc}.{name}{qual}{temp}.{lvl}"
         return values

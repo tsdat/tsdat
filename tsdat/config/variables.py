@@ -169,7 +169,7 @@ class VariableAttributes(AttributeModel):
 # )
 
 
-# class InputVariable(ParametrizedConfigClass, extra=Extra.allow):
+# class InputVariable(ParameterizedConfigClass, extra=Extra.allow):
 #     classname: StrictStr = "tsdat.io.retrievers.SimpleRetriever"
 #     parameters: RetrieverParameters = RetrieverParameters()  # type: ignore
 
@@ -182,7 +182,7 @@ class Variable(BaseModel, extra=Extra.forbid):
     #     " recommend only using lowercase alphanumeric and '_' characters to name"
     #     " variables, as uniformly-named variables are easier to sort through and read"
     #     " for users. Spaces and non-ascii characters are explicitly disallowed. The"
-    #     " variable name should be consise, yet clear enough for users to know what the"
+    #     " variable name should be concise, yet clear enough for users to know what the"
     #     " property measures. A more descriptive name for a variable (i.e. suitable for"
     #     " a plot title / axis label) should be provided via the 'long_name' attribute"
     #     " in the attrs section, if desired. The 'comment' attribute is also recommended"

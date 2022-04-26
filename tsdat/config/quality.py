@@ -1,15 +1,15 @@
 from pydantic import BaseModel, Extra, Field, validator
 from typing import List
-from .utils import ParametrizedConfigClass, YamlModel, find_duplicates
+from .utils import ParameterizedConfigClass, YamlModel, find_duplicates
 
 __all__ = ["QualityConfig"]
 
 
-class CheckerConfig(ParametrizedConfigClass):
+class CheckerConfig(ParameterizedConfigClass):
     pass
 
 
-class HandlerConfig(ParametrizedConfigClass):
+class HandlerConfig(ParameterizedConfigClass):
     pass
 
 

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Extra
 from numpy.typing import NDArray
 
 __all__ = [
-    "ParametrizedClass",
+    "ParameterizedClass",
     "decode_cf",
     "record_corrections_applied",
     "assign_data",
@@ -16,10 +16,10 @@ __all__ = [
 ]
 
 
-class ParametrizedClass(BaseModel, extra=Extra.forbid):
+class ParameterizedClass(BaseModel, extra=Extra.forbid):
     """------------------------------------------------------------------------------------
     Base class for any class that accepts 'parameters' as an argument. Sets the default
-    'parameters' to {}. Subclasses of ParametrizedClass should override the 'parameters'
+    'parameters' to {}. Subclasses of ParameterizedClass should override the 'parameters'
     properties to support custom required or optional arguments from configuration files.
 
     ------------------------------------------------------------------------------------"""
