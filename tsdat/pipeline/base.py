@@ -37,7 +37,7 @@ class Pipeline(ParameterizedClass, ABC):
     """Stores the dataset so it can be retrieved later."""
 
     @abstractmethod
-    def run(self, inputs: Any, **kwargs: Any) -> Any:
+    def run(self, inputs: List[str], **kwargs: Any) -> Any:
         """-----------------------------------------------------------------------------
         Runs the data pipeline on the provided inputs.
 
