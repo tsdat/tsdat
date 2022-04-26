@@ -214,7 +214,7 @@ class CheckValidMin(_CheckMin):
 
 
 class CheckValidMax(_CheckMax):
-    attribute_name: str = "valid_min"
+    attribute_name: str = "valid_max"
 
 
 class CheckFailMin(_CheckMin):
@@ -222,7 +222,7 @@ class CheckFailMin(_CheckMin):
 
 
 class CheckFailMax(_CheckMax):
-    attribute_name: str = "fail_min"
+    attribute_name: str = "fail_max"
 
 
 class CheckWarnMin(_CheckMin):
@@ -230,7 +230,7 @@ class CheckWarnMin(_CheckMin):
 
 
 class CheckWarnMax(_CheckMax):
-    attribute_name: str = "warn_min"
+    attribute_name: str = "warn_max"
 
 
 class CheckValidRangeMin(_CheckMin):
