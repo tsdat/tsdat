@@ -1,13 +1,29 @@
-# TODO: Implement CheckMin/CheckMax & warn/fail/valid
-
 import numpy as np
 import xarray as xr
 from pydantic import BaseModel, Extra, validator
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 from numpy.typing import NDArray
 from .base import QualityChecker
 
-__all__ = ["CheckMissing", "CheckMonotonic"]
+__all__ = [
+    "CheckMissing",
+    "CheckMonotonic",
+    "CheckValidMin",
+    "CheckValidMax",
+    "CheckFailMin",
+    "CheckFailMax",
+    "CheckWarnMin",
+    "CheckWarnMax",
+    "CheckValidRangeMin",
+    "CheckValidRangeMax",
+    "CheckFailRangeMin",
+    "CheckFailRangeMax",
+    "CheckWarnRangeMin",
+    "CheckWarnRangeMax",
+    "CheckValidDelta",
+    "CheckFailDelta",
+    "CheckWarnDelta",
+]
 
 
 class CheckMissing(QualityChecker):
@@ -88,218 +104,200 @@ class CheckMonotonic(QualityChecker):
         return variable.get_axis_num(dim)  # type: ignore
 
 
-# class CheckMin(QualityChecker):
-#     """Check that no values for the specified variable are less than
-#     a specified minimum threshold.  The threshold value is an attribute
-#     set on the variable in question. The  attribute name is
-#     specified in the quality checker definition in the pipeline config
-#     file by setting a param called 'key: ATTRIBUTE_NAME'.
+class _ThresholdChecker(QualityChecker):
+    """---------------------------------------------------------------------------------
+    Base class for threshold-based classes where the threshold value is stored in a
+    variable attribute.
 
-#     If the key parameter is not set or the variable does not possess
-#     the specified attribute, this check will be skipped.
-#     """
+    Args:
+        attribute_name (str): The name of the attribute containing the maximum
+        threshold. If the attribute ends in '_range' then it is assumed to be a list,
+        and the first value from the list will be used as the minimum threshold.
+        allow_equal (bool): True if values equal to the threshold should pass the check,
+        False otherwise.
 
-#     def __init__(
-#         self, ds: xr.Dataset, definition: ManagerConfig, parameters: Dict[str, Any]
-#     ):
-#         super().__init__(ds, definition, parameters)
-#         self.key: str = self.params["key"]
+    ---------------------------------------------------------------------------------"""
 
-#     def run(self, variable_name: str) -> Optional[NDArray[Any]]:
-#         results_array: Optional[NDArray[Any]] = None
-#         min_value: Optional[Union[float, List[float]]] = self.ds[
-#             variable_name
-#         ].attrs.get(self.key, None)
+    allow_equal: bool = True
+    """True if values equal to the threshold should pass, False otherwise."""
 
-#         if min_value is not None:
-#             if isinstance(min_value, List):
-#                 min_value = min_value[0]
+    attribute_name: str
+    """The attribute on the data variable that should be used to get the threshold."""
 
-#             results_array = np.less(self.ds[variable_name].data, min_value)
-
-#         return results_array
-
-
-# class CheckMax(QualityChecker):
-#     """Check that no values for the specified variable are greater than
-#     a specified maximum threshold.  The threshold value is an attribute
-#     set on the variable in question. The  attribute name is
-#     specified in the quality checker definition in the pipeline config
-#     file by setting a param called 'key: ATTRIBUTE_NAME'.
-
-#     If the key parameter is not set or the variable does not possess
-#     the specified attribute, this check will be skipped.
-#     """
-
-#     def __init__(
-#         self, ds: xr.Dataset, definition: ManagerConfig, parameters: Dict[str, Any]
-#     ):
-#         super().__init__(ds, definition, parameters)
-#         self.key: str = self.params["key"]
-
-#     def run(self, variable_name: str) -> Optional[NDArray[Any]]:
-#         results_array: Optional[NDArray[Any]] = None
-#         max_value: Optional[Union[float, List[float]]] = self.ds[
-#             variable_name
-#         ].attrs.get(self.key, None)
-
-#         if max_value is not None:
-#             if isinstance(max_value, List):
-#                 max_value = max_value[1]
-
-#             results_array = np.greater(self.ds[variable_name].data, max_value)
-
-#         return results_array
+    def _get_threshold(
+        self, dataset: xr.Dataset, variable_name: str, min_: bool
+    ) -> Optional[float]:
+        threshold: Optional[Union[float, List[float]]] = dataset[
+            variable_name
+        ].attrs.get(self.attribute_name, None)
+        if threshold is not None:
+            if isinstance(threshold, list):
+                index = 0 if min_ else -1
+                threshold = threshold[index]
+        return threshold
 
 
-# # TODO: Initialize the remaining classes automatically
+class _CheckMin(_ThresholdChecker):
+    """---------------------------------------------------------------------------------
+    Checks that no values for the specified variable are less than a specified minimum
+    threshold. The value of the threshold is specified by an attribute on each data
+    variable, and the attribute to search for is specified as a property of this base
+    class.
+
+    If the specified attribute does not exist on the variable being checked then no
+    failures will be reported.
+
+    Args:
+        attribute_name (str): The name of the attribute containing the minimum
+        threshold. If the attribute ends in '_range' then it is assumed to be a list,
+        and the first value from the list will be used as the minimum threshold.
+        allow_equal (bool): True if values equal to the threshold should pass the check,
+        False otherwise.
+
+    ---------------------------------------------------------------------------------"""
+
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
+
+        var_data = dataset[variable_name]
+        failures: NDArray[np.bool8] = np.zeros_like(var_data, dtype=np.bool8)  # type: ignore
+
+        min_value = self._get_threshold(dataset, variable_name, min_=True)
+        if min_value is None:
+            return failures
+
+        if self.allow_equal:
+            failures = np.less(var_data.data, min_value)
+        else:
+            failures = np.less_equal(var_data.data, min_value)
+
+        return failures
 
 
-# class CheckValidMin(CheckMin):
-#     """Check that no values for the specified variable are less than
-#     the minimum vaue set by the 'valid_range' attribute.  If the
-#     variable in question does not posess the 'valid_range' attribute,
-#     this check will be skipped.
-#     """
+class _CheckMax(_ThresholdChecker):
+    """---------------------------------------------------------------------------------
+    Checks that no values for the specified variable are greater than a specified
+    threshold. The value of the threshold is specified by an attribute on each data
+    variable, and the attribute to search for is specified as a property of this base
+    class.
 
-#     def __init__(
-#         self,
-#         ds: xr.Dataset,
-#         definition: ManagerConfig,
-#         parameters: Dict[str, Any],
-#     ):
-#         super().__init__(ds, definition, parameters=parameters)
-#         self.params["key"] = "valid_range"
+    If the specified attribute does not exist on the variable being checked then no
+    failures will be reported.
 
+    Args:
+        attribute_name (str): The name of the attribute containing the maximum
+        threshold. If the attribute ends in '_range' then it is assumed to be a list,
+        and the first value from the list will be used as the minimum threshold.
+        allow_equal (bool): True if values equal to the threshold should pass the check,
+        False otherwise.
 
-# class CheckValidMax(CheckMax):
-#     """Check that no values for the specified variable are greater than
-#     the maximum vaue set by the 'valid_range' attribute.  If the
-#     variable in question does not posess the 'valid_range' attribute,
-#     this check will be skipped.
-#     """
+    ---------------------------------------------------------------------------------"""
 
-#     def __init__(
-#         self,
-#         ds: xr.Dataset,
-#         definition: ManagerConfig,
-#         parameters: Dict[str, Any],
-#     ):
-#         super().__init__(ds, definition, parameters=parameters)
-#         self.params["key"] = "valid_range"
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
 
+        var_data = dataset[variable_name]
+        failures: NDArray[np.bool8] = np.zeros_like(var_data, dtype=np.bool8)  # type: ignore
 
-# class CheckFailMin(CheckMin):
-#     """Check that no values for the specified variable are less than
-#     the minimum vaue set by the 'fail_range' attribute.  If the
-#     variable in question does not posess the 'fail_range' attribute,
-#     this check will be skipped.
-#     """
+        max_value = self._get_threshold(dataset, variable_name, min_=False)
+        if max_value is None:
+            return failures
 
-#     def __init__(
-#         self,
-#         ds: xr.Dataset,
-#         definition: ManagerConfig,
-#         parameters: Dict[str, Any],
-#     ):
-#         super().__init__(ds, definition, parameters=parameters)
-#         self.params["key"] = "fail_range"
+        if self.allow_equal:
+            failures = np.greater(var_data.data, max_value)
+        else:
+            failures = np.greater_equal(var_data.data, max_value)
+
+        return failures
 
 
-# class CheckFailMax(CheckMax):
-#     """Check that no values for the specified variable greater less than
-#     the maximum vaue set by the 'fail_range' attribute.  If the
-#     variable in question does not posess the 'fail_range' attribute,
-#     this check will be skipped.
-#     """
-
-#     def __init__(
-#         self,
-#         ds: xr.Dataset,
-#         definition: ManagerConfig,
-#         parameters: Dict[str, Any],
-#     ):
-#         super().__init__(ds, definition, parameters=parameters)
-#         self.params["key"] = "fail_range"
+class CheckValidMin(_CheckMin):
+    attribute_name: str = "valid_min"
 
 
-# class CheckWarnMin(CheckMin):
-#     """Check that no values for the specified variable are less than
-#     the minimum vaue set by the 'warn_range' attribute.  If the
-#     variable in question does not posess the 'warn_range' attribute,
-#     this check will be skipped.
-#     """
-
-#     def __init__(
-#         self,
-#         ds: xr.Dataset,
-#         definition: ManagerConfig,
-#         parameters: Dict[str, Any],
-#     ):
-#         super().__init__(ds, definition, parameters=parameters)
-#         self.params["key"] = "warn_range"
+class CheckValidMax(_CheckMax):
+    attribute_name: str = "valid_min"
 
 
-# class CheckWarnMax(CheckMax):
-#     """Check that no values for the specified variable are greater than
-#     the maximum vaue set by the 'warn_range' attribute.  If the
-#     variable in question does not posess the 'warn_range' attribute,
-#     this check will be skipped.
-#     """
-
-#     def __init__(
-#         self,
-#         ds: xr.Dataset,
-#         definition: ManagerConfig,
-#         parameters: Dict[str, Any],
-#     ):
-#         super().__init__(ds, definition, parameters=parameters)
-#         self.params["key"] = "warn_range"
+class CheckFailMin(_CheckMin):
+    attribute_name: str = "fail_min"
 
 
-# class CheckValidDelta(QualityChecker):
-#     """Check that the difference between any two consecutive
-#     values is not greater than the threshold set by the
-#     'valid_delta' attribute.  If the variable in question
-#     does not posess the 'valid_delta' attribute, this check will be skipped.
-#     """
-
-#     def run(self, variable_name: str) -> Optional[NDArray[Any]]:
-
-#         valid_delta = self.ds[variable_name].attrs.get("valid_delta", None)
-
-#         # If no valid_delta is available, then we just skip this definition
-#         results_array: Optional[NDArray[Any]] = None
-#         if valid_delta is not None:
-#             # We need to get the dim to diff on from the parameters
-#             # If dim is not specified, then we use the first dim for the variable
-#             dim = self.params.get("dim", None)
-
-#             if dim is None and len(self.ds[variable_name].dims) > 0:
-#                 dim = self.ds[variable_name].dims[0]
-
-#             if dim is not None:
-#                 # convert to np array
-#                 variable_data = self.ds[variable_name].data
-#                 axis = self.ds[variable_name].get_axis_num(dim)
-
-#                 # If the variable is a time variable, then we convert to nanoseconds before doing our check
-#                 if self.ds[variable_name].data.dtype.type == np.datetime64:
-#                     variable_data = utils.datetime64_to_timestamp(variable_data)
-
-#                 # Compute the difference between each two numbers and check if it exceeds valid_delta
-#                 diff = np.absolute(np.diff(variable_data, axis=axis))  # type: ignore
-#                 results_array = np.greater(diff, valid_delta)
-
-#                 # Our results array is missing one value for the first row, which is not
-#                 # included in the diff computation. We add False for the first row of
-#                 # results, since it won't fail the check.
-#                 first_row = np.zeros(results_array[0].size, dtype=bool)  # type: ignore
-#                 results_array = np.insert(results_array, 0, first_row, axis=axis)  # type: ignore
-
-#         return results_array
+class CheckFailMax(_CheckMax):
+    attribute_name: str = "fail_min"
 
 
-# TODO: Other checks we might implement
+class CheckWarnMin(_CheckMin):
+    attribute_name: str = "warn_min"
+
+
+class CheckWarnMax(_CheckMax):
+    attribute_name: str = "warn_min"
+
+
+class CheckValidRangeMin(_CheckMin):
+    attribute_name: str = "valid_range"
+
+
+class CheckValidRangeMax(_CheckMax):
+    attribute_name: str = "valid_range"
+
+
+class CheckFailRangeMin(_CheckMin):
+    attribute_name: str = "fail_range"
+
+
+class CheckFailRangeMax(_CheckMax):
+    attribute_name: str = "fail_range"
+
+
+class CheckWarnRangeMin(_CheckMin):
+    attribute_name: str = "warn_range"
+
+
+class CheckWarnRangeMax(_CheckMax):
+    attribute_name: str = "warn_range"
+
+
+class _CheckDelta(_ThresholdChecker):
+    """------------------------------------------------------------------------------------
+    Checks the difference between consecutive values and reports a failure if the
+    difference is less than the threshold specified by the value in the attribute
+    provided to this check.
+
+    Args:
+        attribute_name (str): The name of the attribute containing the threshold to use.
+
+    ------------------------------------------------------------------------------------"""
+
+    class Parameters(BaseModel, extra=Extra.forbid):
+        dim: str = "time"
+        """The dimension on which to perform the diff."""
+
+    parameters: Parameters = Parameters()
+
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
+
+        threshold = self._get_threshold(dataset, variable_name, True)
+
+        data: NDArray[Any] = dataset[variable_name].data
+        axis = dataset[variable_name].get_axis_num(self.parameters.dim)
+
+        diff: NDArray[Any] = np.absolute(np.diff(data, axis=axis, prepend=data[0]))  # type: ignore
+        failures = diff > threshold if self.allow_equal else diff >= threshold
+
+        return failures
+
+
+class CheckValidDelta(_CheckDelta):
+    attribute_name: str = "valid_delta"
+
+
+class CheckFailDelta(_CheckDelta):
+    attribute_name: str = "fail_delta"
+
+
+class CheckWarnDelta(_CheckDelta):
+    attribute_name: str = "warn_delta"
+
+
 # check_outlier(std_dev)
 # check_time_gap --> parameters: min_time_gap (str), max_time_gap (str)
