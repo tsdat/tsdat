@@ -2,9 +2,7 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 import pandas as pd
-from tsdat.testing import assert_close
-from tsdat.config.pipeline import PipelineConfig
-from tsdat.pipeline.pipelines import IngestPipeline
+from tsdat import assert_close, PipelineConfig
 
 
 def test_ingest_pipeline():
@@ -40,9 +38,7 @@ def test_ingest_pipeline():
     expected["pi"].attrs = {"units": "1"}
 
     config = PipelineConfig.from_yaml(Path("test/config/yaml/pipeline.yaml"))
-    pipeline = config.instaniate_pipeline()
-    # pipeline: IngestPipeline = recusive_instantiate(config)
-
+    pipeline = config.instantiate_pipeline()
     dataset = pipeline.run(["test/io/data/input.csv"])
 
     assert_close(dataset, expected)

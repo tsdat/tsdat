@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Pattern, Union
 from abc import ABC, abstractmethod
-from ..utils import ParametrizedClass
+from ..utils import ParameterizedClass
 from ..config.dataset import DatasetConfig
 
 
@@ -22,7 +22,7 @@ __all__ = [
 ]
 
 
-class DataConverter(ParametrizedClass, ABC):
+class DataConverter(ParameterizedClass, ABC):
     """---------------------------------------------------------------------------------
     Base class for running data conversions on retrieved raw dataset.
 
@@ -55,7 +55,7 @@ class DataConverter(ParametrizedClass, ABC):
 # TODO: DataTransformer
 
 
-class DataReader(ParametrizedClass, ABC):
+class DataReader(ParameterizedClass, ABC):
     """---------------------------------------------------------------------------------
     Base class for reading data from an input source.
 
@@ -97,7 +97,7 @@ class DataReader(ParametrizedClass, ABC):
         return bool(self.regex.match(key))  # type: ignore
 
 
-class DataWriter(ParametrizedClass, ABC):
+class DataWriter(ParameterizedClass, ABC):
     """---------------------------------------------------------------------------------
     Base class for writing data to storage area(s).
 
@@ -146,7 +146,7 @@ class FileWriter(DataWriter, ABC):
         ...
 
 
-class DataHandler(ParametrizedClass):
+class DataHandler(ParameterizedClass):
     """---------------------------------------------------------------------------------
     Class that groups a DataReader subclass and a DataWriter subclass together to
     provide a unified approach to data I/O.
@@ -180,7 +180,7 @@ class FileHandler(DataHandler):
     writer: FileWriter
 
 
-class Retriever(ParametrizedClass, ABC):
+class Retriever(ParameterizedClass, ABC):
     """---------------------------------------------------------------------------------
     Base class for retrieving data used as input to tsdat pipelines.
 
@@ -216,7 +216,7 @@ class Retriever(ParametrizedClass, ABC):
         ...
 
 
-class Storage(ParametrizedClass, ABC):
+class Storage(ParameterizedClass, ABC):
     """---------------------------------------------------------------------------------
     Abstract base class for the tsdat Storage API. Subclasses of Storage are used in
     pipelines to persist data and ancillary files (e.g., plots).

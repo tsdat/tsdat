@@ -4,12 +4,12 @@ from pydantic import BaseModel, Extra
 import xarray as xr
 from numpy.typing import NDArray
 from abc import ABC, abstractmethod
-from ..utils import ParametrizedClass
+from ..utils import ParameterizedClass
 
 __all__ = ["QualityChecker", "QualityHandler", "QualityManager", "QualityManagement"]
 
 
-class QualityChecker(ParametrizedClass, ABC):
+class QualityChecker(ParameterizedClass, ABC):
     """---------------------------------------------------------------------------------
     Base class for code that checks the dataset / data variable quality.
 
@@ -38,7 +38,7 @@ class QualityChecker(ParametrizedClass, ABC):
         ...
 
 
-class QualityHandler(ParametrizedClass, ABC):
+class QualityHandler(ParameterizedClass, ABC):
     """---------------------------------------------------------------------------------
     Base class for code that handles the dataset / data variable quality.
 

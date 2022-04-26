@@ -13,12 +13,12 @@ from .dataset import DatasetConfig
 from .quality import QualityConfig
 from .storage import StorageConfig
 from .utils import (
-    ParametrizedConfigClass,
+    ParameterizedConfigClass,
     YamlModel,
     Overrideable,
     read_yaml,
     matches_overrideable_schema,
-    recusive_instantiate,
+    recursive_instantiate,
 )
 from ..pipeline.base import Pipeline
 
@@ -62,7 +62,7 @@ __all__ = ["PipelineConfig"]
 #     )
 
 
-class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.allow):
+class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
     """---------------------------------------------------------------------------------
     Class used to contain configuration parameters for tsdat pipelines. This class will
     ultimately be converted into a tsdat.pipeline.base.Pipeline subclass for use in
@@ -148,7 +148,7 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.allow):
 
         return config_cls(**v)
 
-    def instaniate_pipeline(self) -> Pipeline:
+    def instantiate_pipeline(self) -> Pipeline:
         """------------------------------------------------------------------------------------
         This method instantiates the tsdat.pipeline.BasePipeline subclass referenced by the
         classname property on the PipelineConfig instance and passes all properties on the
@@ -156,7 +156,7 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.allow):
         of the tsdat.pipeline.BasePipeline subclass.
 
         Properties and sub-properties of the PipelineConfig class that are subclasses of
-        tsdat.config.utils.ParametrizedConfigClass (e.g, classes that define a 'classname' and
+        tsdat.config.utils.ParameterizedConfigClass (e.g, classes that define a 'classname' and
         optional 'parameters' properties) will also be instantiated in similar fashion. See
         tsdat.config.utils.recursive_instantiate for implementation details.
 
@@ -165,4 +165,4 @@ class PipelineConfig(ParametrizedConfigClass, YamlModel, extra=Extra.allow):
             Pipeline: An instance of a tsdat.pipeline.base.Pipeline subclass.
 
         ------------------------------------------------------------------------------------"""
-        return recusive_instantiate(self)
+        return recursive_instantiate(self)

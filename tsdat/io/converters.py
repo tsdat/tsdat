@@ -105,7 +105,7 @@ class StringToDatetime(DataConverter):
     Args:
         format (Optional[str]): The format of the string data. See strftime.org for more
         information on what components can be used. If None (the default), then pandas
-        will try to intepret the format and convert it automatically. This can be unsafe
+        will try to interpret the format and convert it automatically. This can be unsafe
         but is not explicitly prohibited, so a warning is issued if format is not set
         explicitly.
         timezone (Optional[str]): The timezone of the input data. If not specified it is

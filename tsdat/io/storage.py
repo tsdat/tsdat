@@ -19,7 +19,7 @@ __all__ = ["FileSystem"]
 # file_timespan: 1D
 #
 #
-# psuedocode: Soley for splitting up a file into multiple chunks. Searching for
+# psuedocode: Solely for splitting up a file into multiple chunks. Searching for
 # previous + merging probably happens when you actually store the dataset, if that's
 # something we care about
 
