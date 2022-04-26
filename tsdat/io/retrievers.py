@@ -4,7 +4,7 @@
 import logging
 import xarray as xr
 from pydantic import BaseModel, Extra
-from typing import Any, Dict, List, Pattern
+from typing import Any, Dict, List, Pattern, cast
 from ..config.dataset import DatasetConfig
 from .base import Retriever, DataReader, DataConverter
 
@@ -52,7 +52,7 @@ class DefaultRetriever(Retriever):
 
     parameters: Parameters = Parameters()
 
-    readers: Dict[str, DataReader]
+    readers: Dict[Pattern, DataReader]  # type: ignore
     """A dictionary of DataReaders that should be used to read data provided an input
     key."""
 
@@ -97,8 +97,9 @@ class DefaultRetriever(Retriever):
     def _match_inputs(self, input_keys: List[str]) -> Dict[str, DataReader]:
         input_reader_mapping: Dict[str, DataReader] = {}
         for input_key in input_keys:
-            for reader in self.readers.values():
-                if reader.matches(input_key):
+            for regex, reader in self.readers.items():  # type: ignore
+                regex = cast(Pattern[str], regex)
+                if regex.match(input_key):
                     input_reader_mapping[input_key] = reader
                     break
         return input_reader_mapping

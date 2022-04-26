@@ -1,5 +1,6 @@
 {
     "title": "RetrieverConfig",
+    "description": "---------------------------------------------------------------------------------\nClass used to contain configuration parameters for the tsdat retriever class. This\nclass will ultimately be converted into a tsdat.io.base.Retriever subclass for use\nin tsdat pipelines.\n\nProvides methods to support yaml parsing and validation, including the generation of\njson schema for immediate validation. This class also provides a method to\ninstantiate a tsdat.io.base.Retriever subclass from a parsed configuration file.\n\nArgs:\n    classname (str): The dotted module path to the pipeline that the specified\n    configurations should apply to. To use the built-in IngestPipeline, for example,\n    you would set 'tsdat.pipeline.pipelines.IngestPipeline' as the classname.\n    readers (Dict[str, DataReaderConfig]): The DataReaders to use for reading input\n    data.\n\n---------------------------------------------------------------------------------",
     "type": "object",
     "properties": {
         "classname": {
@@ -40,13 +41,6 @@
                     "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
                     "default": {},
                     "type": "object"
-                },
-                "regex": {
-                    "title": "Regex",
-                    "description": "A regex pattern used to map input data keys (e.g., a file path or url passed as input from the pipeline runner) to the DataReader that should be used to read that resource. If there are multiple DataReader registered and an input data key would be matched by the regex pattern of multiple DataReaders, then only the DataReader corresponding with the first match will be used. Because of this, we recommend ordering your DataReaders from most specific pattern to least specific so that the most specific pattern will be matched first.",
-                    "default": "",
-                    "type": "string",
-                    "format": "regex"
                 }
             },
             "required": [

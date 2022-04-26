@@ -1,10 +1,16 @@
 {
     "title": "DatasetConfig",
-    "description": "Defines the core output dataset structure, including coordinate variables, data\nvariables, and metadata attributes. Quality check variables are not included in this\nstructure.",
+    "description": "---------------------------------------------------------------------------------\nClass defining the structure and metadata of the dataset produced by a tsdat\npipeline.\n\nAlso provides methods to support yaml parsing and validation, including generation\nof json schema.\n\nArgs:\n    attrs (GlobalAttributes): Attributes that pertain to the dataset as a whole.\n    coords (Dict[str, Coordinate]): The dataset's coordinate variables.\n    data_vars (Dict[str, Variable]): The dataset's data variables.\n\n---------------------------------------------------------------------------------",
     "type": "object",
     "properties": {
         "attrs": {
-            "$ref": "#/definitions/GlobalAttributes"
+            "title": "Attrs",
+            "description": "Attributes that pertain to the dataset as a whole (as opposed to attributes that are specific to individual variables.",
+            "allOf": [
+                {
+                    "$ref": "#/definitions/GlobalAttributes"
+                }
+            ]
         },
         "coords": {
             "title": "Coords",
@@ -81,7 +87,7 @@
                 },
                 "location_id": {
                     "title": "Location Id",
-                    "description": "A label or acroynm for the location where the data were obtained from. Only lowercase alphanumeric characters and '_' are allowed.",
+                    "description": "A label or acronym for the location where the data were obtained from. Only lowercase alphanumeric characters and '_' are allowed.",
                     "minLength": 3,
                     "pattern": "^[a-z0-9_]+$",
                     "type": "string"
@@ -104,7 +110,7 @@
                     "title": "Temporal",
                     "description": "An optional string which describes the temporal resolution of the data (if it spaced in regular intervals). This string should be formated as a number followed by a unit of measurement, e.g., '10m' would indicate the data is sampled every ten minutes. Only lowercase alphanumeric characters are allowed.",
                     "minLength": 2,
-                    "pattern": "^[0-9]+[a-z]+$",
+                    "pattern": "^[0-9]+[a-zA-Z]+$",
                     "type": "string"
                 },
                 "data_level": {

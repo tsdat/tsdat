@@ -2,7 +2,7 @@ classname: tsdat.io.retrievers.DefaultRetriever
 parameters: {}
 
 readers:
-  csv:
+  .*\.csv:
     classname: tsdat.io.readers.CSVReader
 
 # IDEA: Add the coords / data vars structure to the config object & generate schema
