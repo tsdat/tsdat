@@ -1,4 +1,7 @@
 {
+    // 
+    // Python environment settings
+    // 
     "python.envFile": "${workspaceFolder}/.vscode/.env",
     "terminal.integrated.env.osx": {
         "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"
@@ -9,12 +12,54 @@
     "terminal.integrated.env.windows": {
         "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"
     },
-    "python.testing.pytestArgs": [
-        "tests"
-    ],
-    "python.testing.pytestEnabled": true,
+    // 
+    // Formatting, linting, code analysis, and testing settings
+    // 
     "editor.formatOnSave": true,
-    "python.linting.lintOnSave": true,
+    "yaml.format.printWidth": 88,
+    "yaml.format.proseWrap": "always",
     "python.formatting.provider": "black",
-    "autoDocstring.customTemplatePath": ".vscode/docstring.mustache"
+    "python.linting.enabled": true,
+    "python.linting.lintOnSave": true,
+    "python.linting.mypyEnabled": true,
+    "python.linting.flake8Enabled": false,
+    "python.analysis.typeCheckingMode": "strict",
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": [
+        "-vv"
+    ],
+    // 
+    // Settings for helpful utilities
+    // 
+    "autoDocstring.customTemplatePath": ".vscode/docstring.mustache",
+    "errorLens.statusBarIconsEnabled": true,
+    "todo-tree.general.tags": [
+        "BUG",
+        "HACK",
+        "FIXME",
+        "TODO",
+        "TEST",
+        "IDEA",
+        "XXX",
+        "[ ]",
+        "[x]"
+    ],
+    "yaml.schemas": {
+        ".vscode/schema/retriever-schema.json": "*retriever*.yaml",
+        ".vscode/schema/dataset-schema.json": "*dataset*.yaml",
+        ".vscode/schema/quality-schema.json": "*quality*.yaml",
+        ".vscode/schema/storage-schema.json": "*storage*.yaml",
+        ".vscode/schema/pipeline-schema.json": "*pipeline*.yaml",
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/.mypy_cache": true,
+    }
 }

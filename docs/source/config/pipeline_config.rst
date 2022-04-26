@@ -1,27 +1,25 @@
 .. _pipeline_config:
 
 Pipeline Configuration
-======================
-The pipeline config file ``pipeline_config.yml`` is used to define how the pipeline will standardize input data.
-It defines all the pieces of your standardized dataset, as described in the in the
-`Data Standards Document <https://github.com/tsdat/data_standards/blob/main/ME_DataStandards.pdf>`_.
-Specifically, it identifies the following components:
+========================
+The pipeline config file ``pipeline.yaml`` describes the configuration of your pipeline:
 
-#. **Global attributes** - dataset metadata
-#. **Dimensions** - shape of data
-#. **Coordinate variables** - coordinate values for a specific dimension
-#. **Data variables** - all other variables in the dataset
-#. **Quality management** - quality tests to be performed for each variable and any associated corrections to be applied for failing tests.
+#. **Triggers** - which file input file patterns should trigger this pipeline
+#. **Ingest Class** - class name of the ingest pipeline to use
+#. **Dependent Config Files** - which yaml files to use for the retriever, dataset, quality management, and storage
 
 Each pipeline template will include a starter pipeline config file in the config folder.
 It will work out of the box, but the configuration should be tweaked according to the
-specifics of your dataset.
+specifics of your pipeline.  Consult the :ref:`getting-started` section for more information on getting started with a template.
 
-A full annotated example of an ingest pipeline config file is provided below and 
-can also be referenced in the
-`Tsdat github repository <https://github.com/tsdat/tsdat/blob/master/examples/templates/ingest_pipeline_template.yml>`_
+.. note::
+   To prevent redundancy, Tsdat config files are designed to be shared across multiple pipelines.  In the pipeline
+   config file, you can specify a shared config file to use (ie., shared/config/dataset.yaml) and then override
+   specific values in the overrides section.
+
+An annotated example of an ingest pipeline config file is provided below:
  
-.. literalinclude:: ../figures/ingest_pipeline_template.yml
+.. literalinclude:: ../figures/pipeline.yaml
     :linenos:
     :language: yaml
 	

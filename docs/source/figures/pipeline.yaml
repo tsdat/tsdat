@@ -1,0 +1,26 @@
+#  Name of the Ingest Pipeline to use
+classname: tsdat.pipeline.ingest.IngestPipeline
+
+#  Regex patterns that should trigger this pipeline
+triggers:
+  - .*example_ingest.*\.csv
+
+# Retriever config
+retriever:
+  path: pipelines/example_ingest/config/retriever.yaml
+
+# Dataset config.  In this example, we use a dataset.yaml file that is shared across multiple pipelines,
+# but we override one global attribute specifying a different location and we add one additional variable attribute.
+dataset:
+  path: shared/config/dataset.yaml
+  overrides:
+    /attrs/location_id: sgp
+    /data_vars/first/attrs/new_attribute: please add this attribute
+
+# Quality config - shared across multiple pipelines
+quality:
+  path: shared/config/default-quality.yaml
+
+# Storage config - shared across multiple pipelines
+storage:
+  path: shared/config/storage.yaml
