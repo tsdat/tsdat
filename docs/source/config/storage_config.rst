@@ -2,103 +2,81 @@
 
 Storage Configuration
 =====================
-The storage config file (``storage_config.yml``) specifies configuration 
-properties, the storage class will be used to save processed data, and 
-declares file handlers that will be used to read/write data.
+The storage config file ``storage.yaml`` describes how the output dataset will be saved to persistent storage.
+Specifically, it identifies the following two components:
 
-A simple annotated storage configuration is shown below:
+#. **Storage Class** - the class that will be used to persist output dataset
+#. **Handler** - the class that will be used to write datasets and read datasets back from the store
 
-.. code-block:: yaml
+Each pipeline template will include a starter storage config file in the config folder.
+It will work out of the box, but the configuration should be tweaked according to the
+specifics of your pipeline.  Consult the :ref:`getting-started` section for more information on getting started with a template.
 
-  ####################################################################
-  # TSDAT INGEST PIPELINE STORAGE TEMPLATE
-  ####################################################################
-  storage:
-    #-----------------------------------------------------------------
-    # Storage Parameters
-    #-----------------------------------------------------------------
-    # This section should not be modified unless there is a strong need. 
-    # Please contact the repository maintainers if you feel you need to 
-    # use different settings here – there may be another way to accomplish 
-    # what you need.
-    
-    classname: ${STORAGE_CLASSNAME}
-    parameters:
-      retain_input_files: ${RETAIN_INPUT_FILES}
-      root_dir: ${ROOT_DIR}
-      bucket_name: ${STORAGE_BUCKET}
+.. note::
+   Tsdat templates come complete with a VS Code IDE configuration that will provide inline documentation and auto-complete
+   for your yaml configuration files.  Consult the :ref:`tutorials` section for more information on editing your pipeline in
+   VS Code.
 
-
-    #-----------------------------------------------------------------
-    # File Handler I/O
-    #-----------------------------------------------------------------
-    # This section specifies the file handlers to use to read the raw
-    # datafile and to write the output file.
-    
-    file_handlers:
-    
-      # Input can be handled by tsdat's native file handlers or a
-      # custom one, written by the user.
-      input:
-        custom:
-          file_pattern: ".*.ext"
-          classname: ingest.<ingest_name>.pipeline.filehandler.CustomFileHandler
-        netcdf:
-          file_pattern: ".*.nc"
-          classname: tsdat.io.filehandlers.NetCdfHandler
-
-      # Output is handled traditionally in tsdat using the netcdf4
-      # format, but provides the option to output a csv. Please contact 
-      # the repository maintainers if you feel you need to write to a 
-      # different format.
-      output:
-        csv:
-          file_extension: ".csv"
-          classname: tsdat.io.filehandlers.CsvHandler
-        netcdf:
-          file_extension: ".nc"
-          classname: tsdat.io.filehandlers.NetCdfHandler
-
-
-File Handler Input/Output
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Please see the file handler :ref:`configuration <filehandlers>` or :ref:`walkthrough <more_code>` 
-for more detail.
-
-
-Storage Parameters
+Storage Classes
 ^^^^^^^^^^^^^^^^^^
 
-This section is primarily kept for reference and may not be of concern
-to the majority of users. 
 Currently there are two provided storage classes:
 
-#. ``FilesystemStorage`` - saves to local filesystem
-#. ``AwsStorage`` - saves to an AWS bucket (requires an AWS account with admin priviledges)
+#. ``FileSystem`` - saves to local filesystem
+#. ``S3Storage`` - saves to an AWS S3 bucket (requires an AWS account with admin privileges)
 
-Each storage class has different configuration parameters, but they both share a common
-file_handlers section. The following codeblocks explicitly state what each class's parameters
-default to.
+Both classes save datasets to file, and the user can specify the output file format(s) via the ``handler`` parameter of
+the config file.
 
-Local Filesystem:
+.. note::
+   The S3Storage class is meant to work with the AWS Pipeline Template which is currently being refactored and
+   will be included in a subsequent release.
 
-.. code-block:: yaml
+.. note::
+   To implement custom storage, such as storing in a database, you can extend the ``tsdat.io.base.Storage`` class.
 
-  storage: 
-    classname:  tsdat.io.FilesystemStorage
-    parameters:
-      retain_input_files: True                 # Whether to keep input files after they are processed
-      root_dir: ${CONFIG_DIR}/../storage/root  # The root dir where processed files will be stored
+Handler Classes
+^^^^^^^^^^^^^^^^^^
+
+Handlers declare the class that should be used to write output datasets and to read datasets back from persistent storage.
+The NetCDFHandler is the default handler, but you can add a custom handler to add additional file formats or to write
+to a different storage medium such as a database.  The only requirement is that it can read and write to and from an
+Xarray dataset.  Handlers must extend the ``DataHandler`` abstract class and encapsulate a DataReader and DataWriter
+class, which should implement the following two methods, respectively:
+
+.. code-block:: python
+
+    @abstractmethod
+    def read(self, input_key: str) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
+        """-----------------------------------------------------------------------------
+        Uses the input key to open a resource and load data as a xr.Dataset object or as
+        a mapping of strings to xr.Dataset objects.
+
+        In most cases DataReaders will only need to return a single xr.Dataset, but
+        occasionally some types of inputs necessitate that the data loaded from the
+        input_key be returned as a mapping. For example, if the input_key is a path to a
+        zip file containing multiple disparate datasets, then returning a mapping is
+        appropriate.
+
+        Args:
+            input_key (str): An input key matching the DataReader's regex pattern that
+            should be used to load data.
+
+        Returns:
+            Union[xr.Dataset, Dict[str, xr.Dataset]]: The raw data extracted from the
+            provided input key.
+
+        -----------------------------------------------------------------------------"""
 
 
-AWS S3 Bucket:
+    @abstractmethod
+    def write(self, dataset: xr.Dataset, **kwargs: Any) -> None:
+        """-----------------------------------------------------------------------------
+        Writes the dataset to the storage area. This method is typically called by
+        the tsdat storage API, which will be responsible for providing any additional
+        parameters required by subclasses of the tsdat.io.base.DataWriter class.
 
-.. code-block:: yaml
+        Args:
+            dataset (xr.Dataset): The dataset to save.
 
-  storage: 
-    classname:  tsdat.io.AwsStorage
-    parameters:
-      retain_input_files: True                 # Whether to keep input files after they are processed
-      bucket_name: tsdat_test                  # The name of the AWS S3 bucket where processed files will be stored
-      root_dir: /storage/root                  # The root dir (key) prefix for all processed files created in the bucket
+        -----------------------------------------------------------------------------"""

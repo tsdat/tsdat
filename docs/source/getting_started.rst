@@ -49,13 +49,13 @@ Developing a Tsdat Pipeline
 The recommended way to set up a Tsdat pipeline is to use a GitHub repository template.
 You can find a list of template repositories for tsdat at `<https://github.com/tsdat/template-repositories>`_.
 
-#. `Ingest Template <https://github.com/tsdat/ingest-template>`_
+#. `Pipeline Template <https://github.com/tsdat/pipeline-template>`_
 
-    Use this template to run ingest pipelines on your local computer.
+    Use this template to run pipelines on your local computer.
 
-#. `AWS Ingest Template <https://github.com/tsdat/ingest-template-aws>`_
+#. `AWS Pipeline Template <https://github.com/tsdat/pipeline-template-aws>`_
 
-    Use this template to run ingest pipelines on AWS.  (It requires an AWS account.)
+    Use this template to run pipelines on AWS.  (It requires an AWS account.)
 
 Once you have selected the template to use, select the "Use this template" button
 to create a new repository at your specified location with the template contents.
@@ -82,15 +82,13 @@ Running Your Tsdat Pipeline
 ****************************
 
 Once tsdat is installed and your pipeline template is configured, you can run it locally on 
-your input data using the following code from a terminal window at the top level of your repository:
+your input data from a terminal window at the top level of your repository.  To see the full list of commands,
+run:
 
-#. `Ingest Template <https://github.com/tsdat/ingest-template>`_::
+.. code-block:: bash
 
-    python ingest/<ingest-name>/runner.py
+    python runner.py --help
 
-#. `AWS Ingest Template <https://github.com/tsdat/ingest-template-aws>`_::
-
-    python tests/test_pipeline.py
 
 For detailed examples of how to set up and use tsdat, consult the 
 :ref:`examples_and_tutorials` section.
