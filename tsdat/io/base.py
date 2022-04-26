@@ -191,7 +191,7 @@ class Retriever(ParameterizedClass, ABC):
 
     ---------------------------------------------------------------------------------"""
 
-    readers: Dict[str, Any]
+    readers: Dict[Pattern, Any]  # type: ignore
     """Mapping of readers that should be used to read data given input keys."""
 
     @abstractmethod
