@@ -1,14 +1,14 @@
 from pydantic import Field
-from .utils import ParametrizedConfigClass, YamlModel
+from .utils import ParameterizedConfigClass, YamlModel
 
 __all__ = ["StorageConfig"]
 
 
-class DataHandlerConfig(ParametrizedConfigClass):
+class DataHandlerConfig(ParameterizedConfigClass):
     ...
 
 
-class StorageConfig(ParametrizedConfigClass, YamlModel):
+class StorageConfig(ParameterizedConfigClass, YamlModel):
     """---------------------------------------------------------------------------------
     Class used to contain configuration parameters for tsdat pipelines. This class will
     ultimately be converted into a tsdat.pipeline.base.Pipeline subclass for use in

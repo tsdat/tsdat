@@ -2,12 +2,12 @@ import re
 from typing import Dict, Pattern
 from pydantic import Field, validator, Extra
 from pydantic.fields import ModelField
-from .utils import ParametrizedConfigClass, YamlModel
+from .utils import ParameterizedConfigClass, YamlModel
 
 __all__ = ["RetrieverConfig"]
 
 
-class DataReaderConfig(ParametrizedConfigClass):
+class DataReaderConfig(ParameterizedConfigClass):
     # HACK: Can't do Pattern[str]: https://github.com/samuelcolvin/pydantic/issues/2636
     regex: Pattern = Field(  # type: ignore
         "",
@@ -22,7 +22,7 @@ class DataReaderConfig(ParametrizedConfigClass):
     )
 
 
-class RetrieverConfig(ParametrizedConfigClass, YamlModel, extra=Extra.allow):
+class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
     """---------------------------------------------------------------------------------
     Class used to contain configuration parameters for the tsdat retriever class. This
     class will ultimately be converted into a tsdat.io.base.Retriever subclass for use

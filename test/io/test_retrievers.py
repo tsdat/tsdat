@@ -7,13 +7,13 @@ from tsdat.config.dataset import DatasetConfig
 from tsdat.config.retriever import RetrieverConfig
 from tsdat.io.retrievers import DefaultRetriever
 from tsdat.testing import assert_close
-from tsdat.config.utils import recusive_instantiate
+from tsdat.config.utils import recursive_instantiate
 
 
 @fixture
 def simple_retriever() -> DefaultRetriever:
     config = RetrieverConfig.from_yaml(Path("test/config/yaml/retriever.yaml"))
-    return recusive_instantiate(config)
+    return recursive_instantiate(config)
 
 
 @fixture

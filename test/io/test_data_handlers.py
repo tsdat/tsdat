@@ -111,4 +111,4 @@ def test_csv_handler(sample_dataset: xr.Dataset):
 
 # TEST: ZipFileReader
 # TEST: Instantiate from config object for all readers/writers/handlers
-# These tests can be parametrized
+# These tests can be parameterized

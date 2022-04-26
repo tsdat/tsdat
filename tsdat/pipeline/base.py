@@ -8,12 +8,12 @@ from pydantic import Field
 from ..config.dataset import DatasetConfig
 from ..io.base import Retriever, Storage
 from ..qc.base import QualityManagement
-from ..utils import ParametrizedClass
+from ..utils import ParameterizedClass
 
 __all__ = ["Pipeline"]
 
 
-class Pipeline(ParametrizedClass, ABC):
+class Pipeline(ParameterizedClass, ABC):
     """------------------------------------------------------------------------------------
     Base class for tsdat data pipelines.
 
