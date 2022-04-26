@@ -46,11 +46,10 @@ class FailPipeline(QualityHandler):
     ------------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel, extra=Extra.allow):
-        # IDEA: add threshold of bad values (% or count) above which the error is thrown
         tolerance: float = 0
         """Tolerance for the number of allowable failures as the ratio of allowable
         failures to the total number of values checked. Defaults to 0, meaning that any
-        failured checks will result in a DataQualityError being raised."""
+        failed checks will result in a DataQualityError being raised."""
 
         context: str = ""
         """Additional context set by users that ends up in the traceback message."""
