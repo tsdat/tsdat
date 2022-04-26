@@ -1,6 +1,6 @@
 {
     "title": "PipelineConfig",
-    "description": "------------------------------------------------------------------------------------\nClass used read in the yaml pipeline config file and to generate its json schema for\nearly validation of its properties.\n\nThis class also provides a method to instantiate a subclass of tsdat.pipeline.Pipeline\nfrom the parsed pipeline configuration file.\n------------------------------------------------------------------------------------",
+    "description": "---------------------------------------------------------------------------------\nClass used to contain configuration parameters for tsdat pipelines. This class will\nultimately be converted into a tsdat.pipeline.base.Pipeline subclass for use in\ntsdat pipelines.\n\nProvides methods to support yaml parsing and validation, including the generation of\njson schema for immediate validation. This class also provides a method to\ninstantiate a tsdat.pipeline.base.Pipeline subclass from a parsed configuration\nfile.\n\nArgs:\n    classname (str): The dotted module path to the pipeline that the specified\n    configurations should apply to. To use the built-in IngestPipeline, for example,\n    you would set 'tsdat.pipeline.pipelines.IngestPipeline' as the classname.\n    triggers (List[Pattern[str]]): A list of regex patterns that should trigger this\n    pipeline when matched with an input key.\n    retriever (Union[Overrideable[RetrieverConfig], RetrieverConfig]): Either the\n    path to the retriever configuration yaml file and any overrides that should be\n    applied, or the retriever configurations themselves.\n    dataset (Union[Overrideable[DatasetConfig], DatasetConfig]): Either the path to\n    the dataset configuration yaml file and any overrides that should be applied, or\n    the dataset configurations themselves.\n    quality (Union[Overrideable[QualityConfig], QualityConfig]): Either the path to\n    the quality configuration yaml file and any overrides that should be applied, or\n    the dataset configurations themselves.\n    storage (Union[Overrideable[StorageConfig], StorageConfig]): Either the path to\n    the storage configuration yaml file and any overrides that should be applied, or\n    the storage configurations themselves.\n\n---------------------------------------------------------------------------------",
     "type": "object",
     "properties": {
         "classname": {
@@ -22,20 +22,6 @@
                 "type": "string",
                 "format": "regex"
             }
-        },
-        "settings": {
-            "title": "Settings",
-            "default": {
-                "validate_retriever_config": true,
-                "validate_dataset_config": true,
-                "validate_quality_config": true,
-                "validate_storage_config": true
-            },
-            "allOf": [
-                {
-                    "$ref": "#/definitions/ConfigSettings"
-                }
-            ]
         },
         "retriever": {
             "title": "Retriever",
@@ -94,50 +80,7 @@
         "quality",
         "storage"
     ],
-    "additionalProperties": false,
     "definitions": {
-        "ConfigSettings": {
-            "title": "ConfigSettings",
-            "description": "Base class for settings, allowing values to be overridden by environment variables.\n\nThis is useful in production for secrets you do not wish to save in code, it plays nicely with docker(-compose),\nHeroku and any 12 factor app design.",
-            "type": "object",
-            "properties": {
-                "validate_retriever_config": {
-                    "title": "Validate Retriever Config",
-                    "default": true,
-                    "env_names": [
-                        "validate_retriever_config"
-                    ],
-                    "type": "boolean"
-                },
-                "validate_dataset_config": {
-                    "title": "Validate Dataset Config",
-                    "description": "Validate the dataset configuration file after any overrides have been merged. Disabling validation is generally 10-30x faster, but comes with some risks and can easily lead to buggy behavior if you are not careful. For example. the dataset configuration model uses validators to set defaults for the 'datastream' attribute based on other global attributes that are set. The 'datastream' attribute is used elsewhere in the pipeline as a label for the dataset, and is used by some storage classes to generate the filepath where the data should be saved. If you disable dataset configuration validation, THIS WILL NOT WORK, so you will need to take care to set the 'datastream' attribute manually in your config file directly. Because of the complicated nature of dataset configuration files, it is almost always better to leave validation ON.",
-                    "default": true,
-                    "env_names": [
-                        "validate_dataset_config"
-                    ],
-                    "type": "boolean"
-                },
-                "validate_quality_config": {
-                    "title": "Validate Quality Config",
-                    "description": "Validate the quality configuration file after any overrides have been merged. Disabling validation is generally 10-30x faster, but comes with some risks and can easily lead to buggy behavior if you are not careful. For example. the quality configuration model uses validators to set defaults for regex patterns in the registry/readers section. If you disable validation of the quality configuration file, then you must ensure that your regex patterns are set explicitly, as you will not be able to rely on the dynamic defaults.",
-                    "default": true,
-                    "env_names": [
-                        "validate_quality_config"
-                    ],
-                    "type": "boolean"
-                },
-                "validate_storage_config": {
-                    "title": "Validate Storage Config",
-                    "description": "Validate the storage configuration file after any overrides have been merged. Disabling validation is generally 10-30x faster, but comes with some risks and can easily lead to buggy behavior if you are not careful.",
-                    "default": true,
-                    "env_names": [
-                        "validate_storage_config"
-                    ],
-                    "type": "boolean"
-                }
-            }
-        },
         "Overrideable_RetrieverConfig_": {
             "title": "Overrideable[RetrieverConfig]",
             "type": "object",
@@ -172,13 +115,6 @@
                     "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
                     "default": {},
                     "type": "object"
-                },
-                "regex": {
-                    "title": "Regex",
-                    "description": "A regex pattern used to map input data keys (e.g., a file path or url passed as input from the pipeline runner) to the DataReader that should be used to read that resource. If there are multiple DataReader registered and an input data key would be matched by the regex pattern of multiple DataReaders, then only the DataReader corresponding with the first match will be used. Because of this, we recommend ordering your DataReaders from most specific pattern to least specific so that the most specific pattern will be matched first.",
-                    "default": "",
-                    "type": "string",
-                    "format": "regex"
                 }
             },
             "required": [
@@ -188,6 +124,7 @@
         },
         "RetrieverConfig": {
             "title": "RetrieverConfig",
+            "description": "---------------------------------------------------------------------------------\nClass used to contain configuration parameters for the tsdat retriever class. This\nclass will ultimately be converted into a tsdat.io.base.Retriever subclass for use\nin tsdat pipelines.\n\nProvides methods to support yaml parsing and validation, including the generation of\njson schema for immediate validation. This class also provides a method to\ninstantiate a tsdat.io.base.Retriever subclass from a parsed configuration file.\n\nArgs:\n    classname (str): The dotted module path to the pipeline that the specified\n    configurations should apply to. To use the built-in IngestPipeline, for example,\n    you would set 'tsdat.pipeline.pipelines.IngestPipeline' as the classname.\n    readers (Dict[str, DataReaderConfig]): The DataReaders to use for reading input\n    data.\n\n---------------------------------------------------------------------------------",
             "type": "object",
             "properties": {
                 "classname": {
@@ -281,7 +218,7 @@
                 },
                 "location_id": {
                     "title": "Location Id",
-                    "description": "A label or acroynm for the location where the data were obtained from. Only lowercase alphanumeric characters and '_' are allowed.",
+                    "description": "A label or acronym for the location where the data were obtained from. Only lowercase alphanumeric characters and '_' are allowed.",
                     "minLength": 3,
                     "pattern": "^[a-z0-9_]+$",
                     "type": "string"
@@ -304,7 +241,7 @@
                     "title": "Temporal",
                     "description": "An optional string which describes the temporal resolution of the data (if it spaced in regular intervals). This string should be formated as a number followed by a unit of measurement, e.g., '10m' would indicate the data is sampled every ten minutes. Only lowercase alphanumeric characters are allowed.",
                     "minLength": 2,
-                    "pattern": "^[0-9]+[a-z]+$",
+                    "pattern": "^[0-9]+[a-zA-Z]+$",
                     "type": "string"
                 },
                 "data_level": {
@@ -510,11 +447,17 @@
         },
         "DatasetConfig": {
             "title": "DatasetConfig",
-            "description": "Defines the core output dataset structure, including coordinate variables, data\nvariables, and metadata attributes. Quality check variables are not included in this\nstructure.",
+            "description": "---------------------------------------------------------------------------------\nClass defining the structure and metadata of the dataset produced by a tsdat\npipeline.\n\nAlso provides methods to support yaml parsing and validation, including generation\nof json schema.\n\nArgs:\n    attrs (GlobalAttributes): Attributes that pertain to the dataset as a whole.\n    coords (Dict[str, Coordinate]): The dataset's coordinate variables.\n    data_vars (Dict[str, Variable]): The dataset's data variables.\n\n---------------------------------------------------------------------------------",
             "type": "object",
             "properties": {
                 "attrs": {
-                    "$ref": "#/definitions/GlobalAttributes"
+                    "title": "Attrs",
+                    "description": "Attributes that pertain to the dataset as a whole (as opposed to attributes that are specific to individual variables.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/GlobalAttributes"
+                        }
+                    ]
                 },
                 "coords": {
                     "title": "Coords",
@@ -656,10 +599,12 @@
                 "checker",
                 "handlers",
                 "apply_to"
-            ]
+            ],
+            "additionalProperties": false
         },
         "QualityConfig": {
             "title": "QualityConfig",
+            "description": "---------------------------------------------------------------------------------\nClass used to contain quality configuration parameters for tsdat pipelines. This\nclass will ultimately be converted into a tsdat.qc.base.QualityManagement class for\nuse in downstream tsdat pipeline code.\n\nProvides methods to support yaml parsing and validation, including the generation of\njson schema for immediate validation.\n\nArgs:\n    managers (List[ManagerConfig]): A list of quality checks and controls that\n    should be applied.\n\n---------------------------------------------------------------------------------",
             "type": "object",
             "properties": {
                 "managers": {
@@ -673,7 +618,8 @@
             },
             "required": [
                 "managers"
-            ]
+            ],
+            "additionalProperties": false
         },
         "Overrideable_StorageConfig_": {
             "title": "Overrideable[StorageConfig]",
@@ -718,6 +664,7 @@
         },
         "StorageConfig": {
             "title": "StorageConfig",
+            "description": "---------------------------------------------------------------------------------\nClass used to contain configuration parameters for tsdat pipelines. This class will\nultimately be converted into a tsdat.pipeline.base.Pipeline subclass for use in\ntsdat pipelines.\n\nProvides methods to support yaml parsing and validation, including the generation of\njson schema for immediate validation. This class also provides a method to\ninstantiate a tsdat.io.base.Storage subclass from a parsed configuration file.\n\nArgs:\n    classname (str): The dotted module path to the storage class that the specified\n    configurations should apply to. To use the built-in FileSystemStorage, for\n    example, you would set 'tsdat.io.storage.FileSystemStorage' as the classname.\n    handler (DataHandlerConfig): Config class that should be used for data I/O\n    within the storage area.\n\n---------------------------------------------------------------------------------",
             "type": "object",
             "properties": {
                 "classname": {

@@ -1,5 +1,6 @@
 {
     "title": "QualityConfig",
+    "description": "---------------------------------------------------------------------------------\nClass used to contain quality configuration parameters for tsdat pipelines. This\nclass will ultimately be converted into a tsdat.qc.base.QualityManagement class for\nuse in downstream tsdat pipeline code.\n\nProvides methods to support yaml parsing and validation, including the generation of\njson schema for immediate validation.\n\nArgs:\n    managers (List[ManagerConfig]): A list of quality checks and controls that\n    should be applied.\n\n---------------------------------------------------------------------------------",
     "type": "object",
     "properties": {
         "managers": {
@@ -14,6 +15,7 @@
     "required": [
         "managers"
     ],
+    "additionalProperties": false,
     "definitions": {
         "CheckerConfig": {
             "title": "CheckerConfig",
@@ -107,7 +109,8 @@
                 "checker",
                 "handlers",
                 "apply_to"
-            ]
+            ],
+            "additionalProperties": false
         }
     }
 }
