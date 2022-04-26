@@ -2,7 +2,7 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 from pytest import fixture
-from tsdat.qc.checkers import CheckMissing, CheckMonotonic
+from tsdat.qc.checkers import *
 
 
 @fixture
@@ -25,7 +25,21 @@ def sample_dataset() -> xr.Dataset:
             ),
             "monotonic_var": (
                 "time",
-                np.array([59, 60, 61, 62], dtype=np.float64),  # type: ignore
+                np.array([59, 60, 61, 64], dtype=np.float64),  # type: ignore
+                {
+                    "valid_min": 60,
+                    "fail_min": 60,
+                    "warn_min": 60,
+                    "valid_max": 61,
+                    "fail_max": 61,
+                    "warn_max": 61,
+                    "valid_range": [60, 61],
+                    "fail_range": [60, 61],
+                    "warn_range": [60, 61],
+                    "valid_delta": 2,
+                    "fail_delta": 2,
+                    "warn_delta": 2,
+                },
             ),
             "string_var": (
                 "time",
@@ -78,4 +92,79 @@ def test_monotonic_check(sample_dataset: xr.Dataset):
     checker = CheckMonotonic(parameters={"dim": "time"})  # type: ignore
     expected = np.bool8([False, False, False, False])
     results = checker.run(sample_dataset, "monotonic_var")
+    assert np.array_equal(results, expected)  # type: ignore
+
+
+def test_check_min_classes(sample_dataset: xr.Dataset):
+    var_name = "monotonic_var"
+    expected = np.bool8([True, False, False, False])
+
+    checker = CheckValidMin()
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+    checker = CheckFailMin()
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+    checker = CheckWarnMin()
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+    checker = CheckValidRangeMin()
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+    checker = CheckFailRangeMin()
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+    checker = CheckWarnRangeMin()
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+
+def test_check_max_classes(sample_dataset: xr.Dataset):
+    var_name = "monotonic_var"
+    expected = np.bool8([False, False, True, True])
+
+    checker = CheckValidMax(allow_equal=False)
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+    checker = CheckFailMax(allow_equal=False)
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+    checker = CheckWarnMax(allow_equal=False)
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+    checker = CheckValidRangeMax(allow_equal=False)
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+    checker = CheckFailRangeMax(allow_equal=False)
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+    checker = CheckWarnRangeMax(allow_equal=False)
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+
+def test_check_delta_classes(sample_dataset: xr.Dataset):
+    var_name = "monotonic_var"
+    expected = np.bool8([False, False, False, True])
+
+    checker = CheckValidDelta(allow_equal=False)
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+    checker = CheckFailDelta()
+    results = checker.run(sample_dataset, var_name)
+    assert np.array_equal(results, expected)  # type: ignore
+
+    checker = CheckWarnDelta()
+    results = checker.run(sample_dataset, var_name)
     assert np.array_equal(results, expected)  # type: ignore
