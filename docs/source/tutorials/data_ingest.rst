@@ -1,11 +1,12 @@
 .. _template repository: https://github.blog/2019-06-06-generate-new-repositories-with-repository-templates/
 .. _Docker container: https://www.docker.com/
 .. _Anaconda environment: https://www.anaconda.com/
+.. _Windows Subsystem for Linux: https://docs.microsoft.com/en-us/windows/wsl/about
 
 .. _data_ingest: 
 
 Pipeline Template Tutorial
----------------------------
+------------------------
 
 In this tutorial we will build a data ingestion pipeline to ingest some global
 marine data hosted by the National Oceanic and Atmospheric Administration’s 
@@ -67,7 +68,7 @@ Now that we have the data and metadata that we will need, let’s move on to
 step #2 and set up a GitHub repository for our work. What we are looking to 
 do is read in the NCEI “raw” data, apply variable names and metadata, 
 apply quality control, and convert it into the netCDF format – an ‘ingest’, 
-in other words. To do this, navigate to https://github.com/tsdat/pipeline-template
+in other words. To do this, navigate to https://github.com/tsdat/pipeline-template 
 and click “Use this template” (you must log into github to see this button).
 
 .. figure:: global_marine_data/github1.png
@@ -96,88 +97,24 @@ whatever IDE you prefer.
 
 Next install Python 3.8+ if you haven’t already done so and create an 
 environment in which to manage your project’s dependencies. You can download 
-and install Python here: https://www.python.org. When developing with intent to
-deploy to a production system, we recommend managing your environment using a 
-`Docker Container`_ or an `Anaconda environment`_. 
+and install Python here: https://www.python.org. 
+
+When developing with intent to deploy to a production system on Windows, we 
+recommend managing your environment using a `Docker Container`_ or `Windows Subsystem
+for Linux`_ with an `Anaconda environment`_. 
 
 
-.. setting_up_docker:
+The tutorials for setting up tsdat in Docker and WSL are located
+in :ref:`setting_up_docker` and :ref:`setting_up_wsl`, respectively.
 
-Setting up a Docker Container and VS Code
-=========================================
 
-Because Tsdat support for Windows machines is currently limited (and I have a 
-windows machine), I'll show how you to set up tsdat in VSCode using tsdat's Docker
-setup. This setup is recommended because it creates a self-contained development
-environment and is pretty user-friendly.
-
-Start by installing `Docker <https://www.docker.com/products/docker-desktop>`_ 
-and `VSCode <https://code.visualstudio.com/>`_. It's a good idea to familiarize
-yourself with the VScode interface, and feel free to go through
-Docker's initial tutorial after installation. It goes through basics on setting 
-up a Docker "engine" to make sure it's working - you don't need to know how to 
-do this (or really anything in Docker) to use Tsdat.
-
-Once you have VS Code and Docker downloaded and installed:
-
-1. Open VSCode -> New Window -> Open Folder -> open cloned template folder ("ncei_global_marine_data_ingest")
-	
-  .. figure:: global_marine_data/vscode1.png
-      :align: center
-      :width: 100%
-      :alt:
-
-  |
-
-  .. figure:: global_marine_data/vscode2.png
-      :align: center
-      :width: 100%
-      :alt:
-
-  |
-	
-2. VSCode will prompt you if you want to open in Docker -> Click yes and wait for docker to initiate, which takes a minute or two.
-	
-  .. figure:: global_marine_data/vscode3.png
-      :align: center
-      :width: 100%
-      :alt:
-
-  |
-
-  .. figure:: global_marine_data/vscode4.png
-      :align: center
-      :width: 100%
-      :alt:
-
-  |
-	
-3. VSCode will prompt if you want to install dependencies -> Hit install; you can close the new windows it opens
-	
-  .. figure:: global_marine_data/vscode5.png
-      :align: center
-      :width: 100%
-      :alt:
-
-  |
-
-4. VS Code will then prompt you to restart window after pylance is installed -> Hit yes again and VS Code will reboot
-	
-  .. figure:: global_marine_data/vscode6.png
-      :align: center
-      :width: 100%
-      :alt:
-
-  |
-
-Congrats! Python environment handling done. Open the "Explorer" tab to see folder contents for the next step:
+Once you have Docker or WSL set up, open the "Explorer" tab to see folder contents 
+for the next step:
 
   .. figure:: global_marine_data/vscode7.png
       :align: center
       :width: 100%
       :alt:
-
-  |
 
 A few quick things on VSCode: in the left-hand toolbar, we will use the "Explorer", "Search", "Testing", and "TODO tree" icons in this tutorial. Also useful to know are the commands "ctrl \`" (toggle the terminal on/off) and "ctrl shift P" (open command search bar).
 
@@ -311,8 +248,8 @@ ingest folder.
 
 Customizing the New Ingest
 ==========================
-Each ingest folder is particular to a specific datafile, so we must customize our ingest
-to our particular datafile. The following section describes how to customize a pipeline 
+Each ingest folder is particular to a specific data file, so we must customize our ingest
+to our particular data file. The following section describes how to customize a pipeline 
 for our historical ship data, following the TODOs list.
 
 7. Let's start with "runner.py". This "TODO" states 'Update path to data and/or 
@@ -320,7 +257,7 @@ configuration files as needed.' As you can see, the `cookiecutter` command auto-
 the configuration filenames, so all we need to do is replace the input data. Once done,
 delete the "TODO" and it disappears from the list.
 
-Raw datafiles can be stored anywhere (but here I have moved it to the tests/data/input/ folder),
+Raw data files can be stored anywhere (but here I have moved it to the tests/data/input/ folder),
 so long as the `run_pipeline` command is referenced to the correct location. Also be sure 
 to delete any other files not to be read through the pipeline from the data folder. Tsdat 
 will try to run these and will fail.
@@ -330,7 +267,7 @@ will try to run these and will fail.
 
 
 8. "mapping.py" is next. This particular file doesn't have a repeatable pattern that
-Regex can accomodate, so we'll simply use the file extension regex ".*.csv".
+Regex can accommodate, so we'll simply use the file extension regex ".*.csv".
 
 .. figure:: global_marine_data/vscode18.png
     :alt:
@@ -363,14 +300,14 @@ particular dataset you are working on:
 
     # These parameters will be used to name files.
     location_id: "arctic"
-    dataset_name: "ncei_artic_cruise_example"
+    dataset_name: "ncei_arctic_cruise_example"
     # qualifier: ""
     # temporal: ""
     data_level: "a1"
 
   dataset_definition:
     attributes:
-      title: "NCEI Artic Cruise Example"
+      title: "NCEI Arctic Cruise Example"
       description: "Historical marine data are comprised of ship, buoy, and platform observations."
       conventions: MHKiT-Cloud Data Standards v. 1.0
       institution: Pacific Northwest National Laboratory
@@ -495,7 +432,7 @@ particular dataset you are working on:
           parameters:
             bit: 1
             assessment: Bad
-            meaning: "Missing datapoint"
+            meaning: "Missing data point"
         - classname: tsdat.qc.handlers.RemoveFailedValues
       variables:
         - DATA_VARS
