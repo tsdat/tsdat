@@ -1,5 +1,5 @@
 import xarray as xr
-from typing import List
+from typing import Any, List
 
 from tsdat.utils import decode_cf
 from .base import Pipeline
@@ -17,7 +17,7 @@ class IngestPipeline(Pipeline):
 
     ---------------------------------------------------------------------------------"""
 
-    def run(self, inputs: List[str]) -> xr.Dataset:
+    def run(self, inputs: List[str], **kwargs: Any) -> xr.Dataset:
         dataset = self.retriever.retrieve(inputs, self.dataset_config)
         dataset = self.prepare_retrieved_dataset(dataset)
         dataset = self.hook_customize_dataset(dataset)

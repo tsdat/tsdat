@@ -38,7 +38,22 @@ class InputKeyRetrieverConfig:
 
 
 class DefaultRetriever(Retriever):
-    # TODO: Docstring
+    """------------------------------------------------------------------------------------
+    Reads data from one or more inputs, renames coordinates and data variables according
+    to retrieval and dataset configurations, and applies registered DataConverters to
+    retrieved data.
+
+    Args:
+        readers (Dict[Pattern[str], DataReader]): A mapping of patterns to DataReaders
+        that the retriever uses to determine which DataReader to use for reading any
+        given input key.
+        coords (Dict[str, Dict[Pattern[str], VariableRetriever]]): A dictionary mapping
+        output coordinate variable names to rules for how they should be retrieved.
+        data_vars (Dict[str, Dict[Pattern[str], VariableRetriever]]): A dictionary
+        mapping output data variable names to rules for how they should be retrieved.
+
+
+    ------------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel, extra=Extra.forbid):
         merge_kwargs: Dict[str, Any] = {}
@@ -67,9 +82,8 @@ class DefaultRetriever(Retriever):
     retrieved data variable."""
 
     def retrieve(
-        self, input_keys: List[str], dataset_config: DatasetConfig
+        self, input_keys: List[str], dataset_config: DatasetConfig, **kwargs: Any
     ) -> xr.Dataset:
-        # TODO: docstring
         raw_mapping = self._get_raw_mapping(input_keys)
         dataset_mapping: Dict[str, xr.Dataset] = {}
         for key, dataset in raw_mapping.items():
@@ -218,7 +232,6 @@ class DefaultRetriever(Retriever):
             dim = actual_dims[0]
             if dim != expected_dim:
                 dataset = dataset.swap_dims({dim: expected_dim})  # type: ignore
-                # dataset = dataset.drop_vars([dim])
 
         return dataset
 
