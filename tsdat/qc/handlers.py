@@ -102,7 +102,7 @@ class RecordQualityResults(QualityHandler):
         dataset.qcfilter.add_test(
             variable_name,
             index=failures,
-            test_number=self.parameters.bit + 1,
+            test_number=self.parameters.bit,
             test_meaning=self.parameters.meaning,
             test_assessment=self.parameters.assessment,
         )

@@ -191,7 +191,7 @@ def test_record_quality_results(sample_dataset: xr.Dataset):
 
     failures: NDArray[np.bool8] = np.bool8([True, False, False, False])  # type: ignore
 
-    parameters: Dict[str, Any] = {"bit": 0, "assessment": "bad", "meaning": "foo bar"}
+    parameters: Dict[str, Any] = {"bit": 1, "assessment": "bad", "meaning": "foo bar"}
     handler = RecordQualityResults(parameters=parameters)  # type: ignore
     dataset = handler.run(sample_dataset, "monotonic_var", failures)
 
