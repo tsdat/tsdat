@@ -5,5 +5,3 @@ managers:
     handlers:
       - classname: tsdat.qc.handlers.FailPipeline
     apply_to: [COORDS]
-
-  # TODO: Add check missing for 'first' data var

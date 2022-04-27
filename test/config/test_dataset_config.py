@@ -224,7 +224,7 @@ def test_variable_attrs_allow_extra():
     assert expected == model_dict
 
 
-# TODO: Move/modify this test to retriever test area
+# TEST: Move/modify this test to retriever test area
 # def test_input_var_properties():
 #     # Input variable can be created, and produces expected result
 #     invar: Dict[str, Any] = {
@@ -263,7 +263,7 @@ def test_fail_if_missing_required_variable_properties():
 
 
 def test_fail_if_bad_variable_name():
-    # TODO: This test should work at the coords/data_vars level instead of inside a
+    # TEST: This test should work at the coords/data_vars level instead of inside a
     # specific variable.
     names: List[str] = [
         "ñø_åsçîí",
@@ -288,7 +288,7 @@ def test_fail_if_bad_variable_name():
         assert expected_error_msg in actual_msg
 
 
-# TODO: This test needs to be reconsidered
+# TEST: This test needs to be reconsidered
 # def test_variable_retrieval_properties():
 #     base_var: Dict[str, Any] = {
 #         "dims": ["time"],
