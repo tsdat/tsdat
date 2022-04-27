@@ -1,4 +1,5 @@
 import logging
+import re
 from pydantic import (
     Extra,
     Field,
@@ -6,6 +7,7 @@ from pydantic import (
     root_validator,
     validator,
 )
+from pydantic.fields import ModelField
 from typing import Any, Dict, Union
 from .attributes import GlobalAttributes
 from .utils import YamlModel
@@ -72,19 +74,18 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
             raise ValueError("Required coordinate definition 'time' is missing.")
         return coords
 
-    # TODO
-    # @validator("coords", "data_vars")
-    # def variable_names_are_legal(
-    #     cls, vars: Dict[str, Variable], field: ModelField
-    # ) -> Dict[str, Variable]:
-    #     for name in vars.keys():
-    #         pattern = re.compile(r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
-    #         if not pattern.match(name):
-    #             raise ValueError(
-    #                 f"'{name}' is not a valid '{field.name}' name. It must be a value"
-    #                 f" matched by {pattern}."
-    #             )
-    #     return vars
+    @validator("coords", "data_vars")
+    def variable_names_are_legal(
+        cls, vars: Dict[str, Variable], field: ModelField
+    ) -> Dict[str, Variable]:
+        for name in vars.keys():
+            pattern = re.compile(r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
+            if not pattern.match(name):
+                raise ValueError(
+                    f"'{name}' is not a valid '{field.name}' name. It must be a value"
+                    f" matched by {pattern}."
+                )
+        return vars
 
     @validator("coords", "data_vars", pre=True)
     @classmethod

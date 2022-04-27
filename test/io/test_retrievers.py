@@ -72,6 +72,6 @@ def test_simple_extract_multifile_dataset(
     assert_close(dataset, expected)
 
 
-def test_multi_datastream_retrieval():
-    # TODO
-    pass
+# TEST: Multiple input datasets with non-overlapping or partially-overlapping data vars
+# def test_multi_datastream_retrieval():
+#     pass

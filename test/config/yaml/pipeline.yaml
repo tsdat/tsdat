@@ -3,7 +3,6 @@ classname: tsdat.pipeline.pipelines.IngestPipeline
 triggers:
   - '.*\.csv'
 
-# TODO: Consider jsonpath-ng for overrides instead of jsonpointer
 retriever:
   path: test/config/yaml/retriever.yaml
 

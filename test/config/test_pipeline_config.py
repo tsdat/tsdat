@@ -9,52 +9,6 @@ from tsdat.config.storage import StorageConfig
 from tsdat.config.quality import QualityConfig
 
 
-# TEST: PipelineConfig can instantiate a real pipeline object
-# TEST: PipelineConfig settings (validate: dataset/quality/storage) disables / enables
-# validation checks.
-# TEST: PipelineConfig performs appropriate cross-validation of dataset, quality, and
-# storage configurations.
-
-
-# def test_pipeline_config_reads_raw_yaml():
-#     expected_dict: Dict[str, Any] = {
-#         "classname": "tsdat.pipeline.ingest.IngestPipeline",
-#         "parameters": {},
-#         "associations": [
-#             ".*\\.csv",
-#         ],
-#         "dataset": {
-#             "path": "test/config/yaml/dataset.yaml",
-#             "overrides": {
-#                 "/attrs/location_id": "sgp",
-#                 "/coords/time/attrs/units": "km",
-#                 "/data_vars/first/attrs/new_attribute": "please add this attribute",
-#             },
-#         },
-#         "quality": {
-#             "path": "test/config/yaml/quality.yaml",
-#             "overrides": {
-#                 "/managers/0/exclude": [],
-#             },
-#         },
-#         "storage": {
-#             "path": "test/config/yaml/storage.yaml",
-#         },
-#         "settings": {
-#             "validate_dataset_config": True,
-#             "validate_quality_config": True,
-#             "validate_storage_config": True,
-#         },
-#     }
-
-#     model = PipelineConfig.from_yaml(
-#         Path("test/config/yaml/pipeline.yaml"), validate=False
-#     )
-#     model_dict = model.dict(exclude_none=True, by_alias=True)
-
-#     assert model_dict == expected_dict
-
-
 def test_pipeline_config_merges_overrides():
     # Load the linked config files separately
     retriever = RetrieverConfig.from_yaml(Path("test/config/yaml/retriever.yaml"))
@@ -73,12 +27,6 @@ def test_pipeline_config_merges_overrides():
         "classname": "tsdat.pipeline.pipelines.IngestPipeline",
         "parameters": {},
         "triggers": [re.compile(r".*\.csv")],
-        # "settings": {
-        #     "validate_retriever_config": True,
-        #     "validate_dataset_config": True,
-        #     "validate_quality_config": True,
-        #     "validate_storage_config": True,
-        # },
         "retriever": retriever.dict(**dict_kwargs),
         "dataset": dataset.dict(**dict_kwargs),
         "quality": quality.dict(**dict_kwargs),

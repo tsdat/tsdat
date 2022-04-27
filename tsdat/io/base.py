@@ -192,9 +192,9 @@ class Retriever(ParameterizedClass, ABC):
     ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Prepares the raw dataset mapping for use in downstream pipeline processes by
-        consolidating the data into a single xr.Dataset object consisting only of
-        variables specified by retriever configurations. Applies input data converters
-        as part of the preparation process.
+        consolidating the data into a single xr.Dataset object. The retrieved dataset
+        may contain additional coords and data_vars that are not defined in the output
+        dataset. Input data converters are applied as part of the preparation process.
 
         Args:
             input_keys (List[str]): The input keys the registered DataReaders should
@@ -202,7 +202,7 @@ class Retriever(ParameterizedClass, ABC):
             dataset_config (DatasetConfig): The specification of the output dataset.
 
         Returns:
-            xr.Dataset: The dataset
+            xr.Dataset: The retrieved dataset.
 
         -----------------------------------------------------------------------------"""
         ...

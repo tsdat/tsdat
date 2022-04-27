@@ -36,6 +36,7 @@ __all__ = [
 class YamlModel(BaseModel):
     @classmethod
     def from_yaml(cls, filepath: Path, overrides: Optional[Dict[str, Any]] = None):
+
         # TODO: Add docstring since this is a public-facing method
         config = read_yaml(filepath)
         if overrides:
