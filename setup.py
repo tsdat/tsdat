@@ -1,33 +1,23 @@
 import os
-import pathlib
 import setuptools
+from pathlib import Path
 
-# The directory containing this file
-CWD = pathlib.Path(__file__).parent
+README = Path("README.md").read_text()
 
-# The text of the README file
-README = (CWD / "README.md").read_text()
+requirements = Path("requirements.txt").read_text().strip().splitlines()
+REQUIREMENTS = [req for req in requirements if not req.startswith("#")]
 
-# Get the list of dependencies from the requirements.txt file
-with open(os.path.join(CWD, "requirements.txt")) as requirements_file:
-    # Parse requirements.txt, ignoring any commented-out lines.
-    REQUIREMENTS = [
-        line
-        for line in requirements_file.read().splitlines()
-        if not line.startswith("#")
-    ]
+VERSION = os.environ["TSDAT_VERSION"]
 
-version = os.environ["TSDAT_VERSION"]
-assert "." in version
 
 setuptools.setup(
     name="tsdat",
-    version=version,
+    version=VERSION,
     description="A data processing framework used to convert time series data into standardized format.",
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/tsdat/tsdat",
-    author="Carina Lansing, Maxwell Levin",
+    author="tsdat",
     author_email="tsdat@pnnl.gov",
     license="Simplified BSD (2-clause)",
     classifiers=[
@@ -41,10 +31,12 @@ setuptools.setup(
         "Intended Audience :: Science/Research",
         "Operating System :: OS Independent",
     ],
-    packages=setuptools.find_packages(exclude=["docs", "tests", "examples"]),
-    entry_points={"console_scripts": []},
+    packages=setuptools.find_packages(exclude=["test"]),
+    package_data={"tsdat": ["py.typed"]},
     include_package_data=True,
+    python_requires=">=3.8",
     zip_safe=False,
     install_requires=REQUIREMENTS,
+    entry_points={"console_scripts": ["tsdat = tsdat.main:app"]}
     scripts=[],
 )
