@@ -81,8 +81,8 @@ class RecordQualityResults(QualityHandler):
     ------------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel, extra=Extra.forbid):
-        bit: int = Field(ge=0, lt=32)
-        """The bit number (e.g., 0, 1, 2, ...) used to indicate if the check passed.
+        bit: int = Field(ge=1, lt=32)
+        """The bit number (e.g., 1, 2, 3, ...) used to indicate if the check passed.
         The quality results are bitpacked into an integer array to preserve space. For
         example, if 'check #0' uses bit 0 and fails, and 'check #1' uses bit 1 and fails
         then the resulting value on the qc variable would be 2^(0) + 2^(1) = 3. If we
@@ -102,7 +102,7 @@ class RecordQualityResults(QualityHandler):
         dataset.qcfilter.add_test(
             variable_name,
             index=failures,
-            test_number=self.parameters.bit + 1,
+            test_number=self.parameters.bit,
             test_meaning=self.parameters.meaning,
             test_assessment=self.parameters.assessment,
         )
