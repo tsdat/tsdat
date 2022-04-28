@@ -37,6 +37,6 @@ setuptools.setup(
     python_requires=">=3.8",
     zip_safe=False,
     install_requires=REQUIREMENTS,
-    entry_points={"console_scripts": ["tsdat = tsdat.main:app"]}
+    entry_points={"console_scripts": ["tsdat = tsdat.main:app"]},
     scripts=[],
 )
