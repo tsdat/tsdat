@@ -66,11 +66,12 @@ class UnitsConverter(DataConverter):
             or output_units == "unitless"
             or input_units == output_units
         ):
-            logger.warning(
-                "Output units for variable %s could not be found. Please ensure these"
-                " are set in the dataset configuration file for the specified variable.",
-                variable_name,
-            )
+            if not output_units:
+                logger.warning(
+                    "Output units for variable %s could not be found. Please ensure these"
+                    " are set in the dataset configuration file for the specified variable.",
+                    variable_name,
+                )
             return dataset
 
         data: NDArray[Any] = act.utils.data_utils.convert_units(  # type: ignore
