@@ -1,14 +1,14 @@
-xarray[complete] >=0.20, <1.0
-act-atmos >=1.1.3, <2.0
-pydantic >=1.9.0, <2.0
-pyyaml >=5.4, <6.0
+netCDF4
+h5netcdf
+cftime
+xarray >=0.20
+act-atmos >=1.1.3
+pydantic >=1.9.0
+pyyaml >=5.4
+numpy >= 1.2
+pandas >= 1.2
 jsonpointer==2.2
-numpy >=1.21, <2.0
-pandas >= 1.2, <2.0
 dunamai==1.9.0
-boto3 >=1.21, <2.0
-typer >=0.4, <1.0
-
-# Optional dependencies
-# cmocean
-# seaborn
+typer >=0.4
+rich
+types-PyYAML
