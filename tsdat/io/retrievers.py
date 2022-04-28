@@ -13,19 +13,19 @@ __all__ = ["DefaultRetriever"]
 logger = logging.getLogger(__name__)
 
 
-class VariableRetriever(BaseModel, extra=Extra.forbid):
+class RetrievedVariable(BaseModel, extra=Extra.forbid):
     name: str
     data_converters: List[DataConverter] = []
 
 
 class InputKeyRetrieverConfig:
     def __init__(self, input_key: str, retriever: "DefaultRetriever") -> None:
-        self.coords: Dict[str, VariableRetriever] = {}
-        self.data_vars: Dict[str, VariableRetriever] = {}
+        self.coords: Dict[str, RetrievedVariable] = {}
+        self.data_vars: Dict[str, RetrievedVariable] = {}
 
         def update_mapping(
-            to_update: Dict[str, VariableRetriever],
-            variable_dict: Dict[str, Dict[Pattern[str], VariableRetriever]],
+            to_update: Dict[str, RetrievedVariable],
+            variable_dict: Dict[str, Dict[Pattern[str], RetrievedVariable]],
         ):
             for name, retriever_dict in variable_dict.items():
                 for pattern, variable_retriever in retriever_dict.items():
@@ -71,12 +71,12 @@ class DefaultRetriever(Retriever):
     """A dictionary of DataReaders that should be used to read data provided an input
     key."""
 
-    coords: Dict[str, Dict[Pattern, VariableRetriever]]  # type: ignore
+    coords: Dict[str, Dict[Pattern, RetrievedVariable]]  # type: ignore
     """A dictionary mapping output coordinate names to the retrieval rules and
     preprocessing actions (e.g., DataConverters) that should be applied to each retrieved
     coordinate variable."""
 
-    data_vars: Dict[str, Dict[Pattern, VariableRetriever]]  # type: ignore
+    data_vars: Dict[str, Dict[Pattern, RetrievedVariable]]  # type: ignore
     """A dictionary mapping output data variable names to the retrieval rules and
     preprocessing actions (e.g., DataConverters) that should be applied to each
     retrieved data variable."""

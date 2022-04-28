@@ -1,6 +1,6 @@
 {
     "title": "RetrieverConfig",
-    "description": "---------------------------------------------------------------------------------\nClass used to contain configuration parameters for the tsdat retriever class. This\nclass will ultimately be converted into a tsdat.io.base.Retriever subclass for use\nin tsdat pipelines.\n\nProvides methods to support yaml parsing and validation, including the generation of\njson schema for immediate validation. This class also provides a method to\ninstantiate a tsdat.io.base.Retriever subclass from a parsed configuration file.\n\nArgs:\n    classname (str): The dotted module path to the pipeline that the specified\n    configurations should apply to. To use the built-in IngestPipeline, for example,\n    you would set 'tsdat.pipeline.pipelines.IngestPipeline' as the classname.\n    readers (Dict[str, DataReaderConfig]): The DataReaders to use for reading input\n    data.\n\n---------------------------------------------------------------------------------",
+    "description": "---------------------------------------------------------------------------------\nClass used to contain configuration parameters for the tsdat retriever class. This\nclass will ultimately be converted into a tsdat.io.base.Retriever subclass for use\nin tsdat pipelines.\n\nProvides methods to support yaml parsing and validation, including the generation of\njson schema for immediate validation. This class also provides a method to\ninstantiate a tsdat.io.base.Retriever subclass from a parsed configuration file.\n\n---------------------------------------------------------------------------------",
     "type": "object",
     "properties": {
         "classname": {
@@ -16,9 +16,48 @@
         },
         "readers": {
             "title": "Readers",
+            "description": "A dictionary mapping regex patterns to DataReaders that should be used to read the input data. For each input given to the Retriever, the mapping will be used to determine which DataReader to use. The patterns will be searched in the order they are defined and the DataReader corresponding with the first pattern that matches the input key will be used.",
             "type": "object",
             "additionalProperties": {
                 "$ref": "#/definitions/DataReaderConfig"
+            }
+        },
+        "coords": {
+            "title": "Coords",
+            "description": "A dictionary mapping output coordinate variable names to the retrieval rules and preprocessing actions (i.e. DataConverters) that should be applied to each retrieved coordinate variable.",
+            "default": {},
+            "type": "object",
+            "additionalProperties": {
+                "anyOf": [
+                    {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/definitions/RetrievedVariableConfig"
+                        }
+                    },
+                    {
+                        "$ref": "#/definitions/RetrievedVariableConfig"
+                    }
+                ]
+            }
+        },
+        "data_vars": {
+            "title": "Data Vars",
+            "description": "A dictionary mapping output data_variable variable names to the retrieval rules and preprocessing actions (i.e. DataConverters) that should be applied to each retrieved coordinate variable.",
+            "default": {},
+            "type": "object",
+            "additionalProperties": {
+                "anyOf": [
+                    {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/definitions/RetrievedVariableConfig"
+                        }
+                    },
+                    {
+                        "$ref": "#/definitions/RetrievedVariableConfig"
+                    }
+                ]
             }
         }
     },
@@ -45,6 +84,51 @@
             },
             "required": [
                 "classname"
+            ],
+            "additionalProperties": false
+        },
+        "DataConverterConfig": {
+            "title": "DataConverterConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "required": [
+                "classname"
+            ]
+        },
+        "RetrievedVariableConfig": {
+            "title": "RetrievedVariableConfig",
+            "description": "Specifies how the variable should be retrieved from the raw dataset and the\npreprocessing steps (i.e. DataConverters) that should be applied.",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "description": "The exact name of the variable in the raw dataset returned by the DataReader.",
+                    "type": "string"
+                },
+                "data_converters": {
+                    "title": "Data Converters",
+                    "description": "A list of DataConverters to run for this variable. Common choices include the tsdat UnitsConverter (classname: 'tsdat.io.converters.UnitsConverter') to convert the variable's data from its input units to specified output units, and the tsdat StringToDatetime converter (classname: 'tsdat.io.converters.StringToDatetime'), which takes dates/times formatted as strings and converts them into a datetime64 object that can be used throughout the rest of the pipeline. This property is optional and defaults to [].",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DataConverterConfig"
+                    }
+                }
+            },
+            "required": [
+                "name"
             ],
             "additionalProperties": false
         }
