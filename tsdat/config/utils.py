@@ -26,10 +26,7 @@ __all__ = [
     "recursive_instantiate",
     "read_yaml",
     "get_code_version",
-    # "YamlModel", # internal use
-    # "Overrideable", # internal use
-    # "matches_overrideable_schema", # internal use
-    # "find_duplicates", # internal use
+    "YamlModel",
 ]
 
 

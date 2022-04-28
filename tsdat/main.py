@@ -3,13 +3,16 @@ import typer
 from typing import Any, Dict, List
 from pathlib import Path
 from enum import Enum
-from tsdat.config.dataset import DatasetConfig
-from tsdat.config.quality import QualityConfig
-from tsdat.config.retriever import RetrieverConfig
-from tsdat.config.storage import StorageConfig
-from tsdat.config.pipeline import PipelineConfig
-from tsdat.config.utils import YamlModel
+from tsdat import (
+    DatasetConfig,
+    QualityConfig,
+    RetrieverConfig,
+    StorageConfig,
+    PipelineConfig,
+    YamlModel,
+)
 
+__all__ = ["generate_schema"]
 
 app = typer.Typer(add_completion=False)
 
@@ -53,6 +56,11 @@ def generate_schema(
         cls.generate_schema(path)
         print(f"Wrote {key} schema file to {path}")
     print("Done!")
+
+
+@app.callback()
+def callback():
+    pass
 
 
 if __name__ == "__main__":

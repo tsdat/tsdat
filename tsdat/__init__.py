@@ -11,6 +11,7 @@ other domains as well.
 from .config.dataset import *
 from .config.pipeline import *
 from .config.storage import *
+from .config.retriever import *
 from .config.quality import *
 from .config.utils import *
 
