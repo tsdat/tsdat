@@ -14,7 +14,7 @@ class DataConverterConfig(ParameterizedConfigClass, extra=Extra.allow):
     ...
 
 
-class RetrievedVariableConfig(BaseModel, extra=Extra.forbid):
+class RetrievedVariableConfig(BaseModel, extra=Extra.allow):
     """Specifies how the variable should be retrieved from the raw dataset and the
     preprocessing steps (i.e. DataConverters) that should be applied."""
 

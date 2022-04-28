@@ -164,8 +164,7 @@
             },
             "required": [
                 "name"
-            ],
-            "additionalProperties": false
+            ]
         },
         "RetrieverConfig": {
             "title": "RetrieverConfig",
