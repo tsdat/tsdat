@@ -1,8 +1,9 @@
 .. _setting_up_docker:
 
-Setting up a Docker Container and VS Code
+Setting up Docker and VS Code
 -----------------------------------------
-This tutorial goes over setting up a Docker container in VSCode for tsdat.
+This tutorial goes over installing Docker and setting up a Docker container 
+in VSCode.
 
 Start by installing `Docker <https://www.docker.com/products/docker-desktop>`_ 
 and `VSCode <https://code.visualstudio.com/>`_. It's a good idea to familiarize

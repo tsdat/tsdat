@@ -1,9 +1,9 @@
 .. _setting_up_wsl:
 
-Installing WSL and setting up VSCode
+Setting up WSL and VSCode
 -------------------------------------------------------
 This tutorial goes over installing WSL Version 1 (and in our case, we'll be 
-installing Ubuntu) and VSCode.
+installing Ubuntu) and setting up a WSL environment in VSCode.
 
 Start by installing `VSCode <https://code.visualstudio.com/>`_. It's a good 
 idea to familiarize yourself with the VScode interface. Installing Ubuntu in
