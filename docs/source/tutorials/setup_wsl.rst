@@ -1,7 +1,7 @@
 .. _setting_up_wsl:
 
-Setting up WSL and VSCode
--------------------------------------------------------
+Setting up WSL and VSCode for Windows Users
+-------------------------------------------
 This tutorial goes over installing WSL Version 1 (and in our case, we'll be 
 installing Ubuntu) and setting up a WSL environment in VSCode.
 
@@ -40,8 +40,8 @@ WSL is a more involved process:
       |
 
     5. A new bash terminal will pop up. Wait for the install to run, and create a 
-    username and password when prompted. Write your both of these down. If you 
-    forget your password, you'll have to manually reset it from Windows later.
+    username and password when prompted. Note, if you forget your password, can 
+    manually reset it from Windows Powershell.
 
 
 Setting up VSCode to run with Ubuntu WSL
@@ -279,7 +279,9 @@ environment is running.
 3. Everything should now be set up to run tsdat, so at this point we just need to 
 install it. Type "ctrl `" to open the VSCode terminal. This should automatically 
 open a new terminal window and a few lines of code should automatically run to 
-activate the conda environment.
+activate the conda environment. The name of your environment should show up in 
+parenthesis in the terminal command line 
+(i.e. "(<env_name>) <username>@<machine>:<path>$").
 
   .. figure:: wsl_screenshots/wsl21.png
       :align: center
