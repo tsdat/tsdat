@@ -40,16 +40,17 @@ class ManagerConfig(BaseModel, extra=Extra.forbid):
 
 class QualityConfig(YamlModel, extra=Extra.forbid):
     """---------------------------------------------------------------------------------
-    Class used to contain quality configuration parameters for tsdat pipelines. This
-    class will ultimately be converted into a tsdat.qc.base.QualityManagement class for
-    use in downstream tsdat pipeline code.
+    Contains quality configuration parameters for tsdat pipelines.
+
+    This class will ultimately be converted into a tsdat.qc.base.QualityManagement class
+    for use in downstream tsdat pipeline code.
 
     Provides methods to support yaml parsing and validation, including the generation of
     json schema for immediate validation.
 
     Args:
         managers (List[ManagerConfig]): A list of quality checks and controls that
-        should be applied.
+            should be applied.
 
     ---------------------------------------------------------------------------------"""
 

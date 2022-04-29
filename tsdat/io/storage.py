@@ -32,16 +32,18 @@ logger = logging.getLogger(__name__)
 
 class FileSystem(Storage):
     """------------------------------------------------------------------------------------
-    Handles data storage and retrieval for file-based data formats. Formats that write to
-    directories (such as zarr) are not supported by the FileSystem storage class.
+    Handles data storage and retrieval for file-based data formats.
+
+    Formats that write to directories (such as zarr) are not supported by the FileSystem
+    storage class.
 
     Args:
         parameters (Parameters): File-system specific parameters, such as the root path to
-        where files should be saved, or additional keyword arguments to specific
-        functions used by the storage API. See the FileSystemStorage.Parameters class for
-        more details.
+            where files should be saved, or additional keyword arguments to specific
+            functions used by the storage API. See the FileSystemStorage.Parameters class for
+            more details.
         handler (FileHandler): The FileHandler class that should be used to handle data
-        I/O within the storage API.
+            I/O within the storage API.
 
     ------------------------------------------------------------------------------------"""
 
@@ -72,14 +74,16 @@ class FileSystem(Storage):
     handler: FileHandler
 
     def save_data(self, dataset: xr.Dataset):
-        """------------------------------------------------------------------------------------
-        Saves a dataset to the storage area. At a minimum, the dataset must have a 'datastream'
-        global attribute and must have a 'time' variable with a np.datetime64-like data type.
+        """-----------------------------------------------------------------------------
+        Saves a dataset to the storage area.
+
+        At a minimum, the dataset must have a 'datastream' global attribute and must
+        have a 'time' variable with a np.datetime64-like data type.
 
         Args:
             dataset (xr.Dataset): The dataset to save.
 
-        ------------------------------------------------------------------------------------"""
+        -----------------------------------------------------------------------------"""
         datastream = dataset.attrs["datastream"]
         filepath = self._get_dataset_filepath(dataset, datastream)
         filepath.parent.mkdir(exist_ok=True, parents=True)
@@ -87,11 +91,11 @@ class FileSystem(Storage):
         logger.info("Saved %s dataset to %s", datastream, filepath.as_posix())
 
     def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
-        """------------------------------------------------------------------------------------
+        """-----------------------------------------------------------------------------
         Fetches data for a given datastream between a specified time range.
 
-        Note: this method is not smart; it searches for the appropriate data files using their
-        filenames and does not filter within each data file.
+        Note: this method is not smart; it searches for the appropriate data files using
+        their filenames and does not filter within each data file.
 
         Args:
             start (datetime): The minimum datetime to fetch.
@@ -99,23 +103,23 @@ class FileSystem(Storage):
             datastream (str): The datastream id to search for.
 
         Returns:
-            xr.Dataset: A dataset containing all the data in the storage area that spans the
-            specified datetimes.
+            xr.Dataset: A dataset containing all the data in the storage area that spans
+            the specified datetimes.
 
-        ------------------------------------------------------------------------------------"""
+        -----------------------------------------------------------------------------"""
         data_files = self._find_data(start, end, datastream)
         datasets = self._open_data_files(*data_files)
         return xr.merge(datasets, **self.parameters.merge_fetched_data_kwargs)  # type: ignore
 
     def save_ancillary_file(self, filepath: Path, datastream: str):
-        """------------------------------------------------------------------------------------
+        """-----------------------------------------------------------------------------
         Saves an ancillary filepath to the datastream's ancillary storage area.
 
         Args:
             filepath (Path): The path to the ancillary file.
             datastream (str): The datastream that the file is related to.
 
-        ------------------------------------------------------------------------------------"""
+        -----------------------------------------------------------------------------"""
         ancillary_filepath = self._get_ancillary_filepath(filepath, datastream)
         ancillary_filepath.parent.mkdir(exist_ok=True, parents=True)
         saved_filepath = shutil.copy2(filepath, ancillary_filepath)
