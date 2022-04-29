@@ -122,6 +122,11 @@ A few quick things on VSCode: in the left-hand toolbar, we will use the "Explore
 Run the Basic Template
 ======================
 
+Start by opening a VSCode terminal and installing the pipeline required packages::
+
+    pip install -r requirements.txt
+
+
 Navigate to the "runner.py" file and run it. This will run the basic example stored
 in the template. Notice the data here is stored in the "tests" folder, but can be
 located anywhere that the user desires.

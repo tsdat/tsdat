@@ -1,6 +1,6 @@
 .. _setting_up_wsl:
 
-Setting up WSL and VSCode
+Installing WSL and setting up VSCode
 -------------------------------------------------------
 This tutorial goes over installing WSL Version 1 (and in our case, we'll be 
 installing Ubuntu) and VSCode.
@@ -11,20 +11,35 @@ WSL is a more involved process:
 
     1. In the windows search bar, type "Turn Windows features on or off" (located 
     in the control panel).
+    
+      .. figure:: wsl_screenshots/wsl0.1.png
+          :align: center
+          :width: 75%
+          :alt:
+      |
 
     2. A new window will pop up with a list of checkboxes. Scroll down to "Windows
     Subsystem for Linux" and make sure that box is checked. Then click "OK".
 
+      .. figure:: wsl_screenshots/wsl0.2.png
+          :align: center
+          :width: 50%
+          :alt:
+      |
+      
     3. Once Windows has applied changes, click "Restart now" to reboot and enable
     WSL.
 
     4. After reboot, open the Microsoft Store app from the search bar, and search
     for "Ubuntu".
+    
+      .. figure:: wsl_screenshots/wsl0.3.png
+          :align: center
+          :width: 75%
+          :alt:
+      |
 
-    5. There are typically several Ubuntu version options. Choose the unversioned
-    option (typically the first that pops up) and install.
-
-    6. A new bash terminal will pop up. Wait for the install to run, and create a 
+    5. A new bash terminal will pop up. Wait for the install to run, and create a 
     username and password when prompted. Write your both of these down. If you 
     forget your password, you'll have to manually reset it from Windows later.
 
@@ -253,8 +268,8 @@ If you don't do this, you'll get an http error anytime you try to run conda:
     conda install wget
     
 
-Open WSL Miniconda Environment in VSCode
-========================================
+Using a WSL Environment in VSCode
+=================================
 Now that Ubuntu has a python environment set up, we need to open it in VSCode
 
 1. Open up the vscode window and click the python version in the bottom right
@@ -302,31 +317,10 @@ is installed.
 
   |
   
-4. Once the conda activate lines are run, install the pipeline required packages 
-through the VSCode terminal::
+Congrats! You know have a working WSL environment in Windows VSCode.
 
-    pip install -r requirements.txt
-
-
-Run the basic example pipeline
-==============================
-After tsdat installs, let's make sure it can run. 
-
-1. Navigate to your "runner.py" file (Either in the example pipeline-template or 
-your own pipeline). In the top toolbar, there should be a dropdown beside the 
-play bar. Select "Run Python Code".
-
-  .. figure:: wsl_screenshots/wsl23.png
-      :align: center
-      :width: 100%
-      :alt:
-
-  |
-
-After the code runs, there won't be any particular output in the terminal window.
-Notice that a new ``storage/`` folder will be created.
-
-If you are running a personal pipeline and get a "permissions denied" error,
+Note:
+If you are running a pipeline and get a "permissions denied" error,
 delete the original ``storage/`` folder and let tsdat recreate the data 
-through WSL. Windows does not allow WSL to alter folder permissions (https://github.com/microsoft/WSL/issues/81), so it can't write to folders that 
-it doesn't originally create.
+through WSL. Windows does not allow WSL to alter folder permissions (https://github.com/microsoft/WSL/issues/81), so it can't write to or
+rename folders that it doesn't originally create.
