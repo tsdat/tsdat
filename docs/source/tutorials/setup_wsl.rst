@@ -143,27 +143,8 @@ Do so.
       :alt:
 
   |
-
-9. At some point VSCode will prompt you to "Reopen in dev container". This refers to
-the docker container files. If you never intend to use docker, click "Don't show again"
-
-  .. figure:: wsl_screenshots/wsl9.png
-      :align: center
-      :width: 100%
-      :alt:
-
-  |
-
-10. You may also delete the Docker container files if you wish.
-
-  .. figure:: wsl_screenshots/wsl10.png
-      :align: center
-      :width: 100%
-      :alt:
-
-  |
   
-11. The next prompts from VSCode will likely be "<package> is not installed". This is
+9. The next prompts from VSCode will likely be "<package> is not installed". This is
 because we need to install python in the WSL environment, so ignore these for now.
 
   .. figure:: wsl_screenshots/wsl11.png
@@ -179,13 +160,13 @@ In these steps I'll show you how to set up Miniconda in WSL. Miniconda is a bare
 version of Anaconda that has all the same hardware, but doesn't download Anaconda's
 full suite of python packages, which saves disk space.
 
-12. Start by opening an Ubuntu bash and downloading Miniconda from the command line:
+1. Start by opening an Ubuntu bash and downloading Miniconda from the command line:
 
   .. code-block::
 
     curl -sL "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" > "miniconda3.sh"
     
-13. This command renames and saves the downloaded file with a simpler filename. Run the
+2. This command renames and saves the downloaded file with a simpler filename. Run the
 '.sh' file with:
 
   .. code-block::
@@ -199,7 +180,7 @@ full suite of python packages, which saves disk space.
 
   |
 
-14. This will start the install process. Scroll through the install process with the
+3. This will start the install process. Scroll through the install process with the
 "enter" key, and type "yes" to the prompts as they pop up.
 
   .. figure:: wsl_screenshots/wsl13.png
@@ -232,7 +213,7 @@ full suite of python packages, which saves disk space.
 
   |
 
-15. Once Miniconda3 finishes installing, it'll ask you to "close and open your shell".
+4. Once Miniconda3 finishes installing, it'll ask you to "close and open your shell".
 To do this, close the Ubuntu window, open up a Windows Powershell window, and type:
 
   .. code-block::
