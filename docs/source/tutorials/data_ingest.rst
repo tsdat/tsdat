@@ -403,7 +403,7 @@ Replace the text in the "retriever.yaml" file with the following:
         name: Wind Speed
         data_converters:
           - classname: tsdat.io.converters.UnitsConverter
-            input_units: cm/s
+            input_units: dm/s
 |
 
 10. The fourth line in "pipeline.yaml", "dataset", refers to the "dataset.yaml"
