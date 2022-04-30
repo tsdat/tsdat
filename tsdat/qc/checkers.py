@@ -106,15 +106,15 @@ class CheckMonotonic(QualityChecker):
 
 class _ThresholdChecker(QualityChecker):
     """---------------------------------------------------------------------------------
-    Base class for threshold-based classes where the threshold value is stored in a
-    variable attribute.
+    Base class for checks that use a variable attribute to specify a threshold.
 
     Args:
         attribute_name (str): The name of the attribute containing the maximum
-        threshold. If the attribute ends in '_range' then it is assumed to be a list,
-        and the first value from the list will be used as the minimum threshold.
+            threshold. If the attribute ends in '_range' then it is assumed to be a
+            list, and the first value from the list will be used as the minimum
+            threshold.
         allow_equal (bool): True if values equal to the threshold should pass the check,
-        False otherwise.
+            False otherwise.
 
     ---------------------------------------------------------------------------------"""
 
@@ -139,20 +139,21 @@ class _ThresholdChecker(QualityChecker):
 
 class _CheckMin(_ThresholdChecker):
     """---------------------------------------------------------------------------------
-    Checks that no values for the specified variable are less than a specified minimum
-    threshold. The value of the threshold is specified by an attribute on each data
-    variable, and the attribute to search for is specified as a property of this base
-    class.
+    Checks for values less than a specified threshold.
+
+    The value of the threshold is specified by an attribute on each data variable, and
+    the attribute to search for is specified as a property of this base class.
 
     If the specified attribute does not exist on the variable being checked then no
     failures will be reported.
 
     Args:
         attribute_name (str): The name of the attribute containing the minimum
-        threshold. If the attribute ends in '_range' then it is assumed to be a list,
-        and the first value from the list will be used as the minimum threshold.
+            threshold. If the attribute ends in '_range' then it is assumed to be a
+            list, and the first value from the list will be used as the minimum
+            threshold.
         allow_equal (bool): True if values equal to the threshold should pass the check,
-        False otherwise.
+            False otherwise.
 
     ---------------------------------------------------------------------------------"""
 
@@ -175,20 +176,21 @@ class _CheckMin(_ThresholdChecker):
 
 class _CheckMax(_ThresholdChecker):
     """---------------------------------------------------------------------------------
-    Checks that no values for the specified variable are greater than a specified
-    threshold. The value of the threshold is specified by an attribute on each data
-    variable, and the attribute to search for is specified as a property of this base
-    class.
+    Checks for values larger than a specified threshold.
+
+    The value of the threshold is specified by an attribute on each data variable, and
+    the attribute to search for is specified as a property of this base class.
 
     If the specified attribute does not exist on the variable being checked then no
     failures will be reported.
 
     Args:
         attribute_name (str): The name of the attribute containing the maximum
-        threshold. If the attribute ends in '_range' then it is assumed to be a list,
-        and the first value from the list will be used as the minimum threshold.
+            threshold. If the attribute ends in '_range' then it is assumed to be a
+            list, and the first value from the list will be used as the minimum
+            threshold.
         allow_equal (bool): True if values equal to the threshold should pass the check,
-        False otherwise.
+            False otherwise.
 
     ---------------------------------------------------------------------------------"""
 
@@ -210,55 +212,117 @@ class _CheckMax(_ThresholdChecker):
 
 
 class CheckValidMin(_CheckMin):
+    """------------------------------------------------------------------------------------
+    Checks for values less than `valid_min'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "valid_min"
 
 
 class CheckValidMax(_CheckMax):
+    """------------------------------------------------------------------------------------
+    Checks for values greater than `valid_min'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "valid_max"
 
 
 class CheckFailMin(_CheckMin):
+    """------------------------------------------------------------------------------------
+    Checks for values less than `fail_min'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "fail_min"
 
 
 class CheckFailMax(_CheckMax):
+    """------------------------------------------------------------------------------------
+    Checks for values greater than `fail_min'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "fail_max"
 
 
 class CheckWarnMin(_CheckMin):
+    """------------------------------------------------------------------------------------
+    Checks for values less than `warn_min'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "warn_min"
 
 
 class CheckWarnMax(_CheckMax):
+    """------------------------------------------------------------------------------------
+    Checks for values greater than `warn_min'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "warn_max"
 
 
 class CheckValidRangeMin(_CheckMin):
+    """------------------------------------------------------------------------------------
+    Checks for values less than 'valid_range'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "valid_range"
 
 
 class CheckValidRangeMax(_CheckMax):
+    """------------------------------------------------------------------------------------
+    Checks for values greater than 'valid_range'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "valid_range"
 
 
 class CheckFailRangeMin(_CheckMin):
+    """------------------------------------------------------------------------------------
+    Checks for values less than 'fail_range'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "fail_range"
 
 
 class CheckFailRangeMax(_CheckMax):
+    """------------------------------------------------------------------------------------
+    Checks for values greater than 'fail_range'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "fail_range"
 
 
 class CheckWarnRangeMin(_CheckMin):
+    """------------------------------------------------------------------------------------
+    Checks for values less than 'warn_range'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "warn_range"
 
 
 class CheckWarnRangeMax(_CheckMax):
+    """------------------------------------------------------------------------------------
+    Checks for values greater than 'warn_range'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "warn_range"
 
 
 class _CheckDelta(_ThresholdChecker):
-    """------------------------------------------------------------------------------------
+    """---------------------------------------------------------------------------------
+    Checks for deltas between consecutive values larger than a specified threshold.
+
     Checks the difference between consecutive values and reports a failure if the
     difference is less than the threshold specified by the value in the attribute
     provided to this check.
@@ -266,7 +330,7 @@ class _CheckDelta(_ThresholdChecker):
     Args:
         attribute_name (str): The name of the attribute containing the threshold to use.
 
-    ------------------------------------------------------------------------------------"""
+    ---------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel, extra=Extra.forbid):
         dim: str = "time"
@@ -288,14 +352,29 @@ class _CheckDelta(_ThresholdChecker):
 
 
 class CheckValidDelta(_CheckDelta):
+    """------------------------------------------------------------------------------------
+    Checks for deltas between consecutive values larger than 'valid_delta'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "valid_delta"
 
 
 class CheckFailDelta(_CheckDelta):
+    """------------------------------------------------------------------------------------
+    Checks for deltas between consecutive values larger than 'fail_delta'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "fail_delta"
 
 
 class CheckWarnDelta(_CheckDelta):
+    """------------------------------------------------------------------------------------
+    Checks for deltas between consecutive values larger than 'warn_delta'.
+
+    ------------------------------------------------------------------------------------"""
+
     attribute_name: str = "warn_delta"
 
 

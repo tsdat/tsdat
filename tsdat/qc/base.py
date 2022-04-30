@@ -18,6 +18,8 @@ class QualityChecker(ParameterizedClass, ABC):
     @abstractmethod
     def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
         """-----------------------------------------------------------------------------
+        Identifies and flags quality problems with the data.
+
         Checks the quality of a specific variable in the dataset and returns the results
         of the check as a boolean array where True values represent quality problems and
         False values represent data that passes the quality check.
@@ -49,15 +51,17 @@ class QualityHandler(ParameterizedClass, ABC):
         self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool8]
     ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
+        Takes some action on data that has had quality issues identified.
+
         Handles the quality of a variable in the dataset and returns the dataset after
         any corrections have been applied.
 
         Args:
             dataset (xr.Dataset): The dataset containing the variable to handle.
             variable_name (str): The name of the variable whose quality should be
-            handled.
+                handled.
             failures (NDArray[np.bool8]): The results of the QualityChecker for the
-            provided variable, where True values indicate a quality problem.
+                provided variable, where True values indicate a quality problem.
 
         Returns:
             xr.Dataset: The dataset after the QualityHandler has been run.
@@ -68,19 +72,18 @@ class QualityHandler(ParameterizedClass, ABC):
 
 class QualityManager(BaseModel, extra=Extra.forbid):
     """---------------------------------------------------------------------------------
-    Class that groups a single QualityChecker and one or more QualityHandlers so they
-    can be dispatched together.
+    Groups a QualityChecker and one or more QualityHandlers together.
 
     Args:
-        name (str): The name of the quality manager
+        name (str): The name of the quality manager.
         checker (QualityChecker): The quality check that should be run.
         handlers (QualityHandler): One or more QualityHandlers that should be run given
-        the results of the checker.
+            the results of the checker.
         apply_to (List[str]): A list of variables that the check should run for. Accepts
-        keywords of 'COORDS' or 'DATA_VARS', or any number of specific variables that
-        should be run.
+            keywords of 'COORDS' or 'DATA_VARS', or any number of specific variables that
+            should be run.
         exclude (List[str]): A list of variables that the check should exclude. Accepts
-        the same keywords as apply_to.
+            the same keywords as apply_to.
 
     ---------------------------------------------------------------------------------"""
 

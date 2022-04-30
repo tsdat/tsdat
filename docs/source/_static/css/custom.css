@@ -1,0 +1,141 @@
+.section-separator {
+    font-size: 18px;
+    font-weight: 900;
+    border-top: 1px solid lightgrey;
+    padding-top: 10px;
+}
+
+.wy-table-responsive table td,
+.wy-table-responsive table th {
+    white-space: normal;
+}
+
+.rst-content .toctree-wrapper>p.caption,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+legend {
+    margin-top: 0;
+    font-weight: 700;
+    font-family: Roboto, ff-tisa-web-pro, Georgia, Arial, sans-serif
+}
+
+.rst-content .sidebar .sidebar-title {
+    display: block;
+    font-family: Roboto, ff-tisa-web-pro, Georgia, Arial, sans-serif;
+    font-weight: 700;
+    background: #e1e4e5;
+    padding: 6px 12px;
+    margin: -24px -24px 24px;
+    font-size: 100%
+}
+
+.rst-content code,
+.rst-content tt,
+code {
+    white-space: nowrap;
+    max-width: 100%;
+    background: inherit;
+    border: none;
+    font-size: 100%;
+    padding: 0 5px;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, Courier, monospace;
+    color: #2980b9;
+    overflow-x: auto
+}
+
+.rst-content code.xref,
+.rst-content tt.xref,
+a .rst-content code,
+a .rst-content tt {
+    font-weight: 700;
+    color: #2980b9
+}
+
+html.writer-html5 .rst-content table.docutils td>p,
+html.writer-html5 .rst-content table.docutils th>p {
+    line-height: 1rem;
+    margin-bottom: 0;
+    font-size: .8rem
+}
+
+h1 {
+    font-size: 22px;
+}
+
+.rst-content .toctree-wrapper>p.caption,
+h2 {
+    font-size: 20px;
+}
+
+html.writer-html4 .rst-content dl:not(.docutils)>dt,
+html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple)>dt {
+    display: table;
+    margin: 6px 0;
+    font-size: 100%;
+    line-height: normal;
+    background: none;
+    color: #2980b9;
+    border-top: none;
+    border-radius: 6px;
+    padding: 8px 0;
+    position: relative
+}
+
+p {
+    line-height: 18px;
+    font-size: 15px;
+    margin: 0 0 24px
+}
+
+dl.py.method,
+dl.py.function {
+    font-size: 15px;
+    box-shadow: 0 0 11px rgba(33, 33, 33, .2);
+}
+
+dl.py.method dt.sig.sig-object.py,
+dl.py.function dt.sig.sig-object.py {
+    margin-bottom: 6px !important;
+    padding: 5px 10px !important;
+    background: #f0f0f0 !important;
+    color: #555 !important;
+    font-weight: normal !important;
+    font-size: 15px !important;
+    width: 100%;
+}
+
+dl.py.class dt.sig.sig-object.py {
+    padding-left: 10px !important;
+}
+
+html.writer-html4 .rst-content dl:not(.docutils) dl:not(.field-list)>dt,
+html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple) dl:not(.field-list)>dt {
+    border-radius: 0;
+    border-left: none;
+    padding-left: 10px;
+}
+
+dl.py.class {
+    border: 1px solid #e1e4e5;
+}
+
+.rst-content dl dd {
+    margin: 0 0 12px 24px;
+    line-height: 18px;
+    padding-right: 20px;
+}
+
+span.sig-name.descname {
+    font-weight: 900;
+    font-size: 15px;
+    margin-right: 3px;
+}
+
+html.writer-html4 .rst-content dl:not(.docutils) .property,
+html.writer-html5 .rst-content dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple) .property {
+    color: #818a91;
+}
