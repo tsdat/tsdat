@@ -5,15 +5,13 @@ readers:
   .*\.csv:
     classname: tsdat.io.readers.CSVReader
 
-# IDEA: Add the coords / data vars structure to the config object & generate schema
 coords:
   time:
-    .*:
-      name: timestamp
-      data_converters:
-        - classname: tsdat.io.converters.StringToDatetime
-          format: "%Y-%m-%d %H:%M:%S"
-          timezone: UTC
+    name: timestamp
+    data_converters:
+      - classname: tsdat.io.converters.StringToDatetime
+        format: "%Y-%m-%d %H:%M:%S"
+        timezone: UTC
 
 data_vars:
   first:
