@@ -39,19 +39,21 @@ class InputKeyRetrieverConfig:
 
 class DefaultRetriever(Retriever):
     """------------------------------------------------------------------------------------
+    Default API for retrieving data from one or more input sources.
+
     Reads data from one or more inputs, renames coordinates and data variables according
     to retrieval and dataset configurations, and applies registered DataConverters to
     retrieved data.
 
     Args:
         readers (Dict[Pattern[str], DataReader]): A mapping of patterns to DataReaders
-        that the retriever uses to determine which DataReader to use for reading any
-        given input key.
+            that the retriever uses to determine which DataReader to use for reading any
+            given input key.
         coords (Dict[str, Dict[Pattern[str], VariableRetriever]]): A dictionary mapping
-        output coordinate variable names to rules for how they should be retrieved.
+            output coordinate variable names to rules for how they should be retrieved.
         data_vars (Dict[str, Dict[Pattern[str], VariableRetriever]]): A dictionary
-        mapping output data variable names to rules for how they should be retrieved.
-
+            mapping output data variable names to rules for how they should be
+            retrieved.
 
     ------------------------------------------------------------------------------------"""
 
@@ -124,8 +126,7 @@ class DefaultRetriever(Retriever):
         input_config: InputKeyRetrieverConfig,
     ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
-        Returns a dataset containing only the variables specified to be retrieved in the
-        retrieval config.
+        Renames variables in the retrieved dataset according to retrieval configurations.
 
         Args:
             raw_dataset (xr.Dataset): The raw dataset.
@@ -175,8 +176,9 @@ class DefaultRetriever(Retriever):
         input_config: InputKeyRetrieverConfig,
     ) -> xr.Dataset:
         """------------------------------------------------------------------------------------
-        Runs the declared DataConverters on the dataset's coords and data_vars. Returns
-        the dataset after all converters have been run.
+        Runs the declared DataConverters on the dataset's coords and data_vars.
+
+        Returns the dataset after all converters have been run.
 
         Args:
             dataset (xr.Dataset): The dataset to convert.
@@ -201,6 +203,8 @@ class DefaultRetriever(Retriever):
         input_config: InputKeyRetrieverConfig,
     ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
+        Swaps dimensions and coordinates to match the structure of the DatasetConfig.
+
         Ensures that the retriever coordinates are set as coordinates in the dataset,
         promoting them to coordinates from data_vars as needed, and reindexes data_vars
         so they are dimensioned by the appropriate coordinates.

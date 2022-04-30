@@ -37,13 +37,22 @@ class RetrievedVariableConfig(BaseModel, extra=Extra.allow):
 
 class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
     """---------------------------------------------------------------------------------
-    Class used to contain configuration parameters for the tsdat retriever class. This
-    class will ultimately be converted into a tsdat.io.base.Retriever subclass for use
-    in tsdat pipelines.
+    Contains configuration parameters for the tsdat retriever class.
+
+    This class will ultimately be converted into a tsdat.io.base.Retriever subclass for
+    use in tsdat pipelines.
 
     Provides methods to support yaml parsing and validation, including the generation of
     json schema for immediate validation. This class also provides a method to
     instantiate a tsdat.io.base.Retriever subclass from a parsed configuration file.
+
+    Args:
+        classname (str): The dotted module path to the pipeline that the specified
+            configurations should apply to. To use the built-in IngestPipeline, for
+            example, you would set 'tsdat.pipeline.pipelines.IngestPipeline' as the
+            classname.
+        readers (Dict[str, DataReaderConfig]): The DataReaders to use for reading input
+            data.
 
     ---------------------------------------------------------------------------------"""
 

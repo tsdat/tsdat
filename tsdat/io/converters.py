@@ -3,7 +3,7 @@
 # IDEA: Use the flyweight pattern to limit memory usage if identical converters would
 # be created.
 
-import act
+import act # type: ignore
 import logging
 import xarray as xr
 import pandas as pd
@@ -23,14 +23,13 @@ logger = logging.getLogger(__name__)
 
 class UnitsConverter(DataConverter):
     """---------------------------------------------------------------------------------
-    Converts the units of a retrieved variable to the units specified by the variable's
-    specification in the DatasetConfig.
+    Converts the units of a retrieved variable to specified output units.
 
     If the 'input_units' property is set then that string is used to determine the input
     input units, otherwise the converter will attempt to look up and use the 'units'
     attribute on the specified variable in the dataset provided to the `convert` method.
     If the input units cannot be set then a warning is issued and the original dataset
-    is returned.
+    is returned. The output units are specified by the output dataset configuration.
 
     Args:
         input_units (Optional[str]): The units that the retrieved data comes in.
@@ -100,20 +99,23 @@ class UnitsConverter(DataConverter):
 
 class StringToDatetime(DataConverter):
     """------------------------------------------------------------------------------------
-    Converts date strings into datetime64 data, accounting for the input format and
-    timezone.
+    Converts date strings into datetime64 data.
+
+    Allows parameters to specify the  string format of the input data, as well as the
+    timezone the input data are reported in. If the input timezone is not UTC, the data
+    are converted to UTC time.
 
     Args:
         format (Optional[str]): The format of the string data. See strftime.org for more
-        information on what components can be used. If None (the default), then pandas
-        will try to interpret the format and convert it automatically. This can be unsafe
-        but is not explicitly prohibited, so a warning is issued if format is not set
-        explicitly.
+            information on what components can be used. If None (the default), then
+            pandas will try to interpret the format and convert it automatically. This
+            can be unsafe but is not explicitly prohibited, so a warning is issued if
+            format is not set explicitly.
         timezone (Optional[str]): The timezone of the input data. If not specified it is
-        assumed to be UTC.
+            assumed to be UTC.
         to_datetime_kwargs (Dict[str, Any]): A set of keyword arguments passed to the
-        pandas.to_datetime() function as keyword arguments. Note that 'format' is
-        already included as a keyword argument. Defaults to {}.
+            pandas.to_datetime() function as keyword arguments. Note that 'format' is
+            already included as a keyword argument. Defaults to {}.
 
     ------------------------------------------------------------------------------------"""
 

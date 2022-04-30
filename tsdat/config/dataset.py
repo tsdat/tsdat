@@ -25,8 +25,7 @@ VarName = constr(regex=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
 
 class DatasetConfig(YamlModel, extra=Extra.forbid):
     """---------------------------------------------------------------------------------
-    Class defining the structure and metadata of the dataset produced by a tsdat
-    pipeline.
+    Defines the structure and metadata of the dataset produced by a tsdat pipeline.
 
     Also provides methods to support yaml parsing and validation, including generation
     of json schema.

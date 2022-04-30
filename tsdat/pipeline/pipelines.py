@@ -32,13 +32,11 @@ class IngestPipeline(Pipeline):
 
     def hook_customize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
         """-----------------------------------------------------------------------------
-        User-overrideable code hook that runs after the retriever has retrieved the
-        dataset from the specified input keys, but before the pipeline has applied any
-        quality checks or corrections to the dataset.
+        Code hook to customize the retrieved dataset prior to qc being applied.
 
         Args:
             dataset (xr.Dataset): The output dataset structure returned by the retriever
-            API.
+                API.
 
         Returns:
             xr.Dataset: The customized dataset.
@@ -48,12 +46,11 @@ class IngestPipeline(Pipeline):
 
     def hook_finalize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
         """-----------------------------------------------------------------------------
-        User-overrideable code hook that runs after the dataset quality has been managed
-        but before the dataset has been sent to the storage API to be saved.
+        Code hook to finalize the dataset after qc is applied but before it is saved.
 
         Args:
             dataset (xr.Dataset): The output dataset returned by the retriever API and
-            modified by the `hook_customize_retrieved_dataset` user code hook.
+                modified by the `hook_customize_dataset` user code hook.
 
         Returns:
             xr.Dataset: The finalized dataset, ready to be saved.
@@ -63,8 +60,7 @@ class IngestPipeline(Pipeline):
 
     def hook_plot_dataset(self, dataset: xr.Dataset):
         """-----------------------------------------------------------------------------
-        User-overrideable code hook that runs after the dataset has been saved by the
-        storage API.
+        Code hook to create plots for the data which runs after the dataset has been saved.
 
         Args:
             dataset (xr.Dataset): The dataset to plot.

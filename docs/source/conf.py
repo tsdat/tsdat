@@ -21,10 +21,10 @@ sys.path.insert(0, project_dir)
 
 project = "tsdat"
 copyright = "2021, Battelle Memorial Institute"
-author = "Carina Lansing, Maxwell Levin"
+author = "tsdat"
 
 # The full version, including alpha/beta/rc tags
-release = "0.2.12"
+release = "0.3.1"
 
 
 # -- General configuration ---------------------------------------------------
@@ -71,6 +71,11 @@ html_css_files = [
     "css/custom.css",
 ]
 
+# -- sphinx-napoleon configuration --------------------------------------------
+# This is used to support google style docstrings.
+napoleon_use_rtype = False
+napoleon_use_param = True
+
 
 # -- sphinx-autoapi configuration --------------------------------------------
 
@@ -105,20 +110,20 @@ import re
 
 
 class PatchedPythonDomain(PythonDomain):
-    def resolve_xref(self, env, fromdocname, builder, typ, target, node, contnode):
+    def resolve_xref(self, env, fromdocname, builder, typ, target, node, contnode):  # type: ignore
         if "refspecific" in node:
             del node["refspecific"]
         return super(PatchedPythonDomain, self).resolve_xref(
-            env, fromdocname, builder, typ, target, node, contnode
+            env, fromdocname, builder, typ, target, node, contnode  # type: ignore
         )
 
 
-def setup(app):
+def setup(app):  # type: ignore
     # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
 
     # Silence 'more than one target found for cross-reference' warning
     # https://github.com/sphinx-doc/sphinx/issues/3866
-    app.add_domain(PatchedPythonDomain, override=True)
+    app.add_domain(PatchedPythonDomain, override=True)  # type: ignore
 
     pattern = re.compile("\\-+")
 
@@ -131,5 +136,5 @@ def setup(app):
             if pattern.match(line):
                 lines[idx] = line.strip("-")
 
-    app.connect("autodoc-process-docstring", process)
-    return app
+    app.connect("autodoc-process-docstring", process)  # type: ignore
+    return app  # type: ignore
