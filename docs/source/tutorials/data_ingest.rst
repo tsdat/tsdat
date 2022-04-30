@@ -225,9 +225,6 @@ named with the "module" name (ncei_arctic_cruise_example):
 "open-preview". Scroll down to "Customizing your pipeline" (we have already
 accomplished the previous steps, but these are good to check).
 
-We are now looking at step #1: Use the "TODO tree" extension or use the search tool
-to find occurances of "# TODO-Developer".
-
   .. figure:: global_marine_data/intro10.png
       :align: center
       :width: 100%
@@ -235,8 +232,8 @@ to find occurances of "# TODO-Developer".
 
   |
 
-6. The "TODO tree" lists every literal "TODO" instance in the code, and we are looking
-in particular for "TODO - Developer". (The "TODO tree" is in fact the oak tree icon in 
+6. We are now looking at step #1: Use the "TODO tree" extension or use the search tool
+to find occurances of "# TODO-Developer". (The "TODO tree" is the oak tree icon in 
 the left-hand window pane).
 
 You may need to reload VS Code for these to show up in the ingest. Hitting "ctrl shift P"
@@ -273,7 +270,7 @@ which we'll visit after setting up the input data and configuration files.
 
 .. figure:: global_marine_data/intro13.png
     :alt:
-
+|
 
 8. The second line, "triggers", is expected naming convention for the input data.
 The "regex" pattern here is expecting the filename to start with the "location_name" 
@@ -285,7 +282,7 @@ a new folder called "data" within our "ncei_arctic_cruise_example" directory.
 
 .. figure:: global_marine_data/intro14.png
     :alt:
-
+|
 
 9. The third line, "retriever", is the first of two required user-customized configuration
 files in "YAML" (Yet Another Markup Language) format, which we’ll need to modify to 
@@ -407,8 +404,7 @@ Replace the text in the "retriever.yaml" file with the following:
         data_converters:
           - classname: tsdat.io.converters.UnitsConverter
             input_units: cm/s
-
-
+|
 
 10. The fourth line in "pipeline.yaml", "dataset", refers to the "dataset.yaml"
 configuration file. This file is where user-specified datatype and metadata are 
@@ -549,7 +545,7 @@ and "dataset.yaml".
         long_name: Wind Speed
         units: m/s
         comment: ""
-        
+|
 
 11. The last two lines in "pipeline.yml" are "quality" and "storage". These are located
 in the "shared" folder in the top-level directory. The "quality.yml" file contains the
@@ -575,13 +571,13 @@ file format or CSV.
 
 .. figure:: global_marine_data/intro19.png
     :alt:
-    
+ 
 I won't do this here, but CSV output can be added by replacing the "handler" block in 
 "storage.yml" with::
 
     handler:
       classname: tsdat.io.handlers.CSVHandler
-      
+|
 
 12. Finally "pipeline.py" is the last "get pipeline to working mode" "TODO" we should
 finish setting up here. As mentioned previously, it contains a series of hook 
@@ -589,7 +585,7 @@ functions that can be used along the pipeline for further data organization.
 
 .. figure:: global_marine_data/intro20.png
     :alt:
-   
+|
 
 We shall set up "hook_plot_dataset", which plots the processed data and save the 
 figures in the storage/ancillary folder. To keep things simple,
@@ -611,7 +607,8 @@ to this code template as desired:
       """---------------------------------------------------------------------------------
         NCEI ARCTIC CRUISE EXAMPLE INGESTION PIPELINE
         
-        "Historical marine data are comprised of ship, buoy, and platform observations."
+        Historical marine data that are comprised of ship, buoy, and platform 
+        observations.
       ---------------------------------------------------------------------------------"""
 
       def hook_customize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
@@ -651,12 +648,13 @@ We can now re-run the pipeline using the "runner.py" file as before with::
 
     python runner.py pipelines/ncei_arctic_cruise_example/data/arctic_ocean.example_data.csv
 
+Which will run with the same output as before:
+
   .. figure:: global_marine_data/intro21.png
       :align: center
       :width: 100%
       :alt:
 
-  |
 
 Once the pipeline runs, if you look in the "storage" folder, you'll see 
 the plot as well as the netCDF file output (or csv if you changed the output writer earlier):
@@ -672,8 +670,8 @@ Data can be viewed by opening the terminal (``ctrl ```) and running a quick pyth
 
 .. code-block:: bash
 
-  # cd storage/root/data/arctic_ocean.ncei_arctic_cruise_example.a1
-  # python
+  $ cd storage/root/data/arctic_ocean.ncei_arctic_cruise_example.a1
+  $ python
   
 In the python shell that opens, we can view the dataset for a quick overview:
 
@@ -708,13 +706,12 @@ In the python shell that opens, we can view the dataset for a quick overview:
       data_level:    a1
       datastream:    arctic_ocean.ncei_arctic_cruise_example.a1
       history:       Ran by jmcvey3 at 2022-04-29T15:31:32.055678
-
-
+|
 
 Pipeline Tests
 ==============
 
-The final TODOs listed are for adding detail to the pipeline description and for testing. Testing is best completed as a last step, after everything is set up and the pipeline outputs
+Testing is best completed as a last step, after everything is set up and the pipeline outputs
 as expected. If running a large number of datafiles, a good idea is to input one of those datafiles here, along with its expected output, and have a separate data folder to collect input files.
 
 .. figure:: global_marine_data/intro23.png
