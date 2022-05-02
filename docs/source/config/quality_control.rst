@@ -14,7 +14,7 @@ data meets quality requirements:
     Each Quality Handler can be specified to run if a particular QC test
     fails. Quality handlers take the QC Checker's logical mask and use it to apply any QC or custom method to the data variable of question. For instance, it can be used to remove flagged data altogether or correct flagged values, such as interpolating to fill gaps in data.
 	
-Custom QC Checkers and QC Handlers are stored (typically) in ``pipelines/<ingest_name>/qc.py``.
+Custom QC Checkers and QC Handlers are stored (typically) in ``pipelines/<pipeline_module>/qc.py``.
 Once written, they must be specified in the ``config/quality.yaml`` file like shown:
 
 .. code-block:: yaml
@@ -29,10 +29,10 @@ Once written, they must be specified in the ``config/quality.yaml`` file like sh
 
       - name: The name of this quality check
         checker:
-          classname: pipelines.example_ingest.qc.CustomQualityChecker
+          classname: pipelines.example_pipeline.qc.CustomQualityChecker
           parameters: {}
         handlers:
-          - classname: pipelines.example_ingest.qc.CustomQualityHandler
+          - classname: pipelines.example_pipeline.qc.CustomQualityHandler
             parameters: {}
         apply_to: [COORDS, DATA_VARS]
 
@@ -41,8 +41,9 @@ Quality Checkers
 ----------------
 Quality Checkers are classes that are used to perform a QC test on a specific
 variable.  Each Quality Checker should extend the ``QualityChecker`` base
-class, and implement the abstract ``run`` method as shown below.  Each QualityChecker defined in the pipeline config file will
-be automatically initialized by the pipeline and invoked on the specified variables.
+class, and implement the abstract ``run`` method as shown below.  Each QualityChecker
+defined in the pipeline config file will be automatically initialized by the pipeline
+and invoked on the specified variables.
 
 .. code-block:: python
 
@@ -73,7 +74,7 @@ Tsdat built-in quality checkers:
 
 .. autosummary::
     :nosignatures:
-	
+
     ~tsdat.qc.checkers.QualityChecker
     ~tsdat.qc.checkers.CheckMissing
     ~tsdat.qc.checkers.CheckMonotonic
@@ -108,9 +109,9 @@ by the pipeline and invoked on the specified variables.
         Args:
             dataset (xr.Dataset): The dataset containing the variable to handle.
             variable_name (str): The name of the variable whose quality should be
-            handled.
+                handled.
             failures (NDArray[np.bool8]): The results of the QualityChecker for the
-            provided variable, where True values indicate a quality problem.
+                provided variable, where True values indicate a quality problem.
 
         Returns:
             xr.Dataset: The dataset after the QualityHandler has been run.
@@ -125,17 +126,18 @@ Tsdat built-in quality handlers:
 	
     ~tsdat.qc.handlers.QualityHandler
     ~tsdat.qc.handlers.RecordQualityResults
-    ~tsdat.qc.handlers.RemoveFailedValues
+    ~tsdat.qc.handlers.ReplaceFailedValues
     ~tsdat.qc.handlers.SortDatasetByCoordinate
-    ~tsdat.qc.handlers.SendEmailAWS
     ~tsdat.qc.handlers.FailPipeline
 
 .. automodule:: tsdat.qc.checkers
     :members:
     :undoc-members:
     :show-inheritance:
+    :noindex:
 	
 .. automodule:: tsdat.qc.handlers
     :members:
     :undoc-members:
     :show-inheritance:
+    :noindex:

@@ -2,7 +2,7 @@
 
 Pydantic and Parameters
 =========================
-Tsdat makes use of the Pydantic libary (https://pydantic-docs.helpmanual.io/) to support automatic validation of
+Tsdat makes use of [Pydantic](https://pydantic-docs.helpmanual.io/) to support automatic validation of
 the yaml configuration files.  This means that each customizable class type in Tsdat that can be specified in a yaml
 file extends a Pydantic base model object.  To facilitate consistent format and validation checking of
 parameters, all Tsdat objects should include a ``Parameters`` inner class.  This means that if you create a custom

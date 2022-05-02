@@ -1,6 +1,4 @@
 -r ../requirements.txt
-sphinx==3.5.4
-sphinx-rtd-theme==0.5.2
-sphinx-autoapi==1.8.1
-jinja2<3.1.0
-yamllint
+sphinx
+sphinx-rtd-theme
+sphinx-autoapi
