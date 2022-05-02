@@ -10,7 +10,7 @@ __all__ = [
     "DataQualityError",
     "FailPipeline",
     "RecordQualityResults",
-    "ReplaceFailedValues",
+    "RemoveFailedValues",
     "SortDatasetByCoordinate",
 ]
 
@@ -109,7 +109,7 @@ class RecordQualityResults(QualityHandler):
         return dataset
 
 
-class ReplaceFailedValues(QualityHandler):
+class RemoveFailedValues(QualityHandler):
     """------------------------------------------------------------------------------------
     Replaces all failed values with the variable's _FillValue. If the variable does not
     have a _FillValue attribute then nan is used instead
