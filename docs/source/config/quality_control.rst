@@ -126,7 +126,7 @@ Tsdat built-in quality handlers:
 	
     ~tsdat.qc.handlers.QualityHandler
     ~tsdat.qc.handlers.RecordQualityResults
-    ~tsdat.qc.handlers.ReplaceFailedValues
+    ~tsdat.qc.handlers.RemoveFailedValues
     ~tsdat.qc.handlers.SortDatasetByCoordinate
     ~tsdat.qc.handlers.FailPipeline
 
