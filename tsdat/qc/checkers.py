@@ -213,7 +213,7 @@ class _CheckMax(_ThresholdChecker):
 
 class CheckValidMin(_CheckMin):
     """------------------------------------------------------------------------------------
-    Checks for values less than `valid_min'.
+    Checks for values less than 'valid_min'.
 
     ------------------------------------------------------------------------------------"""
 
@@ -222,7 +222,7 @@ class CheckValidMin(_CheckMin):
 
 class CheckValidMax(_CheckMax):
     """------------------------------------------------------------------------------------
-    Checks for values greater than `valid_max'.
+    Checks for values greater than 'valid_max'.
 
     ------------------------------------------------------------------------------------"""
 
@@ -231,7 +231,7 @@ class CheckValidMax(_CheckMax):
 
 class CheckFailMin(_CheckMin):
     """------------------------------------------------------------------------------------
-    Checks for values less than `fail_min'.
+    Checks for values less than 'fail_min'.
 
     ------------------------------------------------------------------------------------"""
 
@@ -240,7 +240,7 @@ class CheckFailMin(_CheckMin):
 
 class CheckFailMax(_CheckMax):
     """------------------------------------------------------------------------------------
-    Checks for values greater than `fail_max'.
+    Checks for values greater than 'fail_max'.
 
     ------------------------------------------------------------------------------------"""
 
@@ -249,7 +249,7 @@ class CheckFailMax(_CheckMax):
 
 class CheckWarnMin(_CheckMin):
     """------------------------------------------------------------------------------------
-    Checks for values less than `warn_min'.
+    Checks for values less than 'warn_min'.
 
     ------------------------------------------------------------------------------------"""
 
@@ -258,7 +258,7 @@ class CheckWarnMin(_CheckMin):
 
 class CheckWarnMax(_CheckMax):
     """------------------------------------------------------------------------------------
-    Checks for values greater than `warn_max'.
+    Checks for values greater than 'warn_max'.
 
     ------------------------------------------------------------------------------------"""
 
