@@ -18,9 +18,11 @@ __all__ = [
 
 class ParameterizedClass(BaseModel, extra=Extra.forbid):
     """------------------------------------------------------------------------------------
-    Base class for any class that accepts 'parameters' as an argument. Sets the default
-    'parameters' to {}. Subclasses of ParameterizedClass should override the 'parameters'
-    properties to support custom required or optional arguments from configuration files.
+    Base class for any class that accepts 'parameters' as an argument.
+
+    Sets the default 'parameters' to {}. Subclasses of ParameterizedClass should override
+    the 'parameters' properties to support custom required or optional arguments from
+    configuration files.
 
     ------------------------------------------------------------------------------------"""
 
@@ -29,9 +31,11 @@ class ParameterizedClass(BaseModel, extra=Extra.forbid):
 
 def decode_cf(dataset: xr.Dataset) -> xr.Dataset:
     """---------------------------------------------------------------------------------
-    Decodes the dataset according to CF conventions. This helps ensure that the dataset
-    is formatted and encoded correctly after it has been constructed or modified. This
-    method is a thin wrapper around `xarray.decode_cf()` which
+    Wrapper around `xarray.decode_cf()` which handles additional edge cases.
+
+    This helps ensure that the dataset is formatted and encoded correctly after it has
+    been constructed or modified. Handles edge cases for units and data type encodings
+    on datetime variables.
 
     Args:
         dataset (xr.Dataset): The dataset to decode.
@@ -66,13 +70,12 @@ def record_corrections_applied(
     dataset: xr.Dataset, variable_name: str, message: str
 ) -> None:
     """---------------------------------------------------------------------------------
-    Records the message on the 'corrections_applied' attribute of the specified variable
-    in the dataset.
+    Records the message on the 'corrections_applied' attribute.
 
     Args:
         dataset (xr.Dataset): The corrected dataset.
         variable_name (str): The name of the variable in the dataset.
-        message (str): The
+        message (str): The message to record.
 
     ---------------------------------------------------------------------------------"""
     variable_attrs = dataset[variable_name].attrs
@@ -101,7 +104,7 @@ def assign_data(
 
     Raises:
         KeyError: Raises a KeyError if the specified variable is not in the dataset's
-        coords or data_vars dictionary.
+            coords or data_vars dictionary.
 
     Returns:
         xr.Dataset: The dataset with data assigned to it.
@@ -131,8 +134,7 @@ def assign_data(
 
 def get_start_time(dataset: xr.Dataset) -> pd.Timestamp:
     """---------------------------------------------------------------------------------
-    Gets the earliest 'time' value and returns it as a pandas Timestamp, which resembles
-    the built-in python datetime.datetime module.
+    Gets the earliest 'time' value and returns it as a pandas Timestamp.
 
     Args:
         dataset (xr.Dataset): The dataset whose start time should be retrieved.
@@ -148,10 +150,11 @@ def get_start_time(dataset: xr.Dataset) -> pd.Timestamp:
 
 def get_start_date_and_time_str(dataset: xr.Dataset) -> Tuple[str, str]:
     """---------------------------------------------------------------------------------
-    Gets the start date and start time strings from a Dataset. The strings are formatted
-    using strftime and the following formats:
-    - date: "%Y%m%d"
-    - time: ""%H%M%S"
+    Gets the start date and start time strings from a Dataset.
+
+    The strings are formatted using strftime and the following formats:
+        - date: "%Y%m%d"
+        - time: ""%H%M%S"
 
     Args:
         dataset (xr.Dataset): The dataset whose start date and time should be retrieved.
@@ -168,6 +171,8 @@ def get_filename(
     dataset: xr.Dataset, extension: str, title: Optional[str] = None
 ) -> str:
     """---------------------------------------------------------------------------------
+    Returns the standardized filename for the provided dataset.
+
     Returns a key consisting of the dataset's datastream, starting date/time, the
     extension, and an optional title. For file-based storage systems this method may be
     used to generate the basename of the output data file by providing extension as
@@ -178,10 +183,10 @@ def get_filename(
 
     Args:
         dataset (xr.Dataset): The dataset (used to extract the datastream and starting /
-        ending times).
+            ending times).
         extension (str): The file extension that should be used.
         title (Optional[str]): An optional title that will be placed between the start
-        time and the extension in the generated filename.
+            time and the extension in the generated filename.
 
     Returns:
         str: The filename constructed from provided parameters.

@@ -26,10 +26,7 @@ __all__ = [
     "recursive_instantiate",
     "read_yaml",
     "get_code_version",
-    # "YamlModel", # internal use
-    # "Overrideable", # internal use
-    # "matches_overrideable_schema", # internal use
-    # "find_duplicates", # internal use
+    "YamlModel",
 ]
 
 
@@ -111,6 +108,8 @@ class ParameterizedConfigClass(BaseModel, extra=Extra.forbid):
 
 def recursive_instantiate(model: Any) -> Any:
     """---------------------------------------------------------------------------------
+    Instantiates all ParametrizedClass components and subcomponents of a given model.
+
     Recursively calls model.instantiate() on all ParameterizedConfigClass instances under
     the the model, resulting in a new model which follows the same general structure as
     the given model, but possibly containing totally different properties and methods.

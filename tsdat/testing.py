@@ -47,19 +47,21 @@ def assert_close(
     **kwargs: Any,
 ) -> None:
     """---------------------------------------------------------------------------------
-    Thin wrapper around xarray.assert_allclose which also checks dataset and variable
-    attrs. Removes global attributes that are allowed to be different, which are
-    currently just the 'history' attribute and the 'code_version' attribute, and also
-    handles some obscure edge cases for variable attributes.
+    Thin wrapper around xarray.assert_allclose.
+
+    Also checks dataset and variable attrs. Removes global attributes that are allowed
+    to be different, which are currently just the 'history' attribute and the
+    'code_version' attribute. Also handles some obscure edge cases for variable
+    attributes.
 
     Args:
         a (xr.Dataset): The first dataset to compare.
         b (xr.Dataset): The second dataset to compare.
         check_attrs (bool): Check global and variable attributes in addition to the
-        data. Defaults to True.
+            data. Defaults to True.
         check_fill_value (bool): Check the _FillValue attribute. This is a special case
-        because xarray moves the _FillValue from a variable's attributes to its
-        encoding upon saving the dataset. Defaults to True.
+            because xarray moves the _FillValue from a variable's attributes to its
+            encoding upon saving the dataset. Defaults to True.
 
     ---------------------------------------------------------------------------------"""
     a, b = a.copy(), b.copy()  # type: ignore

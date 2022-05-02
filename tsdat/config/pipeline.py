@@ -64,9 +64,10 @@ __all__ = ["PipelineConfig"]
 
 class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
     """---------------------------------------------------------------------------------
-    Class used to contain configuration parameters for tsdat pipelines. This class will
-    ultimately be converted into a tsdat.pipeline.base.Pipeline subclass for use in
-    tsdat pipelines.
+    Contains configuration parameters for tsdat pipelines.
+
+    This class is ultimately converted into a tsdat.pipeline.base.Pipeline subclass that
+    will be used to process data.
 
     Provides methods to support yaml parsing and validation, including the generation of
     json schema for immediate validation. This class also provides a method to
@@ -75,27 +76,26 @@ class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
 
     Args:
         classname (str): The dotted module path to the pipeline that the specified
-        configurations should apply to. To use the built-in IngestPipeline, for example,
-        you would set 'tsdat.pipeline.pipelines.IngestPipeline' as the classname.
+            configurations should apply to. To use the built-in IngestPipeline, for
+            example, you would set 'tsdat.pipeline.pipelines.IngestPipeline' as the
+            classname.
         triggers (List[Pattern[str]]): A list of regex patterns that should trigger this
-        pipeline when matched with an input key.
+            pipeline when matched with an input key.
         retriever (Union[Overrideable[RetrieverConfig], RetrieverConfig]): Either the
-        path to the retriever configuration yaml file and any overrides that should be
-        applied, or the retriever configurations themselves.
+            path to the retriever configuration yaml file and any overrides that should
+            be applied, or the retriever configurations themselves.
         dataset (Union[Overrideable[DatasetConfig], DatasetConfig]): Either the path to
-        the dataset configuration yaml file and any overrides that should be applied, or
-        the dataset configurations themselves.
+            the dataset configuration yaml file and any overrides that should be
+            applied, or the dataset configurations themselves.
         quality (Union[Overrideable[QualityConfig], QualityConfig]): Either the path to
-        the quality configuration yaml file and any overrides that should be applied, or
-        the dataset configurations themselves.
+            the quality configuration yaml file and any overrides that should be
+            applied, or the quality configurations themselves.
         storage (Union[Overrideable[StorageConfig], StorageConfig]): Either the path to
-        the storage configuration yaml file and any overrides that should be applied, or
-        the storage configurations themselves.
+            the storage configuration yaml file and any overrides that should be
+            applied, or the storage configurations themselves.
 
     ---------------------------------------------------------------------------------"""
 
-    # IDEA: Provide a way of instantiating only the associations (so we can quickly
-    # determine which pipeline should be used for a given input)
     # IDEA: Add a root validator to ensure that properties from the quality config align
     # with dataset config properties -- e.g., includes / excludes are real variables,
     # all retrieved variables are defined in the output dataset, etc.
@@ -150,10 +150,7 @@ class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
 
     def instantiate_pipeline(self) -> Pipeline:
         """------------------------------------------------------------------------------------
-        This method instantiates the tsdat.pipeline.BasePipeline subclass referenced by the
-        classname property on the PipelineConfig instance and passes all properties on the
-        PipelineConfig class (except for 'classname') as keyword arguments to the constructor
-        of the tsdat.pipeline.BasePipeline subclass.
+        Loads the tsdat.pipeline.BasePipeline subclass specified by the classname property.
 
         Properties and sub-properties of the PipelineConfig class that are subclasses of
         tsdat.config.utils.ParameterizedConfigClass (e.g, classes that define a 'classname' and
