@@ -222,7 +222,7 @@ class CheckValidMin(_CheckMin):
 
 class CheckValidMax(_CheckMax):
     """------------------------------------------------------------------------------------
-    Checks for values greater than `valid_min'.
+    Checks for values greater than `valid_max'.
 
     ------------------------------------------------------------------------------------"""
 
@@ -240,7 +240,7 @@ class CheckFailMin(_CheckMin):
 
 class CheckFailMax(_CheckMax):
     """------------------------------------------------------------------------------------
-    Checks for values greater than `fail_min'.
+    Checks for values greater than `fail_max'.
 
     ------------------------------------------------------------------------------------"""
 
@@ -258,7 +258,7 @@ class CheckWarnMin(_CheckMin):
 
 class CheckWarnMax(_CheckMax):
     """------------------------------------------------------------------------------------
-    Checks for values greater than `warn_min'.
+    Checks for values greater than `warn_max'.
 
     ------------------------------------------------------------------------------------"""
 
