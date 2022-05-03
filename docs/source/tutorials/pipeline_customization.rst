@@ -54,16 +54,11 @@ in some custom format or structure. Tsdat has the flexibility to incorporate
 user-built code to read and pre-process raw data.
 
 It is recommended to test your code before inputting to tsdat's framework by first 
-writing and testing a reader on your input data in your preferred IDE. The reader 
-file can contain as many ``<custom_name>Reader``s as the user requires.
-The read function should return an xarray Dataset.
+writing and testing a reader on your input data in your preferred IDE. This read 
+function should return an xarray Dataset.
 
-3. Since we're using the same NOAA NCEI data as before, as an example, we'll recreate
-tsdat's csv reader from the user's standpoint. When you open readers.py, you'll 
-see the reader is built from a class with the name ``CustomDataReader``, and consists
-of a `Parameters` class and a "read" function. The `Parameters` class is built
-to organize additional parameters not specified in the retriever.yaml file, and 
-the "read" function contains the actual file reader code.
+3. Since we're using the same NOAA NCEI data as before, this tutorial with recreate
+tsdat's csv reader from the user's standpoint:
 
 .. code-block:: python
 
@@ -102,12 +97,15 @@ the "read" function contains the actual file reader code.
           return xr.Dataset.from_dataframe(df, **self.parameters.from_dataframe_kwargs)
 
 
+As you can see in the above code, our reader is contained by the class 
+`NCEIReader`. The `Parameters` class initiates the parameters expected from 
+the retriever.yaml file, which are then fed to the "read" function, which 
+contains the reader's source code.
 
-In the above codeblock, the `Parameters` class initiates the parameter dictionaries
-expected from the retriever.yaml file. These dictionaries are
-then called for the respective pandas and xarray functions in the "read" function.
+Note, after running the reader, the pipeline runs the dataset through the retriever.
+If variable names are changed in the reader source code, this change should be 
+reflected in the vairables' input names in retriever.yaml.
 
-Replace the code in reader.py with the above code block.
 
 .. figure:: custom/custom3.png
     :align: center
@@ -117,8 +115,8 @@ Replace the code in reader.py with the above code block.
 |
 
 
-We also need to tell tsdat now to use our csv file reader. Opening the 
-retriever.yaml file, replace the reader block with (remember to replace 
+4. We now need to tell tsdat now to use our csv file reader. Open the 
+retriever.yaml file and replace the reader block with (remember to replace 
 <pipeline_name> with your own pipeline's name):
 
 .. code-block:: yaml
@@ -132,7 +130,9 @@ retriever.yaml file, replace the reader block with (remember to replace
           engine: "python"
           index_col: False
         
-Notice we are not using the "from_dataframe_kwargs".
+Notice we are not using the "from_dataframe_kwargs", but if we were, 
+"from_dataframe_kwargs" would be listed at the same indent level as 
+"read_csv_kwargs".
 
 .. figure:: custom/custom4.png
     :align: center
@@ -148,17 +148,16 @@ Tsdat has two native data converters, a ``UnitsConverter`` and a ``StringToDatet
 converter. These provide the useful functions of converting units and utilizing
 the datetime package's ability to read time formats, given the correct timestring.
 
-The custom data converter is an option to add pre-processing to the input dataset
-if it wasn't done in a custom file reader, or a custom file reader isn't necessary.
+The custom data converter is an option to add pre-processing to specific variables 
+in the input dataset, while a custom file reader gives more flexibility to cover 
+all at once. Converters operate on a variable-by-variable basis, so keep this in 
+mind when adding one.
 
-Converters operate on a variable-by-variable basis, so keep this in mind when adding
-one.
-
-4. In the NCEI NOAA documentation, the units for windspeed state that the data was
-saved as 1/10th of a knot or m/s, depending on the configuration. Because the rest
-of the file is saved in imperial units, it's assumed the data is saved as 1/10th
-knots. This isn't a standard unit, so we shall add a data converter to tackle this
-input in the codeblock below.
+5. As stated in the NCEI NOAA documentation, the units for windspeed are recorded 
+as either 1/10th of a knot or m/s, depending on the configuration. Because the rest
+of the file is saved in imperial units, I'm assuming the data is actually saved as 
+1/10th knots. This isn't a standard unit, so we shall add a data converter to tackle 
+this input in the codeblock below.
 
 .. code-block:: python
 
@@ -218,9 +217,8 @@ input in the codeblock below.
 
 |
 
-Once adding a converter class to the converters.py file, update the appropriate
-variables in the retriever.yaml file. In this case we'll add this to the "wind_speed"
-variable.
+6. Now we configure the "wind_speed" variable to use this converter in the 
+retriever.yaml file:
 
 .. code-block:: yaml
 
@@ -243,6 +241,9 @@ variable.
 
 Adding Custom Quality Control Funtions
 ======================================
+
+First, a quick overview of how tsdat handles quality control (QC):
+
 Tsdat has a number of native quality control functions that users could find useful. 
 (See :ref:`quality control API <quality_control>` for all of them). These built-in 
 functions can then be input into the pipeline config or shared folder 
@@ -256,7 +257,7 @@ For example:
 
   quality_management:
    
-    manage_min: # tsdat's built-in handle min
+    -name: Remove datapoints below minimum valid threshold
       checker:
         classname: tsdat.qc.checkers.CheckValidMin
       handlers:
@@ -275,7 +276,16 @@ variables named "foo" and "bar". This QC check requires the "valid_range" attrib
 on all variables running through it in the dataset.yaml file.
 
 The two built-in handlers specified here remove failues (``RemoveFailedValues``) that 
-failed the QC check by replacing them with the attribute ``_FillValue``, for example:
+failed the QC check by replacing them with the attribute ``_FillValue``.
+
+The second handler used is ``RecordQualityResults``, which requires parameters in the
+quality.yaml block itself: `bit`, `assessment`, and `meaning`. This adds 
+"qc_<variable_name>" to the output data, where variable elements that fail a test 
+are assigned the value 2^bit - 1, otherwise zero.
+
+A variable is set to run through a quality management block by adding the required 
+attributes. To run a variable "distance" through the QC block shown above, add 
+the required "valid_range" and "_FillValue" attributes like the following:
 
 .. code-block:: yaml
 
@@ -285,22 +295,19 @@ failed the QC check by replacing them with the attribute ``_FillValue``, for exa
     attrs:
       units: "m"
       valid_range: [-3, 3] # attribute for the "CheckValidMin" and "CheckValidMax" functions
-      _FillValue: 999
+      _FillValue: 999      # the "bad data" value
+|
 
-The second handler here is ``RecordQualityResults``, which requires parameters in the
-quality.yaml block itself: "bit", "assessment", and "meaning". This function creates an additional variable that is called "qc_<variable_name>", where variable elements that 
-fail a test are given the bit value. If no test fails, "qc_<variable_name>" will contain 
-all zeroes.
+Now back to the tutorial steps:
 
-
-5. Custom QC code in tsdat follows the same structure, with a `checker` and `handler`
-class. Like readers, you can add as many of each as one would like. QualityCheckers 
+Custom QC code in tsdat allows a user to create both `checkers` and `handlers`. 
+Like readers, you can add as many of each as one would like. `Checkers`
 should return a boolean numpy array (True/False), where `True` refers to flagged data,
-for each variable in the raw dataset. QualityHandlers take this boolean array and apply 
+for each variable in the raw dataset. `Handlers` take this boolean array and apply 
 some function to the data variable it was created from.
 
-As a simple example for this tutorial, we'll add a QC handler that interpolates 
-missing data with a cubic polynomial:
+7. For this tutorial, we'll add a QC handler that interpolates missing data with a 
+cubic polynomial using one of xarray's functions:
 
 .. code-block:: python
 
@@ -322,7 +329,7 @@ missing data with a cubic polynomial:
           """
 
       parameters: Parameters = Parameters()
-      """Extra parameters that can be set via the quality configuration file. If you opt
+      """Extra parameters can be set via the quality configuration file. If you opt
       to not use any configuration parameters then please remove the code above."""
 
       def run(
@@ -330,12 +337,26 @@ missing data with a cubic polynomial:
       ) -> xr.Dataset:
 
           if failures.any():
+              # Make sure failed datapoints have been removed
+              dataset[variable_name] = dataset[variable_name].where(~failures)
+              
+              # Interpolate with cubic polynomial
               dataset[variable_name] = dataset[variable_name].interpolate_na(
                   dim="time", method="cubic", keep_attrs=True
               )
 
           return dataset
 
+You'll see that the "run" function here is given three inputs:
+
+  #. dataset - currently processed dataset
+  #. variable_name - current variable undergoing QC
+  #. failures - the true/false array, where true refers to values that failed the QC check
+  
+In this case, the `checker` is ``CheckMissing``, which flags datapoints already missing 
+from the dataset. If the `checker` returned a "failures" array had datapoints flagged 
+that weren't missing, I would want to make sure to remove those datapoints before passing 
+to `xarray.dataset[variable_name].interpolate_na`.
 
 .. figure:: custom/custom7.png
     :align: center
@@ -344,10 +365,14 @@ missing data with a cubic polynomial:
 
 |
 
-And then we update the quality.yaml file and replace the custom input with our most 
+
+8. We then update the quality.yaml file and replace the custom input with our most 
 recent code. We'll continue to use ``CheckMissing`` and ``RecordQualityResults`` here.
-Note, you will need to remove the `Remove missing datapoints` (any block with
-``RemoveFailedValues``) QC block for interpolation to function. 
+
+Note, you will need to remove the `Remove missing datapoints` QC block
+(the first block with ``RemoveFailedValues``) for interpolation to function. If 
+running multiple QC tests, you will want to make sure they aren't overwriting each 
+other.
 
 .. code-block:: yaml
 
@@ -376,7 +401,7 @@ Note, you will need to remove the `Remove missing datapoints` (any block with
 
 Run the Pipeline
 ================
-6. There are a couple more things. First we need to update the pipeline regex
+9. There are a couple more things. First we need to update the pipeline regex
 pattern in the pipeline.yaml file to run files in this particular pipeline, and
 we'll do this by changing the triggers block:
 
@@ -394,7 +419,7 @@ we'll do this by changing the triggers block:
 |
 
 
-7. Next, we want to copy the data to this pipeline and rename it to match the
+10. Next, we want to copy the data to this pipeline and rename it to match the
 regex pattern. The data here is stored in the test/data/input/ folder, but
 can be anywhere, and I have named this data `custom.sample_data.csv`.
 
@@ -406,7 +431,7 @@ can be anywhere, and I have named this data `custom.sample_data.csv`.
 |
 
 
-8. Finally we can run this pipeline. Open a terminal (ctrl `) and run
+11. Finally we can run this pipeline. Open a terminal (ctrl `) and run
 
 .. code-block:: bash
 
@@ -435,8 +460,8 @@ Common Errors:
   
   2. Can't find module "pipeline" -- There are many modules and classes named 
   "pipeline" in tsdat. This error typically refers to a classname specified in the  
-  config file, i.e. ``pipelines.<ingest_name>.qc.CustomQualityChecker`` or
-  ``pipelines.<ingest_name>.readers.CustomQualityHandler``. Make sure this classname 
+  config file, i.e. ``pipelines.<pipeline_name>.qc.<custom_qc>`` or
+  ``pipelines.<pipeline_name>.readers.<custom_reader>``. Make sure this classname 
   path is correct.
   
   3. ``Check_<function>`` fails -- Ensure all the variables listed under a quality 
@@ -445,8 +470,10 @@ Common Errors:
   string array (e.g 'direction': ['x','y','z'], this function will fail. Fix this by
   replacing "COORDS" with only numeric coordinates (e.g. 'time').
   
-  4. If a QC handler doesn't appear to be running on a variable, make sure it's not 
-  being overridden by another in the same pipeline.
+  4. If a QC handler doesn't appear to be running on a variable, 1.) make sure it's not 
+  being overridden by another in the same pipeline, 2.) make sure your custom QC 
+  tests are running on a single variable at a time and not affecting the entire 
+  dataset.
   
   5. Pipeline is "skipped". Make sure your regex pattern in pipeline.yaml matches your
   filename. There are regex file match checkers online for a sanity check.
