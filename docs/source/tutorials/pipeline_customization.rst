@@ -8,26 +8,25 @@ This tutorial goes over how to add custom file readers, quality control, and
 data converter code to tsdat for the `pipeline-template`. This tutorial builds
 off of :ref:`first tutorial <data_ingest>` and utilizes the same example data.
 
-1. After downloading a <template repository>_, create a new pipeline with:
+1. We'll dive straight into it by creating a new pipeline:
 
-.. code-block::
+.. code-block:: bash
 
   make cookies
   
 Or
 
-.. code-block::
+.. code-block:: bash
 
 	cookiecutter templates/ingest -o ingest/
   
-And select yes (2) to the "Select use_custom_<option>".
+And select yes (2) to the "Select use_custom_<option>" prompts.
 
 .. figure:: custom/custom1.png
     :align: center
     :width: 100%
     :alt:
 
-|
 
 Notice this adds a readers.py, qc.py, and converters.py to the new pipeline 
 directory, as well as a qc.yaml file to the config folder.
@@ -38,9 +37,13 @@ directory, as well as a qc.yaml file to the config folder.
     :alt:
 
 |
+
+Fill out the Configuration Files
+================================
   
 2. Go ahead and copy the retriever.yaml, dataset.yaml, and pipeline.py files from the 
-NOAA NCEI example data tutorial.
+NOAA NCEI example data tutorial if you using that data. If you are building a custom 
+pipeline, go ahead and fill out these files now.
 
 
 Adding a Custom File Reader
@@ -50,8 +53,9 @@ for a number of input files, it is not uncommon for raw datafiles to be saved
 in some custom format or structure. Tsdat has the flexibility to incorporate
 user-built code to read and pre-process raw data.
 
-It is recommended to test your code before inputting to tsdat's framework, and 
-the readers.py file can contain as many ``<custom_name>Reader``s as the user requires.
+It is recommended to test your code before inputting to tsdat's framework by first 
+writing and testing a reader on your input data in your preferred IDE. The reader 
+file can contain as many ``<custom_name>Reader``s as the user requires.
 The read function should return an xarray Dataset.
 
 3. Since we're using the same NOAA NCEI data as before, as an example, we'll recreate
@@ -117,7 +121,7 @@ We also need to tell tsdat now to use our csv file reader. Opening the
 retriever.yaml file, replace the reader block with (remember to replace 
 <pipeline_name> with your own pipeline's name):
 
-.. code-block::
+.. code-block:: yaml
 
   readers:
     .*:
@@ -372,12 +376,48 @@ Note, you will need to remove the `Remove missing datapoints` (any block with
 
 Run the Pipeline
 ================
-There are a couple more things.
+6. There are a couple more things. First we need to update the pipeline regex
+pattern in the pipeline.yaml file to run files in this particular pipeline, and
+we'll do this by changing the triggers block:
 
-Need to copy data
-Rename data
-rename pipeline.yaml regex
-Run pipeline string
+.. code-block:: yaml
+
+  triggers:
+  - .*custom.*\.csv
+
+
+.. figure:: custom/custom9.png
+    :align: center
+    :width: 100%
+    :alt:
+
+|
+
+
+7. Next, we want to copy the data to this pipeline and rename it to match the
+regex pattern. The data here is stored in the test/data/input/ folder, but
+can be anywhere, and I have named this data `custom.sample_data.csv`.
+
+.. figure:: custom/custom10.png
+    :align: center
+    :width: 100%
+    :alt:
+
+|
+
+
+8. Finally we can run this pipeline. Open a terminal (ctrl `) and run
+
+.. code-block:: bash
+
+  python runner.py pipelines/<pipeline_name>/test/data/input/custom.sample_data.csv
+
+.. figure:: custom/custom11.png
+    :align: center
+    :width: 100%
+    :alt:
+
+|
 
 Notes on Errors
 ===============
@@ -404,3 +444,10 @@ Common Errors:
   test ``CheckMonotonic`` on all "COORDS", and one of my coordinate variables is a
   string array (e.g 'direction': ['x','y','z'], this function will fail. Fix this by
   replacing "COORDS" with only numeric coordinates (e.g. 'time').
+  
+  4. If a QC handler doesn't appear to be running on a variable, make sure it's not 
+  being overridden by another in the same pipeline.
+  
+  5. Pipeline is "skipped". Make sure your regex pattern in pipeline.yaml matches your
+  filename. There are regex file match checkers online for a sanity check.
+  

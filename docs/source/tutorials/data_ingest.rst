@@ -202,7 +202,7 @@ in the terminal using:
 There will follow a series of prompts that'll be used to auto-fill the new ingest. Fill
 these in for the particular dataset of interest. For this ingest we will not be using 
 custom QC functions, filereaders/writers, or converters, so select no for those as well. 
-(See :ref:`Custom QC & file handler tutorial <pipeline_customization>` for those)
+(See :ref:`the customization tutorial <pipeline_customization>` for those)
 
   .. figure:: global_marine_data/intro8.png
       :align: center
@@ -233,7 +233,7 @@ accomplished the previous steps, but these are good to check).
   |
 
 6. We are now looking at step #1: Use the "TODO tree" extension or use the search tool
-to find occurances of "# TODO-Developer". (The "TODO tree" is the oak tree icon in 
+to find occurances of "# Developer". (The "TODO tree" is the oak tree icon in 
 the left-hand window pane).
 
 You may need to reload VS Code for these to show up in the ingest. Hitting "ctrl shift P"
@@ -247,7 +247,7 @@ on the keyboard to open the search bar, and type in and run the command "Reload 
   |
 
 After doing the window reloads, all the newly created "TODOs" will show up in the new 
-ingest folder.
+ingest folder. The rest of the tutorial consists of running through this list of "TODOs".
 
   .. figure:: global_marine_data/intro12.png
       :align: center
@@ -256,83 +256,119 @@ ingest folder.
 
   |
 
+
 Customizing the New Ingest
 ==========================
-Each ingest folder is particular to a specific data file, so we must customize our ingest
-to our particular data file. The following section describes how to customize a pipeline 
-for our historical ship data, following the TODOs list.
 
-7. Let's start with "config/pipeline.yaml". 
-    
-The first line, "classname" in this file is the class path. This points to your 
-"pipeline/pipeline.py" file, which contains the hook functions for the pipeline,
-which we'll visit after setting up the input data and configuration files.
+7. Navigate to your Explorer pane and open "pipelines/*/config/pipeline.yaml". 
+
+This file lists the configuration files for the pipeline in the order that the
+pipeline is initiating them.
+
+The first line, "classname", refers to the the pipeline class path. This points to
+the class in your "pipeline/pipeline.py" file, which contains the hook functions.
+The only hook we're using in this tutorial is that to create plots, which we'll update
+after setting up the input data and configuration files. It isn't necessary to edit
+this path name.
+
+.. code-block:: yaml
+
+  classname: pipelines.ncei_arctic_cruise_example.pipeline.NceiArcticCruiseExample
 
 .. figure:: global_marine_data/intro13.png
     :alt:
 |
 
-8. The second line, "triggers", is expected naming convention for the input data.
-The "regex" pattern here is expecting the filename to start with the "location_name" 
-from the template creation questions. 
+8. The second line, "triggers", is the expected file pattern, or a "regex" 
+pattern, of the input data, shown below. A regex pattern is a set of symbols 
+and ascii characters that matches to a file name or path. A full set of these 
+symbols can be found 
+`here <https://www.shortcutfoo.com/app/dojos/regex/cheatsheet>_`.
 
-This regex pattern can be adjusted as the user or raw data requires, but for this case, 
-let's rename the sample datafile to "arctic_ocean.sample_data.csv" and move it to
-a new folder called "data" within our "ncei_arctic_cruise_example" directory.
+.. code-block:: yaml
+
+  triggers:
+  - .*arctic_ocean.*\.csv
+
+The file pattern that will trigger a pipeline to run is automatically set to  ``.*<location_name>.*\.csv``. it can be adjusted as the user or raw data requires.
+This pipeline's auto trigger can be broken down into 5 parts:
+
+  - .*
+  - arctic_ocean
+  - .*
+  - \\
+  - .csv
+
+  #. The first symbol, `.*`, means "match any and all characters". 
+  #. The next part, `arctic_ocean`, literally means search for the ascii characters that make up "arctic_ocean". 
+  #. Next we have the `.*` again. 
+  #. Fourth is `\\`, which is the "break" character, meaning "break" the `.*`, i.e. tell it to stop matching characters. 
+  #. Finally is `.csv`, which like "arctic_ocean", matches the ascii ".csv".
+
+.. figure:: global_marine_data/intro13.5.png
+    :alt:
+|
+
+
+9. To match the raw data to the trigger, we will rename the sample datafile to "arctic_ocean.sample_data.csv" and move it to a new folder called "data" within 
+my pipeline (ncei_arctic_cruise_example) directory.
+
+Relating "arctic_ocean.sample_data.csv" to ``.*arctic_ocean.*\.csv``:
+
+ - .* matches to the preceding filepath of the file (./pipelines/ncei_arctic_cruise_example/data/) that is assumed to exist
+ - arctic_ocean matches itself
+ - .* matches `.sample_data` (".sample_data" does not need to begin with . to match)
+ - \\ breaks the above .* on matching `.csv`
+ - .csv matches itself
 
 .. figure:: global_marine_data/intro14.png
     :alt:
 |
 
-9. The third line, "retriever", is the first of two required user-customized configuration
-files in "YAML" (Yet Another Markup Language) format, which we’ll need to modify to 
-capture the variables and metadata we want to retain in this ingest.
 
-Several tasks can be specified in the retriever file to apply to the input file:
-    1. Specific file reader
-    2. Rename data variables
-    3. Applying conversions (timestamp format, unit conversion, basic calculations, etc)
-    4. Mapping particular data variables by input file regex pattern
-    
-For this example, we will specify the file reader, rename the variables and initiate 
-unit conversion. More complicated data conversion, like basic calculations,
-can be accomplished by user-customized "Data Converters" (specify yes ("2") 
-in the appropriate question after creating a new pipeline with `make cookies`). 
-We won't go over task 4 in this tutorial.
+10. The third line, "retriever", is the first of two required user-customized 
+configuration files, which we’ll need to modify to capture the variables and 
+metadata we want to retain in this ingest.
+
+Start by opening retriever.yaml in the "pipelines/*/config" folder.
 
 .. figure:: global_marine_data/intro15.png
     :alt:
 
-Replace the text in the "retriever.yaml" file with the following:
+In the retriever file, we can specify several tasks to be run that apply to the
+input file and raw data:
+
+    - Specify the file reader
+    - Rename data variables
+    - Apply conversions (timestamp format, unit conversion, basic calculations, etc)
+    - Map particular data variables by input file regex pattern
+
+The retriever is split into 4 blocks:
+
+  #. "classname": default retriever code used by tsdat, not necessary to edit
+  #. "readers": specifies details for the input file reader
+  #. "coords": short for coordinates, the number of these defines the number of dimensions of the dataset (i.e. data with the coordinate "time" are 1D)
+  #. "data_vars": short for data variables, these are scalar or vector data
+
+For this pipeline, replace the text in the "retriever.yaml" file with the following:
 
 .. code-block:: yaml
   :linenos:
   
   classname: tsdat.io.retrievers.DefaultRetriever
-  readers:
-    .*:
-      classname: tsdat.io.readers.CSVReader
-      parameters: # Parameters to pass to CsvHandler. Comment out if not using.
-        read_csv_kwargs:
-          sep: ", *"
-          engine: "python"
-          index_col: False
+  readers:                                    # Block header
+    .*:                                       # Secondary regex pattern to match files
+      classname: tsdat.io.readers.CSVReader   # Name of file reader
+      parameters:                             # File reader input arguments
+        read_csv_kwargs:                      # keyword args for CSVReader (pandas.read_csv)
+          sep: ", *"                          # csv "separater" or delimiter
+          engine: "python"                    # csv read engine
+          index_col: False                    # create index column from first column in csv
 
   coords:
     time:
-      # Mapping of regex pattern (matching input key/file) to input name & converter(s) to
-      # run. The default is .*, which matches everything. Put the most specific patterns
-      # first because searching happens top -> down and stops at the first match.
       .*:
-        # The name of the input variable as returned by the selected reader. If using a
-        # built-in DataReader like the CSVReader or NetCDFReader, then will be exactly the
-        # same as the name of the variable in the input file.
         name: Time of Observation
-
-        # Optionally specify converters to run. The one below converts string values into
-        # datetime64 objects. It requests two arguments: format and timezone. Format is
-        # the string time format of the input data (see strftime.org for more info), and
-        # timezone is the timezone of the input measurement.
         data_converters:
           - classname: tsdat.io.converters.StringToDatetime
             format: "%Y-%m-%dT%H:%M:%S"
@@ -404,7 +440,29 @@ Replace the text in the "retriever.yaml" file with the following:
         data_converters:
           - classname: tsdat.io.converters.UnitsConverter
             input_units: dm/s
+    
+The structure of retriever.yaml can be explained by the following excerpt:
+
+.. code-block:: yaml
+  :linenos:
+
+  data_vars:
+    temperature:
+      .*:
+        name: Air Temperature
+        data_converters:
+          - classname: tsdat.io.converters.UnitsConverter
+            input_units: degF
+
+Matching the line numbers of the above code-block:
+   
+  #. The name of the header block
+  #. Desired name of the variable in the output data - user editable
+  #. Secondary regex pattern (matching input key/file) to input name & converter(s) to run
+  #. Name of the variable in the input data - should directly match raw input data
+  #. Optional data converters to run, in this case unit conversion. See :ref:`the customization tutorial <pipeline_customization>` for a how-to on applying custom data conversions.
 |
+
 
 10. The fourth line in pipeline.yaml, "dataset", refers to the dataset.yaml
 configuration file. This file is where user-specified datatype and metadata are 
@@ -417,11 +475,15 @@ is and how to start using it.
 
 .. figure:: global_marine_data/intro16.png
     :alt:
+|
 
-Replace the text in the "dataset.yaml" file with the following. Note that the units
-block is particularly important (you will get an error message if a variable doesn't
-have units), and that variable names match between retriever.yaml and dataset.yaml. 
-Variables not desired from retriever.yaml can be left out of dataset.yaml.
+Replace the text in the "dataset.yaml" file with the following code-block.
+
+ - Note that the units block is particularly important (you will get an error message if a variable doesn't have units)
+ - Variable names must match between retriever.yaml and dataset.yaml. 
+ - Variables not desired from retriever.yaml can be left out of dataset.yaml.
+ - The structure is similar to the retriever, with an addition "attrs" (attributes, or metadata) header block at the top
+ - Notice the QC attributes. We will cover this capability in the next steps.
 
 .. code-block:: yaml
   :linenos:
@@ -548,21 +610,25 @@ Variables not desired from retriever.yaml can be left out of dataset.yaml.
         comment: ""
 |
 
-11. The last two lines in pipeline.yaml are "quality" and "storage". These are located
-in the "shared" folder in the top-level directory. The quality.yaml file contains the
-QC functions that we will run on this code, and the storage.yaml file contains the 
-path to the output file writer.
+11. The last two lines in pipeline.yaml are "quality" and "storage". In this tutorial, 
+these are located in the "shared" folder in the top-level directory. If custom QC is 
+selected, these will also be located in the "config" folder.
+
+The quality.yaml file defines the QC functions that we will run on this code, and the storage.yaml file defines the path to the output file writer.
 
 .. figure:: global_marine_data/intro17.png
     :alt:
-    
-The quality.yml file contains a number of built-in tsdat quality control functions,
-which we will use as is for this ingest.
 
-Quality control in tsdat is broken up into two types of functions: 'checkers' and 
-'handlers'. Checkers are functions that perform a quality control test (e.g. check 
-missing, check range (max/min), etc). Handlers are functions that do something with
-this data.
+The quality.yaml file contains a number of built-in tsdat quality control functions,
+which we will use as is for this ingest. 
+
+Quality control in tsdat is broken up into 
+two types of functions: 'checkers' and 'handlers'. Checkers are functions that 
+perform a quality control test (e.g. check missing, check range (max/min), etc). 
+Handlers are functions that do something with this data. 
+
+See the API documentation for more built-in QC tests, and the
+:ref:`customization tutorial <pipeline_customization>` to create your own.
 
 .. figure:: global_marine_data/intro18.png
     :alt:
@@ -580,18 +646,17 @@ storage.yaml with::
       classname: tsdat.io.handlers.CSVHandler
 |
 
-12. Finally "pipeline.py" is the last "get pipeline to working mode" "TODO" we should
+12. Finally "pipeline.py" is the last get-pipeline-to-working mode TODO we should
 finish setting up here. As mentioned previously, it contains a series of hook 
 functions that can be used along the pipeline for further data organization.
 
 .. figure:: global_marine_data/intro20.png
     :alt:
-|
 
 We shall set up "hook_plot_dataset", which plots the processed data and save the 
 figures in the storage/ancillary folder. To keep things simple,
-only the pressure data is plotted here, but it's easy to switch or add variables
-to this code template as desired:
+only the pressure data is plotted here, but feel free to edit this code as 
+desired:
 
 .. code-block:: python
   :linenos:
@@ -640,6 +705,7 @@ to this code template as desired:
               plot_file = get_filename(dataset, title="example_plot", extension="png")
               fig.savefig(tmp_dir / plot_file)
               plt.close(fig)
+|
 
 
 Running the Pipeline
@@ -665,7 +731,6 @@ the plot as well as the netCDF file output (or csv if you changed the output wri
       :width: 100%
       :alt:
 
-  |
 
 Data can be viewed by opening the terminal (``ctrl ```) and running a quick python shell:
 
@@ -709,6 +774,7 @@ In the python shell that opens, we can view the dataset for a quick overview:
       history:       Ran by jmcvey3 at 2022-04-29T15:31:32.055678
 |
 
+
 Pipeline Tests
 ==============
 
@@ -720,3 +786,16 @@ respectively, and update the file paths.
 
 .. figure:: global_marine_data/intro23.png
     :alt:
+    
+    
+Next Steps
+==========
+
+Tsdat is highly configurable because of the range and variability of input data and 
+output requirements. The following tutorial, the 
+:ref:`customization tutorial <pipeline_customization>`, goes over the steps needed 
+to create custom file readers, data converters, and custom quality control. In the 
+developers experience, many types of input data (aka file extensions) require a 
+custom file reader, which also offers the freedom for easy pre-processing and 
+organization of raw data. 
+
