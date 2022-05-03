@@ -298,7 +298,7 @@ For this example, we will specify the file reader, rename the variables and init
 unit conversion. More complicated data conversion, like basic calculations,
 can be accomplished by user-customized "Data Converters" (specify yes ("2") 
 in the appropriate question after creating a new pipeline with `make cookies`). 
-We won't go over task 3 in this tutorial.
+We won't go over task 4 in this tutorial.
 
 .. figure:: global_marine_data/intro15.png
     :alt:
@@ -406,7 +406,7 @@ Replace the text in the "retriever.yaml" file with the following:
             input_units: dm/s
 |
 
-10. The fourth line in "pipeline.yaml", "dataset", refers to the "dataset.yaml"
+10. The fourth line in pipeline.yaml, "dataset", refers to the dataset.yaml
 configuration file. This file is where user-specified datatype and metadata are 
 added to the raw dataset.
 
@@ -419,8 +419,9 @@ is and how to start using it.
     :alt:
 
 Replace the text in the "dataset.yaml" file with the following. Note that the units
-block is particularly important, and that variable names match between "retriever.yaml"
-and "dataset.yaml".
+block is particularly important (you will get an error message if a variable doesn't
+have units), and that variable names match between retriever.yaml and dataset.yaml. 
+Variables not desired from retriever.yaml can be left out of dataset.yaml.
 
 .. code-block:: yaml
   :linenos:
@@ -443,14 +444,14 @@ and "dataset.yaml".
         units: Seconds since 1970-01-01 00:00:00
         
   data_vars:
-    latitude:                 # Name of variable in dataset
-      dims: [time]            # Dimension of variable
+    latitude:                 # Name of variable in retriever.yaml
+      dims: [time]            # Variable dimension(s), separated by ","
       dtype: float            # Datatype
       attrs:
-        long_name: Latitude   # Used in plots
-        units: deg N          # Necessary for unit conversion and user understanding
+        long_name: Latitude   # Name used in plotting
+        units: deg N          # Units, necessary for unit conversion
         comment: ""           # Add a comment or description if necessary
-        _FillValue: 99        # Bad data marker in raw dataset, typically -999
+        _FillValue: 99        # Bad data marker in raw dataset, otherwise -9999
         fail_range: [-90, 90] # Expected failure range for "CheckFailMax"/Min" QC tests
         
     longitude:
@@ -547,9 +548,9 @@ and "dataset.yaml".
         comment: ""
 |
 
-11. The last two lines in "pipeline.yml" are "quality" and "storage". These are located
-in the "shared" folder in the top-level directory. The "quality.yml" file contains the
-QC functions that we will run on this code, and the "storage.yml" file contains the 
+11. The last two lines in pipeline.yaml are "quality" and "storage". These are located
+in the "shared" folder in the top-level directory. The quality.yaml file contains the
+QC functions that we will run on this code, and the storage.yaml file contains the 
 path to the output file writer.
 
 .. figure:: global_marine_data/intro17.png
@@ -566,14 +567,14 @@ this data.
 .. figure:: global_marine_data/intro18.png
     :alt:
     
-File output is handled by "storage.yml", and built-in output writers are to NETCDF4
+File output is handled by storage.yaml, and built-in output writers are to NETCDF4
 file format or CSV.
 
 .. figure:: global_marine_data/intro19.png
     :alt:
  
 I won't do this here, but CSV output can be added by replacing the "handler" block in 
-"storage.yml" with::
+storage.yaml with::
 
     handler:
       classname: tsdat.io.handlers.CSVHandler
@@ -714,8 +715,8 @@ Pipeline Tests
 Testing is best completed as a last step, after everything is set up and the pipeline outputs
 as expected. If running a large number of datafiles, a good idea is to input one of those datafiles here, along with its expected output, and have a separate data folder to collect input files.
 
+Move the input and output files to the test/data/input/ and test/data/expected/ folders,
+respectively, and update the file paths.
+
 .. figure:: global_marine_data/intro23.png
     :alt:
-
-Move  the input and output files to the test/data/input/ and test/data/expected/ folders,
-respectively for the test to pass.

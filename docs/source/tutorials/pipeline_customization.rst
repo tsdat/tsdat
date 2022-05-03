@@ -1,197 +1,223 @@
+.. _template repository: https://github.blog/2019-06-06-generate-new-repositories-with-repository-templates/
 .. _pipeline_customization:
 
-File Handlers, Quality Control, Etc
+Pipeline Customization
 -----------------------------------
 
-This quick walkthrough shows how to add custom quality control and file handler code to 
-tsdat for the `pipeline-template`. See :ref:`first tutorial <data_ingest>` to learn how
-to set up an ingest first if you haven't already.
+This tutorial goes over how to add custom file readers, quality control, and 
+data converter code to tsdat for the `pipeline-template`. This tutorial builds
+off of :ref:`first tutorial <data_ingest>` and utilizes the same example data.
 
-After running the command 
+1. After downloading a <template repository>, create a new pipeline with::
+
+  make cookies
+  
+Or
 
 .. code-block::
 
 	cookiecutter templates/ingest -o ingest/
   
-to create a new ingest, fill out the information and type "1" to the prompts to add
-custom file handlers and quality control functions.
+And select yes (2) to the "Select use_custom_<option>".
 
-This will create additional ``filehandler.py`` and ``qc.py`` files under the ``ingest/<ingest_name>/pipeline/`` directory.
-
-  .. figure:: global_marine_data/vscode25.png
+  .. figure:: custom/custom1.png
       :align: center
       :width: 100%
       :alt:
 
   |
 
-Adding a Custom File Handler
-============================
+Notice this adds a readers.py, qc.py, and converters.py to the new pipeline 
+directory, as well as a qc.yaml file to the config folder.
 
-First, the ``filehandler.py`` file that contains the code to read in your particular datafile.
-The class name, shown as `CustomFileHandler` below, can be whatever you like. It is recommended
-to test your code before inputting to tsdat's framework. Your code will sit
-under the ``read`` definition within this class, and should return an xarray Dataset.
+  .. figure:: custom/custom2.png
+      :align: center
+      :width: 100%
+      :alt:
+
+  |
+  
+2. Go ahead and copy the retriever.yaml, dataset.yaml, and pipeline.py files from the 
+NOAA NCEI example data tutorial.
+
+
+Adding a Custom File Reader
+===========================
+Tsdat has two native filehandlers: `CSVReader` and `NetCDFReader`. While useful
+for a number of input files, it is not uncommon for raw datafiles to be saved
+in some custom format or structure. Tsdat has the flexibility to incorporate
+user-built code to read and pre-process raw data.
+
+It is recommended to test your code before inputting to tsdat's framework, and 
+the readers.py file can contain as many "<custom_name>Reader"s as the user requires.
+The read function should return an xarray Dataset.
+
+3. Since we're using the same NOAA NCEI data as before, as an example, we'll recreate
+tsdat's csv reader from the user's standpoint. When you open readers.py, you'll 
+see the reader is built from a class with the name "CustomDataReader", and consists
+of a *Parameters* class and a "read" function. The *Parameters* class is built
+to organize additional parameters not specified in the retriever.yaml file, and 
+the "read" function contains the actual file reader code.
 
 .. code-block:: python
 
-  class CustomFileHandler(tsdat.AbstractFileHandler):
-      """
-      Custom file handler for reading <some data type> files from a <instrument name>.
+  from typing import Any, Dict, Union
+  from pydantic import BaseModel, Extra
+  import pandas as pd
+  import xarray as xr
+  from tsdat import DataReader
 
-      See https://tsdat.readthedocs.io/en/latest/autoapi/tsdat/io/index.html for more
-      examples of FileHandler implementations.
-      """
 
-      def read(self, filename: str, **kwargs) -> xarray.Dataset:
+  class NCEIReader(DataReader):
+      """---------------------------------------------------------------------------------
+      Custom DataReader that can be used to read data from a specific format.
+
+      Built-in implementations of data readers can be found in the
+      [tsdat.io.readers](https://tsdat.readthedocs.io/en/latest/autoapi/tsdat/io/readers)
+      module.
+      ---------------------------------------------------------------------------------"""
+
+      class Parameters(BaseModel, extra=Extra.forbid):
+          """If your CustomDataReader should take any additional arguments from the
+          retriever configuration file, then those should be specified here."""
+
+          read_csv_kwargs: Dict[str, Any] = {}
+          from_dataframe_kwargs: Dict[str, Any] = {}
+
+      parameters: Parameters = Parameters()
+      """Extra parameters that can be set via the retrieval configuration file. If you opt
+      to not use any configuration parameters then please remove the code above."""
+
+      def read(self, input_key: str) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
+          # Read csv file with pandas
+          df = pd.read_csv(input_key, **self.parameters.read_csv_kwargs)
+
+          # Return an xarray dataset
+          return xr.Dataset.from_dataframe(df, **self.parameters.from_dataframe_kwargs)
+
+
+
+In the above codeblock, the *Parameters* class initiates the parameter dictionaries
+expected from the retriever.yaml file. These dictionaries are
+then called for the respective pandas and xarray functions in the "read" function.
+
+Replace the code in reader.py with the above code block.
+
+  .. figure:: custom/custom3.png
+      :align: center
+      :width: 100%
+      :alt:
+
+  |
+
+
+We also need to tell tsdat now to use our csv file reader. Opening the retriever.yaml file,
+replace the reader block with:
+
+.. code-block::
+
+  readers:
+    .*:
+      classname: pipelines.<pipeline_name>.readers.NCEIReader
+      parameters:
+        read_csv_kwargs:
+          sep: ", *"
+          engine: "python"
+          index_col: False
+        
+Notice we are not using the "from_dataframe_kwargs".
+
+
+Adding Custom Data Converter Functions
+======================================
+Tsdat has two native data converters, a `UnitsConverter` and a `StringToDatetime`
+converter. These provide the useful functions of converting units and utilizing
+the datetime package's ability to read time formats, given the correct timestring.
+
+The custom data converter is an option to add pre-processing to the input dataset
+if it wasn't done in a custom file reader, or a custom file reader isn't necessary.
+
+Converters operate on a variable-by-variable basis, so keep this in mind when adding
+one.
+
+In the NCEI NOAA documentation, the units for windspeed state that the data was
+saved as 1/10th of a knot or m/s, depending on the configuration. Because the rest
+of the file is saved in imperial units, it's assumed the data is saved as 1/10th
+knots. This isn't a standard unit, so we shall add a data converter to tackle this
+input in the codeblock below.
+
+.. code-block:: python
+
+  import xarray as xr
+  from typing import Any
+  from pydantic import BaseModel, Extra
+  from tsdat.io.base import DataConverter
+  from tsdat.utils import assign_data
+  from tsdat.config.dataset import DatasetConfig
+
+
+  class Kt10Converter(DataConverter):
+      """---------------------------------------------------------------------------------
+      Converts NCEI windspeed data format from 0.1 knots to m/s
+      Expects "kt/10" as input and "m/s" as output units
+      ---------------------------------------------------------------------------------"""
+
+      class Parameters(BaseModel, extra=Extra.forbid):
+          """If your CustomConverter should take any additional arguments from the
+          retriever configuration file, then those should be specified here.
           """
-          Method to read data in a custom format and convert it into an xarray Dataset.
 
-          Args:
-              filename (str): The path to the file to read in.
+      parameters: Parameters = Parameters()
+      """Extra parameters that can be set via the retrieval configuration file. If you opt
+      to not use any configuration parameters then please remove the code above."""
 
-          Returns:
-              xarray.Dataset: An xarray.Dataset object
-          """
-          
-          threshold = self.parameters['threshold']
-          raw_data = read_function(filename, threshold) 
+      def convert(
+          self,
+          dataset: xr.Dataset,
+          dataset_config: DatasetConfig,
+          variable_name: str,
+          **kwargs: Any,
+      ) -> xr.Dataset:
 
-          return raw_data # an xarray Dataset
+          input_units = dataset[variable_name].attrs["units"]
+          output_units = dataset_config[variable_name].attrs["units"]
 
-After adding your custom file handler code, you need to tell tsdat to use your custom code you
-just added, which is done in the ``storage_config.yml`` file. Add a new entry under `input`, with
-a short label, add the file entension under `file_pattern`, and the classname path. An inputs
-required for functions can be added under the `parameters` tag.
+          if "kt/10" in input_units and "m/s" in output_units:
+              pass
+          else:
+              return dataset
+
+          data = dataset[variable_name].data / 10 * 0.514444
+
+          dataset = assign_data(dataset, data, variable_name)
+          dataset[variable_name].attrs["units"] = output_units
+
+          return dataset
+
+Once adding a converter class to the converters.py file, update the appropriate
+variables in the retriever.yaml file. In this case I'll add this to the "wind_speed"
+variable.
 
 .. code-block:: yaml
 
-  file_handlers:
-    input:
-
-      custom:   # Label to identify your file handler
-        file_pattern: ".*.ext"
-        classname: ingest.<ingest_name>.pipeline.filehandlers.CustomHandler
-        parameters: 
-          threshold: 50  # any inputs desired fall under the parameters list
-
-Tsdat's Native File Handlers
-============================
-
-Tsdat has two native filehandlers: ``CsvHandler`` and ``NetcdfHandler``.
-The ``CsvHandler`` uses ``pandas.read_csv`` to read in a .csv file, and the 
-``NetcdfHandler`` uses ``xarray.load_dataset`` to read a .nc file. These should 
-be configured like that shown in :ref:`configuring file handlers <filehandlers>` 
-with the specific format of your input file.
+  wind_speed:
+    .*:
+      name: Wind Speed
+      data_converters:
+        - classname: pipelines.<pipeline_name>.converters.Kt10Converter
+          units: kt/10
 
 
 Adding Custom Quality Control Funtions
 ======================================
-
-The same process is followed to add custom QC code. In the ``qc.py`` file, you can add custom
-`checkers` and `handlers`. Rename the class to something descriptive, and add your qc code
-to the `run` definition. QualityCheckers should return a boolean numpy array (True/False), where
-`True` refers to flagged data, for each variable in the raw dataset. QualityHandlers take this boolean array and apply some function to the data variable it was created from.
-
-.. code-block:: python
-
-  from tsdat import DSUtil, QualityChecker, QualityHandler
-
-  class CustomQualityChecker(QualityChecker):
-      def run(self, variable_name: str) -> Optional[np.ndarray]:
-          """
-          False values in the results array mean the check passed, True values indicate
-          the check failed. Here we initialize the array to be full of False values as
-          an example. Note the shape of the results array must match the variable data.
-          """
-          
-          npt=self.params["n_points"]
-          results_array = qc_function(self.ds[variable_name].data, npt) # returns boolean numpy array
-
-          return results_array
-
-  class CustomQualityHandler(QualityHandler):
-      def run(self, variable_name: str, results_array: np.ndarray):
-          """
-          Some QualityHandlers only want to run if at least one value failed the check.
-          In this case, we replace all values that failed the check with the variable's
-          _FillValue and (possibly) add an attribute to the variable indicating the
-          correction applied.
-          """
-          
-          if results_array.any():
-
-              fill_value = DSUtil.get_fill_value(self.ds, variable_name)
-              keep_array = np.logical_not(results_array)
-
-              var_values = self.ds[variable_name].data
-              replaced_values = np.where(keep_array, var_values, fill_value)
-              self.ds[variable_name].data = replaced_values
-
-              self.record_correction(variable_name)
-
-Likewise to the file handler, you must tell tsdat where and when to use your QC code, which
-is done in the `quality_management` section of the ``pipeline_config.yml`` file, similar to as
-follows. Add a descriptive group label, and update the classnames, as well as any parameters you'd
-like to incorporate:
-
-.. code-block:: yaml
-
-  quality_management:
-
-    custom_QC_name: # Label to identify your QC check
-      checker:
-        classname: ingest.<ingest_name>.pipeline.qc.CustomQualityChecker
-        parameters:
-          npt: 1000
-      handlers:
-        - classname: ingest.<ingest_name>.pipeline.qc.CustomQualityHandler
-        - classname: tsdat.qc.handlers.RecordQualityResults  # Built-in tsdat error logging
-          parameters:
-            bit: 1
-            assessment: Bad
-            meaning: "Flagged by custom quality checker"
-      variables:
-        - DATA_VARS
-
-
-Tsdat's Native QC Functions
-===========================
-
 Tsdat has a number of native quality control functions that users could find useful. 
-(See :ref:`quality control API <quality_control>` for all of them). Built-in QC  
-funtions require inputs that are set either as `attributes` or `parameters` in 
-``pipeline_config.yml``.
+(See :ref:`quality control API <quality_control>` for all of them). These built-in 
+functions can then be input into the pipeline config or shared folder 
+quality.yaml, and many are already incorporated in the <pipeline_template>.
 
-For example, the ``Check*Max`` functions (``CheckValidMax``, ``CheckFailMax``, 
-``CheckWarnMax``) call the base class ``CheckMax``. These three functions require 
-an `attribute` called ``*_range`` (``valid_range``, ``fail_range``, ``warn_range``,
-respectively) to be listed in a variable's attributes to run.
+It is important to note that QC functions are applied one variable at a time.
 
-``RemoveFailedValues`` removes failed values and replaces them for with a fill value, 
-specified in the variable `attribute` ``_FillValue``. If this attribute isn't
-specified, it defaults to ``NaN``.
-
-.. code-block:: yaml
-
-  dataset_definition:
-    <...>
-    variables:
-      <...>
-      
-      distance:
-        input:
-          name: distance_m
-        dims:
-          [time]
-        type: float
-        attrs:
-          units: "m"
-          valid_range: [-3, 3] # attribute for the "CheckValidMin" and "CheckValidMax" functions
-          _FillValue: 999
-
-
-These built-in functions can then be input under the `quality_management` section as follows:
+For example:
 
 .. code-block:: yaml
 
@@ -207,28 +233,105 @@ These built-in functions can then be input under the `quality_management` sectio
             bit: 2
             assessment: Bad
             meaning: "Value is less than expected range"
-      variables:
-        - distance
+      apply_to:
+        - DATA_VARS
+      exclude: [foo, bar]
 
-    manage_max: # tsdat's built-in max
+In the above block of code, a "CheckValidMin" check is run all variables except
+variables named "foo" and "bar". This QC check requires the "valid_range" attribute
+on all variables running through it in the dataset.yaml file.
+
+The two built-in handlers specified here remove failues (`RemoveFailedValues`) that 
+failed the QC check by replacing them with the attribute "_FillValue", for example:
+
+.. code-block:: yaml
+
+  distance:
+    dims: [time]
+    dtype: float
+    attrs:
+      units: "m"
+      valid_range: [-3, 3] # attribute for the "CheckValidMin" and "CheckValidMax" functions
+      _FillValue: 999
+
+The second handler here is ``RecordQualityResults``, which requires parameters in the
+quality.yaml block itself: "bit", "assessment", and "meaning". This function creates an additional variable that is called "qc_<variable_name>", where variable elements that 
+fail a test are given the bit value. If no test fails, `<variable_name>_qc` will contain 
+all zeroes.
+
+
+Custom QC code in tsdat follows the same structure, with a *checker* and *handler*
+class. Like readers, you can add as many of each as one would like. QualityCheckers 
+should return a boolean numpy array (True/False), where `True` refers to flagged data,
+for each variable in the raw dataset. QualityHandlers take this boolean array and apply 
+some function to the data variable it was created from.
+
+For this tutorial, I'm adding a QC handler that interpolates missing data with a
+cubic polynomial:
+
+.. code-block:: python
+
+  import numpy as np
+  from pydantic import BaseModel, Extra
+  import xarray as xr
+  from numpy.typing import NDArray
+  from tsdat import QualityChecker, QualityHandler
+
+
+  class PolyInterpHandler(QualityHandler):
+      """----------------------------------------------------------------------------
+      Custom QualityHandler that can be used to correct, report, or otherwise handle
+      data quality issues identified by a QualityChecker.
+
+      Built-in implementations of tsdat QualityHandlers can be found in the
+      [tsdat.qc.handlers](https://tsdat.readthedocs.io/en/latest/autoapi/tsdat/qc/handlers)
+      module.
+
+      ----------------------------------------------------------------------------"""
+
+      class Parameters(BaseModel, extra=Extra.forbid):
+          """If your QualityChecker should take any additional arguments from the
+          quality configuration file, then those should be specified here.
+          """
+
+      parameters: Parameters = Parameters()
+      """Extra parameters that can be set via the quality configuration file. If you opt
+      to not use any configuration parameters then please remove the code above."""
+
+      def run(
+          self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool8]
+      ) -> xr.Dataset:
+
+          if failures.any():
+              data = self.ds[variable_name]
+              data = data.interpolate_na(
+                  dim="time", method="cubic", limit=None, keep_attrs=True)
+              self.ds[variable_name][np.where(failures)] = data[np.where(failures)]
+
+          return dataset
+
+
+Likewise to the file handler, you must tell tsdat where and when to use your QC code, which
+is done in the `quality_management` section of the ``pipeline_config.yml`` file, similar to as
+follows. Add a descriptive group label, and update the classnames, as well as any parameters you'd like to incorporate:
+
+.. code-block:: yaml
+
+  managers:
+
+    - name: Cubic spline interpolation
       checker:
-        classname: tsdat.qc.checkers.CheckValidMax
+        classname: tsdat.qc.checkers.CheckMissing
       handlers:
-        - classname: tsdat.qc.handlers.RemoveFailedValues
+        - classname: pipelines.<pipeline_name>.qc.PolyInterpHandler
         - classname: tsdat.qc.handlers.RecordQualityResults
           parameters:
-            bit: 3
+            bit: 10
             assessment: Bad
-            meaning: "Value is greater than expected range"
-      variables:
-        - distance
+            meaning: "Data replaced with cubic polynomial"
+      apply_to:
+        - DATA_VARS
 
-Another function of interest is ``RecordQualityResults``, which takes a few 
-parameters: "bit", "assessment", and "meaning". This function creates an additional 
-variable that is called ``<variable_name>_qc``, which contains integers, where 
-variable elements that fail a test are given the bit value. If no test fails, 
-``<variable_name>_qc`` will contain all zeroes. The other two parameters are listed 
-as ``<variable_name>_qc`` attributes.
 
 
 Notes on Errors
@@ -247,8 +350,8 @@ Common Errors:
   
   2. Can't find module "pipeline" -- There are many modules and classes named 
   "pipeline" in tsdat. This error typically refers to a classname specified in the  
-  config file, i.e. ``ingest.<ingest_name>.pipeline.qc.CustomQualityChecker`` or
-  ``ingest.<ingest_name>.pipeline.filehandlers.CustomHandler``. Make sure this classname path is correct.
+  config file, i.e. ``ingest.<ingest_name>.qc.CustomQualityChecker`` or
+  ``pipelines.<ingest_name>.readers.CustomHandler``. Make sure this classname path is correct.
   
   3. ``Check_<function>`` fails -- Ensure all the variables listed under a quality 
   managment group can be run through the function. For example, if I try to run the  
