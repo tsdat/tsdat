@@ -204,7 +204,7 @@ def test_replace_failed_values(sample_dataset: xr.Dataset):
 
     failures: NDArray[np.bool8] = np.bool8([True, False, False, False])  # type: ignore
 
-    handler = ReplaceFailedValues()
+    handler = RemoveFailedValues()
     dataset = handler.run(sample_dataset, "monotonic_var", failures)
 
     assert_close(dataset, expected)
