@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-<a href=https://github.com/tsdat/tsdat/actions/workflows/pytest.yml>
+<a href=../../actions/workflows/pytest.yml>
     <img src="https://github.com/tsdat/tsdat/actions/workflows/pytest.yml/badge.svg">
 </a>
 <a href=https://tsdat.readthedocs.io/en/latest/?badge=latest>
