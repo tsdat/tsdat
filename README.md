@@ -61,8 +61,12 @@ your choice.
     > We recommend using VS Code, as we've included extra settings that make it easy to
     start developing in a standard environment with no overhead configuration time.
 
-2. Set up an isolated development environment with `python 3.8` and install the development
-requirements.
+2. Open an appropriate terminal shell from your computer
+   1. If you are on Linux or Mac, just open a regular terminal
+   2. If you are on Windows, start your Anaconda prompt if you installed Anaconda
+   directly to Windows, OR open a WSL terminal if you installed Anaconda via WSL.
+
+3. Run the following commands to create and activate your `conda` environment
 
     ```
     conda create --name tsdat python=3.8
