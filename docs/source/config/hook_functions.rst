@@ -49,3 +49,4 @@ output. Below is shown a custom plotting example:
 
 .. autoclass:: tsdat.pipeline.pipelines.IngestPipeline
     :members: hook_customize_dataset, hook_finalize_dataset, hook_plot_dataset
+    :noindex:

@@ -3,11 +3,11 @@ classname: tsdat.pipeline.ingest.IngestPipeline
 
 #  Regex patterns that should trigger this pipeline
 triggers:
-  - .*example_ingest.*\.csv
+  - .*example_pipeline.*\.csv
 
 # Retriever config
 retriever:
-  path: pipelines/example_ingest/config/retriever.yaml
+  path: pipelines/example_pipeline/config/retriever.yaml
 
 # Dataset config.  In this example, we use a dataset.yaml file that is shared across multiple pipelines,
 # but we override one global attribute specifying a different location and we add one additional variable attribute.
