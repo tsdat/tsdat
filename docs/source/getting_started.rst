@@ -1,7 +1,5 @@
 .. getting_started:
 
-.. _examples folder: https://github.com/tsdat/tsdat/tree/master/examples
-.. _pipeline template file:  https://github.com/tsdat/tsdat/blob/master/examples/templates/ingest_pipeline_template.yml
 .. _Xarray: http://xarray.pydata.org/en/stable/
 .. _netCDF: https://www.unidata.ucar.edu/software/netcdf/
 .. _act-atmos: https://github.com/ARM-DOE/ACT
@@ -15,80 +13,68 @@
 Getting Started
 ###############
 
-To get started developing a tsdat pipeline, we suggest following the following
-steps, which are explained in more detail in the linked sections:
+To get started developing a tsdat pipeline, we suggest following the steps below.
 
-1. :ref:`Install tsdat<Installation>`
-2. :ref:`Get a template<template>`
-3. :ref:`Configure template<configuring_tsdat>`
-4. :ref:`Run pipeline<running-tsdat>`
-
-
-.. _prerequisites:
-
-Prerequisites
-*************
-Tsdat requires `Python 3.8+ <https://www.python.org/downloads/>`_
-
-
-.. _installation:
-
-Installation
-************
-You can install tsdat simply by running::
-
-    pip install tsdat
-  
-in a console window.  
+1. :ref:`Get a template<template>`
+2. :ref:`Configure the template<configuring_template>`
+3. :ref:`Use the template<running-tsdat>`
 
 
 .. _template:
 
-Developing a Tsdat Pipeline
-***************************
-The recommended way to set up a Tsdat pipeline is to use a GitHub repository template.
+Choose a template
+*****************
+
+The recommended way to set up a tsdat pipeline is to use a GitHub repository template.
 You can find a list of template repositories for tsdat at `<https://github.com/tsdat/template-repositories>`_.
 
-#. `Pipeline Template <https://github.com/tsdat/pipeline-template>`_
-
-    Use this template to run pipelines on your local computer.
-
-#. `AWS Pipeline Template <https://github.com/tsdat/pipeline-template-aws>`_
-
-    Use this template to run pipelines on AWS.  (It requires an AWS account.)
+The most used and most flexible template is the `Pipeline Template <https://github.com/tsdat/pipeline-template>`_
+repository, so we recommend starting there.
 
 Once you have selected the template to use, select the "Use this template" button
 to create a new repository at your specified location with the template contents.
 
+.. note::
+    You must have a github account and be signed-in to see this button. You can still
+    click to download the code as a zip file and follow the rest of the setup instructions,
+    but you will be lacking certain features (e.g., automated testing via github actions)
+
 .. figure:: figures/use_template.png
-   :alt: Use a GitHub pipeline repository template to jumpstart tsdat development.
+   :alt: Use a GitHub pipeline repository template to jumpstart development.
 
-Once you have created a new repository from the template, you can clone your 
-repository to your local desktop and start developing. By default, the repository
-template will come pre-configured to run out-of-the-box on an example dataset.
 
-See the :ref:`pipeline template tutorial<examples_and_tutorials>` walkthroughs for how 
-to set up each of these templates.
+.. _configuring_template:
 
-See :ref:`configuring your pipeline<configuring_tsdat>` for more information on 
-tsdat-specific configuration file and code customizations.  In addition, make
-sure to read the **README.md** file associated with your template for any
-template-specific instructions.
+Configure the Template
+************************
 
+Once you have created a new repository from the template, you can clone your repository
+to your local desktop and start developing. By default, the repository template comes
+pre-configured to run out-of-the-box on an example dataset.
+
+We recommend that reading through the template's README and examining the included example
+before starting to configure the template. The template README will include end-to-end
+instructions on how to customize the template and create your own pipelines, but for those
+who learn best doing things hands-on, we recommend starting with the
+:ref:`pipeline template tutorial<pipeline_customization>` for a complete walkthrough of
+setting up and configuring the pipeline-template repository.
+
+See the :ref:`Configuring Tsdat<configuring_tsdat>` section for more information on tsdat
+configuration files and code customizations.
 
 .. _running-tsdat:
 
-Running Your Tsdat Pipeline
-****************************
+Using the template
+******************
 
-Once tsdat is installed and your pipeline template is configured, you can run it locally on 
-your input data from a terminal window at the top level of your repository.  To see the full list of commands,
-run:
+Once tsdat is installed and your template is configured, you can use it to process data 
+on your computer using the ``runner.py`` script included in the repository. To see the full
+list of options offered by this script run:
 
 .. code-block:: bash
 
     python runner.py --help
 
 
-For detailed examples of how to set up and use tsdat, consult the 
-:ref:`examples_and_tutorials` section.
+For detailed examples of how to set up and use tsdat, consult :ref:`configuring_tsdat`
+and :ref:`examples_and_tutorials`.
