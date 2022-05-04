@@ -48,8 +48,8 @@ pipeline, go ahead and fill out these files now.
 
 Adding a Custom File Reader
 ===========================
-Tsdat has two native filehandlers: ``CSVReader`` and ``NetCDFReader``. While useful
-for a number of input files, it is not uncommon for raw datafiles to be saved
+Tsdat has two native file readers: ``CSVReader`` and ``NetCDFReader``. While useful
+for a number of input files, it is not uncommon for raw data files to be saved
 in some custom format or structure. Tsdat has the flexibility to incorporate
 user-built code to read and pre-process raw data.
 
@@ -296,7 +296,7 @@ the required "valid_range" and "_FillValue" attributes like the following:
       units: "m"
       valid_range: [-3, 3] # attribute for the "CheckValidMin" and "CheckValidMax" functions
       _FillValue: 999      # the "bad data" value
-|
+
 
 Now back to the tutorial steps:
 
@@ -431,7 +431,7 @@ can be anywhere, and I have named this data `custom.sample_data.csv`.
 |
 
 
-11. Finally we can run this pipeline. Open a terminal (ctrl `) and run
+11. Finally we can run this pipeline. Open a terminal (``ctrl ```) and run
 
 .. code-block:: bash
 

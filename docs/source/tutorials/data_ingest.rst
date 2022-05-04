@@ -1,5 +1,5 @@
 .. _template repository: https://github.blog/2019-06-06-generate-new-repositories-with-repository-templates/
-.. _Anaconda: https://www.anaconda.com/
+.. _Anaconda: https://docs.anaconda.com/anaconda/install/index.html
 .. _Windows Subsystem for Linux: https://docs.microsoft.com/en-us/windows/wsl/about
 
 .. _data_ingest: 
@@ -89,27 +89,44 @@ Click “Create repository from template” to create your own repository that y
 can work in for this example.
 
 Go ahead and clone the repository to your local machine and open it up in 
-whatever IDE you prefer.
+VS Code.
+
+.. note::
+
+  VS Code is not the only IDE that may be used, but we provide additional settings for
+  VS Code to make it easier to set up.
 
 
 Set up Python
 =============
 
-Next, install Python 3.8+ if you haven’t already done so and create an 
-environment in which to manage your project’s dependencies. You can download 
-and install Python here: https://www.python.org. 
+Let's set up a python environment that we can develop code in. We will use `Anaconda`_
+to create an isolated virtual area that we can install packages to.
 
-When developing with intent to deploy to a production system on Windows, we 
-recommend managing your environment with `Anaconda`_ and/or using `Windows Subsystem
-for Linux`_ (WSL). 
+.. note::
+  
+  When developing with intent to deploy to a production system on Windows, we recommend
+  using `Windows Subsystem for Linux`_ (WSL) in addition to conda to manage your
+  environment. See the :ref:`setting_up_wsl` tutorial for more information.
 
-I go over a tutorial to set up WLF in :ref:`setting_up_wsl`, and will use WSL as
-my working environment and VSCode as my IDE for the rest of this tutorial. 
-The environment or container in use will not affect the next steps.
+Once you have anaconda (and optionally WSL) installed, you can run the following command
+in the terminal to create and activate the development environment:
+
+.. code-block:: bash
+
+  conda env create --file=conda-environment.yaml
+  conda activate tsdat-pipelines
+  
+.. note::
+
+    Environments other than conda may be used as long as your python version is >=3.8 and
+    you are able to install dependencies from the ``requirements-dev.txt`` file.
+
 
 
 Run the Basic Template
 ======================
+
 If using VSCode, open the "Explorer" tab to see folder contents 
 for the next step:
 
@@ -120,28 +137,27 @@ for the next step:
 
 A few quick things on VSCode: in the left-hand toolbar, we will use the "Explorer", "Search", "Testing", and "TODO tree" icons in this tutorial. Also useful to know are the commands "ctrl \`" (toggle the terminal on/off) and "ctrl shift P" (open command search bar).
 
-Start by opening a VSCode terminal with "ctrl \`" and installing the pipeline 
-required packages::
 
-    pip install -r requirements.txt
+Navigate to the ``runner.py`` file and run
 
-
-Navigate to the "runner.py" file and run::
+.. code-block:: bash
 
     python runner.py  pipelines/example_pipeline/test/data/input/buoy.z06.00.20201201.000000.waves.csv
     
-This will run the example pipeline provided in the "pipelines" folder in the template. 
-All pipelines that we create are stored in the "pipelines" folder and are run using 
-`python runner.py <path_to_data>`. 
+This will run the example pipeline provided in the ``pipelines/`` folder in the template. 
+All pipelines that we create are stored in the ``pipelines/`` folder and are run using 
+``python runner.py <path_to_data>``. 
 
-Addition options for the runner can be queried by typing `python runner.py --help`.
+Addition options for the runner can be queried by running:
+
+.. code-block:: bash
+  
+  python runner.py --help.
 
 .. figure:: global_marine_data/intro4.png
     :align: center
     :width: 100%
     :alt:
-
-|
 
 After the code runs, notice that a new ``storage/`` folder is created with the following contents:
 
@@ -150,7 +166,6 @@ After the code runs, notice that a new ``storage/`` folder is created with the f
     :width: 100%
     :alt:
 
-|
 
 These files contain the outputs of the example pipeline. Note that there 
 are two subdirectories here – "data" and "ancillary". "Data" contains the 
@@ -201,7 +216,7 @@ in the terminal using:
 
 There will follow a series of prompts that'll be used to auto-fill the new ingest. Fill
 these in for the particular dataset of interest. For this ingest we will not be using 
-custom QC functions, filereaders/writers, or converters, so select no for those as well. 
+custom QC functions, readers/writers, or converters, so select no for those as well. 
 
 .. code-block:: bash
 
@@ -245,7 +260,7 @@ accomplished the previous steps, but these are good to check).
 |
 
 6. We are now looking at step #1: Use the "TODO tree" extension or use the search tool
-to find occurances of "# Developer". (The "TODO tree" is the oak tree icon in 
+to find occurrences of "# Developer". (The "TODO tree" is the oak tree icon in 
 the left-hand window pane).
 
 You may need to reload VS Code for these to show up in the ingest. Hitting "ctrl shift P"
@@ -272,7 +287,7 @@ ingest folder. The rest of the tutorial consists of running through this list of
 Customizing the New Ingest
 ==========================
 
-7. Navigate to your Explorer pane and open "pipelines/*/config/pipeline.yaml". 
+7. Navigate to your Explorer pane and open ``pipelines/*/config/pipeline.yaml``. 
 
 This file lists the configuration files for the pipeline in the order that the
 pipeline is initiating them.
@@ -289,7 +304,7 @@ this path name.
 
 .. figure:: global_marine_data/intro13.png
     :alt:
-|
+
 
 8. The second line, "triggers", is the expected file pattern, or a "regex" 
 pattern, of the input data, shown below. A regex pattern is a set of symbols 
@@ -319,7 +334,7 @@ This pipeline's auto trigger can be broken down into 5 parts:
 
 .. figure:: global_marine_data/intro13.5.png
     :alt:
-|
+
 
 
 9. To match the raw data to the trigger, we will rename the sample datafile to "arctic_ocean.sample_data.csv" and move it to a new folder called "data" within 
@@ -336,14 +351,14 @@ Good question! :
 
 .. figure:: global_marine_data/intro14.png
     :alt:
-|
+
 
 
 10. The third line, "retriever", is the first of two required user-customized 
-configuration files, which we’ll need to modify to capture the variables and 
+configuration files, which we'll need to modify to capture the variables and 
 metadata we want to retain in this ingest.
 
-Start by opening retriever.yaml in the "pipelines/*/config" folder.
+Start by opening retriever.yaml in the ``pipelines/*/config`` folder.
 
 .. figure:: global_marine_data/intro15.png
     :alt:
@@ -374,7 +389,7 @@ For this pipeline, replace the text in the "retriever.yaml" file with the follow
       classname: tsdat.io.readers.CSVReader   # Name of file reader
       parameters:                             # File reader input arguments
         read_csv_kwargs:                      # keyword args for CSVReader (pandas.read_csv)
-          sep: ", *"                          # csv "separater" or delimiter
+          sep: ", *"                          # csv "separator" or delimiter
           engine: "python"                    # csv read engine
           index_col: False                    # create index column from first column in csv
 
@@ -474,7 +489,7 @@ Matching the line numbers of the above code-block:
   #. Converter keyword - add if a converter is desired
   #. Classname of data converter to run, in this case unit conversion. See :ref:`the customization tutorial <pipeline_customization>` for a how-to on applying custom data conversions.
   #. Data converter input for this variable, parameter and value pair
-|
+
 
 
 10. Moving on now to the fourth line in pipeline.yaml, "dataset", refers to the 
@@ -619,7 +634,7 @@ Replace the text in the "dataset.yaml" file with the following code-block.
         long_name: Wind Speed
         units: m/s
         comment: ""
-|
+
 
 11. Finally we get to the last two lines in pipeline.yaml are "quality" and "storage". 
 In this tutorial, these files are located in the "shared" folder in the top-level 
@@ -652,11 +667,13 @@ file format or CSV.
     :alt:
  
 I won't do this here, but CSV output can be added by replacing the "handler" block in 
-storage.yaml with::
+storage.yaml with
 
+.. code-block:: yaml
+  
     handler:
       classname: tsdat.io.handlers.CSVHandler
-|
+
 
 12. Finally "pipeline.py" is the last get-pipeline-to-working mode TODO we should
 finish setting up here. As mentioned previously, it contains a series of hook 
@@ -715,7 +732,7 @@ desired:
               plot_file = get_filename(dataset, title="example_plot", extension="png")
               fig.savefig(tmp_dir / plot_file)
               plt.close(fig)
-|
+
 
 
 Running the Pipeline
@@ -776,22 +793,22 @@ In the python shell that opens, we can view the dataset for a quick overview:
       qc_wind_speed       (time) int32 ...
   Attributes:
       title:         NCEI Arctic Cruise Example
-      description:   Historial marine data that are comprised of ship, buoy and...
+      description:   Historical marine data that are comprised of ship, buoy and...
       location_id:   arctic_ocean
       dataset_name:  ncei_arctic_cruise_example
       data_level:    a1
       datastream:    arctic_ocean.ncei_arctic_cruise_example.a1
       history:       Ran by jmcvey3 at 2022-04-29T15:31:32.055678
-|
+
 
 
 Pipeline Tests
 ==============
 
 Testing is best completed as a last step, after everything is set up and the pipeline outputs
-as expected. If running a large number of datafiles, a good idea is to input one of those datafiles here, along with its expected output, and have a separate data folder to collect input files.
+as expected. If running a large number of data files, a good idea is to input one of those data files here, along with its expected output, and have a separate data folder to collect input files.
 
-Move the input and output files to the test/data/input/ and test/data/expected/ folders,
+Move the input and output files to the ``test/data/input/`` and ``test/data/expected/`` folders,
 respectively, and update the file paths.
 
 .. figure:: global_marine_data/intro23.png
@@ -808,4 +825,3 @@ to create custom file readers, data converters, and custom quality control. In t
 developers experience, many types of input data (aka file extensions) require a 
 custom file reader, which also offers the freedom for easy pre-processing and 
 organization of raw data. 
-

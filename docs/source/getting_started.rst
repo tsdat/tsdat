@@ -56,7 +56,7 @@ We recommend that reading through the template's README and examining the includ
 before starting to configure the template. The template README will include end-to-end
 instructions on how to customize the template and create your own pipelines, but for those
 who learn best doing things hands-on, we recommend starting with the
-:ref:`pipeline template tutorial<pipeline_customization>` for a complete walkthrough of
+:ref:`pipeline template tutorial<data_ingest>` for a complete walkthrough of
 setting up and configuring the pipeline-template repository.
 
 See the :ref:`Configuring Tsdat<configuring_tsdat>` section for more information on tsdat

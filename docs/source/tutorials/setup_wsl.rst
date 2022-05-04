@@ -16,7 +16,6 @@ WSL is a more involved process:
           :align: center
           :width: 75%
           :alt:
-      |
 
     2. A new window will pop up with a list of checkboxes. Scroll down to "Windows
     Subsystem for Linux" and make sure that box is checked. Then click "OK".
@@ -25,7 +24,6 @@ WSL is a more involved process:
           :align: center
           :width: 50%
           :alt:
-      |
       
     3. Once Windows has applied changes, click "Restart now" to reboot and enable
     WSL.
@@ -37,7 +35,6 @@ WSL is a more involved process:
           :align: center
           :width: 75%
           :alt:
-      |
 
     5. A new bash terminal will pop up. Wait for the install to run, and create a 
     username and password when prompted. Note, if you forget your password, can 
@@ -277,7 +274,7 @@ environment is running.
   |
 
 3. Everything should now be set up to run tsdat, so at this point we just need to 
-install it. Type "ctrl `" to open the VSCode terminal. This should automatically 
+install it. Type ``ctrl ``` to open the VSCode terminal. This should automatically 
 open a new terminal window and a few lines of code should automatically run to 
 activate the conda environment. The name of your environment should show up in 
 parenthesis in the terminal command line 
