@@ -522,7 +522,7 @@ Replace the text in the "dataset.yaml" file with the following code-block.
       dtype: float            # Datatype
       attrs:
         long_name: Latitude   # Name used in plotting
-        units: deg N          # Units, necessary for unit conversion
+        units: degN           # Units, necessary for unit conversion
         comment: ""           # Add a comment or description if necessary
         _FillValue: 99        # Bad data marker in raw dataset, otherwise -9999
         fail_range: [-90, 90] # Expected failure range for "CheckFailMax"/Min" QC tests
@@ -531,8 +531,8 @@ Replace the text in the "dataset.yaml" file with the following code-block.
       dims: [time]
       dtype: float
       attrs:
-        long_name: Latitude
-        units: deg N
+        long_name: Longitude
+        units: degE
         comment: ""
         
     pressure:
