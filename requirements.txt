@@ -1,5 +1,6 @@
 netCDF4
 h5netcdf
+pyarrow
 cftime
 xarray >=0.20
 act-atmos >=1.1.3

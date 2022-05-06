@@ -1,8 +1,8 @@
 from .base import FileHandler
-from .readers import NetCDFReader, CSVReader
-from .writers import NetCDFWriter, CSVWriter
+from .readers import NetCDFReader, CSVReader, ParquetReader
+from .writers import NetCDFWriter, CSVWriter, ParquetWriter
 
-__all__ = ["NetCDFHandler", "CSVHandler"]
+__all__ = ["NetCDFHandler", "CSVHandler", "ParquetHandler"]
 
 
 class NetCDFHandler(FileHandler):
@@ -15,3 +15,9 @@ class CSVHandler(FileHandler):
     extension: str = "csv"
     reader: CSVReader = CSVReader()
     writer: CSVWriter = CSVWriter()
+
+
+class ParquetHandler(FileHandler):
+    extension: str = "parquet"
+    reader: ParquetReader = ParquetReader()
+    writer: ParquetWriter = ParquetWriter()

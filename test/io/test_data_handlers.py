@@ -6,9 +6,9 @@ from pathlib import Path
 from pytest import fixture
 from pandas.testing import assert_frame_equal
 from tsdat.testing import assert_close
-from tsdat.io.handlers import CSVHandler, NetCDFHandler
-from tsdat.io.readers import CSVReader, NetCDFReader
-from tsdat.io.writers import CSVWriter, NetCDFWriter
+from tsdat.io.handlers import CSVHandler, NetCDFHandler, ParquetHandler
+from tsdat.io.readers import CSVReader, NetCDFReader, ParquetReader
+from tsdat.io.writers import CSVWriter, NetCDFWriter, ParquetWriter
 
 
 @fixture
@@ -57,6 +57,13 @@ def test_csv_reader(sample_dataset: xr.Dataset):
     assert_close(dataset, expected, check_fill_value=False)
 
 
+def test_parquet_reader(sample_dataset: xr.Dataset):
+    expected = sample_dataset
+    reader = ParquetReader()
+    dataset = reader.read("test/io/data/input.parquet")
+    assert_close(dataset, expected, check_fill_value=False)
+
+
 def test_netcdf_writer(sample_dataset: xr.Dataset):
     expected = sample_dataset.copy(deep=True)  # type: ignore
     writer = NetCDFWriter()
@@ -83,6 +90,19 @@ def test_csv_writer(sample_dataset: xr.Dataset, sample_dataframe: pd.DataFrame):
     tmp_dir.cleanup()
 
 
+def test_parquet_writer(sample_dataset: xr.Dataset, sample_dataframe: pd.DataFrame):
+    expected = sample_dataset.to_dataframe()
+    writer = ParquetWriter()
+    tmp_dir = tempfile.TemporaryDirectory()
+
+    tmp_file = Path(tmp_dir.name) / "test_writer.parquet"
+    writer.write(sample_dataset, tmp_file)
+    df: pd.DataFrame = pd.read_parquet(tmp_file)  # type: ignore
+    assert_frame_equal(df, expected)
+
+    tmp_dir.cleanup()
+
+
 def test_netcdf_handler(sample_dataset: xr.Dataset):
     expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
     handler = NetCDFHandler()
@@ -102,6 +122,19 @@ def test_csv_handler(sample_dataset: xr.Dataset):
     tmp_dir = tempfile.TemporaryDirectory()
 
     tmp_file = Path(tmp_dir.name) / "test_dataframe.csv"
+    handler.writer.write(sample_dataset, tmp_file)
+    dataset = handler.reader.read(tmp_file.as_posix())
+    assert_close(dataset, expected, check_attrs=False)
+
+    tmp_dir.cleanup()
+
+
+def test_parquet_handler(sample_dataset: xr.Dataset):
+    expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
+    handler = ParquetHandler()
+    tmp_dir = tempfile.TemporaryDirectory()
+
+    tmp_file = Path(tmp_dir.name) / "test_dataframe.parquet"
     handler.writer.write(sample_dataset, tmp_file)
     dataset = handler.reader.read(tmp_file.as_posix())
     assert_close(dataset, expected, check_attrs=False)
