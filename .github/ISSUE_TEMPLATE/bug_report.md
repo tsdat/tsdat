@@ -3,7 +3,7 @@ name: Bug report
 about: Create a report to help us improve
 title: ''
 labels: bug
-assignees: maxwellevin
+assignees:
 
 ---
 
@@ -16,7 +16,7 @@ Minimal set of steps to reproduce the behavior:
 
 ```
 
-Please include the full Traceback message (if applicable):
+Please include the full traceback message (if applicable):
 ```
 
 ```
@@ -27,13 +27,10 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Environment (please complete the following)** 
+**Environment** 
 
-OS: [e.g. macOS Catalina 10.15.7] 
-Versions of installed libraries (i.e., output of `pip freeze`):
-```
-
-```
+- OS: (e.g. macOS Catalina, Windows 10, etc)
+- `tsdat`: output of `pip show tsdat`)
 
 
 **Additional context**
