@@ -28,7 +28,9 @@ class NetCDFWriter(FileWriter):
     parameters: Parameters = Parameters()
     file_extension: str = "nc"
 
-    def write(self, dataset: xr.Dataset, filepath: Optional[Path] = None) -> None:
+    def write(
+        self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
+    ) -> None:
         if self.parameters.use_compression:
             compression_dict: Dict[Any, Any] = {
                 variable_name: {
@@ -59,7 +61,9 @@ class CSVWriter(FileWriter):
     parameters: Parameters = Parameters()
     file_extension: str = "csv"
 
-    def write(self, dataset: xr.Dataset, filepath: Optional[Path] = None) -> None:
+    def write(
+        self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
+    ) -> None:
         # QUESTION: Can we reliably write the dataset metadata to a separate file such
         # that it can always be retrieved? If not, should we declare this as a format
         # incapable of "round-triping" (i.e., ds != read(write(ds)) for csv format)?
@@ -85,7 +89,9 @@ class ParquetWriter(FileWriter):
     parameters: Parameters = Parameters()
     file_extension: str = "parquet"
 
-    def write(self, dataset: xr.Dataset, filepath: Optional[Path] = None) -> None:
+    def write(
+        self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
+    ) -> None:
         # QUESTION: Can we reliably write the dataset metadata to a separate file such
         # that it can always be retrieved? If not, should we declare this as a format
         # incapable of "round-triping" (i.e., ds != read(write(ds)) for csv format)?
