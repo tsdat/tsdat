@@ -31,7 +31,10 @@ class NetCDFWriter(FileWriter):
     def write(self, dataset: xr.Dataset, filepath: Optional[Path] = None) -> None:
         if self.parameters.use_compression:
             compression_dict: Dict[Any, Any] = {
-                variable_name: self.parameters.compression_kwargs
+                variable_name: {
+                    **dataset[variable_name].encoding,
+                    **self.parameters.compression_kwargs,
+                }
                 for variable_name in dataset.variables
             }
             encoding = self.parameters.to_netcdf_kwargs.get("encoding", {})
