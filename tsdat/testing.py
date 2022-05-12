@@ -108,12 +108,8 @@ def _drop_incomparable_variable_attrs(ds: xr.Dataset):
 
 
 def _check_fillvalue(a: xr.DataArray, b: xr.DataArray) -> None:
-    def _is_nan(num: Any) -> bool:
-        return num != num
+    a_fill = a.attrs.get("_FillValue") or a.encoding.get("_FillValue")
+    b_fill = b.attrs.get("_FillValue") or b.encoding.get("_FillValue")
 
-    nan = float("nan")
-    a_fill = a.attrs.get("_FillValue", nan) or a.encoding.get("_FillValue", nan)
-    b_fill = b.attrs.get("_FillValue", nan) or b.encoding.get("_FillValue", nan)
-    assert (a_fill == b_fill) or (
-        _is_nan(a_fill) and _is_nan(b_fill)
-    ), f"'{a.name}' _FillValue attrs/encoding does not match:\n{a_fill},\n{b_fill}"
+    msg = f"'{a.name}' _FillValue attrs/encoding does not match:\n{a_fill},\n{b_fill}"
+    assert (a_fill == b_fill) or ((a_fill != a_fill) and (b_fill != b_fill)), msg
