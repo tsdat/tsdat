@@ -1,13 +1,11 @@
-import logging
 from pathlib import Path
-from typing import Any
 import numpy as np
 import xarray as xr
 import pandas as pd
 from tsdat import assert_close, PipelineConfig
 
 
-def test_ingest_pipeline(caplog: Any):
+def test_ingest_pipeline():
 
     expected = xr.Dataset(
         coords={
@@ -38,7 +36,7 @@ def test_ingest_pipeline(caplog: Any):
             "datastream": "sgp.example.b1",
         },
     )
-    expected["pi"].attrs = {"units": "1"}
+    expected["pi"].attrs["units"] = "1"
 
     config = PipelineConfig.from_yaml(Path("test/config/yaml/pipeline.yaml"))
     pipeline = config.instantiate_pipeline()

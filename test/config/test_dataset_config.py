@@ -13,6 +13,7 @@ from tsdat.config.variables import (
 )
 
 from tsdat.testing import get_pydantic_error_message, get_pydantic_warning_message
+from tsdat.utils import model_to_dict
 
 
 def test_fail_if_non_ascii_attrs():
@@ -102,7 +103,7 @@ def test_warn_if_unexpected_global_attributes():
         "The 'code_version' attribute should not be set explicitly. The current value of '0.0.1' will be ignored.",
     ]
     with pytest.warns(UserWarning) as warning:
-        model_dict = GlobalAttributes(**attrs).dict(exclude_none=True)
+        model_dict = model_to_dict(GlobalAttributes(**attrs))
 
     actual_msg = get_pydantic_warning_message(warning)
     for expected_msg in expected_warning_msgs:
@@ -122,7 +123,7 @@ def test_valid_model_adds_global_attributes():
         "temporal": "5min",
         "data_level": "a00",
     }
-    model_dict = GlobalAttributes(**attrs).dict(exclude_none=True)
+    model_dict = model_to_dict(GlobalAttributes(**attrs))
 
     assert model_dict["datastream"] == "sgp_01.valid_example-z01-5min.a00"
     assert model_dict["history"] == ""
@@ -139,7 +140,7 @@ def test_global_attributes_allow_extra():
         "extra_key": "This should be fine.",
         "extra_extra_key": 400,  # This should also be fine
     }
-    model_dict = GlobalAttributes(**attrs).dict(exclude_none=True)
+    model_dict = model_to_dict(GlobalAttributes(**attrs))
 
     assert model_dict["extra_key"] == "This should be fine."
     assert model_dict["extra_extra_key"] == 400
@@ -157,7 +158,7 @@ def test_fail_if_bad_variable_attributes():
         "valid_delta": "a",  # Not a float
         "fail_delta": "a",  # Not a float
         "warn_delta": "a",  # Not a float
-        "_FillValue": "a",  # Not a float
+        # "_FillValue": "a",  # Not a float -- no longer needs to be a number
     }
     expected_error_msgs = [
         "The 'units' attr is required if known. If the units are not known,",  # ...
@@ -169,7 +170,7 @@ def test_fail_if_bad_variable_attributes():
         "valid_delta\n  value is not a valid float",
         "fail_delta\n  value is not a valid float",
         "warn_delta\n  value is not a valid float",
-        "_FillValue\n  value is not a valid float",
+        # "_FillValue\n  value is not a valid float",
     ]
     with pytest.raises(ValidationError) as error:
         VariableAttributes(**attrs)
@@ -205,7 +206,7 @@ def test_valid_variable_attrs_adds_fillvalue():
         "fail_delta": 35,
         "warn_delta": 15,
     }
-    model_dict = VariableAttributes(**attrs).dict(exclude_none=True, by_alias=True)
+    model_dict = model_to_dict(VariableAttributes(**attrs))
     assert expected == model_dict
 
 
@@ -220,7 +221,7 @@ def test_variable_attrs_allow_extra():
         "extra": "some extra text",
         "another attr": 200,
     }
-    model_dict = VariableAttributes(**attrs).dict(exclude_none=True, by_alias=True)
+    model_dict = model_to_dict(VariableAttributes(**attrs))
     assert expected == model_dict
 
 
@@ -333,7 +334,7 @@ def test_coordinate_dimensioned_by_itself():
     good_coord: Dict[str, Any] = {"dims": ["my_coordinate"]}
     good_coord.update(base_coord)
     coord = Coordinate(**good_coord)
-    assert good_coord == coord.dict(exclude_none=True, by_alias=True)
+    assert good_coord == model_to_dict(coord)
 
 
 # TEST: variable dtype is one of allowed types
@@ -376,13 +377,14 @@ def test_dataset_definition_from_yaml():
                 "data": 3.14159,
                 "dtype": "float",
                 "dims": [],
-                "attrs": {"units": "1"},
+                "attrs": {"units": "1", "_FillValue": None},
             },
         },
     }
 
     model = DatasetConfig.from_yaml(Path("test/config/yaml/dataset.yaml"))
-    model_dict = model.dict(exclude_none=True, by_alias=True)
+
+    model_dict = model_to_dict(model)
     model_dict["attrs"]["code_version"] = ""  # Don't care to check this value
 
     assert model_dict == expected

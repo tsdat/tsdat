@@ -25,3 +25,4 @@ data_vars:
     dtype: float
     attrs:
       units: "1"
+      _FillValue: null # Should remove the _FillValue attribute entirely

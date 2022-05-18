@@ -101,8 +101,7 @@ class VariableAttributes(AttributeModel):
         " If applying QC tests, then users should configure the quality managers to"
         " flag values outside of this range as having an 'Indeterminate' assessment."
     )
-    fill_value: Optional[float] = Field(
-        None,
+    fill_value: Optional[Any] = Field(
         alias="_FillValue",
         description="A value used to initialize the variable's data and indicate that"
         " the data is missing. Defaults to -9999 for numerical data. If choosing a"
@@ -256,13 +255,11 @@ class Variable(BaseModel, extra=Extra.forbid):
     @validator("attrs")
     @classmethod
     def set_default_fill_value(
-        cls, attrs: VariableAttributes, values: Dict[str, Any]
+        cls, attrs: VariableAttributes, values: Dict[str, Any], config
     ) -> VariableAttributes:
         dtype: str = values["dtype"]
-        data: Any = values["data"]
         if (
-            (data is not None)
-            or (attrs.fill_value is not None)
+            "fill_value" in attrs.__fields_set__  # Preserve _FillValues set explicitly
             or (dtype == "str")
             or ("datetime" in dtype)
         ):
