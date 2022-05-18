@@ -10,7 +10,7 @@ coords:
     dims: [time]
     dtype: datetime64[s]
     attrs:
-      units: Time offset from 1970-01-01 00:00:00
+      units: Seconds since 1970-01-01 00:00:00
 
 data_vars:
   first:
@@ -25,3 +25,4 @@ data_vars:
     dtype: float
     attrs:
       units: "1"
+      _FillValue: null # Should remove the _FillValue attribute entirely

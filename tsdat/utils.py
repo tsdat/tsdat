@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import xarray as xr
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel, Extra
 from numpy.typing import NDArray
 
@@ -27,6 +27,42 @@ class ParameterizedClass(BaseModel, extra=Extra.forbid):
     ------------------------------------------------------------------------------------"""
 
     parameters: Any = {}
+
+
+def _nested_union(dict1: Dict[Any, Any], dict2: Dict[Any, Any]) -> Dict[Any, Any]:
+    for k, v in dict1.items():
+        if isinstance(v, dict):
+            node = dict2.setdefault(k, {})
+            _nested_union(v, node)  # type: ignore
+        else:
+            dict2[k] = v
+    return dict2
+
+
+# Brilliant solution seen here https://stackoverflow.com/a/65363852/15641512
+def model_to_dict(model: BaseModel, by_alias: bool = True) -> Dict[Any, Any]:
+    """---------------------------------------------------------------------------------
+    Converts the model to a dict with unset optional properties excluded.
+
+    Performs a nested union on the dictionaries produced by setting the `exclude_unset`
+    and `exclude_none` options to True for the `model.dict()` method. This allows for
+    the preservation of explicit `None` values in the yaml, while still filtering out
+    values that default to `None`.
+
+    Borrowed approximately from https://stackoverflow.com/a/65363852/15641512.
+
+
+    Args:
+        model (BaseModel): The pydantic model to dict-ify.
+
+    Returns:
+        Dict[Any, Any]: The model as a dictionary.
+
+    ---------------------------------------------------------------------------------"""
+    return _nested_union(
+        model.dict(exclude_unset=True, by_alias=by_alias),
+        model.dict(exclude_none=True, by_alias=by_alias),
+    )
 
 
 def decode_cf(dataset: xr.Dataset) -> xr.Dataset:
@@ -321,7 +357,7 @@ def get_filename(
 
 
 # def datetime64_to_string(datetime64: np.datetime64) -> Tuple[str, str]:
-#     """Convert a datetime64 object to formated string.
+#     """Convert a datetime64 object to formatted string.
 
 #     :param datetime64: The datetime64 object
 #     :type datetime64: Union[np.ndarray, np.datetime64]

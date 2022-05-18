@@ -2,6 +2,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict
 from tsdat.config.storage import StorageConfig
+from tsdat.utils import model_to_dict
 
 
 # def test_writer_config_produces_expected_dict():
@@ -173,7 +174,7 @@ def test_storage_config_produces_expected_dict():
     storage_config_model = StorageConfig.from_yaml(
         Path("test/config/yaml/storage.yaml")
     )
-    assert storage_config_model.dict() == expected_dict
+    assert model_to_dict(storage_config_model) == expected_dict
 
 
 def test_storage_config_can_generate_schema():

@@ -101,8 +101,7 @@ class VariableAttributes(AttributeModel):
         " If applying QC tests, then users should configure the quality managers to"
         " flag values outside of this range as having an 'Indeterminate' assessment."
     )
-    fill_value: Optional[float] = Field(
-        None,
+    fill_value: Optional[Any] = Field(
         alias="_FillValue",
         description="A value used to initialize the variable's data and indicate that"
         " the data is missing. Defaults to -9999 for numerical data. If choosing a"
@@ -189,13 +188,9 @@ class Variable(BaseModel, extra=Extra.forbid):
     #     " to provide additional context about the variable, if needed.",
     # )
     name: str = Field("", regex=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
-    # retrieve: bool = Field(
-    #     True,
-    #     description="Indicate if the variable should be retrieved from an input dataset"
-    #     " according to the retrieval parameters in the retrieval configuration file. If"
-    #     " False then the retriever will not attempt to retrieve this directly from"
-    #     " an input dataset. Defaults to True.",
-    # )
+    """Should be left empty. This property will be set automatically by the data_vars or
+    coords pydantic model upon instantiation."""
+
     data: Optional[Any] = Field(
         description="If the variable is not meant to be retrieved from an input dataset"
         " and the value is known in advance, then the 'data' property should specify"
@@ -223,19 +218,6 @@ class Variable(BaseModel, extra=Extra.forbid):
         " impact. In particular, we recommend adding the 'units', 'long_name', and"
         " 'standard_name' attributes, if possible."
     )
-
-    # @property
-    # def is_retrieved(self) -> bool:
-    #     return self.retrieve
-
-    # @property
-    # def is_static(self) -> bool:
-    #     return not self.is_retrieved and self.data is not None
-
-    # @property
-    # def is_dynamic(self) -> bool:
-    #     return not self.is_retrieved and self.data is None
-
     # @validator("name")
     # @classmethod
     # def validate_name_is_ascii(cls, v: str) -> str:
@@ -243,26 +225,14 @@ class Variable(BaseModel, extra=Extra.forbid):
     #         raise ValueError(f"'{v}' contains a non-ascii character.")
     #     return v
 
-    # @root_validator(skip_on_failure=True)
-    # @classmethod
-    # def validate_data_retrival(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-    #     if values["retrieve"] and values["data"] is not None:
-    #         raise ValueError(
-    #             f"{cls.__name__}s cannot be both retrieved and set statically. Please"
-    #             " either set 'retrieve: False' or remove the 'data' property."
-    #         )
-    #     return values
-
     @validator("attrs")
     @classmethod
     def set_default_fill_value(
         cls, attrs: VariableAttributes, values: Dict[str, Any]
     ) -> VariableAttributes:
         dtype: str = values["dtype"]
-        data: Any = values["data"]
         if (
-            (data is not None)
-            or (attrs.fill_value is not None)
+            "fill_value" in attrs.__fields_set__  # Preserve _FillValues set explicitly
             or (dtype == "str")
             or ("datetime" in dtype)
         ):

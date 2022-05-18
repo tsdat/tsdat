@@ -6,12 +6,13 @@ from tsdat import assert_close, PipelineConfig
 
 
 def test_ingest_pipeline():
+
     expected = xr.Dataset(
         coords={
             "time": (
                 "time",
                 pd.date_range("2022-03-24 21:43:00", "2022-03-24 21:45:00", periods=3),  # type: ignore
-                {"units": "Time offset from 1970-01-01 00:00:00"},
+                {"units": "Seconds since 1970-01-01 00:00:00"},
             ),
         },
         data_vars={
@@ -35,12 +36,30 @@ def test_ingest_pipeline():
             "datastream": "sgp.example.b1",
         },
     )
-    expected["pi"].attrs = {"units": "1"}
+    expected["pi"].attrs["units"] = "1"
 
     config = PipelineConfig.from_yaml(Path("test/config/yaml/pipeline.yaml"))
     pipeline = config.instantiate_pipeline()
     dataset = pipeline.run(["test/io/data/input.csv"])
 
-    assert_close(dataset, expected, check_fill_value=False)
+    # Dataset returned by pipeline
+    assert_close(dataset, expected)
     assert dataset.attrs["code_version"]
     assert dataset.attrs["history"]
+    assert (
+        dataset["first"].encoding.get("_FillValue", None) == -9999
+        or dataset["first"].attrs.get("_FillValue", None) == -9999
+    )
+
+    # Dataset saved to disk
+    save_path = Path(
+        "storage/root/data/sgp.example.b1/sgp.example.b1.20220324.214300.nc"
+    )
+    saved_dataset: xr.Dataset = xr.open_dataset(save_path)  # type: ignore
+    assert_close(saved_dataset, expected)
+    assert saved_dataset.attrs["code_version"]
+    assert saved_dataset.attrs["history"]
+    assert (
+        saved_dataset["first"].encoding.get("_FillValue", None) == -9999
+        or saved_dataset["first"].attrs.get("_FillValue", None) == -9999
+    )

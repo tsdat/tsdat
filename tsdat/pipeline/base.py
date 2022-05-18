@@ -8,7 +8,7 @@ from pydantic import Field
 from ..config.dataset import DatasetConfig
 from ..io.base import Retriever, Storage
 from ..qc.base import QualityManagement
-from ..utils import ParameterizedClass
+from ..utils import ParameterizedClass, model_to_dict
 
 __all__ = ["Pipeline"]
 
@@ -100,13 +100,11 @@ class Pipeline(ParameterizedClass, ABC):
     def _add_dataset_attrs(
         self, dataset: xr.Dataset, output_vars: Iterable[str]
     ) -> xr.Dataset:
-        global_attrs = self.dataset_config.attrs.dict(by_alias=True, exclude_none=True)
+        global_attrs = model_to_dict(self.dataset_config.attrs)
         dataset.attrs.update(**global_attrs)
 
         for name in output_vars:
-            var_attrs = self.dataset_config[name].attrs.dict(
-                by_alias=True, exclude_none=True
-            )
+            var_attrs = model_to_dict(self.dataset_config[name].attrs)
             dataset[name].attrs.update(var_attrs)
 
         history = f"Ran by {getuser()} at {datetime.now().isoformat()}"

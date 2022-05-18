@@ -3,6 +3,7 @@ Utility functions used in tsdat tests.
 
 -------------------------------------------------------------------------------------"""
 
+import numpy as np
 import xarray as xr
 from typing import Any, Hashable, List
 
@@ -74,7 +75,8 @@ def assert_close(
 def _check_global_attrs(a: xr.Dataset, b: xr.Dataset) -> None:
     _drop_incomparable_global_attrs(a)
     _drop_incomparable_global_attrs(b)
-    assert a.attrs == b.attrs, f"global attributes do not match:\n{a.attrs}\n{b.attrs}"
+    if a.attrs != b.attrs:
+        raise AssertionError(f"global attributes do not match:\n{a.attrs}\n{b.attrs}")
 
 
 def _check_variable_attrs(a: xr.Dataset, b: xr.Dataset, check_fill_value: bool) -> None:
@@ -92,9 +94,8 @@ def _check_var_attrs(
     a_attrs, b_attrs = a[var_name].attrs, b[var_name].attrs
     a_attrs.pop("_FillValue", None),
     b_attrs.pop("_FillValue", None)
-    assert (
-        a_attrs == b_attrs
-    ), f"'{var_name}' attributes do not match:\n{a_attrs},\n{b_attrs}"
+    if a.attrs != b.attrs:
+        raise AssertionError(f"attributes do not match:\n{a_attrs}\n{b_attrs}")
 
 
 def _drop_incomparable_global_attrs(ds: xr.Dataset):
@@ -108,12 +109,12 @@ def _drop_incomparable_variable_attrs(ds: xr.Dataset):
 
 
 def _check_fillvalue(a: xr.DataArray, b: xr.DataArray) -> None:
-    def _is_nan(num: Any) -> bool:
-        return num != num
+    a_fill = a.attrs.get("_FillValue") or a.encoding.get("_FillValue")
+    b_fill = b.attrs.get("_FillValue") or b.encoding.get("_FillValue")
 
-    nan = float("nan")
-    a_fill = a.attrs.get("_FillValue", nan) or a.encoding.get("_FillValue", nan)
-    b_fill = b.attrs.get("_FillValue", nan) or b.encoding.get("_FillValue", nan)
-    assert (a_fill == b_fill) or (
-        _is_nan(a_fill) and _is_nan(b_fill)
-    ), f"'{a.name}' _FillValue attrs/encoding does not match:\n{a_fill},\n{b_fill}"
+    if not (a_fill == b_fill or (np.isnan(a) and np.isnan(b))):
+        raise AssertionError(
+            f"'{a.name}' _FillValue attrs/encoding do not match:\n"
+            f"{a_fill},\n"
+            f"{b_fill}"
+        )
