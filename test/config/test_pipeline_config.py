@@ -7,6 +7,7 @@ from tsdat.config.dataset import DatasetConfig
 from tsdat.config.retriever import RetrieverConfig
 from tsdat.config.storage import StorageConfig
 from tsdat.config.quality import QualityConfig
+from tsdat.utils import model_to_dict
 
 
 def test_pipeline_config_merges_overrides():
@@ -22,20 +23,19 @@ def test_pipeline_config_merges_overrides():
     dataset.data_vars["first"].attrs.new_attribute = "please add this attribute"
     quality.managers[0].exclude = []
 
-    dict_kwargs: Dict[str, Any] = {"exclude_none": True, "by_alias": True}
     expected_dict: Dict[str, Any] = {
         "classname": "tsdat.pipeline.pipelines.IngestPipeline",
         "parameters": {},
         "triggers": [re.compile(r".*\.csv")],
-        "retriever": retriever.dict(**dict_kwargs),
-        "dataset": dataset.dict(**dict_kwargs),
-        "quality": quality.dict(**dict_kwargs),
-        "storage": storage.dict(**dict_kwargs),
+        "retriever": model_to_dict(retriever),
+        "dataset": model_to_dict(dataset),
+        "quality": model_to_dict(quality),
+        "storage": model_to_dict(storage),
     }
 
     # Load everything through the PipelineConfig
-    model = PipelineConfig.from_yaml(Path("test/config/yaml/pipeline.yaml"))
-    model_dict = model.dict(**dict_kwargs)
+    pipeline_model = PipelineConfig.from_yaml(Path("test/config/yaml/pipeline.yaml"))
+    model_dict = model_to_dict(pipeline_model)
 
     assert model_dict == expected_dict
 

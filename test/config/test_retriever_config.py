@@ -4,6 +4,7 @@ from typing import Any, Dict
 from pydantic import ValidationError
 from tsdat.testing import get_pydantic_error_message
 from tsdat.config.retriever import DataReaderConfig, RetrieverConfig
+from tsdat.utils import model_to_dict
 
 
 def test_reader_config_produces_expected_dict():
@@ -15,7 +16,7 @@ def test_reader_config_produces_expected_dict():
         "parameters": {},
     }
     reader_model = DataReaderConfig(**reader_dict)
-    reader_dict = reader_model.dict()
+    reader_dict = model_to_dict(reader_model)
     assert reader_dict == expected_dict
 
 

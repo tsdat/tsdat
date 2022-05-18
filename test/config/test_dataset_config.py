@@ -225,29 +225,6 @@ def test_variable_attrs_allow_extra():
     assert expected == model_dict
 
 
-# TEST: Move/modify this test to retriever test area
-# def test_input_var_properties():
-#     # Input variable can be created, and produces expected result
-#     invar: Dict[str, Any] = {
-#         "parameters": {
-#             "name": "Ínpü† √a®îåßlé Ñ∂mé",  # spaces, strange characters are fine here
-#             "units": "km",  # doesn't do anything special by itself
-#             "extra_property": "hi",  # extra fields are allowed\
-#         }
-#     }
-#     expected: Dict[str, Any] = {
-#         "classname": "tsdat.io.retrievers.SimpleRetriever",
-#         "parameters": {
-#             "required": True,
-#             "name": "Ínpü† √a®îåßlé Ñ∂mé",
-#             "units": "km",
-#             "extra_property": "hi",
-#         },
-#     }
-#     model_dict = InputVariable(**invar).dict(exclude_none=True, by_alias=True)
-#     assert model_dict == expected
-
-
 def test_fail_if_missing_required_variable_properties():
     var: Dict[str, Any] = {}
     expected_error_msgs = [
@@ -287,34 +264,6 @@ def test_fail_if_bad_variable_name():
 
         actual_msg = get_pydantic_error_message(error)
         assert expected_error_msg in actual_msg
-
-
-# TEST: This test needs to be reconsidered
-# def test_variable_retrieval_properties():
-#     base_var: Dict[str, Any] = {
-#         "dims": ["time"],
-#         "dtype": "float",
-#         "attrs": {"units": "1"},
-#     }
-
-#     retrieved_var: Dict[str, Any] = {"retrieve": True}
-#     retrieved_var.update(base_var)
-#     assert Variable(**retrieved_var).is_retrieved
-
-#     static_var: Dict[str, Any] = {"retrieve": False, "data": []}
-#     static_var.update(base_var)
-#     assert Variable(**static_var).is_static
-
-#     dynamic_var: Dict[str, Any] = {"retrieve": False}
-#     dynamic_var.update(base_var)
-#     assert Variable(**dynamic_var).is_dynamic
-
-#     bad_var: Dict[str, Any] = {"retrieve": True, "data": []}
-#     bad_var.update(base_var)
-#     with pytest.raises(
-#         ValidationError, match="cannot be both retrieved and set statically"
-#     ):
-#         Variable(**bad_var)
 
 
 def test_coordinate_dimensioned_by_itself():

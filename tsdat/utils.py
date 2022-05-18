@@ -357,7 +357,7 @@ def get_filename(
 
 
 # def datetime64_to_string(datetime64: np.datetime64) -> Tuple[str, str]:
-#     """Convert a datetime64 object to formated string.
+#     """Convert a datetime64 object to formatted string.
 
 #     :param datetime64: The datetime64 object
 #     :type datetime64: Union[np.ndarray, np.datetime64]
