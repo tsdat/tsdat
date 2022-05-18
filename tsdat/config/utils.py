@@ -132,27 +132,31 @@ def recursive_instantiate(model: Any) -> Any:
         Any: The recursively-instantiated object.
 
     ---------------------------------------------------------------------------------"""
-    # Case: ParameterizedConfigClass. Want to instantiate any sub-models then return the class
-    # with all submodels recursively instantiated, then statically instantiate the model.
-    # Note: the model is instantiated last so that sub-models are only processed once.
+    # Case: ParameterizedConfigClass. Want to instantiate any sub-models then return the
+    # class with all sub-models recursively instantiated, then statically instantiate
+    # the model. Note: the model is instantiated last so that sub-models are only
+    # processed once.
     if isinstance(model, ParameterizedConfigClass):
         fields = model.__fields_set__ - {"classname"}  # No point checking classname
         for field in fields:
             setattr(model, field, recursive_instantiate(getattr(model, field)))
-        return model.instantiate()
+        model = model.instantiate()
 
     # Case: BaseModel. Want to instantiate any sub-models then return the model itself.
     elif isinstance(model, BaseModel):
         fields = model.__fields_set__
-        assert "classname" not in fields
+        if "classname" in fields:
+            raise ValueError(
+                f"Model '{model.__repr_name__()}' provides a 'classname' but does not"
+                " extend ParametrizedConfigClass."
+            )
         for field in fields:
             setattr(model, field, recursive_instantiate(getattr(model, field)))
-        return model
 
     # Case: List. Want to iterate through and recursively instantiate all sub-models in
     # the list, then return everything as a list.
     elif isinstance(model, List):
-        return [recursive_instantiate(m) for m in cast(List[Any], model)]
+        model = [recursive_instantiate(m) for m in cast(List[Any], model)]
 
     # Case Dict. Want to iterate through and recursively instantiate all sub-models in
     # the Dict's values, then return everything as a Dict, unless the dict is meant to
@@ -166,9 +170,7 @@ def recursive_instantiate(model: Any) -> Any:
             classname: str = model.pop("classname")  # type: ignore
             _cls = import_string(classname)
             return _cls(**model)
-        return model
 
-    # Base case: Anything else; just return the value
     return model
 
 
