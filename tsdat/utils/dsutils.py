@@ -141,7 +141,7 @@ class DSUtil:
 
         time64_data = time_var_definition.run_converter(time_data)
 
-        end_datetime64 = np.max(time64_data)
+        end_datetime64 = np.nanmax(time64_data)
         return DSUtil.datetime64_to_string(end_datetime64)
 
     @staticmethod
@@ -168,7 +168,7 @@ class DSUtil:
 
         time64_data = time_var_definition.run_converter(time_data)
 
-        start_datetime64 = np.min(time64_data)
+        start_datetime64 = np.nanmin(time64_data)
         return DSUtil.datetime64_to_string(start_datetime64)
 
     @staticmethod
