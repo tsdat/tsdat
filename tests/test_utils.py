@@ -33,9 +33,12 @@ def dataset():
 
 @pytest.fixture(scope="session", autouse=True)
 def raw_dataset():
-    from tsdat.io.filehandlers import FileHandler
+    from tsdat.io.filehandlers import FileHandler, CsvHandler
 
-    return FileHandler.read(NON_MONOTONIC_CSV)
+    handler = FileHandler()
+    handler.register_file_handler("read", ".*", CsvHandler())
+
+    return handler.read(NON_MONOTONIC_CSV)
 
 
 def test_corrections_are_recorded(dataset):

@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Union
 
 from tsdat.utils import DSUtil
 from tsdat.config import Config, DatasetDefinition, VariableDefinition
-from tsdat.io import DatastreamStorage, FileHandler
+from tsdat.io import DatastreamStorage
 
 
 class Pipeline(abc.ABC):
@@ -235,7 +235,9 @@ class Pipeline(abc.ABC):
             datastream_name, f"{start_date}.{start_time}"
         ) as netcdf_file:
             if netcdf_file:
-                prev_dataset = FileHandler.read(netcdf_file, config=self.config)
+                prev_dataset = self.storage.handler_registry.read(
+                    netcdf_file, config=self.config
+                )
 
         return prev_dataset
 
@@ -363,14 +365,14 @@ class Pipeline(abc.ABC):
 
     def decode_cf(self, dataset: xr.Dataset) -> xr.Dataset:
         """------------------------------------------------------------------------------------
-            Decodes the dataset according to CF conventions. This helps ensure that the dataset
-            is formatted correctly after it has been constructed from unstandardized sources or
-            heavily modified.
-            Args:
-                dataset (xr.Dataset): The dataset to decode.
-            Returns:
-                xr.Dataset: The decoded dataset.
-            ------------------------------------------------------------------------------------"""
+        Decodes the dataset according to CF conventions. This helps ensure that the dataset
+        is formatted correctly after it has been constructed from unstandardized sources or
+        heavily modified.
+        Args:
+            dataset (xr.Dataset): The dataset to decode.
+        Returns:
+            xr.Dataset: The decoded dataset.
+        ------------------------------------------------------------------------------------"""
         # We have to make sure that time variables do not have units set as attrs, and
         # instead have units set on the encoding or else xarray will crash when trying
         # to save: https://github.com/pydata/xarray/issues/3739

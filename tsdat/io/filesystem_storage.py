@@ -105,7 +105,7 @@ class FilesystemTemporaryStorage(TemporaryStorage):
             datastream_name,
             prev_date,
             next_date,
-            filetype=DatastreamStorage.default_file_type,
+            filetype=self.datastream_storage.default_file_type,
         )
         dates = [DSUtil.get_date_from_filename(_file) for _file in files]
 
@@ -183,7 +183,7 @@ class FilesystemStorage(DatastreamStorage):
                     storage_paths.append(os.path.join(dir_to_check, file))
 
             if filetype is not None:
-                filter_func = DatastreamStorage.file_filters[filetype]
+                filter_func = self.file_filters[filetype]
                 storage_paths = list(filter(filter_func, storage_paths))
 
         return sorted(storage_paths)

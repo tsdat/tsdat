@@ -12,7 +12,6 @@ uses to manage I/O for the pipeline.  Specifically, it includes:
 from .filehandlers import (
     AbstractFileHandler,
     FileHandler,
-    register_filehandler,
     CsvHandler,
     NetCdfHandler,
     SplitNetCdfHandler,

@@ -25,7 +25,6 @@ from tsdat.io import (
     FileHandler,
     CsvHandler,
     NetCdfHandler,
-    register_filehandler,
 )
 from tsdat.pipeline import Pipeline, IngestPipeline
 from tsdat.qc import (
