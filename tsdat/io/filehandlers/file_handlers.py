@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 import warnings
 import re
 import xarray as xr
@@ -49,16 +50,16 @@ class AbstractFileHandler:
         pass
 
 
+@dataclass
 class FileHandler:
     """Class to provide methods to read and write files with a variety of
     extensions."""
 
-    FILEREADERS: Dict[str, AbstractFileHandler] = {}
-    FILEWRITERS: Dict[str, AbstractFileHandler] = {}
+    FILEREADERS: Dict[str, AbstractFileHandler] = field(default_factory=dict)
+    FILEWRITERS: Dict[str, AbstractFileHandler] = field(default_factory=dict)
 
-    @staticmethod
     def _get_handler(
-        filename: str, method: Literal["read", "write"]
+        self, filename: str, method: Literal["read", "write"]
     ) -> AbstractFileHandler:
         """------------------------------------------------------------------------------------
         Given the filepath of the file to read or write and the FileHandler method to apply to
@@ -76,9 +77,9 @@ class FileHandler:
         ------------------------------------------------------------------------------------"""
         assert method in ["read", "write"]
 
-        handler_dict = FileHandler.FILEREADERS
+        handler_dict = self.FILEREADERS
         if method == "write":
-            handler_dict = FileHandler.FILEWRITERS
+            handler_dict = self.FILEWRITERS
 
         handler = None
 
@@ -95,8 +96,9 @@ class FileHandler:
 
         return handler
 
-    @staticmethod
-    def write(ds: xr.Dataset, filename: str, config: Config = None, **kwargs) -> None:
+    def write(
+        self, ds: xr.Dataset, filename: str, config: Config = None, **kwargs
+    ) -> None:
         """------------------------------------------------------------------------------------
         Calls the appropriate FileHandler to write the dataset to the provided filename.
 
@@ -106,12 +108,11 @@ class FileHandler:
             config (Config, optional): Optional Config object. Defaults to None.
 
         ------------------------------------------------------------------------------------"""
-        handler = FileHandler._get_handler(filename, "write")
+        handler = self._get_handler(filename, "write")
         if handler:
             handler.write(ds, filename, config, **kwargs)
 
-    @staticmethod
-    def read(filename: str, **kwargs) -> xr.Dataset:
+    def read(self, filename: str, **kwargs) -> xr.Dataset:
         """------------------------------------------------------------------------------------
         Reads in the given file and converts it into an xarray dataset object using the
         registered FileHandler for the provided filepath.
@@ -123,12 +124,12 @@ class FileHandler:
             xr.Dataset: The raw file as an Xarray.Dataset object.
 
         ------------------------------------------------------------------------------------"""
-        handler = FileHandler._get_handler(filename, "read")
+        handler = self._get_handler(filename, "read")
         if handler:
             return handler.read(filename, **kwargs)
 
-    @staticmethod
     def register_file_handler(
+        self,
         method: Literal["read", "write"],
         patterns: Union[str, List[str]],
         handler: AbstractFileHandler,
@@ -147,9 +148,9 @@ class FileHandler:
         ------------------------------------------------------------------------------------"""
         assert method in ["read", "write"]
 
-        handler_dict = FileHandler.FILEREADERS
+        handler_dict = self.FILEREADERS
         if method == "write":
-            handler_dict = FileHandler.FILEWRITERS
+            handler_dict = self.FILEWRITERS
 
         if isinstance(patterns, str):
             patterns = [patterns]

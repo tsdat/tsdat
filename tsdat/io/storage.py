@@ -33,17 +33,6 @@ class DatastreamStorage(abc.ABC):
     file.
     """
 
-    default_file_type = None
-
-    # Stores the map of file types to filter functions that will
-    # be loaded from the storage config file and is used to
-    # find specific files in the store.
-    file_filters = {"plots": _is_image, "raw": _is_raw}
-
-    # Stores the map of supported file exensions that will be loaded
-    # from the storage config file.
-    output_file_extensions = {}
-
     @staticmethod
     def from_config(storage_config_file: str):
         """Load a yaml config file which provides the storage constructor
@@ -67,14 +56,15 @@ class DatastreamStorage(abc.ABC):
             storage_dict = yaml.load(file, Loader=yaml.SafeLoader).get("storage", {})
 
         # Now instantiate the storage
-        storage = instantiate_handler(handler_desc=storage_dict)
+        storage: DatastreamStorage = instantiate_handler(handler_desc=storage_dict)
+        storage.handler_registry = FileHandler()
 
         # Now we need to register all the file handlers
         # First do the inputs
         input_handlers = storage_dict.get("file_handlers", {}).get("input", {})
         for handler_dict in input_handlers.values():
             handler = instantiate_handler(handler_desc=handler_dict)
-            FileHandler.register_file_handler(
+            storage.handler_registry.register_file_handler(
                 "read", handler_dict["file_pattern"], handler
             )
 
@@ -86,7 +76,9 @@ class DatastreamStorage(abc.ABC):
 
             # First register the writers
             handler = instantiate_handler(handler_desc=handler_dict)
-            FileHandler.register_file_handler("write", file_pattern, handler)
+            storage.handler_registry.register_file_handler(
+                "write", file_pattern, handler
+            )
 
             # Now register the file patterns for finding files in the store
             regex = re.compile(file_pattern)
@@ -94,12 +86,12 @@ class DatastreamStorage(abc.ABC):
             def filter_func(x):
                 return True if regex.match(x.__str__()) else False
 
-            DatastreamStorage.file_filters[key] = filter_func
-            DatastreamStorage.output_file_extensions[key] = file_extension
+            storage.file_filters[key] = filter_func
+            storage.output_file_extensions[key] = file_extension
 
-            if DatastreamStorage.default_file_type is None:
+            if storage.default_file_type is None:
                 # Use the first output type registered as the default type
-                DatastreamStorage.default_file_type = key
+                storage.default_file_type = key
 
         return storage
 
@@ -113,6 +105,19 @@ class DatastreamStorage(abc.ABC):
             )
 
         self.remove_input_files = not retain_input_files
+
+        self.default_file_type = None
+
+        # Stores the map of file types to filter functions that will
+        # be loaded from the storage config file and is used to
+        # find specific files in the store.
+        self.file_filters = {"plots": _is_image, "raw": _is_raw}
+
+        # Stores the map of supported file exensions that will be loaded
+        # from the storage config file.
+        self.output_file_extensions = {}
+
+        self.handler_registry = FileHandler()
 
     @property
     def tmp(self):
@@ -218,12 +223,12 @@ class DatastreamStorage(abc.ABC):
             dataset = dataset_or_path
 
             # Save file for every registered output file type
-            for file_extension in DatastreamStorage.output_file_extensions.values():
+            for file_extension in self.output_file_extensions.values():
                 dataset_filename = DSUtil.get_dataset_filename(
                     dataset, file_extension=file_extension
                 )
                 with self.tmp.get_temp_filepath(dataset_filename) as tmp_path:
-                    FileHandler.write(dataset, tmp_path, storage=self)
+                    self.handler_registry.write(dataset, tmp_path, storage=self)
                     saved_paths.append(self.save_local_path(tmp_path, new_filename))
 
         else:
