@@ -91,6 +91,11 @@ can work in for this example.
 Go ahead and clone the repository to your local machine and open it up in 
 VS Code.
 
+.. tip::
+
+  You should open the project at the root, which is GIt repo's root directory,
+  and from where the file ``conda-environment.yaml`` is at.
+
 .. note::
 
   VS Code is not the only IDE that may be used, but we provide additional settings for
@@ -110,19 +115,33 @@ to create an isolated virtual area that we can install packages to.
   environment. See the :ref:`setting_up_wsl` tutorial for more information.
 
 Once you have anaconda (and optionally WSL) installed, you can run the following command
-in the terminal to create and activate the development environment:
+in the terminal from the project root (e.g., where ``conda-environment.yaml`` is at) to create
+and activate the development environment:
 
 .. code-block:: bash
 
   conda env create --file=conda-environment.yaml
   conda activate tsdat-pipelines
-  
+
+.. tip::
+  You can find more details about using conda at `Getting started with conda <https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html>`_.
+
 .. note::
 
     Environments other than conda may be used as long as your python version is >=3.8 and
     you are able to install dependencies from the ``requirements-dev.txt`` file.
 
+Configure Python interpreter in Vscode
+======================
 
+Tell VS Code to use your new conda environment:
+
+1. Bring up the command pane in VS Code (shortcut "F1" or "Ctrl+Shift+P")
+2. Type "Python: Select Interpreter" and select it.
+3. Select the newly-created "tsdat-pipelines" conda environment from the drop-down list.
+Note you may need to refresh the list (cycle icon in the top right) to see it.
+
+4. Bring up the command pane and type "Developer: Reload Window" to reload VS Code and ensure the settings changes propagate correctly.
 
 Run the Basic Template
 ======================
