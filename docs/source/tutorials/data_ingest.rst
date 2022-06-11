@@ -131,17 +131,23 @@ and activate the development environment:
     Environments other than conda may be used as long as your python version is >=3.8 and
     you are able to install dependencies from the ``requirements-dev.txt`` file.
 
-Configure Python interpreter in Vscode
+Configure Python interpreter in VS Code
 ======================
 
 Tell VS Code to use your new conda environment:
 
-1. Bring up the command pane in VS Code (shortcut "F1" or "Ctrl+Shift+P")
-2. Type "Python: Select Interpreter" and select it.
-3. Select the newly-created "tsdat-pipelines" conda environment from the drop-down list.
-Note you may need to refresh the list (cycle icon in the top right) to see it.
+#.  Bring up the command pane in VS Code (shortcut "F1" or "Ctrl+Shift+P")
+#.  Type "Python: Select Interpreter" and select it.
+#.  Select the newly-created "tsdat-pipelines" conda environment from the drop-down list.
+    Note you may need to refresh the list (cycle icon in the top right) to see it.
+#.  Bring up the command pane and type "Developer: Reload Window" to reload VS Code and ensure the settings changes propagate correctly.
 
-4. Bring up the command pane and type "Developer: Reload Window" to reload VS Code and ensure the settings changes propagate correctly.
+.. tip::
+
+  A typical path to the Python interpreter in conda is "~/anaconda3/envs/<env-name>/bin/python/".
+  You can find more details about using Python in VS Code at `Using Python Environments in Visual Studio Code <https://code.visualstudio.com/docs/python/environments>`_
+  and `Get Started Tutorial for Python in Visual Studio Code <https://code.visualstudio.com/docs/python/python-tutorial>`_.
+
 
 Run the Basic Template
 ======================
@@ -207,7 +213,7 @@ Creating a New Ingest
 =====================
 Now let’s start working on ingesting the NCEI data.
 
-1. In the Explorer window pane you'll see a list of all folders and files in this ingest -> right click on the top level README.md and select "open preview". The steps in this readme we are more or less following in this tutorial.
+In the Explorer window pane you'll see a list of all folders and files in this ingest -> right click on the top level README.md and select "open preview". The steps in this readme we are more or less following in this tutorial.
 
 .. figure:: global_marine_data/intro6.png
     :align: center
@@ -216,7 +222,11 @@ Now let’s start working on ingesting the NCEI data.
 
 |
 
-2. Before starting, we'll run a quick test of the pipeline to make sure everything is set up properly. Navigate to "Testing" and run all tests using the "Play" icon by hovering over the "ingest" dropdown. Tsdat will automatically configure these tests, and they all should pass at this point in time, as indicated by green checkmarks.
+Before starting, we'll run a quick test of the pipeline to make sure everything is set up properly.
+Navigate to "Testing" and run all tests using the "Play" icon by hovering over the "ingest" dropdown.
+Tsdat will automatically configure these tests, and they all should pass at this point in time,
+as indicated by green checkmarks.
+(You can find more details about testing at `Python testing in Visual Studio Code <https://code.visualstudio.com/docs/python/testing>`_.)
 
 .. figure:: global_marine_data/intro7.png
     :align: center
@@ -225,7 +235,7 @@ Now let’s start working on ingesting the NCEI data.
 
 |
 
-4. Navigate back to the "Explorer" pane and hit "ctrl \`" to open the terminal. 
+Navigate back to the "Explorer" pane and hit "ctrl \`" to open the terminal.
 Create a new ingest by running a python template creator called "cookiecutter" 
 in the terminal using:
 	
