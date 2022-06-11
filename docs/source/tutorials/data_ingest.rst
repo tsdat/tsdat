@@ -260,7 +260,7 @@ custom QC functions, readers/writers, or converters, so select no for those as w
   location_id [arctic_ocean]: arctic_ocean
 
 
-.. figure:: global_marine_data/intro8.png
+.. figure:: global_marine_data/intro8-b.png
     :align: center
     :width: 100%
     :alt:
