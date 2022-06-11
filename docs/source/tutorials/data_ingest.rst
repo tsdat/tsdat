@@ -93,8 +93,8 @@ VS Code.
 
 .. tip::
 
-  You should open the project at the root, which is GIt repo's root directory,
-  and from where the file ``conda-environment.yaml`` is at.
+  You should open the project at the root, which is the Git repo's root directory and
+  where the file ``conda-environment.yaml`` is located.
 
 .. note::
 
@@ -124,7 +124,7 @@ and activate the development environment:
   conda activate tsdat-pipelines
 
 .. tip::
-  You can find more details about using conda at `Getting started with conda <https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html>`_.
+  You can find more details about using conda from `Getting started with conda <https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html>`_.
 
 .. note::
 
@@ -145,7 +145,7 @@ Tell VS Code to use your new conda environment:
 .. tip::
 
   A typical path to the Python interpreter in conda is "~/anaconda3/envs/<env-name>/bin/python/".
-  You can find more details about using Python in VS Code at `Using Python Environments in Visual Studio Code <https://code.visualstudio.com/docs/python/environments>`_
+  You can find more details about using Python in VS Code from `Using Python Environments in Visual Studio Code <https://code.visualstudio.com/docs/python/environments>`_
   and `Get Started Tutorial for Python in Visual Studio Code <https://code.visualstudio.com/docs/python/python-tutorial>`_.
 
 
@@ -226,7 +226,7 @@ Before starting, we'll run a quick test of the pipeline to make sure everything 
 Navigate to "Testing" and run all tests using the "Play" icon by hovering over the "ingest" dropdown.
 Tsdat will automatically configure these tests, and they all should pass at this point in time,
 as indicated by green checkmarks.
-(You can find more details about testing at `Python testing in Visual Studio Code <https://code.visualstudio.com/docs/python/testing>`_.)
+(You can find more details about testing from `Python testing in Visual Studio Code <https://code.visualstudio.com/docs/python/testing>`_.)
 
 .. figure:: global_marine_data/intro7.png
     :align: center
