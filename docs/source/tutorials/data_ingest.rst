@@ -91,6 +91,11 @@ can work in for this example.
 Go ahead and clone the repository to your local machine and open it up in 
 VS Code.
 
+.. tip::
+
+  You should open the project at the root, which is the Git repo's root directory and
+  where the file ``conda-environment.yaml`` is located.
+
 .. note::
 
   VS Code is not the only IDE that may be used, but we provide additional settings for
@@ -110,18 +115,38 @@ to create an isolated virtual area that we can install packages to.
   environment. See the :ref:`setting_up_wsl` tutorial for more information.
 
 Once you have anaconda (and optionally WSL) installed, you can run the following command
-in the terminal to create and activate the development environment:
+in the terminal from the project root (e.g., where ``conda-environment.yaml`` is at) to create
+and activate the development environment:
 
 .. code-block:: bash
 
   conda env create --file=conda-environment.yaml
   conda activate tsdat-pipelines
-  
+
+.. tip::
+  You can find more details about using conda from `Getting started with conda <https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html>`_.
+
 .. note::
 
     Environments other than conda may be used as long as your python version is >=3.8 and
     you are able to install dependencies from the ``requirements-dev.txt`` file.
 
+Configure Python interpreter in VS Code
+======================
+
+Tell VS Code to use your new conda environment:
+
+#.  Bring up the command pane in VS Code (shortcut "F1" or "Ctrl+Shift+P")
+#.  Type "Python: Select Interpreter" and select it.
+#.  Select the newly-created "tsdat-pipelines" conda environment from the drop-down list.
+    Note you may need to refresh the list (cycle icon in the top right) to see it.
+#.  Bring up the command pane and type "Developer: Reload Window" to reload VS Code and ensure the settings changes propagate correctly.
+
+.. tip::
+
+  A typical path to the Python interpreter in conda is "~/anaconda3/envs/<env-name>/bin/python/".
+  You can find more details about using Python in VS Code from `Using Python Environments in Visual Studio Code <https://code.visualstudio.com/docs/python/environments>`_
+  and `Get Started Tutorial for Python in Visual Studio Code <https://code.visualstudio.com/docs/python/python-tutorial>`_.
 
 
 Run the Basic Template
@@ -188,7 +213,7 @@ Creating a New Ingest
 =====================
 Now let’s start working on ingesting the NCEI data.
 
-1. In the Explorer window pane you'll see a list of all folders and files in this ingest -> right click on the top level README.md and select "open preview". The steps in this readme we are more or less following in this tutorial.
+In the Explorer window pane you'll see a list of all folders and files in this ingest -> right click on the top level README.md and select "open preview". The steps in this readme we are more or less following in this tutorial.
 
 .. figure:: global_marine_data/intro6.png
     :align: center
@@ -197,7 +222,11 @@ Now let’s start working on ingesting the NCEI data.
 
 |
 
-2. Before starting, we'll run a quick test of the pipeline to make sure everything is set up properly. Navigate to "Testing" and run all tests using the "Play" icon by hovering over the "ingest" dropdown. Tsdat will automatically configure these tests, and they all should pass at this point in time, as indicated by green checkmarks.
+Before starting, we'll run a quick test of the pipeline to make sure everything is set up properly.
+Navigate to "Testing" and run all tests using the "Play" icon by hovering over the "ingest" dropdown.
+Tsdat will automatically configure these tests, and they all should pass at this point in time,
+as indicated by green checkmarks.
+(You can find more details about testing from `Python testing in Visual Studio Code <https://code.visualstudio.com/docs/python/testing>`_.)
 
 .. figure:: global_marine_data/intro7.png
     :align: center
@@ -206,7 +235,7 @@ Now let’s start working on ingesting the NCEI data.
 
 |
 
-4. Navigate back to the "Explorer" pane and hit "ctrl \`" to open the terminal. 
+Navigate back to the "Explorer" pane and hit "ctrl \`" to open the terminal.
 Create a new ingest by running a python template creator called "cookiecutter" 
 in the terminal using:
 	
@@ -231,7 +260,7 @@ custom QC functions, readers/writers, or converters, so select no for those as w
   location_id [arctic_ocean]: arctic_ocean
 
 
-.. figure:: global_marine_data/intro8.png
+.. figure:: global_marine_data/intro8-b.png
     :align: center
     :width: 100%
     :alt:
