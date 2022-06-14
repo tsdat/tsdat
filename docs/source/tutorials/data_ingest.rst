@@ -132,7 +132,7 @@ and activate the development environment:
     you are able to install dependencies from the ``requirements-dev.txt`` file.
 
 Configure Python interpreter in VS Code
-======================
+=======================================
 
 Tell VS Code to use your new conda environment:
 
