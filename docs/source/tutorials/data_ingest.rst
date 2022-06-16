@@ -568,9 +568,10 @@ Replace the text in the "dataset.yaml" file with the following code-block.
         long_name: Latitude   # Name used in plotting
         units: degN           # Units, necessary for unit conversion
         comment: ""           # Add a comment or description if necessary
-        _FillValue: 99        # Bad data marker in raw dataset, otherwise -9999
-        fail_range: [-90, 90] # Expected failure range for "CheckFailMax"/Min" QC tests
-        
+        _FillValue: -999      # Bad data marker in raw dataset, otherwise -9999
+        valid_max: 90         # Expected failure range for "CheckValidMax" QC test
+        valid_min: -90        # Expected failure range for "CheckValidMin" QC test
+
     longitude:
       dims: [time]
       dtype: float
@@ -578,6 +579,8 @@ Replace the text in the "dataset.yaml" file with the following code-block.
         long_name: Longitude
         units: degE
         comment: ""
+        valid_max: 180
+        valid_min: -180
         
     pressure:
       dims: [time]
@@ -610,8 +613,7 @@ Replace the text in the "dataset.yaml" file with the following code-block.
         long_name: Wave Period
         units: s
         comment: Assumed to refer to average wave period
-        _FillValue: 99
-        warn_range: [0, 22] # Expected range for "CheckWarnMax"/Min" QC tests
+        valid_max: 30 # Expected max for "CheckValidMax"/Min" QC tests
         
     wave_height:
       dims: [time]
@@ -628,7 +630,7 @@ Replace the text in the "dataset.yaml" file with the following code-block.
         long_name: Swell Direction
         units: deg from N
         comment: Assumed to refer to peak wave direction
-        fail_range: [0, 360]
+        valid_max: 360
         
     swell_period:
       dims: [time]
@@ -637,7 +639,7 @@ Replace the text in the "dataset.yaml" file with the following code-block.
         long_name: Swell Period
         units: s
         comment: Assumed to refer to peak wave period
-        warn_range: [0, 22]
+        valid_max: 30
         
     swell_height:
       dims: [time]
@@ -654,7 +656,7 @@ Replace the text in the "dataset.yaml" file with the following code-block.
         long_name: Wind Direction
         units: deg from N
         comment: ""
-        fail_range: [0, 360]
+        valid_max: 360
         
     wind_speed:
       dims: [time]
@@ -752,15 +754,31 @@ desired:
           plt.style.use("default")  # clear any styles that were set before
           plt.style.use("shared/styling.mplstyle")
 
-          with self.storage.uploadable_dir(datastream) as tmp_dir:
+        with self.storage.uploadable_dir(datastream) as tmp_dir:
 
-              fig, ax = plt.subplots()
-              dataset["pressure"].plot(ax=ax, x="time", c=cmocean.cm.deep_r(0.5))
-              fig.suptitle(f"Pressure Observations from at {location} on {date} {time}")
+            fig, ax = plt.subplots()
+            dataset["temperature"].plot(ax=ax, x="time", c=cmocean.cm.deep_r(0.5))
+            fig.suptitle(f"Temperature measured at {location} on {date} {time}")
 
-              plot_file = get_filename(dataset, title="example_plot", extension="png")
-              fig.savefig(tmp_dir / plot_file)
-              plt.close(fig)
+            plot_file = get_filename(dataset, title="temperature", extension="png")
+            fig.savefig(tmp_dir / plot_file)
+            plt.close(fig)
+
+            # Creat Plot Display
+            obj = dataset
+            variable = "wave_height"
+            display = act.plotting.TimeSeriesDisplay(
+                obj, figsize=(15, 10), subplot_shape=(2,)
+            )
+            # Plot data in top plot
+            display.plot(variable, subplot_index=(0,), label="Wave Height")
+            # Plot QC data
+            display.qc_flag_block_plot(variable, subplot_index=(1,))
+            fig = display.fig
+
+            plot_file = get_filename(dataset, title="wave_height", extension="png")
+            fig.savefig(tmp_dir / plot_file)
+            plt.close(fig)
 
 
 
@@ -788,54 +806,84 @@ the plot as well as the netCDF file output (or csv if you changed the output wri
       :alt:
 
 
-Data can be viewed by opening the terminal (``ctrl ```) and running a quick python shell:
+Viewing the Data
+================
+NetCDF files can be opened using the provided `file_viewer.ipynb` jupyter notebook.
+This file can be opened in VSCode or through `Jupyter's website <https://jupyter.org/try>`_.
 
-.. code-block:: bash
+.. figure:: global_marine_data/intro24.png
+    :align: center
+    :width: 100%
+    :alt:
 
-  $ cd storage/root/data/arctic_ocean.ncei_arctic_cruise_example.a1
-  $ python
+Change the first code block to point to our netcdf data:
+
+.. code-block:: python
+
+  import xarray as xr
+
+  ds = xr.open_dataset(
+      "../../storage/root/data/arctic_ocean.ncei_arctic_cruise_example.a1/arctic_ocean.ncei_arctic_cruise_example.a1.20150112.000000.nc"
+  )
   
-In the python shell that opens, we can view the dataset for a quick overview:
+And hit `shift enter` to run this code block. Run the next code block to see an interactive
+data block.
 
-.. code-block::
+.. code-block:: python
 
-  >>> import xarray as xr
-  >>> ds = xr.open_dataset('arctic_ocean.ncei_arctic_cruise_example.a1.20150112.000000.nc')
-  >>> ds
-  <xarray.Dataset>
-  Dimensions:             (time: 55)
-  Coordinates:
-    * time                (time) datetime64[ns] 2015-01-12 ... 2015-01-31T12:00:00
-  Data variables: (12/24)
-      latitude            (time) float64 ...
-      longitude           (time) float64 ...
-      pressure            (time) float64 ...
-      temperature         (time) float64 ...
-      dew_point           (time) float64 ...
-      wave_period         (time) float64 ...
-      ...                  ...
-      qc_wave_height      (time) int32 ...
-      qc_swell_direction  (time) int32 ...
-      qc_swell_period     (time) int32 ...
-      qc_swell_height     (time) int32 ...
-      qc_wind_direction   (time) int32 ...
-      qc_wind_speed       (time) int32 ...
-  Attributes:
-      title:         NCEI Arctic Cruise Example
-      description:   Historical marine data that are comprised of ship, buoy and...
-      location_id:   arctic_ocean
-      dataset_name:  ncei_arctic_cruise_example
-      data_level:    a1
-      datastream:    arctic_ocean.ncei_arctic_cruise_example.a1
-      history:       Ran by jmcvey3 at 2022-04-29T15:31:32.055678
+  ds
 
+Use the drop-down arrows on the left and the text file and database icons on the right
+to explore the data.
+
+.. figure:: global_marine_data/intro25.png
+    :align: center
+    :width: 100%
+    :alt:
+
+There are two sets of variables here. The first are the original variables saved with
+their data (adjusted by data converters and/or QC function if applicable) 
+and associated metadata.
+
+The second set are the QC variables. Tsdat adds these variables if the
+``RecordQualityResults`` handler is called in the quality configuration file.
+A few attributes, specified for this handler in the quality config file, are shared 
+across all QC variables: `flag_masks`, `flag_meanings`, and `flag_assessments`. 
+In this case, there are three `flag masks`: 1, 2, and 4. We can see in the data, flags 
+1 and 4 were tripped on this variable. Every point listed as 1 corresponds to the 
+first entry in `flag_meanings`: "Value is equal to _FillValue or NaN", a.k.a. it is 
+a missing datapoint. Likewise for flag 4: a few datapoints are above the valid maximum
+specified.
+
+Note: if multiple QC flags are tripped, these flags will be added together. For instance,
+if a QC variable has a value of 5, this means that the QC tests corresponding to flag 1 
+and flag 4 were both tripped.
+
+.. figure:: global_marine_data/intro26.png
+    :align: center
+    :width: 100%
+    :alt:
+
+The final two code blocks are shorthand for plotting variables in the dataset.
+
+.. code-block:: python
+
+    ds.temperature.plot()
+    ds.qc_temperature.plot()
+
+.. figure:: global_marine_data/intro27.png
+    :align: center
+    :width: 100%
+    :alt:
 
 
 Pipeline Tests
 ==============
 
-Testing is best completed as a last step, after everything is set up and the pipeline outputs
-as expected. If running a large number of data files, a good idea is to input one of those data files here, along with its expected output, and have a separate data folder to collect input files.
+Testing is best completed as a last step, after everything is set up and the pipeline 
+outputs as expected. If running a large number of data files, a good idea is to input 
+one of those data files here, along with its expected output, and have a separate data 
+folder to collect input files.
 
 Move the input and output files to the ``test/data/input/`` and ``test/data/expected/`` folders,
 respectively, and update the file paths.
