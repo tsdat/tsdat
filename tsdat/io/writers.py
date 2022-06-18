@@ -7,7 +7,12 @@ from pathlib import Path
 from pydantic import BaseModel, Extra
 from .base import FileWriter
 
-__all__ = ["NetCDFWriter", "CSVWriter", "ParquetWriter"]
+__all__ = [
+    "NetCDFWriter",
+    "CSVWriter",
+    "ParquetWriter",
+    "ZarrWriter",
+]
 
 
 class NetCDFWriter(FileWriter):
@@ -32,7 +37,7 @@ class NetCDFWriter(FileWriter):
         """Keyword arguments passed directly to xr.Dataset.to_netcdf()."""
 
     parameters: Parameters = Parameters()
-    file_extension: str = "nc"
+    file_extension: str = ".nc"
 
     def write(
         self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
@@ -75,7 +80,7 @@ class CSVWriter(FileWriter):
         to_csv_kwargs: Dict[str, Any] = {}
 
     parameters: Parameters = Parameters()
-    file_extension: str = "csv"
+    file_extension: str = ".csv"
 
     def write(
         self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
@@ -103,7 +108,7 @@ class ParquetWriter(FileWriter):
         to_parquet_kwargs: Dict[str, Any] = {}
 
     parameters: Parameters = Parameters()
-    file_extension: str = "parquet"
+    file_extension: str = ".parquet"
 
     def write(
         self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
@@ -113,3 +118,34 @@ class ParquetWriter(FileWriter):
         # incapable of "round-tripping" (i.e., ds != read(write(ds)) for csv format)?
         df = dataset.to_dataframe(self.parameters.dim_order)  # type: ignore
         df.to_parquet(filepath, **self.parameters.to_parquet_kwargs)  # type: ignore
+
+
+class ZarrWriter(FileWriter):
+    """---------------------------------------------------------------------------------
+    Writes the dataset to a basic zarr archive.
+
+    Advanced features such as specifying the chunk size or writing the zarr archive in
+    AWS S3 will be implemented later.
+
+    ---------------------------------------------------------------------------------"""
+
+    class Parameters(BaseModel, extra=Extra.forbid):
+        to_zarr_kwargs: Dict[str, Any] = {}
+
+    parameters: Parameters = Parameters()
+    file_extension: str = ".zarr"
+
+    def write(
+        self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
+    ) -> None:
+        encoding_dict: Dict[str, Dict[str, Any]] = {}
+        for variable_name in cast(Iterable[str], dataset.variables):
+            # Prevent Xarray from setting 'nan' as the default _FillValue
+            encoding_dict[variable_name] = dataset[variable_name].encoding  # type: ignore
+            if (
+                "_FillValue" not in encoding_dict[variable_name]
+                and "_FillValue" not in dataset[variable_name].attrs
+            ):
+                encoding_dict[variable_name]["_FillValue"] = None
+
+        dataset.to_zarr(filepath, encoding=encoding_dict, **self.parameters.to_zarr_kwargs)  # type: ignore
