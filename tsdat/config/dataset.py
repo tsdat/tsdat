@@ -3,7 +3,6 @@ import re
 from pydantic import (
     Extra,
     Field,
-    constr,
     root_validator,
     validator,
 )
@@ -17,10 +16,6 @@ __all__ = ["DatasetConfig"]
 
 
 logger = logging.getLogger(__name__)
-
-# TEST: constr actually validates stuff
-# TEST: schema validation for variable names based on this property
-VarName = constr(regex=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
 
 
 class DatasetConfig(YamlModel, extra=Extra.forbid):
@@ -46,7 +41,7 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
         description="Attributes that pertain to the dataset as a whole (as opposed to"
         " attributes that are specific to individual variables."
     )
-    coords: Dict[VarName, Coordinate] = Field(
+    coords: Dict[str, Coordinate] = Field(
         description="This section defines the coordinate variables that the rest of the"
         " data are dimensioned by. Coordinate variable data can either be retrieved"
         " from an input data source or defined statically via the 'data' property. Note"
@@ -57,7 +52,7 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
         " coordinate variables, and that this value should be [<name>], where <name> is"
         " the name of the coord (e.g., 'time').",
     )
-    data_vars: Dict[VarName, Variable] = Field(
+    data_vars: Dict[str, Variable] = Field(
         description="This section defines the data variables that the output dataset"
         " will contain. Variable data can either be retrieved from an input data"
         " source, defined statically via the 'data' property, or initalized to missing"
@@ -66,9 +61,7 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
 
     @validator("coords")
     @classmethod
-    def time_in_coords(
-        cls, coords: Dict[VarName, Coordinate]
-    ) -> Dict[VarName, Coordinate]:
+    def time_in_coords(cls, coords: Dict[str, Coordinate]) -> Dict[str, Coordinate]:
         if "time" not in coords:
             raise ValueError("Required coordinate definition 'time' is missing.")
         return coords
