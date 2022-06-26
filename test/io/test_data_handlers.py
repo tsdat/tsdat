@@ -6,9 +6,9 @@ from pathlib import Path
 from pytest import fixture
 from pandas.testing import assert_frame_equal
 from tsdat.testing import assert_close
-from tsdat.io.handlers import CSVHandler, NetCDFHandler, ParquetHandler
-from tsdat.io.readers import CSVReader, NetCDFReader, ParquetReader
-from tsdat.io.writers import CSVWriter, NetCDFWriter, ParquetWriter
+from tsdat.io.handlers import CSVHandler, NetCDFHandler, ParquetHandler, ZarrHandler
+from tsdat.io.readers import CSVReader, NetCDFReader, ParquetReader, ZarrReader
+from tsdat.io.writers import CSVWriter, NetCDFWriter, ParquetWriter, ZarrWriter
 
 
 @fixture
@@ -64,6 +64,13 @@ def test_parquet_reader(sample_dataset: xr.Dataset):
     assert_close(dataset, expected, check_fill_value=False)
 
 
+def test_zarr_reader(sample_dataset: xr.Dataset):
+    expected = sample_dataset
+    reader = ZarrReader()
+    dataset = reader.read("test/io/data/input.zarr")
+    assert_close(dataset, expected, check_fill_value=False)
+
+
 def test_netcdf_writer(sample_dataset: xr.Dataset):
     expected = sample_dataset.copy(deep=True)  # type: ignore
     writer = NetCDFWriter()
@@ -103,6 +110,19 @@ def test_parquet_writer(sample_dataset: xr.Dataset, sample_dataframe: pd.DataFra
     tmp_dir.cleanup()
 
 
+def test_zarr_writer(sample_dataset: xr.Dataset):
+    expected = sample_dataset.copy(deep=True)  # type: ignore
+    writer = ZarrWriter()
+    tmp_dir = tempfile.TemporaryDirectory()
+
+    tmp_file = Path(tmp_dir.name) / "test_writer.zarr"
+    writer.write(sample_dataset, tmp_file)
+    dataset: xr.Dataset = xr.open_zarr(tmp_file)  # type: ignore
+    assert_close(dataset, expected, check_fill_value=False)
+
+    tmp_dir.cleanup()
+
+
 def test_netcdf_handler(sample_dataset: xr.Dataset):
     expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
     handler = NetCDFHandler()
@@ -138,5 +158,18 @@ def test_parquet_handler(sample_dataset: xr.Dataset):
     handler.writer.write(sample_dataset, tmp_file)
     dataset = handler.reader.read(tmp_file.as_posix())
     assert_close(dataset, expected, check_attrs=False)
+
+    tmp_dir.cleanup()
+
+
+def test_zarr_handler(sample_dataset: xr.Dataset):
+    expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
+    handler = ZarrHandler()
+    tmp_dir = tempfile.TemporaryDirectory()
+
+    tmp_file = Path(tmp_dir.name) / "test_dataset.zarr"
+    handler.writer.write(sample_dataset, tmp_file)
+    dataset = handler.reader.read(tmp_file.as_posix())
+    assert_close(dataset, expected, check_fill_value=False)
 
     tmp_dir.cleanup()
