@@ -121,7 +121,7 @@ class RemoveFailedValues(QualityHandler):
     ) -> xr.Dataset:
         if failures.any():
             fill_value = dataset[variable_name].attrs.get("_FillValue", None)
-            dataset[variable_name][failures] = fill_value
+            dataset[variable_name] = dataset[variable_name].where(~failures, fill_value)  # type: ignore
         return dataset
 
 
