@@ -66,10 +66,19 @@ def assert_close(
 
     ---------------------------------------------------------------------------------"""
     a, b = a.copy(), b.copy()  # type: ignore
+    _convert_time(a, b)
     xr.testing.assert_allclose(a, b, **kwargs)  # type: ignore
     if check_attrs:
         _check_global_attrs(a, b)
         _check_variable_attrs(a, b, check_fill_value)
+
+
+def _convert_time(a: xr.Dataset, b: xr.Dataset) -> None:
+    # Converts datetime64 to seconds since 1970
+    for v in a.variables:
+        if np.issubdtype(a[v].dtype, np.datetime64):  # type: ignore
+            a[v] = a[v].astype("datetime64[ns]").astype("float") / 1e9  # type: ignore
+            b[v] = b[v].astype("datetime64[ns]").astype("float") / 1e9  # type: ignore
 
 
 def _check_global_attrs(a: xr.Dataset, b: xr.Dataset) -> None:
