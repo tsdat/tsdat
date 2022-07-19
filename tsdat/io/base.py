@@ -3,6 +3,7 @@ import contextlib
 import xarray as xr
 from datetime import datetime
 from pathlib import Path
+from io import BytesIO
 from typing import Any, Dict, Generator, List, Optional, Pattern, Union
 from abc import ABC, abstractmethod
 from ..utils import ParameterizedClass
@@ -66,7 +67,9 @@ class DataReader(ParameterizedClass, ABC):
     ---------------------------------------------------------------------------------"""
 
     @abstractmethod
-    def read(self, input_key: str) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
+    def read(
+        self, input_key: Union[str, BytesIO]
+    ) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
         """-----------------------------------------------------------------------------
         Reads data given an input key.
 
@@ -89,6 +92,30 @@ class DataReader(ParameterizedClass, ABC):
 
         -----------------------------------------------------------------------------"""
         ...
+
+
+class ArchiveReader(DataReader):
+    """------------------------------------------------------------------------------------
+    Base class for DataReader objects that read data from archives.
+    Subclasses of `ArchiveHandler` may define additional parameters to support various
+    methods of unpacking archived data.
+
+    ------------------------------------------------------------------------------------"""
+
+    _handlers: List[DataReader] = []
+    """A list of DataReaders that the ArchiveHandler should use."""
+
+    _exclude: str = ""
+
+    def __init__(self, parameters: Dict = None):  # type: ignore
+        super().__init__(parameters=parameters)
+        self._handlers = list()
+
+        # Naively merge a list of regex patterns to exclude certain files from being
+        # read. By default we exclude files that macOS creates when zipping a folder.
+        exclude = [".*\\_\\_MACOSX/.*", ".*\\.DS_Store"]
+        exclude.extend(self.parameters.get("exclude", []))
+        self._exclude = "(?:% s)" % "|".join(exclude)
 
 
 class DataWriter(ParameterizedClass, ABC):

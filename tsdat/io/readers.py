@@ -1,4 +1,3 @@
-# TODO: Implement ZipReader
 import pandas as pd
 import xarray as xr
 import re
@@ -6,14 +5,16 @@ import tarfile
 from io import BytesIO
 from zipfile import ZipFile
 from pydantic import BaseModel, Extra
-from typing import Any, Dict, List, Union
-from .base import DataReader
+from typing import Any, Dict, Union
+from .base import DataReader, ArchiveReader
 
 __all__ = [
     "NetCDFReader",
     "CSVReader",
     "ParquetReader",
     "ZarrReader",
+    "TarReader",
+    "ZipReader",
 ]
 
 
@@ -47,7 +48,6 @@ class CSVReader(DataReader):
 
     def read(self, input_key: Union[str, BytesIO]) -> xr.Dataset:
         df: pd.DataFrame = pd.read_csv(input_key, **self.parameters.read_csv_kwargs)  # type: ignore
-        # df.to_parquet()
         return xr.Dataset.from_dataframe(df, **self.parameters.from_dataframe_kwargs)
 
 
@@ -87,71 +87,7 @@ class ZarrReader(DataReader):
         return xr.open_zarr(input_key, **self.parameters.open_zarr_kwargs)  # type: ignore
 
 
-class ArchiveHandler(DataReader):
-    """------------------------------------------------------------------------------------
-    Base class for DataReader objects that read data from archives.
-
-    This class, and any classes derived from it, require a `handlers` section in the
-    parameters given to this `DataReader` from the storage configuration file. The
-    structure of the `handlers` section underneath an `ArchiveHandler` should mirror the
-    structure of its parent `handlers` section. To illustrate, consider the following
-    configuration block for the `ZipHandler` class:
-
-    .. code-block:: yaml
-
-        file_handlers:
-          input:
-            zip:
-              file_pattern: '.*\\.zip'
-              classname: "tsdat.io.handlers.ZipHandler"
-              parameters:
-                # The handlers section tells the ArchiveHandler which DataReaders should be
-                # used to handle the unpacked files.
-                handlers:
-                  csv:
-                    file_pattern: '.*\\.csv'
-                    classname: tsdat.io.handlers.CsvHandler
-                    parameters:  # Parameters specific to tsdat.io.handlers.CsvHandler
-                      sep: '\\t'
-                # Pattern(s) used to exclude certain files in the archive from being handled. This
-                # parameter is optional, and the default value is shown below:
-                exclude: ['.*\\_\\_MACOSX/.*', '.*\\.DS_Store']
-
-    All `ArchiveHandler` classes also allow an optional `exclude` parameter, which is used
-    to filter out unpacked files matching regex patterns defined by the `exclude`
-    parameter.
-
-    Subclasses of `ArchiveHandler` may define additional parameters to support various
-    methods of unpacking archived data.
-
-    ------------------------------------------------------------------------------------"""
-
-    _registry: HandlerRegistry = None
-    _handlers: List[DataReader] = None
-    """A list of DataReaders that the ArchiveHandler should use."""
-
-    _exclude: str = None
-
-    def __init__(self, parameters: Dict = None):
-        super().__init__(parameters=parameters)
-        self._registry = HandlerRegistry()
-        self._handlers = list()
-
-        for handler_dict in self.parameters["handlers"].values():
-            child: DataReader = instantiate_handler(handler_desc=handler_dict)
-            self._handlers.append(child)
-            self._registry.register_file_handler(
-                method="read", patterns=handler_dict["file_pattern"], handler=child,
-            )
-
-        # Naively merge a list of regex patterns to exclude certain files from being
-        # read. By default we exclude files that macOS creates when zipping a folder.
-        exclude = [".*\\_\\_MACOSX/.*", ".*\\.DS_Store"]
-        exclude.extend(self.parameters.get("exclude", []))
-        self._exclude = "(?:% s)" % "|".join(exclude)
-
-
-class TarHandler(ArchiveHandler):
+class TarReader(ArchiveReader):
     """------------------------------------------------------------------------------------
     DataReader for reading from a tarred archive. Writing to this format is not supported.
 
@@ -162,34 +98,33 @@ class TarHandler(ArchiveHandler):
 
     .. code-block:: yaml
 
-        file_handlers:
-          input:
+        readers:
+          .*:
             tar:
               file_pattern: '.*\\.tar'
-              classname: "tsdat.io.handlers.TarHandler"
+              classname: "tsdat.io.readers.TarHandler"
               parameters:
                 # Parameters to specify how the TarHandler should read/unpack the archive.
-                read:
-                  # Parameters here are passed to the Python open() method as kwargs. The
-                  # default value is shown below.
-                  open:
-                    mode: "rb"
+                # Parameters here are passed to the Python open() method as kwargs. The
+                # default value is shown below.
+                open_tar_kwargs:
+                  mode: "rb"
 
-                  # Parameters here are passed to tarfile.open() as kwargs. Useful for
-                  # specifying the system encoding or compression algorithm to use for
-                  # unpacking the archive. These are optional.
-                  # tarfile:
-                    # mode: "r:gz"
+                # Parameters here are passed to tarfile.open() as kwargs. Useful for
+                # specifying the system encoding or compression algorithm to use for
+                # unpacking the archive. These are optional.
+                read_tar_kwargs:
+                  mode: "r:gz"
 
 
-                # The handlers section tells the TarHandler which DataReaders should be
+                # The readers section tells the TarHandler which DataReaders should be
                 # used to handle the unpacked files.
-                handlers:
+                readers:
                   csv:
-                    file_pattern: '.*\\.csv'
-                    classname: tsdat.io.handlers.CsvHandler
-                    parameters:  # Parameters specific to tsdat.io.handlers.CsvHandler
-                      sep: '\\t'
+                    classname: tsdat.io.readers.CSVReader
+                    parameters:  # Parameters specific to tsdat.io.readers.CSVReader
+                      read_csv_kwargs:
+                        sep: '\\t'
 
                 # Pattern(s) used to exclude certain files in the archive from being handled.
                 # This parameter is optional, and the default value is shown below:
@@ -200,6 +135,7 @@ class TarHandler(ArchiveHandler):
     class Parameters(BaseModel, extra=Extra.forbid):
         open_tar_kwargs: Dict[str, Any] = {}
         read_tar_kwargs: Dict[str, Any] = {}
+        readers: Dict[str, Any] = {}
 
     parameters: Parameters = Parameters()
 
@@ -221,39 +157,33 @@ class TarHandler(ArchiveHandler):
             Dict[str, xr.Dataset]: A mapping of {label: xr.Dataset}.
 
         ------------------------------------------------------------------------------------"""
-        # assert isinstance(input_key, str), "Must provide name if file is not a str."
-        label = input_key
-        output: Dict[str, xr.Dataset] = dict()
+
+        output = xr.Dataset()
 
         # If we are reading from a string / filepath then add option to specify more
         # parameters for opening (i.e., mode or encoding options)
         if isinstance(input_key, str):
             open_params = dict(mode="rb")
             open_params.update(self.parameters.open_tar_kwargs)
-            fileobj = open(input_key, **open_params)
+            fileobj = open(input_key, **open_params)  # type: ignore
         else:
             fileobj = input_key
 
-        tar = tarfile.open(fileobj=fileobj, **self.parameters.read_tar_kwargs)
+        tar = tarfile.open(fileobj=fileobj, **self.parameters.read_tar_kwargs)  # type: ignore
         for info_obj in tar:
             filename = info_obj.name
-            file_label = f"{label}::{filename}"
             if re.match(self._exclude, filename):
                 continue
-            handler: DataReader = self._registry._get_handler(
-                name=filename, method="read",
-            )
-            if handler:
-                tar_bytes = BytesIO(tar.extractfile(filename).read())
-                data = handler.read(input_key=tar_bytes, name=file_label)
-                if isinstance(data, xr.Dataset):
-                    data = {file_label: data}
-                output.update(data)
+            reader: DataReader = self.parameters.readers.get("classname", None)
+            if reader:
+                tar_bytes = BytesIO(tar.extractfile(filename).read())  # type: ignore
+                data = reader.read(input_key=tar_bytes)
+                output = xr.merge(output, data)  # type: ignore
 
         return output
 
 
-class ZipHandler(ArchiveHandler):
+class ZipReader(ArchiveReader):
     """------------------------------------------------------------------------------------
     DataReader for reading from a zipped archive. Writing to this format is not supported.
 
@@ -264,34 +194,33 @@ class ZipHandler(ArchiveHandler):
 
     .. code-block:: yaml
 
-        file_handlers:
-          input:
+        readers:
+          .*:
             zip:
               file_pattern: '.*\\.zip'
-              classname: "tsdat.io.handlers.ZipHandler"
+              classname: "tsdat.io.readers.ZipHandler"
               parameters:
                 # Parameters to specify how the ZipHandler should read/unpack the archive.
-                read:
-                  # Parameters here are passed to the Python open() method as kwargs. The
-                  # default value is shown below.
-                  open:
-                    mode: "rb"
+                # Parameters here are passed to the Python open() method as kwargs. The
+                # default value is shown below.
+                open_zip_kwargs:
+                mode: "rb"
 
-                  # Parameters here are passed to zipfile.ZipFile.open() as kwargs. Useful
-                  # for specifying the system encoding or compression algorithm to use for
-                  # unpacking the archive. These are optional.
-                  # zipfile:
-                    # mode: "r"
+                # Parameters here are passed to zipfile.ZipFile.open() as kwargs. Useful
+                # for specifying the system encoding or compression algorithm to use for
+                # unpacking the archive. These are optional.
+                read_zip_kwargs:
+                mode: "r"
 
 
-                # The handlers section tells the ZipHandler which DataReaders should be
+                # The readers section tells the ZipHandler which DataReaders should be
                 # used to handle the unpacked files.
-                handlers:
+                readers:
                   csv:
-                    file_pattern: '.*\\.csv'
-                    classname: tsdat.io.handlers.CsvHandler
-                    parameters:  # Parameters specific to tsdat.io.handlers.CsvHandler
-                      sep: '\\t'
+                    classname: tsdat.io.readers.CSVReader
+                    parameters:  # Parameters specific to tsdat.io.readers.CsvHandler
+                      read_csv_kwargs:
+                        sep: '\\t'
 
                 # Pattern(s) used to exclude certain files in the archive from being handled.
                 # This parameter is optional, and the default value is shown below:
@@ -302,6 +231,7 @@ class ZipHandler(ArchiveHandler):
     class Parameters(BaseModel, extra=Extra.forbid):
         open_zip_kwargs: Dict[str, Any] = {}
         read_zip_kwargs: Dict[str, Any] = {}
+        readers: Dict[str, Any] = {}
 
     parameters: Parameters = Parameters()
 
@@ -323,11 +253,7 @@ class ZipHandler(ArchiveHandler):
             Dict[str, xr.Dataset]: A mapping of {label: xr.Dataset}.
 
         ------------------------------------------------------------------------------------"""
-        # assert isinstance(input_key, str), "Must provide name if file is not a str."
-
-        label = input_key
-
-        output: Dict[str, xr.Dataset] = dict()
+        output = xr.Dataset()
 
         # If we are reading from a string / filepath then add option to specify more
         # parameters for opening (i.e., mode or encoding options)
@@ -335,28 +261,20 @@ class ZipHandler(ArchiveHandler):
         if isinstance(input_key, str):
             open_params = dict(mode="rb")
             open_params.update(self.parameters.open_zip_kwargs)
-            fileobj = open(input_key, **open_params)
+            fileobj = open(input_key, **open_params)  # type: ignore
         else:
             fileobj = input_key
 
-        zip = ZipFile(file=fileobj, **self.parameters.read_zip_kwargs)
+        zip = ZipFile(file=fileobj, **self.parameters.read_zip_kwargs)  # type: ignore
 
         for filename in zip.namelist():
-            file_label = f"{label}::{filename}"
-
             if re.match(self._exclude, filename):
                 continue
 
-            handler: DataReader = self._registry._get_handler(
-                name=filename, method="read",
-            )
-            if handler:
+            reader: DataReader = self.parameters.readers.get("classname", None)
+            if reader:
                 zip_bytes = BytesIO(zip.read(filename))
-                data = handler.read(input_key=zip_bytes, name=file_label)
-
-                if isinstance(data, xr.Dataset):
-                    data = {file_label: data}
-
-                output.update(data)
+                data = reader.read(input_key=zip_bytes)
+                output = xr.merge(output, data)  # type: ignore
 
         return output
