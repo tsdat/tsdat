@@ -91,9 +91,9 @@ class TarReader(ArchiveReader):
     """------------------------------------------------------------------------------------
     DataReader for reading from a tarred archive. Writing to this format is not supported.
 
-    This class requires a that `handlers` be specified in the parameters section of the
-    storage configuration file. The structure of the `handlers` section should mirror the
-    structure of its parent `handlers` section. To illustrate, consider the following
+    This class requires a that `readers be specified in the parameters section of the
+    storage configuration file. The structure of the `readers section should mirror the
+    structure of its parent `readers section. To illustrate, consider the following
     configuration block:
 
     .. code-block:: yaml
@@ -102,9 +102,9 @@ class TarReader(ArchiveReader):
           .*:
             tar:
               file_pattern: '.*\\.tar'
-              classname: "tsdat.io.readers.TarHandler"
+              classname: "tsdat.io.readers.TarReader"
               parameters:
-                # Parameters to specify how the TarHandler should read/unpack the archive.
+                # Parameters to specify how the TarReader should read/unpack the archive.
                 # Parameters here are passed to the Python open() method as kwargs. The
                 # default value is shown below.
                 open_tar_kwargs:
@@ -117,7 +117,7 @@ class TarReader(ArchiveReader):
                   mode: "r:gz"
 
 
-                # The readers section tells the TarHandler which DataReaders should be
+                # The readers section tells the TarReader which DataReaders should be
                 # used to handle the unpacked files.
                 readers:
                   csv:
@@ -187,9 +187,9 @@ class ZipReader(ArchiveReader):
     """------------------------------------------------------------------------------------
     DataReader for reading from a zipped archive. Writing to this format is not supported.
 
-    This class requires a that `handlers` be specified in the parameters section of the
-    storage configuration file. The structure of the `handlers` section should mirror the
-    structure of its parent `handlers` section. To illustrate, consider the following
+    This class requires a that `readers be specified in the parameters section of the
+    storage configuration file. The structure of the `readers section should mirror the
+    structure of its parent `readers section. To illustrate, consider the following
     configuration block:
 
     .. code-block:: yaml
@@ -198,9 +198,9 @@ class ZipReader(ArchiveReader):
           .*:
             zip:
               file_pattern: '.*\\.zip'
-              classname: "tsdat.io.readers.ZipHandler"
+              classname: "tsdat.io.readers.ZipReader"
               parameters:
-                # Parameters to specify how the ZipHandler should read/unpack the archive.
+                # Parameters to specify how the ZipReader should read/unpack the archive.
                 # Parameters here are passed to the Python open() method as kwargs. The
                 # default value is shown below.
                 open_zip_kwargs:
@@ -213,12 +213,12 @@ class ZipReader(ArchiveReader):
                 mode: "r"
 
 
-                # The readers section tells the ZipHandler which DataReaders should be
-                # used to handle the unpacked files.
+                # The readers section tells the ZipReaders which DataReaders should be
+                # used to read the unpacked files.
                 readers:
                   csv:
                     classname: tsdat.io.readers.CSVReader
-                    parameters:  # Parameters specific to tsdat.io.readers.CsvHandler
+                    parameters:  # Parameters specific to tsdat.io.readers.CsvReader
                       read_csv_kwargs:
                         sep: '\\t'
 
