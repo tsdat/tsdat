@@ -102,20 +102,16 @@ class ArchiveReader(DataReader):
 
     ------------------------------------------------------------------------------------"""
 
-    _handlers: List[DataReader] = []
-    """A list of DataReaders that the ArchiveHandler should use."""
-
-    _exclude: str = ""
+    exclude: str = ""
 
     def __init__(self, parameters: Dict = None):  # type: ignore
         super().__init__(parameters=parameters)
-        self._handlers = list()
 
         # Naively merge a list of regex patterns to exclude certain files from being
         # read. By default we exclude files that macOS creates when zipping a folder.
         exclude = [".*\\_\\_MACOSX/.*", ".*\\.DS_Store"]
-        exclude.extend(self.parameters.get("exclude", []))
-        self._exclude = "(?:% s)" % "|".join(exclude)
+        exclude.extend(getattr(self.parameters, "exclude", []))
+        self.parameters.exclude = "(?:% s)" % "|".join(exclude)
 
 
 class DataWriter(ParameterizedClass, ABC):

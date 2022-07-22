@@ -5,7 +5,7 @@ import tarfile
 from io import BytesIO
 from zipfile import ZipFile
 from pydantic import BaseModel, Extra
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, List
 from .base import DataReader, ArchiveReader
 
 __all__ = [
@@ -136,6 +136,7 @@ class TarReader(ArchiveReader):
         open_tar_kwargs: Dict[str, Any] = {}
         read_tar_kwargs: Dict[str, Any] = {}
         readers: Dict[str, Any] = {}
+        exclude: List[str] = []
 
     parameters: Parameters = Parameters()
 
@@ -172,7 +173,7 @@ class TarReader(ArchiveReader):
         tar = tarfile.open(fileobj=fileobj, **self.parameters.read_tar_kwargs)  # type: ignore
         for info_obj in tar:
             filename = info_obj.name
-            if re.match(self._exclude, filename):
+            if re.match(self.parameters.exclude, filename):
                 continue
             reader: DataReader = self.parameters.readers.get("classname", None)
             if reader:
@@ -204,23 +205,22 @@ class ZipReader(ArchiveReader):
                 # Parameters here are passed to the Python open() method as kwargs. The
                 # default value is shown below.
                 open_zip_kwargs:
-                mode: "rb"
+                  mode: "rb"
 
                 # Parameters here are passed to zipfile.ZipFile.open() as kwargs. Useful
                 # for specifying the system encoding or compression algorithm to use for
                 # unpacking the archive. These are optional.
                 read_zip_kwargs:
-                mode: "r"
+                  mode: "r"
 
 
                 # The readers section tells the ZipReaders which DataReaders should be
                 # used to read the unpacked files.
                 readers:
-                  csv:
-                    classname: tsdat.io.readers.CSVReader
-                    parameters:  # Parameters specific to tsdat.io.readers.CsvReader
-                      read_csv_kwargs:
-                        sep: '\\t'
+                  classname: tsdat.io.readers.CSVReader
+                  parameters:  # Parameters specific to tsdat.io.readers.CsvReader
+                    read_csv_kwargs:
+                    sep: '\\t'
 
                 # Pattern(s) used to exclude certain files in the archive from being handled.
                 # This parameter is optional, and the default value is shown below:
@@ -232,6 +232,7 @@ class ZipReader(ArchiveReader):
         open_zip_kwargs: Dict[str, Any] = {}
         read_zip_kwargs: Dict[str, Any] = {}
         readers: Dict[str, Any] = {}
+        exclude: List[str] = []
 
     parameters: Parameters = Parameters()
 
@@ -268,7 +269,7 @@ class ZipReader(ArchiveReader):
         zip = ZipFile(file=fileobj, **self.parameters.read_zip_kwargs)  # type: ignore
 
         for filename in zip.namelist():
-            if re.match(self._exclude, filename):
+            if re.match(self.parameters.exclude, filename):
                 continue
 
             reader: DataReader = self.parameters.readers.get("classname", None)
