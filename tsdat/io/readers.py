@@ -272,10 +272,11 @@ class ZipReader(ArchiveReader):
             if re.match(self.parameters.exclude, filename):
                 continue
 
-            reader: DataReader = self.parameters.readers.get("classname", None)
-            if reader:
-                zip_bytes = BytesIO(zip.read(filename))
-                data = reader.read(input_key=zip_bytes)
-                output = xr.merge(output, data)  # type: ignore
+            for key in self.parameters.readers.keys():
+                reader: DataReader = self.parameters.readers.get(key, None)
+                if reader:
+                    zip_bytes = BytesIO(zip.read(filename))
+                    data = reader.read(input_key=zip_bytes)
+                    output = xr.merge((output, data))  # type: ignore
 
         return output
