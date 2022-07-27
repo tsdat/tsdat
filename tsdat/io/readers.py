@@ -27,8 +27,8 @@ class NetCDFReader(DataReader):
 
     parameters: Dict[str, Any] = {}
 
-    def read(self, input_key: Union[str, BytesIO]) -> xr.Dataset:
-        return xr.open_dataset(input_key, **self.parameters)  # type: ignore
+    def read(self, file: Union[str, BytesIO], name: str = "") -> xr.Dataset:
+        return xr.open_dataset(file, **self.parameters)  # type: ignore
 
 
 class CSVReader(DataReader):
@@ -46,8 +46,8 @@ class CSVReader(DataReader):
 
     parameters: Parameters = Parameters()
 
-    def read(self, input_key: Union[str, BytesIO]) -> xr.Dataset:
-        df: pd.DataFrame = pd.read_csv(input_key, **self.parameters.read_csv_kwargs)  # type: ignore
+    def read(self, file: Union[str, BytesIO], name: str = "") -> xr.Dataset:
+        df: pd.DataFrame = pd.read_csv(file, **self.parameters.read_csv_kwargs)  # type: ignore
         return xr.Dataset.from_dataframe(df, **self.parameters.from_dataframe_kwargs)
 
 
@@ -66,8 +66,8 @@ class ParquetReader(DataReader):
 
     parameters: Parameters = Parameters()
 
-    def read(self, input_key: Union[str, BytesIO]) -> xr.Dataset:
-        df: pd.DataFrame = pd.read_parquet(input_key, **self.parameters.read_parquet_kwargs)  # type: ignore
+    def read(self, file: Union[str, BytesIO], name: str = "") -> xr.Dataset:
+        df: pd.DataFrame = pd.read_parquet(file, **self.parameters.read_parquet_kwargs)  # type: ignore
         return xr.Dataset.from_dataframe(df, **self.parameters.from_dataframe_kwargs)
 
 
@@ -83,8 +83,8 @@ class ZarrReader(DataReader):
 
     parameters: Parameters = Parameters()
 
-    def read(self, input_key: Union[str, BytesIO]) -> xr.Dataset:
-        return xr.open_zarr(input_key, **self.parameters.open_zarr_kwargs)  # type: ignore
+    def read(self, file: Union[str, BytesIO], name: str = "") -> xr.Dataset:
+        return xr.open_zarr(file, **self.parameters.open_zarr_kwargs)  # type: ignore
 
 
 class TarReader(ArchiveReader):
@@ -140,7 +140,7 @@ class TarReader(ArchiveReader):
 
     parameters: Parameters = Parameters()
 
-    def read(self, input_key: Union[str, BytesIO]) -> xr.Dataset:
+    def read(self, file: Union[str, BytesIO], name: str = "") -> xr.Dataset:
         """------------------------------------------------------------------------------------
         Extracts the file into memory and uses registered `DataReaders` to read each relevant
         extracted file into its own xarray Dataset object. Returns a mapping like
@@ -163,12 +163,12 @@ class TarReader(ArchiveReader):
 
         # If we are reading from a string / filepath then add option to specify more
         # parameters for opening (i.e., mode or encoding options)
-        if isinstance(input_key, str):
+        if isinstance(file, str):
             open_params = dict(mode="rb")
             open_params.update(self.parameters.open_tar_kwargs)
-            fileobj = open(input_key, **open_params)  # type: ignore
+            fileobj = open(file, **open_params)  # type: ignore
         else:
-            fileobj = input_key
+            fileobj = file
 
         tar = tarfile.open(fileobj=fileobj, **self.parameters.read_tar_kwargs)  # type: ignore
         for info_obj in tar:
@@ -178,7 +178,7 @@ class TarReader(ArchiveReader):
             reader: DataReader = self.parameters.readers.get("classname", None)
             if reader:
                 tar_bytes = BytesIO(tar.extractfile(filename).read())  # type: ignore
-                data = reader.read(input_key=tar_bytes)
+                data = reader.read(file=tar_bytes, name=filename)
                 output = xr.merge(output, data)  # type: ignore
 
         return output
@@ -236,7 +236,7 @@ class ZipReader(ArchiveReader):
 
     parameters: Parameters = Parameters()
 
-    def read(self, input_key: Union[str, BytesIO]) -> xr.Dataset:
+    def read(self, file: Union[str, BytesIO], name: str = "") -> xr.Dataset:
         """------------------------------------------------------------------------------------
         Extracts the file into memory and uses registered `DataReaders` to read each relevant
         extracted file into its own xarray Dataset object. Returns a mapping like
@@ -259,12 +259,12 @@ class ZipReader(ArchiveReader):
         # If we are reading from a string / filepath then add option to specify more
         # parameters for opening (i.e., mode or encoding options)
         fileobj = None
-        if isinstance(input_key, str):
+        if isinstance(file, str):
             open_params = dict(mode="rb")
             open_params.update(self.parameters.open_zip_kwargs)
-            fileobj = open(input_key, **open_params)  # type: ignore
+            fileobj = open(file, **open_params)  # type: ignore
         else:
-            fileobj = input_key
+            fileobj = file
 
         zip = ZipFile(file=fileobj, **self.parameters.read_zip_kwargs)  # type: ignore
 
@@ -276,7 +276,7 @@ class ZipReader(ArchiveReader):
                 reader: DataReader = self.parameters.readers.get(key, None)
                 if reader:
                     zip_bytes = BytesIO(zip.read(filename))
-                    data = reader.read(input_key=zip_bytes)
+                    data = reader.read(file=zip_bytes, name=filename)
                     output = xr.merge((output, data))  # type: ignore
 
         return output

@@ -68,7 +68,7 @@ class DataReader(ParameterizedClass, ABC):
 
     @abstractmethod
     def read(
-        self, input_key: Union[str, BytesIO]
+        self, file: Union[str, BytesIO], name: str = "",
     ) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
         """-----------------------------------------------------------------------------
         Reads data given an input key.
