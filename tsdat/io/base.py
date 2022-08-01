@@ -3,7 +3,6 @@ import contextlib
 import xarray as xr
 from datetime import datetime
 from pathlib import Path
-from io import BytesIO
 from typing import Any, Dict, Generator, List, Optional, Pattern, Union
 from abc import ABC, abstractmethod
 from ..utils import ParameterizedClass
@@ -67,9 +66,7 @@ class DataReader(ParameterizedClass, ABC):
     ---------------------------------------------------------------------------------"""
 
     @abstractmethod
-    def read(
-        self, file: Union[str, BytesIO], name: str = "",
-    ) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
+    def read(self, input_key: str,) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
         """-----------------------------------------------------------------------------
         Reads data given an input key.
 
