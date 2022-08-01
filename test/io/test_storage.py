@@ -6,8 +6,13 @@ import pandas as pd
 from pathlib import Path
 from pytest import fixture
 from datetime import datetime
+<<<<<<< HEAD
 from tsdat.io.handlers import NetCDFHandler
 from tsdat.io.storage import FileSystem, S3Storage
+=======
+from tsdat.io.handlers import NetCDFHandler, ZarrHandler
+from tsdat.io.storage import FileSystem, ZarrLocalStorage
+>>>>>>> 2a8e34df030ff6f6b7319dbcf5e8d6b07c6c3e82
 from tsdat.testing import assert_close
 
 
@@ -38,8 +43,23 @@ def file_storage():
         parameters={"storage_root": storage_root},  # type: ignore
         handler=NetCDFHandler(),
     )
-    yield storage
-    shutil.rmtree(storage.parameters.storage_root)
+    try:
+        yield storage
+    finally:
+        shutil.rmtree(storage.parameters.storage_root)
+
+
+@fixture
+def zarr_storage():
+    storage_root = Path.cwd() / "test/storage_root"
+    storage = ZarrLocalStorage(
+        parameters={"storage_root": storage_root},  # type: ignore
+        handler=ZarrHandler(),
+    )
+    try:
+        yield storage
+    finally:
+        shutil.rmtree(storage.parameters.storage_root)
 
 
 @fixture
@@ -73,6 +93,27 @@ def test_filesystem_save_and_fetch_data(
 
     # Fetch
     dataset = file_storage.fetch_data(
+        start=datetime.fromisoformat("2022-04-05 00:00:00"),
+        end=datetime.fromisoformat("2022-04-06 00:00:00"),
+        datastream="sgp.testing-storage.a0",
+    )
+    assert_close(dataset, expected)
+
+
+def test_zarr_storage_save_and_fetch_data(
+    zarr_storage: ZarrLocalStorage, sample_dataset: xr.Dataset
+):
+    expected = sample_dataset.copy(deep=True)  # type: ignore
+
+    # Save
+    zarr_storage.save_data(sample_dataset)
+    expected_path = Path(
+        zarr_storage.parameters.storage_root / "data" / "sgp.testing-storage.a0.zarr"
+    )
+    assert expected_path.is_dir()
+
+    # Fetch
+    dataset = zarr_storage.fetch_data(
         start=datetime.fromisoformat("2022-04-05 00:00:00"),
         end=datetime.fromisoformat("2022-04-06 00:00:00"),
         datastream="sgp.testing-storage.a0",
@@ -130,3 +171,28 @@ def test_filesystem_save_and_fetch_data_s3(
         datastream="sgp.testing-storage.a0",
     )
     assert_close(dataset, expected)
+
+def test_zarr_storage_saves_ancillary_files(zarr_storage: ZarrLocalStorage):
+    expected_filepath = (
+        zarr_storage.parameters.storage_root
+        / "ancillary"
+        / "sgp.testing-storage.a0"
+        / "ancillary_file.txt"
+    )
+
+    # Upload directly
+    tmp_dir = tempfile.TemporaryDirectory()
+    ancillary_filepath = Path(tmp_dir.name) / "ancillary_file.txt"
+    ancillary_filepath.write_text("foobar")
+    zarr_storage.save_ancillary_file(
+        filepath=ancillary_filepath, datastream="sgp.testing-storage.a0"
+    )
+    assert expected_filepath.is_file()
+    os.remove(expected_filepath)
+
+    # Using context manager
+    with zarr_storage.uploadable_dir(datastream="sgp.testing-storage.a0") as tmp_dir:
+        ancillary_filepath = tmp_dir / "ancillary_file.txt"
+        ancillary_filepath.write_text("foobar")
+    assert expected_filepath.is_file()
+    os.remove(expected_filepath)

@@ -92,6 +92,10 @@ def decode_cf(dataset: xr.Dataset) -> xr.Dataset:
             del variable.attrs["units"]
             variable.encoding["units"] = units  # type: ignore
 
+        # If the _FillValue is already encoded, remove it since it can't be overwritten per xarray
+        if "_FillValue" in variable.encoding:  # type: ignore
+            del variable.encoding["_FillValue"]  # type: ignore
+
     # Leaving the "dtype" entry in the encoding for datetime64 variables causes a crash
     # when saving the dataset. Not fixed by: https://github.com/pydata/xarray/pull/4684
     ds: xr.Dataset = xr.decode_cf(dataset)  # type: ignore

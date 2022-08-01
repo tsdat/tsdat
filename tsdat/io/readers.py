@@ -1,13 +1,16 @@
 # TODO: Implement ZipReader
-# TODO: Implement ZarrReader
-
 import pandas as pd
 import xarray as xr
 from pydantic import BaseModel, Extra
 from typing import Any, Dict
 from .base import DataReader
 
-__all__ = ["NetCDFReader", "CSVReader", "ParquetReader"]
+__all__ = [
+    "NetCDFReader",
+    "CSVReader",
+    "ParquetReader",
+    "ZarrReader",
+]
 
 
 class NetCDFReader(DataReader):
@@ -62,3 +65,19 @@ class ParquetReader(DataReader):
     def read(self, input_key: str) -> xr.Dataset:
         df: pd.DataFrame = pd.read_parquet(input_key, **self.parameters.read_parquet_kwargs)  # type: ignore
         return xr.Dataset.from_dataframe(df, **self.parameters.from_dataframe_kwargs)
+
+
+class ZarrReader(DataReader):
+    """---------------------------------------------------------------------------------
+    Uses xarray's Zarr capabilities to read a Zarr archive and extract its contents into
+    an xarray Dataset object.
+
+    ---------------------------------------------------------------------------------"""
+
+    class Parameters(BaseModel, extra=Extra.forbid):
+        open_zarr_kwargs: Dict[str, Any] = {}
+
+    parameters: Parameters = Parameters()
+
+    def read(self, input_key: str) -> xr.Dataset:
+        return xr.open_zarr(input_key, **self.parameters.open_zarr_kwargs)  # type: ignore

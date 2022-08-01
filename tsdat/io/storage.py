@@ -8,7 +8,7 @@ from pydantic import BaseSettings, validator
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from .base import Storage
-from .handlers import FileHandler
+from .handlers import FileHandler, ZarrHandler
 from ..utils import get_filename
 
 __all__ = ["FileSystem"]
@@ -188,3 +188,92 @@ class S3Storage(FileSystem):
     def save_ancillary_file(self, filepath: Path, datastream: str):
         pass
         # return super().save_ancillary_file(filepath, datastream)
+
+class ZarrLocalStorage(Storage):
+    """---------------------------------------------------------------------------------
+    Handles data storage and retrieval for zarr archives on a local filesystem.
+
+    Zarr is a special format that writes chunked data to a number of files underneath
+    a given directory. This distribution of data into chunks and distinct files makes
+    zarr an extremely well-suited format for quickly storing and retrieving large
+    quantities of data.
+
+    Args:
+        parameters (Parameters): File-system specific parameters, such as the root path
+            to where the Zarr archives should be saved, or additional keyword arguments
+            to specific functions used by the storage API. See the Parameters class for
+            more details.
+
+        handler (ZarrHandler): The ZarrHandler class that should be used to handle data
+            I/O within the storage API.
+
+    ---------------------------------------------------------------------------------"""
+
+    class Parameters(BaseSettings):
+        storage_root: Path = Path.cwd() / "storage" / "root"
+        """The path on disk where data and ancillary files will be saved to. Defaults to
+        the `storage/root` folder in the active working directory. The directory is
+        created as this parameter is set, if the directory does not already exist."""
+
+    handler: ZarrHandler = ZarrHandler()
+    parameters: Parameters = Parameters()
+
+    def save_data(self, dataset: xr.Dataset):
+        """-----------------------------------------------------------------------------
+        Saves a dataset to the storage area.
+
+        At a minimum, the dataset must have a 'datastream' global attribute and must
+        have a 'time' variable with a np.datetime64-like data type.
+
+        Args:
+            dataset (xr.Dataset): The dataset to save.
+
+        -----------------------------------------------------------------------------"""
+        datastream = dataset.attrs["datastream"]
+        dataset_path = self._get_dataset_path(datastream)
+        dataset_path.mkdir(exist_ok=True, parents=True)
+        self.handler.writer.write(dataset, dataset_path)
+        logger.info("Saved %s dataset to %s", datastream, dataset_path.as_posix())
+
+    def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
+        """-----------------------------------------------------------------------------
+        Fetches data for a given datastream between a specified time range.
+
+        Args:
+            start (datetime): The minimum datetime to fetch (inclusive).
+            end (datetime): The maximum datetime to fetch (exclusive).
+            datastream (str): The datastream id to search for.
+
+        Returns:
+            xr.Dataset: A dataset containing all the data in the storage area that spans
+            the specified datetimes.
+
+        -----------------------------------------------------------------------------"""
+        datastream_path = self._get_dataset_path(datastream)
+        full_dataset = self.handler.reader.read(datastream_path.as_posix())
+        dataset_in_range = full_dataset.sel(time=slice(start, end))
+        return dataset_in_range.compute()  # type: ignore
+
+    def save_ancillary_file(self, filepath: Path, datastream: str):
+        """-----------------------------------------------------------------------------
+        Saves an ancillary filepath to the datastream's ancillary storage area.
+
+        Args:
+            filepath (Path): The path to the ancillary file.
+            datastream (str): The datastream that the file is related to.
+
+        -----------------------------------------------------------------------------"""
+        ancillary_filepath = self._get_ancillary_filepath(filepath, datastream)
+        ancillary_filepath.parent.mkdir(exist_ok=True, parents=True)
+        saved_filepath = shutil.copy2(filepath, ancillary_filepath)
+        logger.info("Saved ancillary file to: %s", saved_filepath)
+
+    def _get_dataset_path(self, datastream: str) -> Path:
+        datastream_dir = self.parameters.storage_root / "data" / datastream
+        extension = self.handler.writer.file_extension
+        return datastream_dir.parent / (datastream_dir.name + extension)
+
+    def _get_ancillary_filepath(self, filepath: Path, datastream: str) -> Path:
+        anc_datastream_dir = self.parameters.storage_root / "ancillary" / datastream
+        return anc_datastream_dir / filepath.name
+

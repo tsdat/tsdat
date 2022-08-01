@@ -9,8 +9,7 @@ Table of Contents
 -----------------
 
 .. toctree::
-   :maxdepth: 2
-	
+
    about
    getting_started
    examples_and_tutorials

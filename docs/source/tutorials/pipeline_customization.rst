@@ -295,7 +295,7 @@ the required "valid_range" and "_FillValue" attributes like the following:
     attrs:
       units: "m"
       valid_range: [-3, 3] # attribute for the "CheckValidMin" and "CheckValidMax" functions
-      _FillValue: 999      # the "bad data" value
+      _FillValue: -999      # the "bad data" value
 
 
 Now back to the tutorial steps:
