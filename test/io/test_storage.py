@@ -7,7 +7,7 @@ from pathlib import Path
 from pytest import fixture
 from datetime import datetime
 from tsdat.io.handlers import NetCDFHandler
-from tsdat.io.storage import FileSystem
+from tsdat.io.storage import FileSystem, S3Storage
 from tsdat.testing import assert_close
 
 
@@ -34,6 +34,20 @@ def sample_dataset() -> xr.Dataset:
 @fixture
 def file_storage():
     storage_root = Path.cwd() / "test/storage_root"
+    storage = FileSystem(
+        parameters={"storage_root": storage_root},  # type: ignore
+        handler=NetCDFHandler(),
+    )
+    yield storage
+    shutil.rmtree(storage.parameters.storage_root)
+
+
+@fixture
+def file_storage_s3():
+    bucket: str = ""
+    region: str = ""
+    storage_root_pre: str = ""  # used to be Path.cwd()
+    storage_root = storage_root_pre + "test/storage_root"
     storage = FileSystem(
         parameters={"storage_root": storage_root},  # type: ignore
         handler=NetCDFHandler(),
@@ -90,3 +104,29 @@ def test_filesystem_saves_ancillary_files(file_storage: FileSystem):
         ancillary_filepath.write_text("foobar")
     assert expected_filepath.is_file()
     os.remove(expected_filepath)
+
+
+def test_filesystem_save_and_fetch_data_s3(
+    file_storage: S3Storage, sample_dataset: xr.Dataset
+):
+    expected = sample_dataset.copy(deep=True)  # type: ignore
+
+    # Save
+    file_storage.save_data(sample_dataset)
+    expected_file = Path(
+        file_storage.parameters.storage_root
+        / "data"
+        / "sgp.testing-storage.a0"
+        / "sgp.testing-storage.a0.20220405.000000.nc"
+    )
+    assert expected_file.is_file()
+    print("file_storage.parameters.storage_root============ ", file_storage.parameters.storage_root)
+    print("expected_file============ ", expected_file)
+
+    # Fetch
+    dataset = file_storage.fetch_data(
+        start=datetime.fromisoformat("2022-04-05 00:00:00"),
+        end=datetime.fromisoformat("2022-04-06 00:00:00"),
+        datastream="sgp.testing-storage.a0",
+    )
+    assert_close(dataset, expected)

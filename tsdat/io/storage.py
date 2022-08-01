@@ -169,19 +169,22 @@ class FileSystem(Storage):
         return anc_datastream_dir / filepath.name
 
 
-# class S3Storage(FileSystem):
+class S3Storage(FileSystem):
 
-#     class Parameters(FileSystem.Parameters):
-#         bucket: str
-#         region: str = "us-west-2"
+    class Parameters(FileSystem.Parameters):
+        bucket: str
+        region: str = "us-west-2"
 
-#     parameters: Parameters
+    parameters: Parameters
 
-#     def save_data(self, dataset: xr.Dataset):
-#         return super().save_data(dataset)
+    def save_data(self, dataset: xr.Dataset):
+        pass
+        # return super().save_data(dataset)
 
-#     def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
-#         return super().fetch_data(start, end, datastream)
+    def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
+        pass
+        # return super().fetch_data(start, end, datastream)
 
-#     def save_ancillary_file(self, filepath: Path, datastream: str):
-#         return super().save_ancillary_file(filepath, datastream)
+    def save_ancillary_file(self, filepath: Path, datastream: str):
+        pass
+        # return super().save_ancillary_file(filepath, datastream)
