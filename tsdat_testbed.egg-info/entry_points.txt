@@ -1,0 +1,2 @@
+[console_scripts]
+tsdat = tsdat.main:app
