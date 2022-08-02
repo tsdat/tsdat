@@ -226,18 +226,25 @@ class S3Storage(FileSystem):
                     dataset (xr.Dataset): The dataset to save.
 
                 -----------------------------------------------------------------------------"""
-        client = boto3.client('s3',
-                              aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-                              aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-                              aws_session_token=os.environ["AWS_SESSION_TOKEN"]
-                              )  # TODO: refactor to find a better way to init
-
-        bucket = self.parameters.bucket
         datastream = dataset.attrs["datastream"]
-        filepath = self._get_dataset_filepath(dataset, datastream)
+        # put_object to s3 directly from memory
+        # client = self.parameters.s3_client
+        client = boto3.client('s3',
+                              aws_access_key_id="ghg",
+                              aws_secret_access_key="gfhg",
+                              aws_session_token="fhgfghTIWj/YmC8rHprJTfeGTQZfcSK+gyNFi157AiEAzVz6RrX7xYcCP93oIYyF4YFNqGoTFayuP+nbMhxnJHcqjAMIbxADGgwzMzI4ODMxMTkxNTMiDFey21+MKt8OWLGB7CrpAhwIXmeWsdUQiIV44wLx28LRkQGulu74qtcOs42dWLSlm7OxJqElLze29k6MsHOaag0EqP/nTPFCaJJQYx7/2oFXkhU8N1wCMeknv0acg6RWDtXi16d12tgiuQMW9MpSw5lcquOjg8IYbWjTLjRhpvElbg3SAP47PfSaELGrttyuvizqsQskL1rB6cS35O0eYy0p2V1MQBE1IPlombjJWccqhz+SUMA0NHNX9FZU0iRTra80LievaV5Oult9lZmQZvXr6fOHPufGumZ9WIJD2KDHP4ZxYqqi94Zzy0LW0s8cA9+7g4T5XrMibLKLQzWdsOjagHmsWIbeSo9Efr4LslCFlurVtShxertMMljmujkesA6hwiAFiJCtQUEjogKT005hObbeDOIWkWT9toNP1D7KorpS53Jyj4VnlQGYW1Jo/WUZghaNVQvzL/IH0xyLR96r6GT4rxZWzjNaYTI+Yr1Fz6LXwYDYrJQwke6ilwY6pgGOFctVNU6MFqAAdF27gT90bdFJS+N5fgO11kVC9ZeKscNq37RVQzJt2psbaLZrIWAOSCCbO+JjQgd0UOjw2I2HuCS3H8G8sJ9XYRsJC90BPFi4z/NzwETAHHSUj2oIX20PY8lRpER+Vr5XaBviNdJvdvyjTteyQe5lFGLPPCLJeX1xH+MiiyJHSkGC3OtS7kHlv2K4wLdobgcaHF3j+iTERdGCh1s6"
+                              )  # TODO: refactor to find a better way to init
+        # client = self.MyS3Client()
+        bucket = "kefei-test"
+        file_buffer = io.StringIO()
+        import pandas as pd
+        df_test = pd.DataFrame([6, 7])
+        df_test.head()
+        df_test.to_csv(file_buffer)
+        file_body_to_upload = file_buffer.getvalue()
+        file_name_on_s3 = "csv_test_s3.csv"
 
-        file_body_to_upload: bytes = dataset.to_netcdf(path=None)  # return ``bytes` if path is None`
-        file_name_on_s3: str = str(filepath)  # e.g., test/storage_root/data/sgp.testing-storage.a0/sgp.testing-storage.a0.20220405.000000.nc
+        print("I am evoked")
 
         response = client.put_object(
             Body=file_body_to_upload,
@@ -249,11 +256,7 @@ class S3Storage(FileSystem):
         # filepath = self._get_dataset_filepath(dataset, datastream)
         # filepath.parent.mkdir(exist_ok=True, parents=True)
         # self.handler.writer.write(dataset, filepath)
-        # logger.info("Saved %s dataset to S3 %s", datastream, filepath.as_posix())  # TODO: mimic this
-
-    def get_data(self, dataset: xr.Dataset):
-        pass
-        # placeholder: to mimic fetch_data
+        # logger.info("Saved %s dataset to S3 %s", datastream, filepath.as_posix())
 
 class ZarrLocalStorage(Storage):
     """---------------------------------------------------------------------------------
