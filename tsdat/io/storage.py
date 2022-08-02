@@ -10,6 +10,9 @@ from typing import Any, Dict, List, Optional
 from .base import Storage
 from .handlers import FileHandler, ZarrHandler
 from ..utils import get_filename
+import io
+import boto3
+
 
 __all__ = ["FileSystem"]
 
@@ -174,8 +177,31 @@ class S3Storage(FileSystem):
     class Parameters(FileSystem.Parameters):
         bucket: str
         region: str = "us-west-2"
+        # s3_client = boto3.client('s3')  # TODO: need to refactor since this is not parameter
+        #
+        # @property
+        # def client(self):
+        #     return self._client
+
+    # class MyS3Client:
+    #     def __init__(self, region_name="us-west-2"):
+    #         self.client = boto3.client("s3", region_name=region_name)
+    #
+    #     # def list_buckets(self):
+    #     #     """Returns a list of bucket names."""
+    #     #     response = self.client.list_buckets()
+    #     #     return [bucket["Name"] for bucket in response["Buckets"]]
+    #     #
+    #     # def list_objects(self, bucket_name, prefix):
+    #     #     """Returns a list all objects with specified prefix."""
+    #     #     response = self.client.list_objects(
+    #     #         Bucket=bucket_name,
+    #     #         Prefix=prefix,
+    #     #     )
+    #     #     return [object["Key"] for object in response["Contents"]]
 
     parameters: Parameters
+    # my_s3_client: MyS3Client
 
     def save_data(self, dataset: xr.Dataset):
         pass
@@ -188,6 +214,49 @@ class S3Storage(FileSystem):
     def save_ancillary_file(self, filepath: Path, datastream: str):
         pass
         # return super().save_ancillary_file(filepath, datastream)
+
+    def put_data(self, dataset: xr.Dataset):
+        """-----------------------------------------------------------------------------
+                Saves a dataset to the s3 bucket.
+
+                At a minimum, the dataset must have a 'datastream' global attribute and must
+                have a 'time' variable with a np.datetime64-like data type.
+
+                Args:
+                    dataset (xr.Dataset): The dataset to save.
+
+                -----------------------------------------------------------------------------"""
+        datastream = dataset.attrs["datastream"]
+        # put_object to s3 directly from memory
+        # client = self.parameters.s3_client
+        client = boto3.client('s3',
+                              aws_access_key_id="ghg",
+                              aws_secret_access_key="gfhg",
+                              aws_session_token="fhgfghTIW1+MKt8OWLGB7CrpAhwIXmeWsdUQiIV44wLx28LRkQGulu74qtcOs42dWLSlm7OxJqElLze29k6MsHOaag0EqP/nTPFCaJJQYx7/2oFXkhU8N1wCMeknv0acg6RWDtXi16d12tgiuQMW9MpSw5lcquOjg8IYbWjTLjRhpvElbg3SAP47PfSaELGrttyuvizqsQskL1rB6cS35O0eYy0p2V1MQBE1IPlombjJWccqhz+SUMA0NHNX9FZU0iRTra80LievaV5Oult9lZmQZvXr6fOHPufGumZ9WIJD2KDHP4ZxYqqi94Zzy0LW0s8cA9+7g4T5XrMibLKLQzWdsOjagHmsWIbeSo9Efr4LslCFlurVtShxertMMljmujkesA6hwiAFiJCtQUEjogKT005hObbeDOIWkWT9toNP1D7KorpS53Jyj4VnlQGYW1Jo/WUZghaNVQvzL/IH0xyLR96r6GT4rxZWzjNaYTI+Yr1Fz6LXwYDYrJQwke6ilwY6pgGOFctVNU6MFqAAdF27gT90bdFJS+N5fgO11kVC9ZeKscNq37RVQzJt2psbaLZrIWAOSCCbO+JjQgd0UOjw2I2HuCS3H8G8sJ9XYRsJC90BPFi4z/NzwETAHHSUj2oIX20PY8lRpER+Vr5XaBviNdJvdvyjTteyQe5lFGLPPCLJeX1xH+MiiyJHSkGC3OtS7kHlv2K4wLdobgcaHF3j+iTERdGCh1s6"
+                              )  # TODO: refactor to find a better way to init
+        # client = self.MyS3Client()
+        bucket = "kefei-test"
+        file_buffer = io.StringIO()
+        import pandas as pd
+        df_test = pd.DataFrame([6, 7])
+        df_test.head()
+        df_test.to_csv(file_buffer)
+        file_body_to_upload = file_buffer.getvalue()
+        file_name_on_s3 = "csv_test_s3.csv"
+
+        print("I am evoked")
+
+        response = client.put_object(
+            Body=file_body_to_upload,
+            Bucket=bucket,
+            Key=file_name_on_s3,
+        )
+        print(response)
+
+        # filepath = self._get_dataset_filepath(dataset, datastream)
+        # filepath.parent.mkdir(exist_ok=True, parents=True)
+        # self.handler.writer.write(dataset, filepath)
+        # logger.info("Saved %s dataset to S3 %s", datastream, filepath.as_posix())
 
 class ZarrLocalStorage(Storage):
     """---------------------------------------------------------------------------------
