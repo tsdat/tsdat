@@ -26,7 +26,7 @@ class NetCDFHandler(FileHandler):
 class SplitNetCDFHandler(FileHandler):
     extension: str = ".nc"
     reader: NetCDFReader = NetCDFReader()
-    writer: NetCDFWriter = SplitNetCDFWriter()
+    writer: SplitNetCDFWriter = SplitNetCDFWriter()
 
 
 class CSVHandler(FileHandler):

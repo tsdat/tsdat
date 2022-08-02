@@ -27,7 +27,7 @@ class NetCDFWriter(FileWriter):
     `Dataset.to_netcdf()` as keyword arguments.
 
     File compression is used by default to save disk space. To disable compression set the
-    `use_compression` parameter to `False`.
+    `compression_level` parameter to `0`.
 
     ------------------------------------------------------------------------------------"""
 
@@ -75,20 +75,24 @@ class NetCDFWriter(FileWriter):
 class SplitNetCDFWriter(NetCDFWriter):
     """------------------------------------------------------------------------------------
     Wrapper around xarray's `Dataset.to_netcdf()` function for saving a dataset to a
-    netCDF file based on a particular time interval. Properties under the `to_netcdf_kwargs` 
-    parameter will be passed to `Dataset.to_netcdf()` as keyword arguments.
+    netCDF file based on a particular time interval, and is an extension of the 
+    `NetCDFWriter`.
+    Files are split (sliced) via a time interval specified in two parts, `time_interval` 
+    a literal value, and a `time_unit` character (year: "Y", month: "m", day: "D", hour: 
+    "H", minute: "M", second: "S").
 
-    File compression is used by default to save disk space. To disable compression set the
-    `use_compression` parameter to `False`.
+    Properties under the `to_netcdf_kwargs` parameter will be passed to 
+    `Dataset.to_netcdf()` as keyword arguments. File compression is used by default to save 
+    disk space. To disable compression set the `compression_level` parameter to `0`.
 
     ------------------------------------------------------------------------------------"""
 
     class Parameters(NetCDFWriter.Parameters):
         time_interval: int = 1
-        """Time interval integer used to split file for saving."""
+        """Time interval value."""
 
         time_unit: str = "D"
-        """Time interval unit used to split file for saving"""
+        """Time interval unit."""
 
     parameters: Parameters = Parameters()
     file_extension: str = ".nc"
