@@ -177,8 +177,31 @@ class S3Storage(FileSystem):
     class Parameters(FileSystem.Parameters):
         bucket: str
         region: str = "us-west-2"
+        # s3_client = boto3.client('s3')  # TODO: need to refactor since this is not parameter
+        #
+        # @property
+        # def client(self):
+        #     return self._client
+
+    # class MyS3Client:
+    #     def __init__(self, region_name="us-west-2"):
+    #         self.client = boto3.client("s3", region_name=region_name)
+    #
+    #     # def list_buckets(self):
+    #     #     """Returns a list of bucket names."""
+    #     #     response = self.client.list_buckets()
+    #     #     return [bucket["Name"] for bucket in response["Buckets"]]
+    #     #
+    #     # def list_objects(self, bucket_name, prefix):
+    #     #     """Returns a list all objects with specified prefix."""
+    #     #     response = self.client.list_objects(
+    #     #         Bucket=bucket_name,
+    #     #         Prefix=prefix,
+    #     #     )
+    #     #     return [object["Key"] for object in response["Contents"]]
 
     parameters: Parameters
+    # my_s3_client: MyS3Client
 
     def save_data(self, dataset: xr.Dataset):
         pass
@@ -191,6 +214,46 @@ class S3Storage(FileSystem):
     def save_ancillary_file(self, filepath: Path, datastream: str):
         pass
         # return super().save_ancillary_file(filepath, datastream)
+
+    def put_data(self, dataset: xr.Dataset):
+        """-----------------------------------------------------------------------------
+                Saves a dataset to the s3 bucket.
+
+                At a minimum, the dataset must have a 'datastream' global attribute and must
+                have a 'time' variable with a np.datetime64-like data type.
+
+                Args:
+                    dataset (xr.Dataset): The dataset to save.
+
+                -----------------------------------------------------------------------------"""
+        client = boto3.client('s3',
+                              aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+                              aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+                              aws_session_token=os.environ["AWS_SESSION_TOKEN"]
+                              )  # TODO: refactor to find a better way to init
+
+        bucket = self.parameters.bucket
+        datastream = dataset.attrs["datastream"]
+        filepath = self._get_dataset_filepath(dataset, datastream)
+
+        file_body_to_upload: bytes = dataset.to_netcdf(path=None)  # return ``bytes` if path is None`
+        file_name_on_s3: str = str(filepath)  # e.g., test/storage_root/data/sgp.testing-storage.a0/sgp.testing-storage.a0.20220405.000000.nc
+
+        response = client.put_object(
+            Body=file_body_to_upload,
+            Bucket=bucket,
+            Key=file_name_on_s3,
+        )
+        print(response)
+
+        # filepath = self._get_dataset_filepath(dataset, datastream)
+        # filepath.parent.mkdir(exist_ok=True, parents=True)
+        # self.handler.writer.write(dataset, filepath)
+        # logger.info("Saved %s dataset to S3 %s", datastream, filepath.as_posix())  # TODO: mimic this
+
+    def get_data(self, dataset: xr.Dataset):
+        pass
+        # placeholder: to mimic fetch_data
 
 class ZarrLocalStorage(Storage):
     """---------------------------------------------------------------------------------
@@ -280,20 +343,3 @@ class ZarrLocalStorage(Storage):
         anc_datastream_dir = self.parameters.storage_root / "ancillary" / datastream
         return anc_datastream_dir / filepath.name
 
-
-# class S3Storage(FileSystem):
-
-#     class Parameters(FileSystem.Parameters):
-#         bucket: str
-#         region: str = "us-west-2"
-
-#     parameters: Parameters
-
-#     def save_data(self, dataset: xr.Dataset):
-#         return super().save_data(dataset)
-
-#     def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
-#         return super().fetch_data(start, end, datastream)
-
-#     def save_ancillary_file(self, filepath: Path, datastream: str):
-#         return super().save_ancillary_file(filepath, datastream)
