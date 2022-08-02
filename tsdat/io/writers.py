@@ -1,14 +1,19 @@
 # TODO: Implement ZarrWriter
 
 import copy
+import os
+import numpy as np
 import xarray as xr
 from typing import Any, Dict, Iterable, List, Optional, cast
 from pathlib import Path
 from pydantic import BaseModel, Extra
 from .base import FileWriter
+from ..utils import get_filename
+
 
 __all__ = [
     "NetCDFWriter",
+    "SplitNetCDFWriter",
     "CSVWriter",
     "ParquetWriter",
     "ZarrWriter",
@@ -65,6 +70,76 @@ class NetCDFWriter(FileWriter):
                 )
 
         dataset.to_netcdf(filepath, **to_netcdf_kwargs)  # type: ignore
+
+
+class SplitNetCDFWriter(NetCDFWriter):
+    """------------------------------------------------------------------------------------
+    Wrapper around xarray's `Dataset.to_netcdf()` function for saving a dataset to a
+    netCDF file based on a particular time interval. Properties under the `to_netcdf_kwargs` 
+    parameter will be passed to `Dataset.to_netcdf()` as keyword arguments.
+
+    File compression is used by default to save disk space. To disable compression set the
+    `use_compression` parameter to `False`.
+
+    ------------------------------------------------------------------------------------"""
+
+    class Parameters(NetCDFWriter.Parameters):
+        time_interval: int = 1
+        """Time interval integer used to split file for saving."""
+
+        time_unit: str = "D"
+        """Time interval unit used to split file for saving"""
+
+    parameters: Parameters = Parameters()
+    file_extension: str = ".nc"
+
+    def write(
+        self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
+    ) -> None:
+        to_netcdf_kwargs = copy.deepcopy(self.parameters.to_netcdf_kwargs)
+        encoding_dict: Dict[str, Dict[str, Any]] = {}
+        to_netcdf_kwargs["encoding"] = encoding_dict
+
+        for variable_name in cast(Iterable[str], dataset.variables):
+
+            # Prevent Xarray from setting 'nan' as the default _FillValue
+            encoding_dict[variable_name] = dataset[variable_name].encoding  # type: ignore
+            if (
+                "_FillValue" not in encoding_dict[variable_name]
+                and "_FillValue" not in dataset[variable_name].attrs
+            ):
+                encoding_dict[variable_name]["_FillValue"] = None
+
+            if self.parameters.compression_level:
+                encoding_dict[variable_name].update(
+                    {
+                        self.parameters.compression_engine: True,
+                        "complevel": self.parameters.compression_level,
+                    }
+                )
+
+            # Must remove original chunksize to split and save dataset
+            if "chunksizes" in encoding_dict[variable_name]:
+                del encoding_dict[variable_name]["chunksizes"]
+
+        interval = self.parameters.time_interval
+        unit = self.parameters.time_unit
+
+        t1 = dataset.time[0]
+        t2 = t1 + np.timedelta64(interval, unit)
+
+        while t1 < dataset.time[-1]:
+            ds_temp = dataset.sel(time=slice(t1, t2))
+
+            temp_filedir = list(filepath.parts[:-1])
+            new_filename = get_filename(ds_temp, ".nc")
+            temp_filedir.append(new_filename)  # type: ignore
+            temp_filepath = os.path.join(*temp_filedir)
+
+            ds_temp.to_netcdf(temp_filepath, **to_netcdf_kwargs)  # type: ignore
+
+            t1 = t2
+            t2 = t1 + np.timedelta64(interval, unit)
 
 
 class CSVWriter(FileWriter):
