@@ -10,6 +10,9 @@ from typing import Any, Dict, List, Optional
 from .base import Storage
 from .handlers import FileHandler, ZarrHandler
 from ..utils import get_filename
+import io
+import boto3
+
 
 __all__ = ["FileSystem"]
 
@@ -168,6 +171,26 @@ class FileSystem(Storage):
         anc_datastream_dir = self.parameters.storage_root / "ancillary" / datastream
         return anc_datastream_dir / filepath.name
 
+
+class S3Storage(FileSystem):
+
+    class Parameters(FileSystem.Parameters):
+        bucket: str
+        region: str = "us-west-2"
+
+    parameters: Parameters
+
+    def save_data(self, dataset: xr.Dataset):
+        pass
+        # return super().save_data(dataset)
+
+    def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
+        pass
+        # return super().fetch_data(start, end, datastream)
+
+    def save_ancillary_file(self, filepath: Path, datastream: str):
+        pass
+        # return super().save_ancillary_file(filepath, datastream)
 
 class ZarrLocalStorage(Storage):
     """---------------------------------------------------------------------------------
