@@ -81,6 +81,7 @@ def s3_storage():
         handler=NetCDFHandler(),
 
     )
+    # print("storage_root: ", storage_root)
     yield storage
     # shutil.rmtree(storage.parameters.storage_root)  # TODO: mimic this behavior and delete testing upload object
 

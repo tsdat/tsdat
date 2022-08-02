@@ -239,6 +239,7 @@ class S3Storage(FileSystem):
         file_body_to_upload: bytes = dataset.to_netcdf(path=None)  # return ``bytes` if path is None`
         file_name_on_s3: str = str(filepath)  # e.g., test/storage_root/data/sgp.testing-storage.a0/sgp.testing-storage.a0.20220405.000000.nc
 
+        # put_object to s3 directly from memory
         response = client.put_object(
             Body=file_body_to_upload,
             Bucket=bucket,
@@ -254,6 +255,7 @@ class S3Storage(FileSystem):
     def get_data(self, dataset: xr.Dataset):
         pass
         # placeholder: to mimic fetch_data
+
 
 class ZarrLocalStorage(Storage):
     """---------------------------------------------------------------------------------
