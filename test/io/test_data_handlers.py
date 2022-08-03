@@ -123,7 +123,10 @@ def test_split_netcdf_writer(sample_dataset: xr.Dataset):
 
     tmp_file = Path(tmp_dir.name) / "test_writer.nc"
     writer.write(test_dataset, tmp_file)  # type: ignore
-    assert os.listdir(Path(tmp_dir.name)) == [
+
+    filelist = os.listdir(Path(tmp_dir.name))
+    filelist.sort()
+    assert filelist == [
         "test_writer.20220324.214300.nc",
         "test_writer.20220324.214400.nc",
     ]
