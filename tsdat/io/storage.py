@@ -172,6 +172,9 @@ class FileSystem(Storage):
         return anc_datastream_dir / filepath.name
 
 
+s3_Path = str  # alias
+
+
 class S3Storage(FileSystem):
 
     class Parameters(FileSystem.Parameters):
@@ -180,37 +183,24 @@ class S3Storage(FileSystem):
 
     @staticmethod
     def _get_s3_client():
-        client = boto3.client('s3',
-                              aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-                              aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-                              aws_session_token=os.environ["AWS_SESSION_TOKEN"]
-                              )  # TODO: refactor to find a better way to init
+        client = boto3.client('s3')
         return client
 
-
-    def _get_s3_bucket(self):
-        s3 = boto3.resource('s3',
-                            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-                            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-                            aws_session_token=os.environ["AWS_SESSION_TOKEN"]
-                            )  # TODO: refactor to a better place to init.
-        my_bucket = s3.Bucket(self.parameters.bucket)
-        return my_bucket
+    @staticmethod
+    def _get_s3_resource():
+        resource = boto3.resource('s3')
+        return resource
 
     parameters: Parameters
-    # my_s3_client: MyS3Client
 
     def save_data(self, dataset: xr.Dataset):
-        pass
-        # return super().save_data(dataset)
+        return super().save_data(dataset)
 
     def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
-        pass
-        # return super().fetch_data(start, end, datastream)
+        return super().fetch_data(start, end, datastream)
 
     def save_ancillary_file(self, filepath: Path, datastream: str):
-        pass
-        # return super().save_ancillary_file(filepath, datastream)
+        return super().save_ancillary_file(filepath, datastream)
 
     def save_data_s3(self, dataset: xr.Dataset):
         """-----------------------------------------------------------------------------
@@ -229,7 +219,7 @@ class S3Storage(FileSystem):
         filepath = self._get_dataset_filepath(dataset, datastream)
 
         file_body_to_upload: bytes = dataset.to_netcdf(path=None)  # return ``bytes` if path is None`
-        file_name_on_s3: str = str(filepath)  # e.g., test/storage_root/data/sgp.testing-storage.a0/sgp.testing-storage.a0.20220405.000000.nc
+        file_name_on_s3: s3_Path = str(filepath)
 
         # put_object to s3 directly from memory
         response = client.put_object(
@@ -241,8 +231,6 @@ class S3Storage(FileSystem):
         logger.info("Saved %s dataset to AWS S3 in bucket %s at %s", datastream, bucket, file_name_on_s3)
 
     def fetch_data_s3(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
-        pass
-        # placeholder: to mimic fetch_data
         """-----------------------------------------------------------------------------
                 Gets data from AWS S3 for a given datastream between a specified time range. (fetch_data counterpart)
 
@@ -260,17 +248,26 @@ class S3Storage(FileSystem):
 
                 -----------------------------------------------------------------------------"""
         data_files_s3 = self._find_data_at_s3(start, end, datastream)
-        print("===================data_files_s3", data_files_s3)
-        # datasets = self._open_data_files(*data_files)  # TODO: mimic this
         datasets = self._open_data_files_s3(*data_files_s3)
-        print("datasets[0]", datasets[0])
 
         return xr.merge(datasets, **self.parameters.merge_fetched_data_kwargs)  # type: ignore
+
+    def _is_file_exist_s3(self, key_name: s3_Path) -> bool:
+        s3 = self._get_s3_resource()
+        bucket_name = self.parameters.bucket
+        s3_object_info = s3.Object(bucket_name, key_name)
+        try:
+            result = s3_object_info.get()
+            # print(result)
+            return True
+        except Exception as e:  # catch NoSuchKey
+            return False
 
     def _open_data_files_s3(self, *filepaths_s3: str) -> List[xr.Dataset]:
         dataset_list: List[xr.Dataset] = []
         # download object to memory
-        my_bucket = self._get_s3_bucket()
+        s3 = self._get_s3_resource()
+        my_bucket = s3.Bucket(self.parameters.bucket)
 
         for filepath in filepaths_s3:
             buf = io.BytesIO()
@@ -283,22 +280,30 @@ class S3Storage(FileSystem):
             dataset_list.append(data)
         return dataset_list
 
-    s3_Path = str  # alias
+    def list_files_s3(self, prefix: s3_Path) -> List[s3_Path]:
+        """-----------------------------------------------------------------------------
+                List objects/files at s3 at certain prefix/dir
+
+                Args:
+                    prefix (s3_Path): The prefix/directory to query.
+
+                Returns:
+                    List[s3_Path]: A list of available files under certain directory
+
+                -----------------------------------------------------------------------------"""
+        s3 = self._get_s3_resource()
+        my_bucket = s3.Bucket(self.parameters.bucket)
+        response = my_bucket.objects.filter(Prefix=prefix)  # query object info at s3 bucket
+        filepaths_at_s3: List[str] = [object_summary.key for object_summary in response]
+        return filepaths_at_s3
 
     def _find_data_at_s3(self, start: datetime, end: datetime, datastream: str) -> List[s3_Path]:
         data_dirpath = self.parameters.storage_root / "data" / datastream
-        # print("=========data_dirpath, ", data_dirpath)
+
         prefix = str(data_dirpath)
-        # print("=========prefix, ", prefix)
+        filepaths_at_s3 = self.list_files_s3(prefix)
 
-        my_bucket = self._get_s3_bucket()
-        response = my_bucket.objects.filter(Prefix=prefix)  # query object info at s3 bucket
-        filepaths_at_s3: List[str] = [object_summary.key for object_summary in response]
-
-        # print("========filepaths_at_s3 ", filepaths_at_s3, type(filepaths_at_s3))
-        # s3_paths = self._filter_between_dates_at_s3(filepaths, start, end)
         valid_filepaths_at_s3 = self._filter_between_dates(list(map(Path, filepaths_at_s3)), start, end)
-        # print("========valid_filepaths_at_s3 ", valid_filepaths_at_s3, type(valid_filepaths_at_s3))
         return list(map(str, valid_filepaths_at_s3))
 
 
