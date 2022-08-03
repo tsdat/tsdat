@@ -1,4 +1,5 @@
 import tempfile
+import os
 from typing import Any, Dict
 import pandas as pd
 import xarray as xr
@@ -94,7 +95,7 @@ def test_netcdf_writer(sample_dataset: xr.Dataset):
 
 
 def test_split_netcdf_writer(sample_dataset: xr.Dataset):
-    params = {"time_interval": 1, "time_unit": "M"}
+    params = {"time_interval": 1, "time_unit": "m"}
     # expected = sample_dataset.copy(deep=True)  # type: ignore
     writer = SplitNetCDFWriter(parameters=recursive_instantiate(params))
     tmp_dir = tempfile.TemporaryDirectory()
@@ -103,11 +104,14 @@ def test_split_netcdf_writer(sample_dataset: xr.Dataset):
         for x in sample_dataset["timestamp"].data
     ]
     test_dataset = sample_dataset.assign_coords({"index": time_coord}).rename({"index": "time"})  # type: ignore
+    test_dataset.attrs["datastream"] = "test_writer"
 
     tmp_file = Path(tmp_dir.name) / "test_writer.nc"
-    writer.write(test_dataset, tmp_file)
-    dataset: xr.Dataset = xr.open_dataset(tmp_file)  # type: ignore
-    # assert_close(dataset, expected, check_fill_value=False)
+    writer.write(test_dataset, tmp_file)  # type: ignore
+    assert os.listdir(Path(tmp_dir.name)) == [
+        "test_writer.20220324.214300.nc",
+        "test_writer.20220324.214400.nc",
+    ]
 
     tmp_dir.cleanup()
 

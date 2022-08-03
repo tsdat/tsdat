@@ -78,8 +78,8 @@ class SplitNetCDFWriter(NetCDFWriter):
     netCDF file based on a particular time interval, and is an extension of the 
     `NetCDFWriter`.
     Files are split (sliced) via a time interval specified in two parts, `time_interval` 
-    a literal value, and a `time_unit` character (year: "Y", month: "m", day: "D", hour: 
-    "H", minute: "M", second: "S").
+    a literal value, and a `time_unit` character (year: "Y", month: "M", day: "D", hour: 
+    "h", minute: "m", second: "s").
 
     Properties under the `to_netcdf_kwargs` parameter will be passed to 
     `Dataset.to_netcdf()` as keyword arguments. File compression is used by default to save 
