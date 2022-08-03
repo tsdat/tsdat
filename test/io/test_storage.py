@@ -11,7 +11,6 @@ from tsdat.io.handlers import NetCDFHandler, ZarrHandler
 from tsdat.io.storage import FileSystem, ZarrLocalStorage
 from tsdat.testing import assert_close
 import boto3
-# from moto import mock_s3
 
 
 @fixture
@@ -59,15 +58,17 @@ def zarr_storage():
     finally:
         shutil.rmtree(storage.parameters.storage_root)
 
+
 @fixture
 def s3_storage():
-    bucket: str = "kefei-test"  # TODO: refactor to env var
-    region: str = ""
+    bucket: str = os.environ["STORAGE_BUCKET"]  # TODO: might change to "TSDAT_S3_STORAGE_BUCKET"
+    region: str = ""  # region is not required for s3
     storage_root_pre: str = ""  # used to be Path.cwd()
     storage_root = storage_root_pre + "test/storage_root"
     storage = S3Storage(
         parameters={"storage_root": storage_root,
                     "bucket": bucket,
+                    # "region": region
                     },  # type: ignore
         handler=NetCDFHandler(),
 
@@ -83,7 +84,6 @@ def test_filesystem_save_and_fetch_data_s3(
 ):
 
     expected = sample_dataset.copy(deep=True)  # type: ignore
-    # s3_client = s3_storage.parameters.client
 
     # Save/upload to s3
     s3_storage.save_data_s3(sample_dataset)
@@ -93,57 +93,16 @@ def test_filesystem_save_and_fetch_data_s3(
         / "sgp.testing-storage.a0"
         / "sgp.testing-storage.a0.20220405.000000.nc"
     )
-    # assert expected_file_path_local.is_file()  # TODO: mimic this
+    expected_file_path_s3 = str(expected_file_path_local)
+    assert s3_storage._is_file_exist_s3(key_name=expected_file_path_s3)
 
-    # print("file_storage.parameters.storage_root============ ", s3_storage.parameters.storage_root)
-    # print("expected_file============ ", expected_file)
-    #
     # Fetch
     dataset = s3_storage.fetch_data_s3(
         start=datetime.fromisoformat("2022-04-05 00:00:00"),
         end=datetime.fromisoformat("2022-04-06 00:00:00"),
         datastream="sgp.testing-storage.a0",
     )
-    print("====================dataset", dataset, type(dataset))
-    print("====================expected", expected, type(expected))
-    assert_close(expected, expected)
-    assert_close(dataset, dataset)
-    assert_close(dataset, expected, check_fill_value=False)  # avoid NAN != None when fillna
-
-def test_filesystem_save_and_fetch_data_s3_dummy(
-    s3_storage: S3Storage, sample_dataset: xr.Dataset
-):
-
-    expected = sample_dataset.copy(deep=True)  # type: ignore
-    # s3_client = s3_storage.parameters.client
-
-    # Save/upload to s3
-    # s3_storage.save_data_s3(sample_dataset)
-    # expected_file_path_local = Path(
-    #     s3_storage.parameters.storage_root
-    #     / "data"
-    #     / "sgp.testing-storage.a0"
-    #     / "sgp.testing-storage.a0.20220405.000000.nc"
-    # )
-    # # assert expected_file_path_local.is_file()  # TODO: mimic this
-    #
-    # # print("file_storage.parameters.storage_root============ ", s3_storage.parameters.storage_root)
-    # # print("expected_file============ ", expected_file)
-    # #
-    # # Fetch
-    # dataset = s3_storage.fetch_data_s3(
-    #     start=datetime.fromisoformat("2022-04-05 00:00:00"),
-    #     end=datetime.fromisoformat("2022-04-06 00:00:00"),
-    #     datastream="sgp.testing-storage.a0",
-    # )
-
-    dataset = xr.open_dataset("/home/kefei/Desktop/ubuntu-20-shared/sgp.testing-storage.a0.20220405.000000.nc")
-    print("====================dataset", dataset, type(dataset))
-    print("====================expected", expected, type(expected))
-    assert_close(expected, expected)
-    assert_close(dataset, dataset)
-    # assert_close(dataset, expected)
-    assert_close(dataset, expected, check_fill_value=False)
+    assert_close(dataset, expected, check_fill_value=False)  # check_fill_value=False to avoid NAN != None when fillna
 
 
 def test_filesystem_save_and_fetch_data(
@@ -191,9 +150,9 @@ def test_zarr_storage_save_and_fetch_data(
     assert_close(dataset, expected)
 
 
-def test_filesystem_saves_ancillary_files(s3_storage):
+def test_filesystem_saves_ancillary_files(file_storage: FileSystem):
     expected_filepath = (
-            s3_storage.parameters.storage_root
+            file_storage.parameters.storage_root
             / "ancillary"
             / "sgp.testing-storage.a0"
             / "ancillary_file.txt"
@@ -203,14 +162,14 @@ def test_filesystem_saves_ancillary_files(s3_storage):
     tmp_dir = tempfile.TemporaryDirectory()
     ancillary_filepath = Path(tmp_dir.name) / "ancillary_file.txt"
     ancillary_filepath.write_text("foobar")
-    s3_storage.save_ancillary_file(
+    file_storage.save_ancillary_file(
         filepath=ancillary_filepath, datastream="sgp.testing-storage.a0"
     )
     assert expected_filepath.is_file()
     os.remove(expected_filepath)
 
     # Using context manager
-    with s3_storage.uploadable_dir(datastream="sgp.testing-storage.a0") as tmp_dir:
+    with file_storage.uploadable_dir(datastream="sgp.testing-storage.a0") as tmp_dir:
         ancillary_filepath = tmp_dir / "ancillary_file.txt"
         ancillary_filepath.write_text("foobar")
     assert expected_filepath.is_file()
