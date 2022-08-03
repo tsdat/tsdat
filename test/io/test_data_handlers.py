@@ -6,6 +6,7 @@ from pathlib import Path
 from pytest import fixture
 from pandas.testing import assert_frame_equal
 from tsdat.testing import assert_close
+from tsdat.config.utils import recursive_instantiate
 from tsdat.io.handlers import CSVHandler, NetCDFHandler, ParquetHandler, ZarrHandler
 from tsdat.io.readers import (
     CSVReader,
@@ -16,7 +17,6 @@ from tsdat.io.readers import (
     ZipReader,
 )
 from tsdat.io.writers import CSVWriter, NetCDFWriter, ParquetWriter, ZarrWriter
-from tsdat.config.utils import recursive_instantiate
 
 
 @fixture
