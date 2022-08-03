@@ -15,7 +15,13 @@ from tsdat.io.handlers import (
     ParquetHandler,
     ZarrHandler,
 )
-from tsdat.io.readers import CSVReader, NetCDFReader, ParquetReader, ZarrReader
+from tsdat.io.readers import (
+    CSVReader,
+    NetCDFReader,
+    ParquetReader,
+    ZarrReader,
+    ZipReader,
+)
 from tsdat.io.writers import (
     CSVWriter,
     NetCDFWriter,
@@ -79,6 +85,15 @@ def test_zarr_reader(sample_dataset: xr.Dataset):
     reader = ZarrReader()
     dataset = reader.read("test/io/data/input.zarr")
     assert_close(dataset, expected, check_fill_value=False)
+
+
+def test_zip_reader(sample_dataset: xr.Dataset):
+    params = {"readers": {r".*\.nc": {"classname": "tsdat.io.readers.NetCDFReader"}}}
+
+    expected = sample_dataset
+    reader = ZipReader(parameters=recursive_instantiate(params))
+    dataset = reader.read("test/io/data/input.zip")
+    assert_close(dataset["input.nc"], expected, check_fill_value=False)
 
 
 def test_netcdf_writer(sample_dataset: xr.Dataset):
