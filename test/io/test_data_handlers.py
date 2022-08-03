@@ -7,8 +7,15 @@ from pytest import fixture
 from pandas.testing import assert_frame_equal
 from tsdat.testing import assert_close
 from tsdat.io.handlers import CSVHandler, NetCDFHandler, ParquetHandler, ZarrHandler
-from tsdat.io.readers import CSVReader, NetCDFReader, ParquetReader, ZarrReader
+from tsdat.io.readers import (
+    CSVReader,
+    NetCDFReader,
+    ParquetReader,
+    ZarrReader,
+    ZipReader,
+)
 from tsdat.io.writers import CSVWriter, NetCDFWriter, ParquetWriter, ZarrWriter
+from tsdat.config.utils import recursive_instantiate
 
 
 @fixture
@@ -20,11 +27,7 @@ def sample_dataset() -> xr.Dataset:
                 "index",
                 ["2022-03-24 21:43:00", "2022-03-24 21:44:00", "2022-03-24 21:45:00"],
             ),
-            "First Data Var": (
-                "index",
-                [71.4, 71.2, 71.1],
-                {"_FillValue": -9999},
-            ),
+            "First Data Var": ("index", [71.4, 71.2, 71.1], {"_FillValue": -9999},),
         },
     )
 
@@ -69,6 +72,15 @@ def test_zarr_reader(sample_dataset: xr.Dataset):
     reader = ZarrReader()
     dataset = reader.read("test/io/data/input.zarr")
     assert_close(dataset, expected, check_fill_value=False)
+
+
+def test_zip_reader(sample_dataset: xr.Dataset):
+    params = {"readers": {r".*\.nc": {"classname": "tsdat.io.readers.NetCDFReader"}}}
+
+    expected = sample_dataset
+    reader = ZipReader(parameters=recursive_instantiate(params))
+    dataset = reader.read("test/io/data/input.zip")
+    assert_close(dataset["input.nc"], expected, check_fill_value=False)
 
 
 def test_netcdf_writer(sample_dataset: xr.Dataset):
