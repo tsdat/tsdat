@@ -11,7 +11,7 @@ from tsdat.io.handlers import NetCDFHandler, ZarrHandler
 from tsdat.io.storage import FileSystem, ZarrLocalStorage
 from tsdat.testing import assert_close
 import boto3
-from moto import mock_s3
+# from moto import mock_s3
 
 
 @fixture
@@ -37,7 +37,7 @@ def sample_dataset() -> xr.Dataset:
 @fixture
 def file_storage():
     storage_root = Path.cwd() / "test/storage_root"
-    storage = S3Storage(
+    storage = FileSystem(
         parameters={"storage_root": storage_root},  # type: ignore
         handler=NetCDFHandler(),
     )
@@ -58,15 +58,6 @@ def zarr_storage():
         yield storage
     finally:
         shutil.rmtree(storage.parameters.storage_root)
-
-
-@fixture
-def s3_client():
-    with mock_s3():
-        # conn = boto3.client("s3", region_name="us-west-2")
-        conn = boto3.client("s3")
-        yield conn
-
 
 @fixture
 def s3_storage():
@@ -117,18 +108,53 @@ def test_filesystem_save_and_fetch_data_s3(
     print("====================expected", expected, type(expected))
     assert_close(expected, expected)
     assert_close(dataset, dataset)
-    assert_close(dataset, expected)
+    assert_close(dataset, expected, check_fill_value=False)  # avoid NAN != None when fillna
+
+def test_filesystem_save_and_fetch_data_s3_dummy(
+    s3_storage: S3Storage, sample_dataset: xr.Dataset
+):
+
+    expected = sample_dataset.copy(deep=True)  # type: ignore
+    # s3_client = s3_storage.parameters.client
+
+    # Save/upload to s3
+    # s3_storage.save_data_s3(sample_dataset)
+    # expected_file_path_local = Path(
+    #     s3_storage.parameters.storage_root
+    #     / "data"
+    #     / "sgp.testing-storage.a0"
+    #     / "sgp.testing-storage.a0.20220405.000000.nc"
+    # )
+    # # assert expected_file_path_local.is_file()  # TODO: mimic this
+    #
+    # # print("file_storage.parameters.storage_root============ ", s3_storage.parameters.storage_root)
+    # # print("expected_file============ ", expected_file)
+    # #
+    # # Fetch
+    # dataset = s3_storage.fetch_data_s3(
+    #     start=datetime.fromisoformat("2022-04-05 00:00:00"),
+    #     end=datetime.fromisoformat("2022-04-06 00:00:00"),
+    #     datastream="sgp.testing-storage.a0",
+    # )
+
+    dataset = xr.open_dataset("/home/kefei/Desktop/ubuntu-20-shared/sgp.testing-storage.a0.20220405.000000.nc")
+    print("====================dataset", dataset, type(dataset))
+    print("====================expected", expected, type(expected))
+    assert_close(expected, expected)
+    assert_close(dataset, dataset)
+    # assert_close(dataset, expected)
+    assert_close(dataset, expected, check_fill_value=False)
 
 
 def test_filesystem_save_and_fetch_data(
-        s3_storage, sample_dataset: xr.Dataset
+    file_storage: FileSystem, sample_dataset: xr.Dataset
 ):
     expected = sample_dataset.copy(deep=True)  # type: ignore
 
     # Save
-    s3_storage.save_data(sample_dataset)
+    file_storage.save_data(sample_dataset)
     expected_file = Path(
-        s3_storage.parameters.storage_root
+        file_storage.parameters.storage_root
         / "data"
         / "sgp.testing-storage.a0"
         / "sgp.testing-storage.a0.20220405.000000.nc"
@@ -136,7 +162,7 @@ def test_filesystem_save_and_fetch_data(
     assert expected_file.is_file()
 
     # Fetch
-    dataset = s3_storage.fetch_data(
+    dataset = file_storage.fetch_data(
         start=datetime.fromisoformat("2022-04-05 00:00:00"),
         end=datetime.fromisoformat("2022-04-06 00:00:00"),
         datastream="sgp.testing-storage.a0",
