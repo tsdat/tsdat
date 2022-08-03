@@ -121,7 +121,7 @@ def _check_fillvalue(a: xr.DataArray, b: xr.DataArray) -> None:
     a_fill = a.attrs.get("_FillValue") or a.encoding.get("_FillValue")
     b_fill = b.attrs.get("_FillValue") or b.encoding.get("_FillValue")
 
-    if not (a_fill == b_fill or (np.isnan(a) and np.isnan(b))):
+    if not (a_fill == b_fill or (np.isnan(a_fill) and np.isnan(b_fill))):
         raise AssertionError(
             f"'{a.name}' _FillValue attrs/encoding do not match:\n"
             f"{a_fill},\n"
