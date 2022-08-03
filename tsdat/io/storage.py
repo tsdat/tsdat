@@ -275,41 +275,30 @@ class S3Storage(FileSystem):
         for filepath in filepaths_s3:
             buf = io.BytesIO()
             my_bucket.download_fileobj(filepath, buf)
-            filecontent_bytes = buf.getvalue()
-            data = xr.load_dataset(filecontent_bytes)
+            file_content_bytes = buf.getvalue()
+            data = xr.load_dataset(file_content_bytes)
             # data = self.handler.reader.read(filepath.as_posix())
             if isinstance(data, dict):
                 data = xr.merge(data.values())  # type: ignore
             dataset_list.append(data)
         return dataset_list
+
     s3_Path = str  # alias
 
     def _find_data_at_s3(self, start: datetime, end: datetime, datastream: str) -> List[s3_Path]:
         data_dirpath = self.parameters.storage_root / "data" / datastream
-        print("=========data_dirpath, ", data_dirpath)
+        # print("=========data_dirpath, ", data_dirpath)
         prefix = str(data_dirpath)
-        print("=========prefix, ", prefix)
+        # print("=========prefix, ", prefix)
 
         my_bucket = self._get_s3_bucket()
+        response = my_bucket.objects.filter(Prefix=prefix)  # query object info at s3 bucket
+        filepaths_at_s3: List[str] = [object_summary.key for object_summary in response]
 
-        # prefix = 'test/storage_root/data/sgp.testing-storage.a0/'
-
-        for object_summary in my_bucket.objects.filter(Prefix=prefix):
-            print("=============print(object_summary.key)")
-            print(object_summary.key)
-
-        filepaths_at_s3: List[str] = [object_summary.key for object_summary in my_bucket.objects.filter(Prefix=prefix)]
-
-
-        # client = self._get_s3_client()
-        # result = client.list_objects_v2(Bucket=bucket, Prefix=prefix, Delimiter='/')
-        # # filepaths_at_s3 = [data_dirpath / Path(file) for file in os.listdir(data_dirpath)]  # TODO: mimic this at s3
-        # print("=========result, ", result)
-        # filepaths_at_s3: List[str] = [content.get("Key") for content in result.get("Contents")]
-        print("========filepaths_at_s3 ", filepaths_at_s3, type(filepaths_at_s3))
+        # print("========filepaths_at_s3 ", filepaths_at_s3, type(filepaths_at_s3))
         # s3_paths = self._filter_between_dates_at_s3(filepaths, start, end)
         valid_filepaths_at_s3 = self._filter_between_dates(list(map(Path, filepaths_at_s3)), start, end)
-        print("========valid_filepaths_at_s3 ", valid_filepaths_at_s3, type(valid_filepaths_at_s3))
+        # print("========valid_filepaths_at_s3 ", valid_filepaths_at_s3, type(valid_filepaths_at_s3))
         return list(map(str, valid_filepaths_at_s3))
 
 

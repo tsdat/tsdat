@@ -113,6 +113,10 @@ def test_filesystem_save_and_fetch_data_s3(
         end=datetime.fromisoformat("2022-04-06 00:00:00"),
         datastream="sgp.testing-storage.a0",
     )
+    print("====================dataset", dataset, type(dataset))
+    print("====================expected", expected, type(expected))
+    assert_close(expected, expected)
+    assert_close(dataset, dataset)
     assert_close(dataset, expected)
 
 
