@@ -95,7 +95,7 @@ def test_filesystem_save_and_fetch_data_s3(
     # s3_client = s3_storage.parameters.client
 
     # Save/upload to s3
-    s3_storage.put_data(sample_dataset)
+    s3_storage.save_data_s3(sample_dataset)
     expected_file_path_local = Path(
         s3_storage.parameters.storage_root
         / "data"
@@ -107,13 +107,14 @@ def test_filesystem_save_and_fetch_data_s3(
     # print("file_storage.parameters.storage_root============ ", s3_storage.parameters.storage_root)
     # print("expected_file============ ", expected_file)
     #
-    # # Fetch
-    # dataset = s3_storage.fetch_data(
-    #     start=datetime.fromisoformat("2022-04-05 00:00:00"),
-    #     end=datetime.fromisoformat("2022-04-06 00:00:00"),
-    #     datastream="sgp.testing-storage.a0",
-    # )
-    # assert_close(dataset, expected)
+    # Fetch
+    dataset = s3_storage.fetch_data_s3(
+        start=datetime.fromisoformat("2022-04-05 00:00:00"),
+        end=datetime.fromisoformat("2022-04-06 00:00:00"),
+        datastream="sgp.testing-storage.a0",
+    )
+    assert_close(dataset, expected)
+
 
 def test_filesystem_save_and_fetch_data(
         s3_storage, sample_dataset: xr.Dataset

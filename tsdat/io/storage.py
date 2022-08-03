@@ -177,28 +177,25 @@ class S3Storage(FileSystem):
     class Parameters(FileSystem.Parameters):
         bucket: str
         region: str = "us-west-2"
-        # s3_client = boto3.client('s3')  # TODO: need to refactor since this is not parameter
-        #
-        # @property
-        # def client(self):
-        #     return self._client
 
-    # class MyS3Client:
-    #     def __init__(self, region_name="us-west-2"):
-    #         self.client = boto3.client("s3", region_name=region_name)
-    #
-    #     # def list_buckets(self):
-    #     #     """Returns a list of bucket names."""
-    #     #     response = self.client.list_buckets()
-    #     #     return [bucket["Name"] for bucket in response["Buckets"]]
-    #     #
-    #     # def list_objects(self, bucket_name, prefix):
-    #     #     """Returns a list all objects with specified prefix."""
-    #     #     response = self.client.list_objects(
-    #     #         Bucket=bucket_name,
-    #     #         Prefix=prefix,
-    #     #     )
-    #     #     return [object["Key"] for object in response["Contents"]]
+    @staticmethod
+    def _get_s3_client():
+        client = boto3.client('s3',
+                              aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+                              aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+                              aws_session_token=os.environ["AWS_SESSION_TOKEN"]
+                              )  # TODO: refactor to find a better way to init
+        return client
+
+
+    def _get_s3_bucket(self):
+        s3 = boto3.resource('s3',
+                            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+                            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+                            aws_session_token=os.environ["AWS_SESSION_TOKEN"]
+                            )  # TODO: refactor to a better place to init.
+        my_bucket = s3.Bucket(self.parameters.bucket)
+        return my_bucket
 
     parameters: Parameters
     # my_s3_client: MyS3Client
@@ -215,9 +212,9 @@ class S3Storage(FileSystem):
         pass
         # return super().save_ancillary_file(filepath, datastream)
 
-    def put_data(self, dataset: xr.Dataset):
+    def save_data_s3(self, dataset: xr.Dataset):
         """-----------------------------------------------------------------------------
-                Saves a dataset to the s3 bucket.
+                Saves a dataset to the s3 bucket. (save_data counterpart)
 
                 At a minimum, the dataset must have a 'datastream' global attribute and must
                 have a 'time' variable with a np.datetime64-like data type.
@@ -226,12 +223,7 @@ class S3Storage(FileSystem):
                     dataset (xr.Dataset): The dataset to save.
 
                 -----------------------------------------------------------------------------"""
-        client = boto3.client('s3',
-                              aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-                              aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-                              aws_session_token=os.environ["AWS_SESSION_TOKEN"]
-                              )  # TODO: refactor to find a better way to init
-
+        client = self._get_s3_client()
         bucket = self.parameters.bucket
         datastream = dataset.attrs["datastream"]
         filepath = self._get_dataset_filepath(dataset, datastream)
@@ -245,16 +237,81 @@ class S3Storage(FileSystem):
             Bucket=bucket,
             Key=file_name_on_s3,
         )
-        print(response)
+        # print(response)
+        logger.info("Saved %s dataset to AWS S3 in bucket %s at %s", datastream, bucket, file_name_on_s3)
 
-        # filepath = self._get_dataset_filepath(dataset, datastream)
-        # filepath.parent.mkdir(exist_ok=True, parents=True)
-        # self.handler.writer.write(dataset, filepath)
-        # logger.info("Saved %s dataset to S3 %s", datastream, filepath.as_posix())  # TODO: mimic this
-
-    def get_data(self, dataset: xr.Dataset):
+    def fetch_data_s3(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
         pass
         # placeholder: to mimic fetch_data
+        """-----------------------------------------------------------------------------
+                Gets data from AWS S3 for a given datastream between a specified time range. (fetch_data counterpart)
+
+                Note: this method is not smart; it searches for the appropriate data files using
+                their filenames and does not filter within each data file.
+
+                Args:
+                    start (datetime): The minimum datetime to fetch.
+                    end (datetime): The maximum datetime to fetch.
+                    datastream (str): The datastream id to search for.
+
+                Returns:
+                    xr.Dataset: A dataset containing (after searching and merging) all the data 
+                    in the storage area that spans the specified datetimes.
+
+                -----------------------------------------------------------------------------"""
+        data_files_s3 = self._find_data_at_s3(start, end, datastream)
+        print("===================data_files_s3", data_files_s3)
+        # datasets = self._open_data_files(*data_files)  # TODO: mimic this
+        datasets = self._open_data_files_s3(*data_files_s3)
+        print("datasets[0]", datasets[0])
+
+        return xr.merge(datasets, **self.parameters.merge_fetched_data_kwargs)  # type: ignore
+
+    def _open_data_files_s3(self, *filepaths_s3: str) -> List[xr.Dataset]:
+        dataset_list: List[xr.Dataset] = []
+        # download object to memory
+        my_bucket = self._get_s3_bucket()
+
+        for filepath in filepaths_s3:
+            buf = io.BytesIO()
+            my_bucket.download_fileobj(filepath, buf)
+            filecontent_bytes = buf.getvalue()
+            data = xr.load_dataset(filecontent_bytes)
+            # data = self.handler.reader.read(filepath.as_posix())
+            if isinstance(data, dict):
+                data = xr.merge(data.values())  # type: ignore
+            dataset_list.append(data)
+        return dataset_list
+    s3_Path = str  # alias
+
+    def _find_data_at_s3(self, start: datetime, end: datetime, datastream: str) -> List[s3_Path]:
+        data_dirpath = self.parameters.storage_root / "data" / datastream
+        print("=========data_dirpath, ", data_dirpath)
+        prefix = str(data_dirpath)
+        print("=========prefix, ", prefix)
+
+        my_bucket = self._get_s3_bucket()
+
+        # prefix = 'test/storage_root/data/sgp.testing-storage.a0/'
+
+        for object_summary in my_bucket.objects.filter(Prefix=prefix):
+            print("=============print(object_summary.key)")
+            print(object_summary.key)
+
+        filepaths_at_s3: List[str] = [object_summary.key for object_summary in my_bucket.objects.filter(Prefix=prefix)]
+
+
+        # client = self._get_s3_client()
+        # result = client.list_objects_v2(Bucket=bucket, Prefix=prefix, Delimiter='/')
+        # # filepaths_at_s3 = [data_dirpath / Path(file) for file in os.listdir(data_dirpath)]  # TODO: mimic this at s3
+        # print("=========result, ", result)
+        # filepaths_at_s3: List[str] = [content.get("Key") for content in result.get("Contents")]
+        print("========filepaths_at_s3 ", filepaths_at_s3, type(filepaths_at_s3))
+        # s3_paths = self._filter_between_dates_at_s3(filepaths, start, end)
+        valid_filepaths_at_s3 = self._filter_between_dates(list(map(Path, filepaths_at_s3)), start, end)
+        print("========valid_filepaths_at_s3 ", valid_filepaths_at_s3, type(valid_filepaths_at_s3))
+        return list(map(str, valid_filepaths_at_s3))
+
 
 
 class ZarrLocalStorage(Storage):
