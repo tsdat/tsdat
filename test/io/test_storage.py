@@ -70,21 +70,20 @@ def s3_client():
 
 @fixture
 def s3_storage():
-    bucket: str = ""
+    bucket: str = "kefei-test"  # TODO: refactor to env var
     region: str = ""
     storage_root_pre: str = ""  # used to be Path.cwd()
     storage_root = storage_root_pre + "test/storage_root"
     storage = S3Storage(
         parameters={"storage_root": storage_root,
                     "bucket": bucket,
-                    # "s3_client":s3_client,
                     },  # type: ignore
         handler=NetCDFHandler(),
 
     )
-    print("storage_root: ", storage_root)
+    # print("storage_root: ", storage_root)
     yield storage
-    # shutil.rmtree(storage.parameters.storage_root)
+    # shutil.rmtree(storage.parameters.storage_root)  # TODO: mimic this behavior and delete testing upload object
 
 
 # TODO: relocate test_filesystem_save_and_fetch_data_s3 to after test_filesystem_save_and_fetch_data
@@ -96,24 +95,26 @@ def test_filesystem_save_and_fetch_data_s3(
     # s3_client = s3_storage.parameters.client
 
     # Save/upload to s3
-    s3_storage.put_data(sample_dataset)
-    # expected_file_path_local = Path(
-    #     s3_storage.parameters.storage_root
-    #     / "data"
-    #     / "sgp.testing-storage.a0"
-    #     / "sgp.testing-storage.a0.20220405.000000.nc"
-    # )
-    # assert expected_file.is_file()
+    s3_storage.save_data_s3(sample_dataset)
+    expected_file_path_local = Path(
+        s3_storage.parameters.storage_root
+        / "data"
+        / "sgp.testing-storage.a0"
+        / "sgp.testing-storage.a0.20220405.000000.nc"
+    )
+    # assert expected_file_path_local.is_file()  # TODO: mimic this
+
     # print("file_storage.parameters.storage_root============ ", s3_storage.parameters.storage_root)
     # print("expected_file============ ", expected_file)
     #
-    # # Fetch
-    # dataset = s3_storage.fetch_data(
-    #     start=datetime.fromisoformat("2022-04-05 00:00:00"),
-    #     end=datetime.fromisoformat("2022-04-06 00:00:00"),
-    #     datastream="sgp.testing-storage.a0",
-    # )
-    # assert_close(dataset, expected)
+    # Fetch
+    dataset = s3_storage.fetch_data_s3(
+        start=datetime.fromisoformat("2022-04-05 00:00:00"),
+        end=datetime.fromisoformat("2022-04-06 00:00:00"),
+        datastream="sgp.testing-storage.a0",
+    )
+    assert_close(dataset, expected)
+
 
 def test_filesystem_save_and_fetch_data(
         s3_storage, sample_dataset: xr.Dataset
