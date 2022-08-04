@@ -14,7 +14,7 @@ import io
 import boto3
 
 
-__all__ = ["FileSystem"]
+__all__ = ["FileSystem", "S3Storage"]
 
 # IDEA: interval / split files apart by some timeframe (e.g., 1 day)
 #
