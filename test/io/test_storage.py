@@ -81,57 +81,6 @@ def s3_storage():
         obj.delete()
 
 
-# TODO: relocate test_filesystem_save_and_fetch_data_s3 to after test_filesystem_save_and_fetch_data
-def test_filesystem_save_and_fetch_data_s3(
-    s3_storage: S3Storage, sample_dataset: xr.Dataset
-):
-
-    expected = sample_dataset.copy(deep=True)  # type: ignore
-
-    # Save/upload to s3
-    s3_storage.save_data_s3(sample_dataset)
-    expected_file_path_local = Path(
-        s3_storage.parameters.storage_root
-        / "data"
-        / "sgp.testing-storage.a0"
-        / "sgp.testing-storage.a0.20220405.000000.nc"
-    )
-    expected_file_path_s3 = str(expected_file_path_local)
-    assert s3_storage._is_file_exist_s3(key_name=expected_file_path_s3)
-
-    # Fetch
-    dataset = s3_storage.fetch_data_s3(
-        start=datetime.fromisoformat("2022-04-05 00:00:00"),
-        end=datetime.fromisoformat("2022-04-06 00:00:00"),
-        datastream="sgp.testing-storage.a0",
-    )
-    assert_close(dataset, expected, check_fill_value=False)  # check_fill_value=False to avoid NAN != None when fillna
-
-
-def test_filesystem_saves_ancillary_files_s3(s3_storage: S3Storage):
-    expected_filepath = str(
-            s3_storage.parameters.storage_root
-            / "ancillary"
-            / "sgp.testing-storage.a0"
-            / "ancillary_file.txt"
-    )
-
-    # Create a temp file at `ancillary_filepath_src` as resource ancillary file
-    tmp_dir = tempfile.TemporaryDirectory()
-    ancillary_filepath_src = str(Path(tmp_dir.name) / "ancillary_file.txt")
-    object_bytes = "foobar"
-    s3_storage._put_object_s3(object_bytes=object_bytes, file_name_on_s3=ancillary_filepath_src)
-
-    # Core test
-    s3_storage.save_ancillary_file_s3(
-        path_src=ancillary_filepath_src, datastream="sgp.testing-storage.a0"
-    )
-    assert s3_storage._is_file_exist_s3(key_name=expected_filepath)
-
-    # clean up tmp file
-    s3_storage._delete_all_objects_under_prefix(prefix=ancillary_filepath_src)
-
-
 def test_filesystem_save_and_fetch_data(
     file_storage: FileSystem, sample_dataset: xr.Dataset
 ):
@@ -227,3 +176,53 @@ def test_zarr_storage_saves_ancillary_files(zarr_storage: ZarrLocalStorage):
         ancillary_filepath.write_text("foobar")
     assert expected_filepath.is_file()
     os.remove(expected_filepath)
+
+
+def test_filesystem_save_and_fetch_data_s3(
+    s3_storage: S3Storage, sample_dataset: xr.Dataset
+):
+
+    expected = sample_dataset.copy(deep=True)  # type: ignore
+
+    # Save/upload to s3
+    s3_storage.save_data_s3(sample_dataset)
+    expected_file_path_local = Path(
+        s3_storage.parameters.storage_root
+        / "data"
+        / "sgp.testing-storage.a0"
+        / "sgp.testing-storage.a0.20220405.000000.nc"
+    )
+    expected_file_path_s3 = str(expected_file_path_local)
+    assert s3_storage._is_file_exist_s3(key_name=expected_file_path_s3)
+
+    # Fetch
+    dataset = s3_storage.fetch_data_s3(
+        start=datetime.fromisoformat("2022-04-05 00:00:00"),
+        end=datetime.fromisoformat("2022-04-06 00:00:00"),
+        datastream="sgp.testing-storage.a0",
+    )
+    assert_close(dataset, expected, check_fill_value=False)  # check_fill_value=False to avoid NAN != None when fillna
+
+
+def test_filesystem_saves_ancillary_files_s3(s3_storage: S3Storage):
+    expected_filepath = str(
+        s3_storage.parameters.storage_root
+        / "ancillary"
+        / "sgp.testing-storage.a0"
+        / "ancillary_file.txt"
+    )
+
+    # Create a temp file at `ancillary_filepath_src` as resource ancillary file
+    tmp_dir = tempfile.TemporaryDirectory()
+    ancillary_filepath_src = str(Path(tmp_dir.name) / "ancillary_file.txt")
+    object_bytes = "foobar"
+    s3_storage._put_object_s3(object_bytes=object_bytes, file_name_on_s3=ancillary_filepath_src)
+
+    # Core test
+    s3_storage.save_ancillary_file_s3(
+        path_src=ancillary_filepath_src, datastream="sgp.testing-storage.a0"
+    )
+    assert s3_storage._is_file_exist_s3(key_name=expected_filepath)
+
+    # clean up tmp file
+    s3_storage._delete_all_objects_under_prefix(prefix=ancillary_filepath_src)
