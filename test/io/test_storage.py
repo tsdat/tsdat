@@ -215,7 +215,7 @@ def test_filesystem_saves_ancillary_files_s3(s3_storage: S3Storage):
     # Create a temp file at `ancillary_filepath_src` as resource ancillary file
     tmp_dir = tempfile.TemporaryDirectory()
     ancillary_filepath_src = str(Path(tmp_dir.name) / "ancillary_file.txt")
-    object_bytes = "foobar"
+    object_bytes = "foobar".encode('utf-8')
     s3_storage._put_object_s3(object_bytes=object_bytes, file_name_on_s3=ancillary_filepath_src)
 
     # Core test
