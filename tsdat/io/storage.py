@@ -182,12 +182,28 @@ class S3Storage(FileSystem):
         region: str = "us-west-2"
 
     @staticmethod
-    def _get_s3_client():
+    def _check_aws_credentials():
+        try:
+            aws_access_key_id = os.environ["AWS_ACCESS_KEY_ID"]
+            aws_secret_access_key = os.environ["AWS_SECRET_ACCESS_KEY"]
+            aws_session_token = os.environ["AWS_SESSION_TOKEN"]
+        except Exception as e:
+            logger.warning("Environment variable for AWS credentials is not configured")
+            logger.warning(e)
+
+    def _delete_all_objects_under_prefix(self, prefix):
+        s3 = self._get_s3_resource()
+        test_bucket = s3.Bucket(self.parameters.bucket)
+        for obj in test_bucket.objects.filter(Prefix=prefix):
+            obj.delete()
+
+    def _get_s3_client(self):
+        self._check_aws_credentials()
         client = boto3.client('s3')
         return client
 
-    @staticmethod
-    def _get_s3_resource():
+    def _get_s3_resource(self):
+        self._check_aws_credentials()
         resource = boto3.resource('s3')
         return resource
 
@@ -202,6 +218,17 @@ class S3Storage(FileSystem):
     def save_ancillary_file(self, filepath: Path, datastream: str):
         return super().save_ancillary_file(filepath, datastream)
 
+    def _put_object_s3(self, object_bytes: bytes, file_name_on_s3: s3_Path):
+
+        client = self._get_s3_client()
+        bucket = self.parameters.bucket
+        response = client.put_object(
+            Body=object_bytes,
+            Bucket=bucket,
+            Key=file_name_on_s3,
+        )
+        # print(response)
+
     def save_data_s3(self, dataset: xr.Dataset):
         """-----------------------------------------------------------------------------
                 Saves a dataset to the s3 bucket. (save_data counterpart)
@@ -213,8 +240,7 @@ class S3Storage(FileSystem):
                     dataset (xr.Dataset): The dataset to save.
 
                 -----------------------------------------------------------------------------"""
-        client = self._get_s3_client()
-        bucket = self.parameters.bucket
+
         datastream = dataset.attrs["datastream"]
         filepath = self._get_dataset_filepath(dataset, datastream)
 
@@ -222,12 +248,7 @@ class S3Storage(FileSystem):
         file_name_on_s3: s3_Path = str(filepath)
 
         # put_object to s3 directly from memory
-        response = client.put_object(
-            Body=file_body_to_upload,
-            Bucket=bucket,
-            Key=file_name_on_s3,
-        )
-        # print(response)
+        self._put_object_s3(object_bytes=file_body_to_upload, file_name_on_s3=file_name_on_s3)
         logger.info("Saved %s dataset to AWS S3 in bucket %s at %s", datastream, bucket, file_name_on_s3)
 
     def fetch_data_s3(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
@@ -310,6 +331,25 @@ class S3Storage(FileSystem):
         valid_filepaths_at_s3 = self._filter_between_dates(list(map(Path, filepaths_at_s3)), start, end)
         return list(map(str, valid_filepaths_at_s3))
 
+    def save_ancillary_file_s3(self, path_src: s3_Path, datastream: str):
+        """-----------------------------------------------------------------------------
+        Saves an ancillary filepath to the datastream's ancillary storage area.
+
+        Args:
+            path_src (s3_Path): The path to the ancillary file.
+            datastream (str): The datastream that the file is related to.
+
+        -----------------------------------------------------------------------------"""
+        path_dst: s3_Path = str(self._get_ancillary_filepath(Path(path_src), datastream))
+        s3 = self._get_s3_resource()
+        bucket_name = self.parameters.bucket
+        copy_source = {
+            'Bucket': bucket_name,
+            'Key': path_src
+        }
+        my_bucket = s3.Bucket(bucket_name)
+        my_bucket.copy(copy_source, path_dst)
+        logger.info("Saved ancillary to AWS S3 to %s, in bucket %s", path_dst, bucket_name)
 
 
 class ZarrLocalStorage(Storage):

@@ -109,6 +109,30 @@ def test_filesystem_save_and_fetch_data_s3(
     assert_close(dataset, expected, check_fill_value=False)  # check_fill_value=False to avoid NAN != None when fillna
 
 
+def test_filesystem_saves_ancillary_files_s3(s3_storage: S3Storage):
+    expected_filepath = str(
+            s3_storage.parameters.storage_root
+            / "ancillary"
+            / "sgp.testing-storage.a0"
+            / "ancillary_file.txt"
+    )
+
+    # Create a temp file at `ancillary_filepath_src` as resource ancillary file
+    tmp_dir = tempfile.TemporaryDirectory()
+    ancillary_filepath_src = str(Path(tmp_dir.name) / "ancillary_file.txt")
+    object_bytes = "foobar"
+    s3_storage._put_object_s3(object_bytes=object_bytes, file_name_on_s3=ancillary_filepath_src)
+
+    # Core test
+    s3_storage.save_ancillary_file_s3(
+        path_src=ancillary_filepath_src, datastream="sgp.testing-storage.a0"
+    )
+    assert s3_storage._is_file_exist_s3(key_name=expected_filepath)
+
+    # clean up tmp file
+    s3_storage._delete_all_objects_under_prefix(prefix=ancillary_filepath_src)
+
+
 def test_filesystem_save_and_fetch_data(
     file_storage: FileSystem, sample_dataset: xr.Dataset
 ):
