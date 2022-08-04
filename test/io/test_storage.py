@@ -6,9 +6,8 @@ import pandas as pd
 from pathlib import Path
 from pytest import fixture
 from datetime import datetime
-from tsdat.io.storage import FileSystem, S3Storage
 from tsdat.io.handlers import NetCDFHandler, ZarrHandler
-from tsdat.io.storage import FileSystem, ZarrLocalStorage
+from tsdat.io.storage import FileSystem, ZarrLocalStorage, S3Storage
 from tsdat.testing import assert_close
 import boto3
 
