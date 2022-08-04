@@ -252,6 +252,10 @@ class S3Storage(FileSystem):
 
         return xr.merge(datasets, **self.parameters.merge_fetched_data_kwargs)  # type: ignore
 
+    def _create_bucket(self):
+        # TODO: create a bucket if not exists
+        pass
+
     def _is_file_exist_s3(self, key_name: s3_Path) -> bool:
         s3 = self._get_s3_resource()
         bucket_name = self.parameters.bucket

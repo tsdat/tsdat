@@ -62,20 +62,24 @@ def zarr_storage():
 @fixture
 def s3_storage():
     bucket: str = os.environ["STORAGE_BUCKET"]  # TODO: might change to "TSDAT_S3_STORAGE_BUCKET"
-    region: str = ""  # region is not required for s3
+    region: str = "us-west-2"  # hard coded for now. region is not required for s3
     storage_root_pre: str = ""  # used to be Path.cwd()
     storage_root = storage_root_pre + "test/storage_root"
     storage = S3Storage(
         parameters={"storage_root": storage_root,
                     "bucket": bucket,
-                    # "region": region
+                    "region": region
                     },  # type: ignore
         handler=NetCDFHandler(),
 
     )
     # print("storage_root: ", storage_root)
     yield storage
-    # shutil.rmtree(storage.parameters.storage_root)  # TODO: mimic this behavior and delete testing upload object
+    # clean up: delete the test datasets
+    s3 = boto3.resource('s3')
+    test_bucket = s3.Bucket(bucket)
+    for obj in test_bucket.objects.filter(Prefix=storage_root):
+        obj.delete()
 
 
 # TODO: relocate test_filesystem_save_and_fetch_data_s3 to after test_filesystem_save_and_fetch_data
