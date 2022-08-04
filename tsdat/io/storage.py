@@ -197,12 +197,12 @@ class S3Storage(FileSystem):
         for obj in test_bucket.objects.filter(Prefix=prefix):
             obj.delete()
 
-    def _get_s3_client(self):
+    def _get_s3_client(self):  # TODO: use singleton pattern
         self._check_aws_credentials()
         client = boto3.client('s3')
         return client
 
-    def _get_s3_resource(self):
+    def _get_s3_resource(self):  # TODO: use singleton pattern
         self._check_aws_credentials()
         resource = boto3.resource('s3')
         return resource
@@ -249,7 +249,7 @@ class S3Storage(FileSystem):
 
         # put_object to s3 directly from memory
         self._put_object_s3(object_bytes=file_body_to_upload, file_name_on_s3=file_name_on_s3)
-        logger.info("Saved %s dataset to AWS S3 in bucket %s at %s", datastream, bucket, file_name_on_s3)
+        logger.info("Saved %s dataset to AWS S3 in bucket %s at %s", datastream, self.parameters.bucket, file_name_on_s3)
 
     def fetch_data_s3(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
         """-----------------------------------------------------------------------------
