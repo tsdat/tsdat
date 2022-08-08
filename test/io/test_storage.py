@@ -185,7 +185,8 @@ def test_filesystem_save_and_fetch_data_s3(
     expected = sample_dataset.copy(deep=True)  # type: ignore
 
     # Save/upload to s3
-    s3_storage.save_data_s3(sample_dataset)
+    # s3_storage.save_data_s3(sample_dataset)
+    s3_storage.save_data(sample_dataset)
     expected_file_path_local = Path(
         s3_storage.parameters.storage_root
         / "data"
@@ -196,7 +197,12 @@ def test_filesystem_save_and_fetch_data_s3(
     assert s3_storage._is_file_exist_s3(key_name=expected_file_path_s3)
 
     # Fetch
-    dataset = s3_storage.fetch_data_s3(
+    # dataset = s3_storage.fetch_data_s3(
+    #     start=datetime.fromisoformat("2022-04-05 00:00:00"),
+    #     end=datetime.fromisoformat("2022-04-06 00:00:00"),
+    #     datastream="sgp.testing-storage.a0",
+    # )
+    dataset = s3_storage.fetch_data(
         start=datetime.fromisoformat("2022-04-05 00:00:00"),
         end=datetime.fromisoformat("2022-04-06 00:00:00"),
         datastream="sgp.testing-storage.a0",
@@ -213,16 +219,31 @@ def test_filesystem_saves_ancillary_files_s3(s3_storage: S3Storage):
     )
 
     # Create a temp file at `ancillary_filepath_src` as resource ancillary file
+
+    # # workflow no.1 temp file at path on S3
+    # tmp_dir = tempfile.TemporaryDirectory()
+    # ancillary_filepath_src = str(Path(tmp_dir.name) / "ancillary_file.txt")
+    # object_bytes = "foobar".encode('utf-8')
+    # s3_storage._put_object_s3(object_bytes=object_bytes, file_name_on_s3=ancillary_filepath_src)
+    #
+    # # Core test
+    # s3_storage.save_ancillary_file_s3(
+    #     path_src=ancillary_filepath_src, datastream="sgp.testing-storage.a0"
+    # )
+
+    # clean up tmp file
+    # s3_storage._delete_all_objects_under_prefix(prefix=ancillary_filepath_src)
+
+    # workflow no.2 temp file at path on local
     tmp_dir = tempfile.TemporaryDirectory()
-    ancillary_filepath_src = str(Path(tmp_dir.name) / "ancillary_file.txt")
-    object_bytes = "foobar".encode('utf-8')
-    s3_storage._put_object_s3(object_bytes=object_bytes, file_name_on_s3=ancillary_filepath_src)
+    ancillary_filepath_src = Path(tmp_dir.name) / "ancillary_file.txt"
+    ancillary_filepath_src.write_text("foobar")
 
     # Core test
-    s3_storage.save_ancillary_file_s3(
-        path_src=ancillary_filepath_src, datastream="sgp.testing-storage.a0"
+    s3_storage.save_ancillary_file(
+        filepath=ancillary_filepath_src, datastream="sgp.testing-storage.a0"
     )
     assert s3_storage._is_file_exist_s3(key_name=expected_filepath)
 
-    # clean up tmp file
-    s3_storage._delete_all_objects_under_prefix(prefix=ancillary_filepath_src)
+    # # clean up tmp file
+    # s3_storage._delete_all_objects_under_prefix(prefix=ancillary_filepath_src)

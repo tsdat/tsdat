@@ -210,13 +210,51 @@ class S3Storage(FileSystem):
     parameters: Parameters
 
     def save_data(self, dataset: xr.Dataset):
-        return super().save_data(dataset)
+        """-----------------------------------------------------------------------------
+                Saves a dataset to the s3 bucket. (save_data counterpart)
+
+                At a minimum, the dataset must have a 'datastream' global attribute and must
+                have a 'time' variable with a np.datetime64-like data type.
+
+                Args:
+                    dataset (xr.Dataset): The dataset to save.
+
+                -----------------------------------------------------------------------------"""
+        return self.save_data_s3(dataset)
 
     def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
-        return super().fetch_data(start, end, datastream)
+        """-----------------------------------------------------------------------------
+                Gets data from AWS S3 for a given datastream between a specified time range. (fetch_data counterpart)
+
+                Note: this method is not smart; it searches for the appropriate data files using
+                their filenames and does not filter within each data file.
+
+                Args:
+                    start (datetime): The minimum datetime to fetch.
+                    end (datetime): The maximum datetime to fetch.
+                    datastream (str): The datastream id to search for.
+
+                Returns:
+                    xr.Dataset: A dataset containing (after searching and merging) all the data
+                    in the storage area that spans the specified datetimes.
+
+                -----------------------------------------------------------------------------"""
+        return self.fetch_data_s3(start, end, datastream)
 
     def save_ancillary_file(self, filepath: Path, datastream: str):
-        return super().save_ancillary_file(filepath, datastream)
+        """-----------------------------------------------------------------------------
+                Saves an ancillary filepath to the datastream's ancillary storage area.
+
+                Args:
+                    filepath (Path): The path to the ancillary file. (Note: assuming filepath is at local)
+                    datastream (str): The datastream that the file is related to.
+
+                -----------------------------------------------------------------------------"""
+        path_src: str = str(filepath)
+        with open(filepath, 'r') as f:
+            output = f.read()
+        self._put_object_s3(object_bytes=output, file_name_on_s3=path_src)
+        return self.save_ancillary_file_s3(path_src, datastream)
 
     def _put_object_s3(self, object_bytes: bytes, file_name_on_s3: s3_Path):
 
@@ -350,6 +388,9 @@ class S3Storage(FileSystem):
         my_bucket = s3.Bucket(bucket_name)
         my_bucket.copy(copy_source, path_dst)
         logger.info("Saved ancillary to AWS S3 to %s, in bucket %s", path_dst, bucket_name)
+
+        # clean up tmp file
+        self._delete_all_objects_under_prefix(prefix=path_src)
 
 
 class ZarrLocalStorage(Storage):
