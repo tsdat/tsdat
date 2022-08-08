@@ -6,7 +6,7 @@ import xarray as xr
 from pydantic import BaseModel, Extra
 from typing import Any, Dict, List, Pattern, cast
 from ..config.dataset import DatasetConfig
-from .base import Retriever, DataReader, DataConverter
+from .base import Retriever, DataReader, DataConverter, Storage
 
 __all__ = ["DefaultRetriever"]
 
@@ -19,6 +19,11 @@ class RetrievedVariable(BaseModel, extra=Extra.forbid):
 
 
 class InputKeyRetrieverConfig:
+    """------------------------------------------------------------------------------------
+    Tracks the coords and data vars that should be retrieved for a given input key.
+
+    ------------------------------------------------------------------------------------"""
+
     def __init__(self, input_key: str, retriever: "DefaultRetriever") -> None:
         self.coords: Dict[str, RetrievedVariable] = {}
         self.data_vars: Dict[str, RetrievedVariable] = {}
@@ -100,6 +105,7 @@ class DefaultRetriever(Retriever):
         return output_dataset
 
     def _get_raw_mapping(self, input_keys: List[str]) -> Dict[str, xr.Dataset]:
+        """"""
         dataset_mapping: Dict[str, xr.Dataset] = {}
         input_reader_mapping = self._match_inputs(input_keys)
         for input_key, reader in input_reader_mapping.items():  # IDEA: async
@@ -111,6 +117,7 @@ class DefaultRetriever(Retriever):
         return dataset_mapping
 
     def _match_inputs(self, input_keys: List[str]) -> Dict[str, DataReader]:
+        """Matches each input key to the DataReader that should be used to open it."""
         input_reader_mapping: Dict[str, DataReader] = {}
         for input_key in input_keys:
             for regex, reader in self.readers.items():  # type: ignore
@@ -241,3 +248,13 @@ class DefaultRetriever(Retriever):
 
     def _merge_raw_mapping(self, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         return xr.merge(list(raw_mapping.values()), **self.parameters.merge_kwargs)  # type: ignore
+
+
+class StorageRetriever(Retriever):
+
+    storage: Storage
+
+    def retrieve(
+        self, input_keys: List[str], dataset_config: DatasetConfig, **kwargs: Any
+    ) -> xr.Dataset:
+        ...
