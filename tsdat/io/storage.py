@@ -254,7 +254,7 @@ class S3Storage(FileSystem):
         with open(filepath, 'r') as f:
             output = f.read()
         self._put_object_s3(object_bytes=output, file_name_on_s3=path_src)
-        return self.save_ancillary_file_s3(path_src, datastream)
+        return self.save_ancillary_file_s3(path_src, datastream, True)
 
     def _put_object_s3(self, object_bytes: bytes, file_name_on_s3: s3_Path):
 
@@ -369,13 +369,14 @@ class S3Storage(FileSystem):
         valid_filepaths_at_s3 = self._filter_between_dates(list(map(Path, filepaths_at_s3)), start, end)
         return list(map(str, valid_filepaths_at_s3))
 
-    def save_ancillary_file_s3(self, path_src: s3_Path, datastream: str):
+    def save_ancillary_file_s3(self, path_src: s3_Path, datastream: str, is_src_temp: bool=False):
         """-----------------------------------------------------------------------------
         Saves an ancillary filepath to the datastream's ancillary storage area.
 
         Args:
             path_src (s3_Path): The path to the ancillary file.
             datastream (str): The datastream that the file is related to.
+            is_src_temp (bool), False: Flag to indicate if the file at path_src is temporary. If so then delete it.
 
         -----------------------------------------------------------------------------"""
         path_dst: s3_Path = str(self._get_ancillary_filepath(Path(path_src), datastream))
@@ -389,8 +390,9 @@ class S3Storage(FileSystem):
         my_bucket.copy(copy_source, path_dst)
         logger.info("Saved ancillary to AWS S3 to %s, in bucket %s", path_dst, bucket_name)
 
-        # clean up tmp file
-        self._delete_all_objects_under_prefix(prefix=path_src)
+        # if the file at path_src is temporary, clean up tmp file
+        if is_src_temp:
+            self._delete_all_objects_under_prefix(prefix=path_src)
 
 
 class ZarrLocalStorage(Storage):
