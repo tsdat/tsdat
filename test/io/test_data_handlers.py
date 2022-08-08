@@ -6,16 +6,17 @@ from pathlib import Path
 from pytest import fixture
 from pandas.testing import assert_frame_equal
 from tsdat.testing import assert_close
+from tsdat.config.utils import recursive_instantiate
 from tsdat.io.handlers import CSVHandler, NetCDFHandler, ParquetHandler, ZarrHandler
 from tsdat.io.readers import (
     CSVReader,
     NetCDFReader,
     ParquetReader,
     ZarrReader,
+    TarReader,
     ZipReader,
 )
 from tsdat.io.writers import CSVWriter, NetCDFWriter, ParquetWriter, ZarrWriter
-from tsdat.config.utils import recursive_instantiate
 
 
 @fixture
@@ -72,6 +73,23 @@ def test_zarr_reader(sample_dataset: xr.Dataset):
     reader = ZarrReader()
     dataset = reader.read("test/io/data/input.zarr")
     assert_close(dataset, expected, check_fill_value=False)
+
+
+def test_tar_reader(sample_dataset: xr.Dataset):
+    params = {
+        "read_tar_kwargs": {"mode": "r:gz"},
+        "readers": {
+            r".*\.nc": {
+                "classname": "tsdat.io.readers.NetCDFReader",
+                "parameters": {"engine": "h5netcdf",},
+            }
+        },
+    }
+
+    expected = sample_dataset
+    reader = TarReader(parameters=recursive_instantiate(params))
+    dataset = reader.read("test/io/data/input.tar.gz")
+    assert_close(dataset["input.nc"], expected, check_fill_value=False)
 
 
 def test_zip_reader(sample_dataset: xr.Dataset):
