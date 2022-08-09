@@ -135,12 +135,10 @@ class SplitNetCDFWriter(NetCDFWriter):
         while t1 < dataset.time[-1]:
             ds_temp = dataset.sel(time=slice(t1, t2))
 
-            temp_filedir = list(filepath.parts[:-1])
-            new_filename = get_filename(ds_temp, ".nc")
-            temp_filedir.append(new_filename)  # type: ignore
-            temp_filepath = os.path.join(*temp_filedir)
+            new_filename = get_filename(ds_temp, self.file_extension)
+            new_filepath = filepath.with_name(new_filename)
 
-            ds_temp.to_netcdf(temp_filepath, **to_netcdf_kwargs)  # type: ignore
+            ds_temp.to_netcdf(new_filepath, **to_netcdf_kwargs)  # type: ignore
 
             t1 = t2
             t2 = t1 + np.timedelta64(interval, unit)

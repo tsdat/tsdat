@@ -46,6 +46,18 @@ def sample_dataset() -> xr.Dataset:
 
 
 @fixture
+def sample_dataset_w_time(sample_dataset: xr.Dataset) -> xr.Dataset:
+    time_coord = [
+        datetime.strptime(x, "%Y-%m-%d %H:%M:%S")
+        for x in sample_dataset["timestamp"].data
+    ]
+    ds = sample_dataset.assign_coords({"index": time_coord}).rename({"index": "time"})  # type: ignore
+    ds.attrs["datastream"] = "test_writer"
+
+    return ds
+
+
+@fixture
 def sample_dataframe() -> pd.DataFrame:
     data: Dict[str, Any] = {
         "index": [0, 1, 2],
@@ -109,20 +121,13 @@ def test_netcdf_writer(sample_dataset: xr.Dataset):
     tmp_dir.cleanup()
 
 
-def test_split_netcdf_writer(sample_dataset: xr.Dataset):
+def test_split_netcdf_writer(sample_dataset_w_time: xr.Dataset):
     params = {"time_interval": 1, "time_unit": "m"}
-    # expected = sample_dataset.copy(deep=True)  # type: ignore
     writer = SplitNetCDFWriter(parameters=recursive_instantiate(params))
     tmp_dir = tempfile.TemporaryDirectory()
-    time_coord = [
-        datetime.strptime(x, "%Y-%m-%d %H:%M:%S")
-        for x in sample_dataset["timestamp"].data
-    ]
-    test_dataset = sample_dataset.assign_coords({"index": time_coord}).rename({"index": "time"})  # type: ignore
-    test_dataset.attrs["datastream"] = "test_writer"
 
     tmp_file = Path(tmp_dir.name) / "test_writer.nc"
-    writer.write(test_dataset, tmp_file)  # type: ignore
+    writer.write(sample_dataset_w_time, tmp_file)  # type: ignore
 
     filelist = os.listdir(Path(tmp_dir.name))
     filelist.sort()
