@@ -15,3 +15,4 @@ zarr
 rich
 types-PyYAML
 boto3
+boto3-stubs[essential]
