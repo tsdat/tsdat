@@ -4,17 +4,20 @@ import os
 import shutil
 import xarray as xr
 from datetime import datetime
-from pydantic import BaseSettings, validator
+from pydantic import BaseSettings, validator, root_validator, Field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from .base import Storage
 from .handlers import FileHandler, ZarrHandler
 from ..utils import get_filename
-import io
+
 import boto3
+import botocore.exceptions
+
+import tempfile
 
 
-__all__ = ["FileSystem", "S3Storage"]
+__all__ = ["FileSystem", "S3Storage", "ZarrLocalStorage"]
 
 # IDEA: interval / split files apart by some timeframe (e.g., 1 day)
 #
@@ -172,227 +175,101 @@ class FileSystem(Storage):
         return anc_datastream_dir / filepath.name
 
 
-s3_Path = str  # alias
-
-
 class S3Storage(FileSystem):
+    """------------------------------------------------------------------------------------
+    Handles data storage and retrieval for file-based data formats in an AWS S3 bucket.
 
-    class Parameters(FileSystem.Parameters):
-        bucket: str
-        region: str = "us-west-2"
+    Args:
+        parameters (Parameters): File-system and AWS-specific parameters, such as the root
+            path to where files should be saved, or additional keyword arguments to
+            specific functions used by the storage API. See the S3Storage.Parameters
+            class for more details.
+        handler (FileHandler): The FileHandler class that should be used to handle data
+            I/O within the storage API.
 
-    @staticmethod
-    def _check_aws_credentials():
-        try:
-            aws_access_key_id = os.environ["AWS_ACCESS_KEY_ID"]
-            aws_secret_access_key = os.environ["AWS_SECRET_ACCESS_KEY"]
-            aws_session_token = os.environ["AWS_SESSION_TOKEN"]
-        except Exception as e:
-            logger.warning("Environment variable for AWS credentials is not configured")
-            logger.warning(e)
+    ------------------------------------------------------------------------------------"""
 
-    def _delete_all_objects_under_prefix(self, prefix):
-        s3 = self._get_s3_resource()
-        test_bucket = s3.Bucket(self.parameters.bucket)
-        for obj in test_bucket.objects.filter(Prefix=prefix):
-            obj.delete()
+    class Parameters(BaseSettings):  # type: ignore
+        storage_root: Path = Field(Path("storage/root"), env="TSDAT_STORAGE_ROOT")
+        """The path on disk where data and ancillary files will be saved to. Defaults to
+        the `storage/root` folder in the top level of the storage bucket."""
 
-    def _get_s3_client(self):  # TODO: use singleton pattern
-        self._check_aws_credentials()
-        client = boto3.client('s3')
-        return client
+        bucket: str = Field(..., env="TSDAT_S3_BUCKET_NAME")
+        """The name of the S3 bucket that the storage class should attach to."""
 
-    def _get_s3_resource(self):  # TODO: use singleton pattern
-        self._check_aws_credentials()
-        resource = boto3.resource('s3')
-        return resource
+        region: str = Field("us-west-2", env="TSDAT_S3_BUCKET_REGION")
+        """The AWS region of the storage bucket. Defaults to "us-west-2"."""
 
-    parameters: Parameters
+        @root_validator(pre=True)
+        def check_aws_credentials(cls, values: Any):
+            try:
+                client = boto3.client("s3")  # type: ignore
+                _ = client.list_buckets()
+            except botocore.exceptions.ClientError:
+                logger.exception(
+                    "Could not connect to the S3 client. The error is likely due to"
+                    " misconfigured credentials."
+                )
+                raise ValueError("Could not connect to the S3 client.")
+            return values
+
+        @root_validator
+        def ensure_bucket_exists(cls, values: Any):
+
+            return values
+
+    parameters: Parameters  # type: ignore
+
+    @property
+    def bucket(self):
+        s3 = boto3.resource("s3", region_name=self.parameters.region)  # type: ignore
+        return s3.Bucket(name=self.parameters.bucket)
 
     def save_data(self, dataset: xr.Dataset):
-        """-----------------------------------------------------------------------------
-                Saves a dataset to the s3 bucket. (save_data counterpart)
+        datastream: str = dataset.attrs["datastream"]
+        filename = get_filename(dataset, self.handler.extension)
 
-                At a minimum, the dataset must have a 'datastream' global attribute and must
-                have a 'time' variable with a np.datetime64-like data type.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_filepath = Path(tmp_dir) / filename
+            self.handler.writer.write(dataset, tmp_filepath)
+            s3_filepath = self._get_dataset_filepath(dataset, datastream)
+            self.bucket.upload_file(Filename=str(tmp_filepath), Key=str(s3_filepath))
 
-                Args:
-                    dataset (xr.Dataset): The dataset to save.
-
-                -----------------------------------------------------------------------------"""
-        return self.save_data_s3(dataset)
-
-    def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
-        """-----------------------------------------------------------------------------
-                Gets data from AWS S3 for a given datastream between a specified time range. (fetch_data counterpart)
-
-                Note: this method is not smart; it searches for the appropriate data files using
-                their filenames and does not filter within each data file.
-
-                Args:
-                    start (datetime): The minimum datetime to fetch.
-                    end (datetime): The maximum datetime to fetch.
-                    datastream (str): The datastream id to search for.
-
-                Returns:
-                    xr.Dataset: A dataset containing (after searching and merging) all the data
-                    in the storage area that spans the specified datetimes.
-
-                -----------------------------------------------------------------------------"""
-        return self.fetch_data_s3(start, end, datastream)
+        logger.info(
+            "Saved %s dataset to %s in AWS S3 bucket %s",
+            datastream,
+            str(s3_filepath),
+            self.parameters.bucket,
+        )
 
     def save_ancillary_file(self, filepath: Path, datastream: str):
-        """-----------------------------------------------------------------------------
-                Saves an ancillary filepath to the datastream's ancillary storage area.
+        s3_filepath = self._get_ancillary_filepath(filepath, datastream)
+        self.bucket.upload_file(Filename=str(filepath), Key=str(s3_filepath))
+        logger.info("Saved %s ancillary file to: %s", str(s3_filepath))
 
-                Args:
-                    filepath (Path): The path to the ancillary file. (Note: assuming filepath is at local)
-                    datastream (str): The datastream that the file is related to.
+    def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
+        prefix = str(self.parameters.storage_root / "data" / datastream) + "/"
+        objects = self.bucket.objects.filter(Prefix=prefix).all()
+        filepaths = [
+            Path(obj.key) for obj in objects if obj.key.endswith(self.handler.extension)
+        ]
+        return self._filter_between_dates(filepaths, start, end)
 
-                -----------------------------------------------------------------------------"""
-        path_src: str = str(filepath)
-        with open(filepath, 'r') as f:
-            output = f.read()
-        self._put_object_s3(object_bytes=output, file_name_on_s3=path_src)
-        return self.save_ancillary_file_s3(path_src, datastream, True)
-
-    def _put_object_s3(self, object_bytes: bytes, file_name_on_s3: s3_Path):
-
-        client = self._get_s3_client()
-        bucket = self.parameters.bucket
-        response = client.put_object(
-            Body=object_bytes,
-            Bucket=bucket,
-            Key=file_name_on_s3,
-        )
-        # print(response)
-
-    def save_data_s3(self, dataset: xr.Dataset):
-        """-----------------------------------------------------------------------------
-                Saves a dataset to the s3 bucket. (save_data counterpart)
-
-                At a minimum, the dataset must have a 'datastream' global attribute and must
-                have a 'time' variable with a np.datetime64-like data type.
-
-                Args:
-                    dataset (xr.Dataset): The dataset to save.
-
-                -----------------------------------------------------------------------------"""
-
-        datastream = dataset.attrs["datastream"]
-        filepath = self._get_dataset_filepath(dataset, datastream)
-
-        file_body_to_upload: bytes = dataset.to_netcdf(path=None)  # return ``bytes` if path is None`
-        file_name_on_s3: s3_Path = str(filepath)
-
-        # put_object to s3 directly from memory
-        self._put_object_s3(object_bytes=file_body_to_upload, file_name_on_s3=file_name_on_s3)
-        logger.info("Saved %s dataset to AWS S3 in bucket %s at %s", datastream, self.parameters.bucket, file_name_on_s3)
-
-    def fetch_data_s3(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
-        """-----------------------------------------------------------------------------
-                Gets data from AWS S3 for a given datastream between a specified time range. (fetch_data counterpart)
-
-                Note: this method is not smart; it searches for the appropriate data files using
-                their filenames and does not filter within each data file.
-
-                Args:
-                    start (datetime): The minimum datetime to fetch.
-                    end (datetime): The maximum datetime to fetch.
-                    datastream (str): The datastream id to search for.
-
-                Returns:
-                    xr.Dataset: A dataset containing (after searching and merging) all the data 
-                    in the storage area that spans the specified datetimes.
-
-                -----------------------------------------------------------------------------"""
-        data_files_s3 = self._find_data_at_s3(start, end, datastream)
-        datasets = self._open_data_files_s3(*data_files_s3)
-
-        return xr.merge(datasets, **self.parameters.merge_fetched_data_kwargs)  # type: ignore
-
-    def _create_bucket(self):
-        # TODO: create a bucket if not exists
-        pass
-
-    def _is_file_exist_s3(self, key_name: s3_Path) -> bool:
-        s3 = self._get_s3_resource()
-        bucket_name = self.parameters.bucket
-        s3_object_info = s3.Object(bucket_name, key_name)
-        try:
-            result = s3_object_info.get()
-            # print(result)
-            return True
-        except Exception as e:  # catch NoSuchKey
-            return False
-
-    def _open_data_files_s3(self, *filepaths_s3: str) -> List[xr.Dataset]:
+    def _open_data_files(self, *filepaths: Path) -> List[xr.Dataset]:
         dataset_list: List[xr.Dataset] = []
-        # download object to memory
-        s3 = self._get_s3_resource()
-        my_bucket = s3.Bucket(self.parameters.bucket)
-
-        for filepath in filepaths_s3:
-            buf = io.BytesIO()
-            my_bucket.download_fileobj(filepath, buf)
-            file_content_bytes = buf.getvalue()
-            data = xr.load_dataset(file_content_bytes)
-            # data = self.handler.reader.read(filepath.as_posix())
-            if isinstance(data, dict):
-                data = xr.merge(data.values())  # type: ignore
-            dataset_list.append(data)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            for s3_filepath in filepaths:
+                tmp_filepath = str(Path(tmp_dir) / s3_filepath.name)
+                self.bucket.download_file(
+                    Key=str(s3_filepath),
+                    Filename=tmp_filepath,
+                )
+                data = self.handler.reader.read(tmp_filepath)
+                if isinstance(data, dict):
+                    data = xr.merge(data.values())  # type: ignore
+                data = data.compute()  # type: ignore
+                dataset_list.append(data)
         return dataset_list
-
-    def list_files_s3(self, prefix: s3_Path) -> List[s3_Path]:
-        """-----------------------------------------------------------------------------
-                List objects/files at s3 at certain prefix/dir
-
-                Args:
-                    prefix (s3_Path): The prefix/directory to query.
-
-                Returns:
-                    List[s3_Path]: A list of available files under certain directory
-
-                -----------------------------------------------------------------------------"""
-        s3 = self._get_s3_resource()
-        my_bucket = s3.Bucket(self.parameters.bucket)
-        response = my_bucket.objects.filter(Prefix=prefix)  # query object info at s3 bucket
-        filepaths_at_s3: List[str] = [object_summary.key for object_summary in response]
-        return filepaths_at_s3
-
-    def _find_data_at_s3(self, start: datetime, end: datetime, datastream: str) -> List[s3_Path]:
-        data_dirpath = self.parameters.storage_root / "data" / datastream
-
-        prefix = str(data_dirpath)
-        filepaths_at_s3 = self.list_files_s3(prefix)
-
-        valid_filepaths_at_s3 = self._filter_between_dates(list(map(Path, filepaths_at_s3)), start, end)
-        return list(map(str, valid_filepaths_at_s3))
-
-    def save_ancillary_file_s3(self, path_src: s3_Path, datastream: str, is_src_temp: bool=False):
-        """-----------------------------------------------------------------------------
-        Saves an ancillary filepath to the datastream's ancillary storage area.
-
-        Args:
-            path_src (s3_Path): The path to the ancillary file.
-            datastream (str): The datastream that the file is related to.
-            is_src_temp (bool), False: Flag to indicate if the file at path_src is temporary. If so then delete it.
-
-        -----------------------------------------------------------------------------"""
-        path_dst: s3_Path = str(self._get_ancillary_filepath(Path(path_src), datastream))
-        s3 = self._get_s3_resource()
-        bucket_name = self.parameters.bucket
-        copy_source = {
-            'Bucket': bucket_name,
-            'Key': path_src
-        }
-        my_bucket = s3.Bucket(bucket_name)
-        my_bucket.copy(copy_source, path_dst)
-        logger.info("Saved ancillary to AWS S3 to %s, in bucket %s", path_dst, bucket_name)
-
-        # if the file at path_src is temporary, clean up tmp file
-        if is_src_temp:
-            self._delete_all_objects_under_prefix(prefix=path_src)
 
 
 class ZarrLocalStorage(Storage):
@@ -482,4 +359,3 @@ class ZarrLocalStorage(Storage):
     def _get_ancillary_filepath(self, filepath: Path, datastream: str) -> Path:
         anc_datastream_dir = self.parameters.storage_root / "ancillary" / datastream
         return anc_datastream_dir / filepath.name
-

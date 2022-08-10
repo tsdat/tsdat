@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import tempfile
 import contextlib
 import xarray as xr
@@ -66,7 +68,10 @@ class DataReader(ParameterizedClass, ABC):
     ---------------------------------------------------------------------------------"""
 
     @abstractmethod
-    def read(self, input_key: str,) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
+    def read(
+        self,
+        input_key: str,
+    ) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
         """-----------------------------------------------------------------------------
         Reads data given an input key.
 
@@ -179,7 +184,7 @@ class DataHandler(ParameterizedClass):
 
     ---------------------------------------------------------------------------------"""
 
-    parameters: Any
+    parameters: Any | None = None
     reader: DataReader
     writer: DataWriter
 
@@ -189,12 +194,14 @@ class FileHandler(DataHandler):
     DataHandler specifically tailored to reading and writing files of a specific type.
 
     Args:
+        extension (str): The specific file extension used for data files, e.g., ".nc".
         reader (DataReader): The DataReader subclass responsible for reading input data.
         writer (FileWriter): The FileWriter subclass responsible for writing output
         data.
 
     ---------------------------------------------------------------------------------"""
 
+    extension: str
     reader: DataReader
     writer: FileWriter
 
