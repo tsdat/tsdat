@@ -69,14 +69,13 @@ class FileSystem(Storage):
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
 
         @validator("storage_root")
-        @classmethod
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
             if not storage_root.is_dir():
                 logger.info("Creating storage root at: %s", storage_root.as_posix())
                 storage_root.mkdir(parents=True)
             return storage_root
 
-    parameters: Parameters = Parameters()
+    parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
     handler: FileHandler
 
     def save_data(self, dataset: xr.Dataset):
@@ -194,7 +193,7 @@ class S3Storage(FileSystem):
         """The path on disk where data and ancillary files will be saved to. Defaults to
         the `storage/root` folder in the top level of the storage bucket."""
 
-        bucket: str = Field(..., env="TSDAT_S3_BUCKET_NAME")
+        bucket: str = Field("tsdat-storage", env="TSDAT_S3_BUCKET_NAME")
         """The name of the S3 bucket that the storage class should attach to."""
 
         region: str = Field("us-west-2", env="TSDAT_S3_BUCKET_REGION")
@@ -219,10 +218,15 @@ class S3Storage(FileSystem):
 
         @root_validator
         def ensure_bucket_exists(cls, values: Any):
-
+            s3 = boto3.resource("s3", region_name=values["region"])  # type: ignore
+            try:
+                s3.meta.client.head_bucket(Bucket=values["bucket"])
+            except:
+                logger.info("Creating bucket '%s'", values["bucket"])
+                s3.create_bucket(Bucket=values["bucket"])
             return values
 
-    parameters: Parameters  # type: ignore
+    parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
 
     @property
     def bucket(self):
@@ -313,7 +317,7 @@ class ZarrLocalStorage(Storage):
         created as this parameter is set, if the directory does not already exist."""
 
     handler: ZarrHandler = ZarrHandler()
-    parameters: Parameters = Parameters()
+    parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
 
     def save_data(self, dataset: xr.Dataset):
         """-----------------------------------------------------------------------------
