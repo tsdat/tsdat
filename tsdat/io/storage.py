@@ -200,6 +200,10 @@ class S3Storage(FileSystem):
         region: str = Field("us-west-2", env="TSDAT_S3_BUCKET_REGION")
         """The AWS region of the storage bucket. Defaults to "us-west-2"."""
 
+        merge_fetched_data_kwargs: Dict[str, Any] = dict()
+        """Keyword arguments to xr.merge. Note: this will only be called if the
+        DataReader returns a dictionary of xr.Datasets for a single saved file."""
+
         @root_validator(pre=True)
         def check_aws_credentials(cls, values: Any):
             try:
@@ -270,6 +274,16 @@ class S3Storage(FileSystem):
                 data = data.compute()  # type: ignore
                 dataset_list.append(data)
         return dataset_list
+
+    def exists(self, key: Path | str) -> bool:
+        return self.get_obj(str(key)) is not None
+
+    def get_obj(self, key: Path | str):
+        objects = self.bucket.objects.filter(Prefix=str(key)).all()
+        selected = [obj for obj in objects if obj.key == str(key)]
+        if selected:
+            return selected[0]
+        return None
 
 
 class ZarrLocalStorage(Storage):
