@@ -256,7 +256,7 @@ class Storage(ParameterizedClass, ABC):
 
     ---------------------------------------------------------------------------------"""
 
-    parameters: Any = {}
+    parameters: Optional[Any]
     """(Internal) parameters used by the storage API that can be set through
     configuration files, environment variables, or other means."""
 

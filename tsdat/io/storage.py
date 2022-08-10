@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # TODO: Implement FileSystemS3
 import logging
 import os
@@ -209,11 +211,10 @@ class S3Storage(FileSystem):
                 client = boto3.client("s3")  # type: ignore
                 _ = client.list_buckets()
             except botocore.exceptions.ClientError:
-                logger.exception(
-                    "Could not connect to the S3 client. The error is likely due to"
-                    " misconfigured credentials."
+                raise ValueError(
+                    "Could not connect to the S3 client. This is likely due to"
+                    " misconfigured or expired credentials."
                 )
-                raise ValueError("Could not connect to the S3 client.")
             return values
 
         @root_validator
