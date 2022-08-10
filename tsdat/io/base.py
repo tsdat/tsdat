@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import tempfile
 import contextlib
 import xarray as xr
@@ -184,7 +182,7 @@ class DataHandler(ParameterizedClass):
 
     ---------------------------------------------------------------------------------"""
 
-    parameters: Any | None = None
+    parameters: Optional[Any] = None
     reader: DataReader
     writer: DataWriter
 
