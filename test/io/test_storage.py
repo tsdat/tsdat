@@ -7,9 +7,8 @@ from pathlib import Path
 from pytest import fixture
 from datetime import datetime
 from tsdat.io.handlers import NetCDFHandler, ZarrHandler
-from tsdat.io.storage import FileSystem, ZarrLocalStorage, S3Storage
+from tsdat.io.storage import FileSystem, ZarrLocalStorage, FileSystemS3
 from tsdat.testing import assert_close
-import boto3
 
 
 @fixture
@@ -61,7 +60,7 @@ def zarr_storage():
 @fixture
 def s3_storage():
     storage_root = Path("test/storage_root")
-    storage = S3Storage(
+    storage = FileSystemS3(
         parameters={"storage_root": storage_root},  # type: ignore
         handler=NetCDFHandler(),
     )
@@ -116,8 +115,8 @@ def test_zarr_storage_save_and_fetch_data(
     assert_close(dataset, expected)
 
 
-def test_s3_storage_save_and_fetch_data(
-    s3_storage: S3Storage, sample_dataset: xr.Dataset
+def test_filesystem_s3_save_and_fetch_data(
+    s3_storage: FileSystemS3, sample_dataset: xr.Dataset
 ):
 
     expected = sample_dataset.copy(deep=True)  # type: ignore
@@ -193,7 +192,7 @@ def test_zarr_storage_saves_ancillary_files(zarr_storage: ZarrLocalStorage):
     os.remove(expected_filepath)
 
 
-def test_s3_storage_saves_ancillary_files(s3_storage: S3Storage):
+def test_filesystem_s3_saves_ancillary_files(s3_storage: FileSystemS3):
     expected_filepath = (
         s3_storage.parameters.storage_root
         / "ancillary"

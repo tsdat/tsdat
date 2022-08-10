@@ -1,14 +1,13 @@
-from __future__ import annotations
-
-# TODO: Implement FileSystemS3
+from functools import lru_cache
 import logging
 import os
 import shutil
+from time import time
 import xarray as xr
 from datetime import datetime
-from pydantic import BaseSettings, validator, root_validator, Field
+from pydantic import BaseSettings, validator, Field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from .base import Storage
 from .handlers import FileHandler, ZarrHandler
 from ..utils import get_filename
@@ -19,7 +18,7 @@ import botocore.exceptions
 import tempfile
 
 
-__all__ = ["FileSystem", "S3Storage", "ZarrLocalStorage"]
+__all__ = ["FileSystem", "FileSystemS3", "ZarrLocalStorage"]
 
 # IDEA: interval / split files apart by some timeframe (e.g., 1 day)
 #
@@ -176,7 +175,7 @@ class FileSystem(Storage):
         return anc_datastream_dir / filepath.name
 
 
-class S3Storage(FileSystem):
+class FileSystemS3(FileSystem):
     """------------------------------------------------------------------------------------
     Handles data storage and retrieval for file-based data formats in an AWS S3 bucket.
 
@@ -205,34 +204,69 @@ class S3Storage(FileSystem):
         """Keyword arguments to xr.merge. Note: this will only be called if the
         DataReader returns a dictionary of xr.Datasets for a single saved file."""
 
-        @root_validator(pre=True)
-        def check_aws_credentials(cls, values: Any):
-            try:
-                client = boto3.client("s3")  # type: ignore
-                _ = client.list_buckets()
-            except botocore.exceptions.ClientError:
-                raise ValueError(
-                    "Could not connect to the S3 client. This is likely due to"
-                    " misconfigured or expired credentials."
-                )
-            return values
-
-        @root_validator
-        def ensure_bucket_exists(cls, values: Any):
-            s3 = boto3.resource("s3", region_name=values["region"])  # type: ignore
-            try:
-                s3.meta.client.head_bucket(Bucket=values["bucket"])
-            except botocore.exceptions.ClientError:
-                logger.info("Creating bucket '%s'", values["bucket"])
-                s3.create_bucket(Bucket=values["bucket"])
-            return values
-
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
+
+    @validator("parameters")
+    def check_authentication(cls, parameters: Parameters):
+        session = FileSystemS3._get_session(
+            region=parameters.region, timehash=FileSystemS3._get_timehash()
+        )
+        try:
+            session.client("sts").get_caller_identity().get("Account")  # type: ignore
+        except botocore.exceptions.ClientError:
+            raise ValueError(
+                "Could not connect to the AWS client. This is likely due to"
+                " misconfigured or expired credentials."
+            )
+        return parameters
+
+    @validator("parameters")
+    def ensure_bucket_exists(cls, parameters: Parameters):
+        session = FileSystemS3._get_session(
+            region=parameters.region, timehash=FileSystemS3._get_timehash()
+        )
+        s3 = session.resource("s3", region_name=parameters.region)  # type: ignore
+        try:
+            s3.meta.client.head_bucket(Bucket=parameters.bucket)
+        except botocore.exceptions.ClientError:
+            logger.warning("Creating bucket '%s'.", parameters.bucket)
+            s3.create_bucket(Bucket=parameters.bucket)
+        return parameters
+
+    @property
+    def session(self):
+        return FileSystemS3._get_session(
+            region=self.parameters.region, timehash=FileSystemS3._get_timehash()
+        )
 
     @property
     def bucket(self):
-        s3 = boto3.resource("s3", region_name=self.parameters.region)  # type: ignore
+        s3 = self.session.resource("s3", region_name=self.parameters.region)  # type: ignore
         return s3.Bucket(name=self.parameters.bucket)
+
+    @staticmethod
+    @lru_cache()
+    def _get_session(region: str, timehash: int = 0):
+        """------------------------------------------------------------------------------------
+        Creates a boto3 Session or returns an active one.
+
+        Borrowed approximately from https://stackoverflow.com/a/55900800/15641512.
+
+        Args:
+            region (str): The session region.
+            timehash (int, optional): A time hash used to cache repeated calls to this
+                function. This should be generated using tsdat.io.storage.get_timehash().
+
+        Returns:
+            boto3.session.Session: An active boto3 Session object.
+
+        ------------------------------------------------------------------------------------"""
+        del timehash
+        return boto3.session.Session(region_name=region)
+
+    @staticmethod
+    def _get_timehash(seconds: int = 3600) -> int:
+        return round(time() / seconds)
 
     def save_data(self, dataset: xr.Dataset):
         datastream: str = dataset.attrs["datastream"]
@@ -258,7 +292,7 @@ class S3Storage(FileSystem):
 
     def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
         prefix = str(self.parameters.storage_root / "data" / datastream) + "/"
-        objects = self.bucket.objects.filter(Prefix=prefix).all()
+        objects = self.bucket.objects.filter(Prefix=prefix)
         filepaths = [
             Path(obj.key) for obj in objects if obj.key.endswith(self.handler.extension)
         ]
@@ -280,15 +314,15 @@ class S3Storage(FileSystem):
                 dataset_list.append(data)
         return dataset_list
 
-    def exists(self, key: Path | str) -> bool:
+    def exists(self, key: Union[Path, str]) -> bool:
         return self.get_obj(str(key)) is not None
 
-    def get_obj(self, key: Path | str):
-        objects = self.bucket.objects.filter(Prefix=str(key)).all()
-        selected = [obj for obj in objects if obj.key == str(key)]
-        if selected:
-            return selected[0]
-        return None
+    def get_obj(self, key: Union[Path, str]):
+        objects = self.bucket.objects.filter(Prefix=str(key))
+        try:
+            return next(obj for obj in objects if obj.key == str(key))
+        except StopIteration:
+            return None
 
 
 class ZarrLocalStorage(Storage):
@@ -379,8 +413,9 @@ class ZarrLocalStorage(Storage):
         anc_datastream_dir = self.parameters.storage_root / "ancillary" / datastream
         return anc_datastream_dir / filepath.name
 
+
 # HACK: Update forward refs to get around error I couldn't replicate with simpler code
 # "pydantic.errors.ConfigError: field "parameters" not yet prepared so type is still a ForwardRef..."
 FileSystem.update_forward_refs(Parameters=FileSystem.Parameters)
-S3Storage.update_forward_refs(Parameters=S3Storage.Parameters)
+FileSystemS3.update_forward_refs(Parameters=FileSystemS3.Parameters)
 ZarrLocalStorage.update_forward_refs(Parameters=ZarrLocalStorage.Parameters)
