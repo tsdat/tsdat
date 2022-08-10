@@ -7,5 +7,6 @@
         "Gruntfuggly.todo-tree",
         "usernamehw.errorlens",
         "redhat.vscode-yaml",
+        "Boto3typed.boto3-ide"
     ]
 }
