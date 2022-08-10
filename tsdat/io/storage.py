@@ -222,7 +222,7 @@ class S3Storage(FileSystem):
             s3 = boto3.resource("s3", region_name=values["region"])  # type: ignore
             try:
                 s3.meta.client.head_bucket(Bucket=values["bucket"])
-            except:
+            except botocore.exceptions.ClientError:
                 logger.info("Creating bucket '%s'", values["bucket"])
                 s3.create_bucket(Bucket=values["bucket"])
             return values
@@ -317,8 +317,8 @@ class ZarrLocalStorage(Storage):
         the `storage/root` folder in the active working directory. The directory is
         created as this parameter is set, if the directory does not already exist."""
 
-    handler: ZarrHandler = ZarrHandler()
-    parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
+    parameters: Parameters = Field(default_factory=Parameters)
+    handler: ZarrHandler = Field(default_factory=ZarrHandler)
 
     def save_data(self, dataset: xr.Dataset):
         """-----------------------------------------------------------------------------
@@ -378,3 +378,9 @@ class ZarrLocalStorage(Storage):
     def _get_ancillary_filepath(self, filepath: Path, datastream: str) -> Path:
         anc_datastream_dir = self.parameters.storage_root / "ancillary" / datastream
         return anc_datastream_dir / filepath.name
+
+# HACK: Update forward refs to get around error I couldn't replicate with simpler code
+# "pydantic.errors.ConfigError: field "parameters" not yet prepared so type is still a ForwardRef..."
+FileSystem.update_forward_refs(Parameters=FileSystem.Parameters)
+S3Storage.update_forward_refs(Parameters=S3Storage.Parameters)
+ZarrLocalStorage.update_forward_refs(Parameters=ZarrLocalStorage.Parameters)
