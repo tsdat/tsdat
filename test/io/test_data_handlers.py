@@ -1,13 +1,20 @@
 import tempfile
+import os
 from typing import Any, Dict
 import pandas as pd
 import xarray as xr
+from datetime import datetime
 from pathlib import Path
 from pytest import fixture
 from pandas.testing import assert_frame_equal
 from tsdat.testing import assert_close
 from tsdat.config.utils import recursive_instantiate
-from tsdat.io.handlers import CSVHandler, NetCDFHandler, ParquetHandler, ZarrHandler
+from tsdat.io.handlers import (
+    CSVHandler,
+    NetCDFHandler,
+    ParquetHandler,
+    ZarrHandler,
+)
 from tsdat.io.readers import (
     CSVReader,
     NetCDFReader,
@@ -16,7 +23,13 @@ from tsdat.io.readers import (
     TarReader,
     ZipReader,
 )
-from tsdat.io.writers import CSVWriter, NetCDFWriter, ParquetWriter, ZarrWriter
+from tsdat.io.writers import (
+    CSVWriter,
+    NetCDFWriter,
+    SplitNetCDFWriter,
+    ParquetWriter,
+    ZarrWriter,
+)
 
 
 @fixture
@@ -31,6 +44,18 @@ def sample_dataset() -> xr.Dataset:
             "First Data Var": ("index", [71.4, 71.2, 71.1], {"_FillValue": -9999},),
         },
     )
+
+
+@fixture
+def sample_dataset_w_time(sample_dataset: xr.Dataset) -> xr.Dataset:
+    time_coord = [
+        datetime.strptime(x, "%Y-%m-%d %H:%M:%S")
+        for x in sample_dataset["timestamp"].data
+    ]
+    ds = sample_dataset.assign_coords({"index": time_coord}).rename({"index": "time"})  # type: ignore
+    ds.attrs["datastream"] = "test_writer"
+
+    return ds
 
 
 @fixture
@@ -110,6 +135,24 @@ def test_netcdf_writer(sample_dataset: xr.Dataset):
     writer.write(sample_dataset, tmp_file)
     dataset: xr.Dataset = xr.open_dataset(tmp_file)  # type: ignore
     assert_close(dataset, expected, check_fill_value=False)
+
+    tmp_dir.cleanup()
+
+
+def test_split_netcdf_writer(sample_dataset_w_time: xr.Dataset):
+    params = {"time_interval": 1, "time_unit": "m"}
+    writer = SplitNetCDFWriter(parameters=recursive_instantiate(params))
+    tmp_dir = tempfile.TemporaryDirectory()
+
+    tmp_file = Path(tmp_dir.name) / "test_writer.nc"
+    writer.write(sample_dataset_w_time, tmp_file)  # type: ignore
+
+    filelist = os.listdir(Path(tmp_dir.name))
+    filelist.sort()
+    assert filelist == [
+        "test_writer.20220324.214300.nc",
+        "test_writer.20220324.214400.nc",
+    ]
 
     tmp_dir.cleanup()
 
