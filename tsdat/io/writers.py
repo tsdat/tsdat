@@ -1,7 +1,6 @@
 # TODO: Implement ZarrWriter
 
 import copy
-import os
 import numpy as np
 import xarray as xr
 from typing import Any, Dict, Iterable, List, Optional, cast

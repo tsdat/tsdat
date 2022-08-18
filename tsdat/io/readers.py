@@ -119,7 +119,7 @@ class TarReader(ArchiveReader):
                 # The readers section tells the TarReader which DataReaders should be
                 # used to handle the unpacked files.
                 readers:
-                  r".*\.csv":
+                  r".*\\.csv":
                     classname: tsdat.io.readers.CSVReader
                     parameters:  # Parameters specific to tsdat.io.readers.CSVReader
                       read_csv_kwargs:
@@ -162,7 +162,7 @@ class TarReader(ArchiveReader):
 
         # If we are reading from a string / filepath then add option to specify more
         # parameters for opening (i.e., mode or encoding options)
-        if isinstance(input_key, str):
+        if isinstance(input_key, str):  # Necessary for archiveReaders
             open_params = dict(mode="rb")
             open_params.update(self.parameters.open_tar_kwargs)
             fileobj = open(input_key, **open_params)  # type: ignore
@@ -222,7 +222,7 @@ class ZipReader(ArchiveReader):
                 # The readers section tells the ZipReaders which DataReaders should be
                 # used to read the unpacked files.
                 readers:
-                  r".*\.csv":
+                  r".*\\.csv":
                     classname: tsdat.io.readers.CSVReader
                     parameters:  # Parameters specific to tsdat.io.readers.CsvReader
                         read_csv_kwargs:
@@ -265,7 +265,7 @@ class ZipReader(ArchiveReader):
         # If we are reading from a string / filepath then add option to specify more
         # parameters for opening (i.e., mode or encoding options)
         fileobj = None
-        if isinstance(input_key, str):
+        if isinstance(input_key, str):  # Necessary for archiveReaders
             open_params = dict(mode="rb")
             open_params.update(self.parameters.open_zip_kwargs)
             fileobj = open(input_key, **open_params)  # type: ignore
