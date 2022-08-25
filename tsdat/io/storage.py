@@ -197,7 +197,7 @@ class FileSystemS3(FileSystem):
         bucket: str = Field("tsdat-storage", env="TSDAT_S3_BUCKET_NAME")
         """The name of the S3 bucket that the storage class should attach to."""
 
-        region: str = Field("us-west-2", env="TSDAT_S3_BUCKET_REGION")
+        region: str = Field("us-west-2", env="AWS_DEFAULT_REGION")
         """The AWS region of the storage bucket. Defaults to "us-west-2"."""
 
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
