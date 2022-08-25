@@ -1,11 +1,15 @@
 import os
 import shutil
 import tempfile
-import xarray as xr
-import pandas as pd
-from pathlib import Path
-from pytest import fixture
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import moto
+import pandas as pd
+import xarray as xr
+from pytest import fixture
+
 from tsdat.io.handlers import NetCDFHandler, ZarrHandler
 from tsdat.io.storage import FileSystem, ZarrLocalStorage, FileSystemS3
 from tsdat.testing import assert_close
@@ -57,17 +61,32 @@ def zarr_storage():
         shutil.rmtree(storage.parameters.storage_root)
 
 
+@fixture(scope="function")
+def aws_credentials():
+    """Mocked AWS Credentials for moto."""
+    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+    os.environ["AWS_SECURITY_TOKEN"] = "testing"
+    os.environ["AWS_SESSION_TOKEN"] = "testing"
+    os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+
+
 @fixture
-def s3_storage():
+def s3_storage(aws_credentials: Any):
+    s3, sts = moto.mock_s3(), moto.mock_sts()  # type: ignore
+    s3.start()
+    sts.start()
     storage_root = Path("test/storage_root")
     storage = FileSystemS3(
-        parameters={"bucket": "tsdat-core", "storage_root": storage_root},  # type: ignore
+        parameters={"bucket": "tsdat-core", "storage_root": storage_root, "region": "us-east-1"},  # type: ignore
         handler=NetCDFHandler(),
     )
     try:
         yield storage
     finally:
         storage.bucket.objects.filter(Prefix=str(storage_root)).delete()
+        s3.stop()
+        sts.stop()
 
 
 def test_filesystem_save_and_fetch_data(
