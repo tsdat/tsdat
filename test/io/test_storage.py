@@ -61,7 +61,7 @@ def zarr_storage():
 def s3_storage():
     storage_root = Path("test/storage_root")
     storage = FileSystemS3(
-        parameters={"storage_root": storage_root},  # type: ignore
+        parameters={"bucket": "tsdat-core", "storage_root": storage_root},  # type: ignore
         handler=NetCDFHandler(),
     )
     try:
