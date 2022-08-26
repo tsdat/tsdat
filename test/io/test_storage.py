@@ -6,11 +6,12 @@ from pathlib import Path
 from typing import Any
 
 import moto
+import pytest
 import pandas as pd
 import xarray as xr
 from pytest import fixture
+from tsdat.io.base import Storage
 
-from tsdat.io.handlers import NetCDFHandler, ZarrHandler
 from tsdat.io.storage import FileSystem, ZarrLocalStorage, FileSystemS3
 from tsdat.testing import assert_close
 
@@ -37,11 +38,7 @@ def sample_dataset() -> xr.Dataset:
 
 @fixture
 def file_storage():
-    storage_root = Path.cwd() / "test/storage_root"
-    storage = FileSystem(
-        parameters={"storage_root": storage_root},  # type: ignore
-        handler=NetCDFHandler(),
-    )
+    storage = FileSystem(parameters={"storage_root": Path.cwd() / "test/storage_root"})  # type: ignore
     try:
         yield storage
     finally:
@@ -50,11 +47,7 @@ def file_storage():
 
 @fixture
 def zarr_storage():
-    storage_root = Path.cwd() / "test/storage_root"
-    storage = ZarrLocalStorage(
-        parameters={"storage_root": storage_root},  # type: ignore
-        handler=ZarrHandler(),
-    )
+    storage = ZarrLocalStorage(parameters={"storage_root": Path.cwd() / "test/storage_root"})  # type: ignore
     try:
         yield storage
     finally:
@@ -74,89 +67,48 @@ def aws_credentials():
 @fixture
 def s3_storage(aws_credentials: Any):
     s3, sts = moto.mock_s3(), moto.mock_sts()  # type: ignore
-    s3.start()
-    sts.start()
+    s3.start(), sts.start()  # type: ignore
     storage_root = Path("test/storage_root")
     storage = FileSystemS3(
-        parameters={"bucket": "tsdat-core", "storage_root": storage_root, "region": "us-east-1"},  # type: ignore
-        handler=NetCDFHandler(),
+        parameters={
+            "bucket": "tsdat-core",
+            "storage_root": storage_root,
+            "region": "us-east-1",
+        },  # type: ignore
     )
     try:
         yield storage
     finally:
         storage.bucket.objects.filter(Prefix=str(storage_root)).delete()
-        s3.stop()
-        sts.stop()
+        s3.stop(), sts.stop()  # type: ignore
 
 
-def test_filesystem_save_and_fetch_data(
-    file_storage: FileSystem, sample_dataset: xr.Dataset
+@pytest.mark.parametrize(
+    "storage_fixture, dataset_fixture",
+    [
+        ("file_storage", "sample_dataset"),
+        ("zarr_storage", "sample_dataset"),
+        ("s3_storage", "sample_dataset"),
+    ],
+)
+def test_storage_saves_and_fetches_data(
+    storage_fixture: str,
+    dataset_fixture: str,
+    request: pytest.FixtureRequest,
 ):
-    expected = sample_dataset.copy(deep=True)  # type: ignore
+    # pytest can't pass fixtures through pytest.mark.parametrize so we use this approach
+    storage: Storage = request.getfixturevalue(storage_fixture)
+    input_dataset: xr.Dataset = request.getfixturevalue(dataset_fixture)
 
-    # Save
-    file_storage.save_data(sample_dataset)
-    expected_file = Path(
-        file_storage.parameters.storage_root
-        / "data"
-        / "sgp.testing-storage.a0"
-        / "sgp.testing-storage.a0.20220405.000000.nc"
-    )
-    assert expected_file.is_file()
-
-    # Fetch
-    dataset = file_storage.fetch_data(
+    expected_dataset: xr.Dataset = input_dataset.copy(deep=True)  # type: ignore
+    storage.save_data(dataset=input_dataset)
+    dataset = storage.fetch_data(
         start=datetime.fromisoformat("2022-04-05 00:00:00"),
         end=datetime.fromisoformat("2022-04-06 00:00:00"),
         datastream="sgp.testing-storage.a0",
     )
-    assert_close(dataset, expected)
-
-
-def test_zarr_storage_save_and_fetch_data(
-    zarr_storage: ZarrLocalStorage, sample_dataset: xr.Dataset
-):
-    expected = sample_dataset.copy(deep=True)  # type: ignore
-
-    # Save
-    zarr_storage.save_data(sample_dataset)
-    expected_path = Path(
-        zarr_storage.parameters.storage_root / "data" / "sgp.testing-storage.a0.zarr"
-    )
-    assert expected_path.is_dir()
-
-    # Fetch
-    dataset = zarr_storage.fetch_data(
-        start=datetime.fromisoformat("2022-04-05 00:00:00"),
-        end=datetime.fromisoformat("2022-04-06 00:00:00"),
-        datastream="sgp.testing-storage.a0",
-    )
-    assert_close(dataset, expected)
-
-
-def test_filesystem_s3_save_and_fetch_data(
-    s3_storage: FileSystemS3, sample_dataset: xr.Dataset
-):
-
-    expected = sample_dataset.copy(deep=True)  # type: ignore
-
-    # Save
-    s3_storage.save_data(sample_dataset)
-    expected_path = Path(
-        s3_storage.parameters.storage_root
-        / "data"
-        / "sgp.testing-storage.a0"
-        / "sgp.testing-storage.a0.20220405.000000.nc"
-    )
-    assert s3_storage.exists(expected_path)
-
-    # Fetch
-    dataset = s3_storage.fetch_data(
-        start=datetime.fromisoformat("2022-04-05 00:00:00"),
-        end=datetime.fromisoformat("2022-04-06 00:00:00"),
-        datastream="sgp.testing-storage.a0",
-    )
-    assert_close(dataset, expected)
+    assert_close(input_dataset, expected_dataset)  # storage should not modify inputs
+    assert_close(dataset, expected_dataset)
 
 
 def test_filesystem_saves_ancillary_files(file_storage: FileSystem):
