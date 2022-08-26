@@ -237,12 +237,12 @@ class DefaultRetriever(Retriever):
                 logger.warning(
                     f"Retrieved coordinate '{coord_name}' has 0 attached dimensions in"
                     " the retrieved dataset (expected ndims=1). Attempting to fix this"
-                    f" using xr.Dataset.expand_dims(dim={coord_name}), which may result"
-                    " in unexpected behavior. Consider writing a DataReader to handle"
-                    " this coordinate correctly."
+                    f" using xr.Dataset.expand_dims(dim='{coord_name}'), which may"
+                    " result in unexpected behavior. Please consider writing a"
+                    " DataReader to handle this coordinate correctly."
                 )
                 dataset = dataset.expand_dims(dim=coord_name, axis=axis)
-            dim = coord_name
+            dim = actual_dims[0] if ndims else coord_name
             if dim != expected_dim:
                 dataset = dataset.swap_dims({dim: expected_dim})  # type: ignore
 
