@@ -222,10 +222,10 @@ class DefaultRetriever(Retriever):
             xr.Dataset: The reindexed dataset.
 
         -----------------------------------------------------------------------------"""
-        for coord_name in input_config.coords:
+        for axis, coord_name in enumerate(input_config.coords):
             expected_dim = dataset_config[coord_name].dims[0]
             actual_dims = dataset[coord_name].dims
-            if (ndims := len(actual_dims)) != 1:
+            if (ndims := len(actual_dims)) > 1:
                 raise ValueError(
                     f"Retrieved coordinate '{coord_name}' must have exactly one"
                     f" dimension in the retrieved dataset, found {ndims} (dims="
@@ -233,7 +233,16 @@ class DefaultRetriever(Retriever):
                     " variable, please move it to the data_vars section in the"
                     " retriever config file."
                 )
-            dim = actual_dims[0]
+            elif ndims == 0:
+                logger.warning(
+                    f"Retrieved coordinate '{coord_name}' has 0 attached dimensions in"
+                    " the retrieved dataset (expected ndims=1). Attempting to fix this"
+                    f" using xr.Dataset.expand_dims(dim='{coord_name}'), which may"
+                    " result in unexpected behavior. Please consider writing a"
+                    " DataReader to handle this coordinate correctly."
+                )
+                dataset = dataset.expand_dims(dim=coord_name, axis=axis)
+            dim = actual_dims[0] if ndims else coord_name
             if dim != expected_dim:
                 dataset = dataset.swap_dims({dim: expected_dim})  # type: ignore
 
