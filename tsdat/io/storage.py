@@ -9,7 +9,7 @@ from pydantic import BaseSettings, validator, Field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from .base import Storage
-from .handlers import FileHandler, ZarrHandler
+from .handlers import FileHandler, NetCDFHandler, ZarrHandler
 from ..utils import get_filename
 
 import boto3
@@ -77,7 +77,7 @@ class FileSystem(Storage):
             return storage_root
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
-    handler: FileHandler
+    handler: FileHandler = Field(default_factory=NetCDFHandler)
 
     def save_data(self, dataset: xr.Dataset):
         """-----------------------------------------------------------------------------
