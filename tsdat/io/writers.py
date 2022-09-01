@@ -51,9 +51,16 @@ class NetCDFWriter(FileWriter):
         to_netcdf_kwargs["encoding"] = encoding_dict
 
         for variable_name in cast(Iterable[str], dataset.variables):
+            # Encoding options: https://unidata.github.io/netcdf4-python/#Dataset.createVariable
+            # For some reason contiguous=True and chunksizes=None is incompatible with compression
+            if hasattr(dataset[variable_name], "encoding"):
+                if "contiguous" in dataset[variable_name].encoding:
+                    dataset[variable_name].encoding.pop("contiguous")
+                if "chunksizes" in dataset[variable_name].encoding:
+                    dataset[variable_name].encoding.pop("chunksizes")
 
             # Prevent Xarray from setting 'nan' as the default _FillValue
-            encoding_dict[variable_name] = dataset[variable_name].encoding  # type: ignore
+            encoding_dict[variable_name] = dataset[variable_name].encoding.copy()  # type: ignore
             if (
                 "_FillValue" not in encoding_dict[variable_name]
                 and "_FillValue" not in dataset[variable_name].attrs
