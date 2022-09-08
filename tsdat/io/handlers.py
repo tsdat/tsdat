@@ -1,9 +1,16 @@
 from .base import FileHandler
 from .readers import NetCDFReader, CSVReader, ParquetReader, ZarrReader
-from .writers import NetCDFWriter, CSVWriter, ParquetWriter, ZarrWriter
+from .writers import (
+    NetCDFWriter,
+    SplitNetCDFWriter,
+    CSVWriter,
+    ParquetWriter,
+    ZarrWriter,
+)
 
 __all__ = [
     "NetCDFHandler",
+    "SplitNetCDFHandler",
     "CSVHandler",
     "ParquetHandler",
     "ZarrHandler",
@@ -14,6 +21,12 @@ class NetCDFHandler(FileHandler):
     extension: str = ".nc"
     reader: NetCDFReader = NetCDFReader()
     writer: NetCDFWriter = NetCDFWriter()
+
+
+class SplitNetCDFHandler(FileHandler):
+    extension: str = ".nc"
+    reader: NetCDFReader = NetCDFReader()
+    writer: SplitNetCDFWriter = SplitNetCDFWriter()
 
 
 class CSVHandler(FileHandler):

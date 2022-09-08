@@ -6,3 +6,4 @@ black
 isort
 flake8
 build
+moto[s3,sts]==4.0.1

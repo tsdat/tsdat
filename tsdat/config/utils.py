@@ -190,7 +190,7 @@ def find_duplicates(entries: Sequence[_NamedClass]) -> List[str]:
 
 
 def read_yaml(filepath: Path) -> Dict[Any, Any]:
-    return list(yaml.safe_load_all(filepath.read_text()))[0]
+    return list(yaml.safe_load_all(filepath.read_text(encoding="UTF-8")))[0]
 
 
 def get_code_version() -> str:
