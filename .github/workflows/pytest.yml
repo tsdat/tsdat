@@ -3,7 +3,7 @@ name: main
 on: [push]
 
 jobs:
-  build:
+  tests:
     name: Run Test Suite
     runs-on: ${{ matrix.os }}
     strategy:
