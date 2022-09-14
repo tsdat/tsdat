@@ -3,11 +3,16 @@ import pandas as pd
 import xarray as xr
 from pathlib import Path
 from pytest import fixture
-from tsdat.config.dataset import DatasetConfig
-from tsdat.config.retriever import RetrieverConfig
-from tsdat.io.retrievers import DefaultRetriever
-from tsdat.testing import assert_close
-from tsdat.config.utils import recursive_instantiate
+
+from tsdat import (
+    DatasetConfig,
+    RetrieverConfig,
+    DefaultRetriever,
+    StorageRetriever,
+    FileSystem,
+    assert_close,
+    recursive_instantiate,
+)
 
 
 @fixture
@@ -75,3 +80,15 @@ def test_simple_extract_multifile_dataset(
 # TEST: Multiple input datasets with non-overlapping or partially-overlapping data vars
 # def test_multi_datastream_retrieval():
 #     pass
+
+# TEST: Storage retriever: single-file case, multi-file case, nearest-neighbor mapping multifile.
+
+
+def test_storage_retriever_instantiates_with_custom_storage():
+    retriever_config = RetrieverConfig.from_yaml(
+        Path("test/io/yaml/vap-retriever.yaml")
+    )
+    retriever: StorageRetriever = recursive_instantiate(retriever_config)
+
+    assert isinstance(retriever, StorageRetriever)
+    assert isinstance(retriever.storage, FileSystem)

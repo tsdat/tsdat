@@ -2,7 +2,7 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 import pandas as pd
-from tsdat import assert_close, PipelineConfig
+from tsdat import assert_close, PipelineConfig, TransformationPipeline
 
 
 def test_ingest_pipeline():
@@ -63,3 +63,11 @@ def test_ingest_pipeline():
         saved_dataset["first"].encoding.get("_FillValue", None) == -9999
         or saved_dataset["first"].attrs.get("_FillValue", None) == -9999
     )
+
+
+def test_transformation_pipeline_sets_retriever_storage():
+    config = PipelineConfig.from_yaml(Path("test/config/yaml/vap-pipeline.yaml"))
+    pipeline = config.instantiate_pipeline()
+
+    assert isinstance(pipeline, TransformationPipeline)
+    assert pipeline.retriever.storage is pipeline.storage

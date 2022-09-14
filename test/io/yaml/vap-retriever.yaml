@@ -1,0 +1,21 @@
+classname: tsdat.io.retrievers.StorageRetriever
+parameters: {}
+
+storage:
+  classname: tsdat.io.storage.FileSystem
+
+coords:
+  time:
+    name: time
+    data_converters:
+      - classname: tsdat.io.converters.StringToDatetime
+        format: "%Y-%m-%d %H:%M:%S"
+        timezone: UTC
+
+data_vars:
+  first:
+    .*:
+      name: first
+      data_converters:
+        - classname: tsdat.io.converters.UnitsConverter
+          input_units: degF

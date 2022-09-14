@@ -1,0 +1,17 @@
+classname: tsdat.pipeline.pipelines.TransformationPipeline
+
+triggers: []
+
+retriever:
+  path: test/config/yaml/vap-retriever.yaml
+
+dataset:
+  path: test/config/yaml/dataset.yaml
+
+quality:
+  path: test/config/yaml/quality.yaml
+  overrides:
+    /managers/0/exclude: []
+
+storage:
+  path: test/config/yaml/storage.yaml

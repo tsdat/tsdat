@@ -1,6 +1,7 @@
 import re
-from typing import Dict, List, Pattern, Union, cast
+from typing import Dict, List, Optional, Pattern, Union, cast
 from pydantic import BaseModel, Extra, Field, validator
+from .storage import StorageConfig
 from .utils import ParameterizedConfigClass, YamlModel
 
 __all__ = ["RetrieverConfig"]
@@ -56,8 +57,16 @@ class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
 
     ---------------------------------------------------------------------------------"""
 
+    storage: Optional[StorageConfig] = Field(
+        description="Optional storage configurations the retriever may use to pull data"
+        " from. This field should only be used if the selected Retriever class is"
+        " derived from tsdat.io.retrievers.StorageRetriever AND the storage object you"
+        " wish to retrieve data from is different than the storage object the pipeline"
+        " is configured to write to."
+    )
+
     # HACK: Can't do Pattern[str]: https://github.com/samuelcolvin/pydantic/issues/2636
-    readers: Dict[Pattern, DataReaderConfig] = Field(  # type: ignore
+    readers: Optional[Dict[Pattern, DataReaderConfig]] = Field(  # type: ignore
         description="A dictionary mapping regex patterns to DataReaders that should be"
         " used to read the input data. For each input given to the Retriever, the"
         " mapping will be used to determine which DataReader to use. The patterns will"
