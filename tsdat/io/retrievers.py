@@ -7,16 +7,11 @@ import xarray as xr
 from pydantic import BaseModel, Extra
 from typing import Any, Dict, List, Optional, Pattern, Tuple, cast
 from ..config.dataset import DatasetConfig
-from .base import Retriever, DataReader, DataConverter, Storage
+from .base import Retriever, DataReader, Storage, RetrievedVariable
 
 __all__ = ["DefaultRetriever", "StorageRetriever"]
 
 logger = logging.getLogger(__name__)
-
-
-class RetrievedVariable(BaseModel, extra=Extra.forbid):
-    name: str
-    data_converters: List[DataConverter] = []
 
 
 # TODO: Rename to FilteredInputConfig
@@ -26,7 +21,7 @@ class InputKeyRetrieverConfig:
 
     ------------------------------------------------------------------------------------"""
 
-    def __init__(self, input_key: str, retriever: "DefaultRetriever") -> None:
+    def __init__(self, input_key: str, retriever: Retriever) -> None:
         self.coords: Dict[str, RetrievedVariable] = {}
         self.data_vars: Dict[str, RetrievedVariable] = {}
 
@@ -79,16 +74,6 @@ class DefaultRetriever(Retriever):
     readers: Dict[Pattern, DataReader]  # type: ignore
     """A dictionary of DataReaders that should be used to read data provided an input
     key."""
-
-    coords: Dict[str, Dict[Pattern, RetrievedVariable]]  # type: ignore
-    """A dictionary mapping output coordinate names to the retrieval rules and
-    preprocessing actions (e.g., DataConverters) that should be applied to each retrieved
-    coordinate variable."""
-
-    data_vars: Dict[str, Dict[Pattern, RetrievedVariable]]  # type: ignore
-    """A dictionary mapping output data variable names to the retrieval rules and
-    preprocessing actions (e.g., DataConverters) that should be applied to each
-    retrieved data variable."""
 
     def retrieve(
         self, input_keys: List[str], dataset_config: DatasetConfig, **kwargs: Any
@@ -283,7 +268,11 @@ class StorageRetriever(Retriever):
     # Due to the difference in how the StorageRetriever class obtains data compared with
     # other retriever classes, the inputs to the StorageRetriever also differ slightly.
 
+    # HACK: Typed as 'Optional' until we can figure out how to instantiate this with the
+    # pipeline's storage object. Currently it is instantiated as None then linked as the
+    # pipeline object is created.
     storage: Optional[Storage]
+    """The storage object to pull data from."""
 
     coords: Dict[str, Dict[Pattern, RetrievedVariable]]  # type: ignore
     """A dictionary mapping output coordinate names to the retrieval rules and
@@ -316,11 +305,14 @@ class StorageRetriever(Retriever):
         Returns:
             xr.Dataset: The retrieved dataset.
         """
+        assert self.storage is not None
+
         retrieved_dataset = xr.Dataset()
 
         # Retrieve all the input data from the storage area
         input_datasets: Dict[str, xr.Dataset] = {}
         for key in input_keys:
+            # TODO: pad start & end according to parameters
             datastream, start, end = unpack_datastream_date_str(key)
             input_datasets[key] = self.storage.fetch_data(
                 start=start, end=end, datastream=datastream
@@ -328,6 +320,21 @@ class StorageRetriever(Retriever):
 
         # Extract and rename the requested DataArray objects
 
-        # Transform the requested DataArray objects
+        # Apply selected DataConverters
+
+        # Set the output coordinates (time, any others)
+
+        # Transform the DataArray objects onto the correct coord grids
+
+        # Original logic:
+        dataset_mapping: Dict[str, xr.Dataset] = {}
+        for key, dataset in input_datasets.items():
+            input_config = InputKeyRetrieverConfig(key, self)
+            dataset = rename_variables(dataset, input_config)
+            dataset = reindex_dataset_coords(dataset, dataset_config, input_config)
+            dataset = run_data_converters(dataset, dataset_config, input_config)
+            dataset_mapping[key] = dataset
+
+        retrieved_dataset = xr.merge(list(dataset_mapping.values()))  # type: ignore
 
         return retrieved_dataset
