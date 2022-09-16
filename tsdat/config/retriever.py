@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List, Pattern, Union, cast
+from typing import Dict, List, Optional, Pattern, Union, cast
 from pydantic import BaseModel, Extra, Field, validator
 from .utils import ParameterizedConfigClass, YamlModel
 
@@ -57,7 +57,7 @@ class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
     ---------------------------------------------------------------------------------"""
 
     # HACK: Can't do Pattern[str]: https://github.com/samuelcolvin/pydantic/issues/2636
-    readers: Dict[Pattern, DataReaderConfig] = Field(  # type: ignore
+    readers: Optional[Dict[Pattern, DataReaderConfig]] = Field(  # type: ignore
         description="A dictionary mapping regex patterns to DataReaders that should be"
         " used to read the input data. For each input given to the Retriever, the"
         " mapping will be used to determine which DataReader to use. The patterns will"
