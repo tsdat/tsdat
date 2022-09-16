@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Pattern, Union
 from abc import ABC, abstractmethod
+from pydantic import BaseModel, Extra
 from ..utils import ParameterizedClass
 from ..config.dataset import DatasetConfig
 
@@ -204,6 +205,11 @@ class FileHandler(DataHandler):
     writer: FileWriter
 
 
+class RetrievedVariable(BaseModel, extra=Extra.forbid):
+    name: str
+    data_converters: List[DataConverter] = []
+
+
 class Retriever(ParameterizedClass, ABC):
     """---------------------------------------------------------------------------------
     Base class for retrieving data used as input to tsdat pipelines.
@@ -215,8 +221,18 @@ class Retriever(ParameterizedClass, ABC):
 
     ---------------------------------------------------------------------------------"""
 
-    readers: Dict[Pattern, Any]  # type: ignore
+    readers: Optional[Dict[Pattern, Any]]  # type: ignore
     """Mapping of readers that should be used to read data given input keys."""
+
+    coords: Dict[str, Dict[Pattern, RetrievedVariable]]  # type: ignore
+    """A dictionary mapping output coordinate names to the retrieval rules and
+    preprocessing actions (e.g., DataConverters) that should be applied to each retrieved
+    coordinate variable."""
+
+    data_vars: Dict[str, Dict[Pattern, RetrievedVariable]]  # type: ignore
+    """A dictionary mapping output data variable names to the retrieval rules and
+    preprocessing actions (e.g., DataConverters) that should be applied to each
+    retrieved data variable."""
 
     @abstractmethod
     def retrieve(
