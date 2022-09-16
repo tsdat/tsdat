@@ -16,20 +16,16 @@
             "title": "Coords",
             "description": "This section defines the coordinate variables that the rest of the data are dimensioned by. Coordinate variable data can either be retrieved from an input data source or defined statically via the 'data' property. Note that tsdat requires the dataset at least be dimensioned by a 'time' variable. Most datasets will only need the 'time' coordinate variable, but multidimensional datasets (e.g., ADCP or Lidar data (time, height)) are well-supported. Note that the 'dims' attribute is still required for coordinate variables, and that this value should be [<name>], where <name> is the name of the coord (e.g., 'time').",
             "type": "object",
-            "patternProperties": {
-                "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$": {
-                    "$ref": "#/definitions/Coordinate"
-                }
+            "additionalProperties": {
+                "$ref": "#/definitions/Coordinate"
             }
         },
         "data_vars": {
             "title": "Data Vars",
             "description": "This section defines the data variables that the output dataset will contain. Variable data can either be retrieved from an input data source, defined statically via the 'data' property, or initalized to missing and set dynamically via user code in a tsdat pipeline.",
             "type": "object",
-            "patternProperties": {
-                "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$": {
-                    "$ref": "#/definitions/Variable"
-                }
+            "additionalProperties": {
+                "$ref": "#/definitions/Variable"
             }
         }
     },
