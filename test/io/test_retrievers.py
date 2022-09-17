@@ -3,17 +3,32 @@ import pandas as pd
 import xarray as xr
 from pathlib import Path
 from pytest import fixture
-from tsdat.config.dataset import DatasetConfig
-from tsdat.config.retriever import RetrieverConfig
-from tsdat.io.retrievers import DefaultRetriever
-from tsdat.testing import assert_close
-from tsdat.config.utils import recursive_instantiate
+from tsdat import (
+    DatasetConfig,
+    RetrieverConfig,
+    DefaultRetriever,
+    StorageRetriever,
+    FileSystem,
+    recursive_instantiate,
+    assert_close,
+)
 
 
 @fixture
 def simple_retriever() -> DefaultRetriever:
     config = RetrieverConfig.from_yaml(Path("test/config/yaml/retriever.yaml"))
     return recursive_instantiate(config)
+
+
+@fixture
+def storage_retriever() -> StorageRetriever:
+    config = RetrieverConfig.from_yaml(Path("test/io/yaml/vap-retriever.yaml"))
+    return recursive_instantiate(config)
+
+
+@fixture
+def vap_dataset_config() -> DatasetConfig:
+    return DatasetConfig.from_yaml(Path("test/io/yaml/vap-dataset.yaml"))
 
 
 @fixture
@@ -70,6 +85,34 @@ def test_simple_extract_multifile_dataset(
         ["test/io/data/input.csv", "test/io/data/input_extended.csv"], dataset_config
     )
     assert_close(dataset, expected)
+
+
+def test_storage_retriever(
+    storage_retriever: StorageRetriever, vap_dataset_config: DatasetConfig
+):
+    # TODO: Test with some 2D data
+    storage = FileSystem(
+        parameters=FileSystem.Parameters(storage_root=Path("test/io/retriever-store"))
+    )
+    inputs = [
+        "humboldt.buoy_z06.a1::20220405.000000::20220406.000000",
+        "humboldt.buoy_z07.a1::20220405.000000::20220406.000000",
+    ]
+
+    retrieved_dataset = storage_retriever.retrieve(
+        inputs, dataset_config=vap_dataset_config, storage=storage
+    )
+
+    expected = xr.Dataset(
+        coords={"time": pd.date_range("2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left")},  # type: ignore
+        data_vars={
+            "temperature": ("time", [70, 76, 84]),
+            "humidity": ("time", [0, 30, 70]),
+        },
+        attrs={"datastream": "humboldt.buoy.b1"},
+    )
+
+    xr.testing.assert_allclose(retrieved_dataset, expected)  # type: ignore
 
 
 # TEST: Multiple input datasets with non-overlapping or partially-overlapping data vars
