@@ -1,37 +1,47 @@
 # TODO: Retrieval from S3; another retriever class, or parameters on the default?
 # IDEA: Implement MultiDatastreamRetriever & variable finders
 
+from datetime import datetime
 import logging
 import xarray as xr
 from pydantic import BaseModel, Extra
-from typing import Any, Dict, List, Pattern, cast
+from typing import Any, Dict, List, NamedTuple, Optional, Pattern, Tuple, cast
 from ..config.dataset import DatasetConfig
-from .base import Retriever, DataReader, RetrievedVariable
+from .base import Retriever, DataReader, RetrievedVariable, Storage
 
-__all__ = ["DefaultRetriever"]
+__all__ = ["DefaultRetriever", "StorageRetriever"]
 
 logger = logging.getLogger(__name__)
 
 
-class InputKeyRetrieverConfig:
+# Verbose type aliases
+InputKey = str
+VarName = str
+
+
+class InputKeyRetrievalRules:
     """Gathers variable retrieval rules for the given input key."""
 
-    def __init__(self, input_key: str, retriever: Retriever) -> None:
-        self.coords: Dict[str, RetrievedVariable] = {}
-        self.data_vars: Dict[str, RetrievedVariable] = {}
+    def __init__(
+        self,
+        input_key: InputKey,
+        coord_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
+        data_var_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
+    ):
+        self.coords: Dict[VarName, RetrievedVariable] = {}
+        self.data_vars: Dict[VarName, RetrievedVariable] = {}
 
-        def update_mapping(
-            to_update: Dict[str, RetrievedVariable],
-            variable_dict: Dict[str, Dict[Pattern[str], RetrievedVariable]],
-        ):
-            for name, retriever_dict in variable_dict.items():
-                for pattern, variable_retriever in retriever_dict.items():
-                    if pattern.match(input_key):
-                        to_update[name] = variable_retriever
-                    break
+        for name, retriever_dict in coord_rules.items():
+            for pattern, variable_retriever in retriever_dict.items():
+                if pattern.match(input_key):
+                    self.coords[name] = variable_retriever
+                break
 
-        update_mapping(self.coords, retriever.coords)  # type: ignore
-        update_mapping(self.data_vars, retriever.data_vars)  # type: ignore
+        for name, retriever_dict in data_var_rules.items():
+            for pattern, variable_retriever in retriever_dict.items():
+                if pattern.match(input_key):
+                    self.data_vars[name] = variable_retriever
+                break
 
 
 class DefaultRetriever(Retriever):
@@ -76,7 +86,11 @@ class DefaultRetriever(Retriever):
         raw_mapping = self._get_raw_mapping(input_keys)
         dataset_mapping: Dict[str, xr.Dataset] = {}
         for key, dataset in raw_mapping.items():
-            input_config = InputKeyRetrieverConfig(key, self)
+            input_config = InputKeyRetrievalRules(
+                input_key=key,
+                coord_rules=self.coords,  # type: ignore
+                data_var_rules=self.data_vars,  # type: ignore
+            )
             dataset = _rename_variables(dataset, input_config)
             dataset = _reindex_dataset_coords(dataset, dataset_config, input_config)
             dataset = _run_data_converters(dataset, dataset_config, input_config)
@@ -111,7 +125,7 @@ class DefaultRetriever(Retriever):
 
 def _rename_variables(
     dataset: xr.Dataset,
-    input_config: InputKeyRetrieverConfig,
+    input_config: InputKeyRetrievalRules,
 ) -> xr.Dataset:
     """-----------------------------------------------------------------------------
     Renames variables in the retrieved dataset according to retrieval configurations.
@@ -161,7 +175,7 @@ def _rename_variables(
 def _run_data_converters(
     dataset: xr.Dataset,
     dataset_config: DatasetConfig,
-    input_config: InputKeyRetrieverConfig,
+    input_config: InputKeyRetrievalRules,
 ) -> xr.Dataset:
     """------------------------------------------------------------------------------------
     Runs the declared DataConverters on the dataset's coords and data_vars.
@@ -188,7 +202,7 @@ def _run_data_converters(
 def _reindex_dataset_coords(
     dataset: xr.Dataset,
     dataset_config: DatasetConfig,
-    input_config: InputKeyRetrieverConfig,
+    input_config: InputKeyRetrievalRules,
 ) -> xr.Dataset:
     """-----------------------------------------------------------------------------
     Swaps dimensions and coordinates to match the structure of the DatasetConfig.
@@ -235,3 +249,202 @@ def _reindex_dataset_coords(
             dataset = dataset.swap_dims({dim: expected_dim})  # type: ignore
 
     return dataset
+
+
+def unpack_datastream_date_str(key: str) -> Tuple[str, datetime, datetime]:
+    """Unpacks a datastream-date string.
+    Input strings are expected to be formatted like "datastream::start_date::end_date".
+    The input string is unpacked into a tuple containing the datastream, the start date,
+    and the end date.
+    Args:
+        key (str): The datastream date string to unpack.
+    Returns:
+        Tuple[str, datetime, datetime]: The unpacked datastream and dates.
+    """
+    datastream, start_str, end_str, *_ = key.split("::")
+    start = datetime.strptime(start_str, "%Y%m%d.%H%M%S")
+    end = datetime.strptime(end_str, "%Y%m%d.%H%M%S")
+    return datastream, start, end
+
+
+class RetrievedDataset(NamedTuple):
+    """Maps variable names to the input DataArray the data are retrieved from."""
+
+    coords: Dict[VarName, xr.DataArray]
+    data_vars: Dict[VarName, xr.DataArray]
+
+
+class RetrievalRuleSelections(NamedTuple):
+    """Maps variable names to the rules and conversions that should be applied."""
+
+    coords: Dict[VarName, RetrievedVariable]
+    data_vars: Dict[VarName, RetrievedVariable]
+
+
+# TODO: Handle cases where some variable retrievals are matched by multiple
+# input keys. We must pick the strongest match:
+# i.e. say 'var1' has retrieval rules: [.*datastream.*: "variable 1", .*: "variable"]
+# then it would be matched by both input keys: ["mydatastream.b1" and "anythingelse.b1"],
+# but {'mydatastream.b1': 'variable 1'} should be the winner.
+#
+# Additionally, we must also be aware that cases like {'.*': 'variable'} may not
+# have a data variable match in the datasets we check, so we should use the
+# first working match for each
+
+#
+# Variable retrieval:
+# a) Figure out from which dataset / input key each variable should be retrieved from
+# b) Retrieve that variable from the dataset
+
+
+def perform_data_retrieval(
+    input_data: Dict[InputKey, xr.Dataset],
+    coord_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
+    data_var_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
+) -> Tuple[RetrievedDataset, RetrievalRuleSelections]:
+    # Rule selections
+    selected_coord_rules: Dict[VarName, RetrievedVariable] = {}
+    selected_data_var_rules: Dict[VarName, RetrievedVariable] = {}
+
+    # Retrieved dataset
+    coord_data: Dict[VarName, xr.DataArray] = {}
+    data_var_data: Dict[VarName, xr.DataArray] = {}
+
+    # Retrieve coordinates
+    for name, retriever_dict in coord_rules.items():
+        for pattern, variable_retriever in retriever_dict.items():
+            if name in selected_coord_rules:  # already matched
+                break
+            for input_key, dataset in input_data.items():
+                if pattern.match(input_key):
+                    if variable_retriever.name in dataset.variables:
+                        logger.info(
+                            "Coordinate '%s' retrieved from '%s': '%s'",
+                            name,
+                            input_key,
+                            variable_retriever.name,
+                        )
+                        selected_coord_rules[name] = variable_retriever
+                        coord_data[name] = dataset[variable_retriever.name]
+                        break
+                    else:
+                        logger.warning(
+                            "Input key matched regex pattern but no matching variable"
+                            " could be found in the input dataset:\n"
+                            "\tCoordinate: %s\n"
+                            "\tInput Variable: %s\n"
+                            "\tPattern: %s\n"
+                            "\tInput Key: %s\n",
+                            name,
+                            variable_retriever.name,
+                            pattern.pattern,
+                            input_key,
+                        )
+        if name not in selected_coord_rules:
+            logger.warning("Could not retrieve coordinate '%s'.", name)
+
+    # Retrieve data variables
+    for name, retriever_dict in data_var_rules.items():
+        for pattern, variable_retriever in retriever_dict.items():
+            if name in selected_data_var_rules:  # already matched
+                break
+            for input_key, dataset in input_data.items():
+                if pattern.match(input_key):
+                    if variable_retriever.name in dataset.variables:
+                        logger.info(
+                            "Variable '%s' retrieved from '%s': '%s'",
+                            name,
+                            input_key,
+                            variable_retriever.name,
+                        )
+                        selected_data_var_rules[name] = variable_retriever
+                        data_var_data[name] = dataset[variable_retriever.name]
+                        break
+                    else:
+                        logger.warning(
+                            "Input key matched regex pattern but no matching variable"
+                            " could be found in the input dataset:\n"
+                            "\tVariable: %s\n"
+                            "\tInput Variable: %s\n"
+                            "\tPattern: %s\n"
+                            "\tInput Key: %s\n",
+                            name,
+                            variable_retriever.name,
+                            pattern.pattern,
+                            input_key,
+                        )
+        if name not in selected_data_var_rules:
+            logger.warning("Could not retrieve variable '%s'.", name)
+
+    return (
+        RetrievedDataset(coords=coord_data, data_vars=data_var_data),
+        RetrievalRuleSelections(
+            coords=selected_coord_rules, data_vars=selected_data_var_rules
+        ),
+    )
+
+
+class StorageRetriever(Retriever):
+    """Retriever API for pulling input data from the storage area."""
+
+    def retrieve(
+        self,
+        input_keys: List[str],
+        dataset_config: DatasetConfig,
+        storage: Optional[Storage] = None,
+        **kwargs: Any,
+    ) -> xr.Dataset:
+        """------------------------------------------------------------------------------------
+        Retrieves input data from the storage area.
+
+        Note that each input_key is expected to be formatted according to the following
+        format:
+
+        "datastream::start-date::end-date",
+
+        e.g., "sgp.myingest.b1::20220913.000000::20220914.000000"
+
+        This format allows the retriever to pull datastream data from the Storage API
+        for the desired dates for each desired input source.
+
+        Args:
+            input_keys (List[str]): A list of specially-formatted input keys.
+            dataset_config (DatasetConfig): The output dataset configuration.
+            storage (Storage): Instance of a Storage class used to fetch saved data.
+
+        Returns:
+            xr.Dataset: The retrieved dataset
+
+        ------------------------------------------------------------------------------------"""
+        assert storage is not None, "Missing required 'storage' parameter."
+
+        # Use the Storage API to fetch input data
+        input_data: Dict[InputKey, xr.Dataset] = {}
+        for key in input_keys:
+            datastream, start, end = unpack_datastream_date_str(key)
+            # TODO: pad start & end according to parameters
+            dataset = storage.fetch_data(start=start, end=end, datastream=datastream)
+            input_data[key] = dataset
+
+        # Perform coord/variable retrieval
+        retrieved_data, retrieval_selections = perform_data_retrieval(
+            input_data=input_data,
+            coord_rules=self.coords,  # type: ignore
+            data_var_rules=self.data_vars,  # type: ignore
+        )
+
+        # temp = retrieved_data.data_vars["temp"]
+        # temp.rename("temperature")
+
+        # Extract and rename the requested DataArray objects
+        # tricky: make sure DataArray.coords are named correctly
+
+        # Apply selected DataConverters -- coords first, then data variables
+        # Modify DataConverter signature -- it should take new data structure instead of xr.Dataset:
+        # RetrievedDataset()
+        # RetrievedDataset.coords = Dict[OutputVarName, xr.DataArray]
+        # RetrievedDataset.data_vars = Dict[OutputVarName, xr.DataArray]
+
+        # Merge the RetrievedDataset structure into an xarray dataset, return
+
+        return xr.Dataset()
