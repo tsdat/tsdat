@@ -3,7 +3,7 @@
 # IDEA: Use the flyweight pattern to limit memory usage if identical converters would
 # be created.
 
-import act # type: ignore
+import act  # type: ignore
 import logging
 import xarray as xr
 import pandas as pd
@@ -166,3 +166,17 @@ class StringToDatetime(DataConverter):
         dataset = assign_data(dataset, data, variable_name)
 
         return dataset
+
+
+class NearestNeighbor(DataConverter):
+    coord: str = "time"
+    """The coordinate axis this converter should be applied on. Defaults to 'time'."""
+
+    def convert(
+        self,
+        dataset: xr.Dataset,
+        dataset_config: DatasetConfig,
+        variable_name: str,
+        **kwargs: Any,
+    ) -> xr.Dataset:
+        ...
