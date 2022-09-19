@@ -5,18 +5,29 @@ from datetime import datetime
 import logging
 import xarray as xr
 from pydantic import BaseModel, Extra
-from typing import Any, Dict, List, NamedTuple, Optional, Pattern, Tuple, cast
+from typing import Any, Dict, List, Optional, Pattern, Tuple, cast
+
+from ..utils import assign_data
 from ..config.dataset import DatasetConfig
-from .base import Retriever, DataReader, RetrievedVariable, Storage
+from .base import (
+    DataReader,
+    InputKey,
+    RetrievalRuleSelections,
+    RetrievedDataset,
+    RetrievedVariable,
+    Retriever,
+    Storage,
+    VarName,
+)
+
+# TODO: Note that the DefaultRetriever applies DataConverters / transformations on
+# variables from all input datasets, while the new version only applies these to
+# variables that are actually retrieved. This leads to a different way of applying
+# data converters
 
 __all__ = ["DefaultRetriever", "StorageRetriever"]
 
 logger = logging.getLogger(__name__)
-
-
-# Verbose type aliases
-InputKey = str
-VarName = str
 
 
 class InputKeyRetrievalRules:
@@ -190,12 +201,26 @@ def _run_data_converters(
         xr.Dataset: The converted dataset.
 
     ------------------------------------------------------------------------------------"""
+    retrieved_dataset = RetrievedDataset.from_xr_dataset(dataset)
     for coord_name, coord_config in input_config.coords.items():
         for converter in coord_config.data_converters:
-            dataset = converter.convert(dataset, dataset_config, coord_name)
+            data_array = retrieved_dataset.coords[coord_name]
+            data = converter.convert(
+                data_array, coord_name, dataset_config, retrieved_dataset
+            )
+            if data is not None:
+                retrieved_dataset.coords[coord_name] = data
+                dataset = assign_data(dataset, data.data, coord_name)
     for var_name, var_config in input_config.data_vars.items():
         for converter in var_config.data_converters:
-            dataset = converter.convert(dataset, dataset_config, var_name)
+            data_array = retrieved_dataset.data_vars[var_name]
+            data = converter.convert(
+                data_array, var_name, dataset_config, retrieved_dataset
+            )
+            if data is not None:
+                retrieved_dataset.data_vars[var_name] = data
+                dataset = assign_data(dataset, data.data, var_name)
+    # TODO: Convert retrieved_dataset back into the xr.Dataset and return that
     return dataset
 
 
@@ -265,20 +290,6 @@ def unpack_datastream_date_str(key: str) -> Tuple[str, datetime, datetime]:
     start = datetime.strptime(start_str, "%Y%m%d.%H%M%S")
     end = datetime.strptime(end_str, "%Y%m%d.%H%M%S")
     return datastream, start, end
-
-
-class RetrievedDataset(NamedTuple):
-    """Maps variable names to the input DataArray the data are retrieved from."""
-
-    coords: Dict[VarName, xr.DataArray]
-    data_vars: Dict[VarName, xr.DataArray]
-
-
-class RetrievalRuleSelections(NamedTuple):
-    """Maps variable names to the rules and conversions that should be applied."""
-
-    coords: Dict[VarName, RetrievedVariable]
-    data_vars: Dict[VarName, RetrievedVariable]
 
 
 # TODO: Handle cases where some variable retrievals are matched by multiple
@@ -436,8 +447,27 @@ class StorageRetriever(Retriever):
         # temp = retrieved_data.data_vars["temp"]
         # temp.rename("temperature")
 
-        # Extract and rename the requested DataArray objects
+        # Extract, rename, and reshape (transpose) the requested DataArray objects to
+        # match the output data structure
+        for name, coord in retrieved_data.coords.items():
+            new_coord = xr.DataArray(
+                data=coord.data,
+                coords={name: coord.data},
+                dims=(name,),
+                attrs=coord.attrs,
+            )
+            retrieved_data.coords[name] = new_coord
+        # for name, data_var in retrieved_data.data_vars.items():
+        #     # 1. Update the coord names, values, and orders
+        #     # 2. Update the data var name
+        #     data_var_def = dataset_config.data_vars[name]
+        #     output_coords = data_var_def.dims
+        # TODO: transpose coords/dims as needed
+
+        # TODO: Run DataConverters on coords, then on data_vars
+
         # tricky: make sure DataArray.coords are named correctly
+        # tricky: make sure DataArray.coords are actually coords
 
         # Apply selected DataConverters -- coords first, then data variables
         # Modify DataConverter signature -- it should take new data structure instead of xr.Dataset:
