@@ -20,6 +20,10 @@ __all__ = ["UnitsConverter", "StringToDatetime"]
 logger = logging.getLogger(__name__)
 
 
+# IDEA: "@data_converter()" decorator so DataConverters can be defined as functions in
+# user code. Arguments to data_converter can be parameters to the class.
+
+
 class UnitsConverter(DataConverter):
     """---------------------------------------------------------------------------------
     Converts the units of a retrieved variable to specified output units.
@@ -183,6 +187,8 @@ class StringToDatetime(DataConverter):
 
 
 class NearestNeighbor(DataConverter):
+    """Maps data onto the specified coordinate grid using nearest-neighbor."""
+
     coord: str = "time"
     """The coordinate axis this converter should be applied on. Defaults to 'time'."""
 
@@ -194,4 +200,20 @@ class NearestNeighbor(DataConverter):
         retrieved_dataset: RetrievedDataset,
         **kwargs: Any,
     ) -> Optional[xr.DataArray]:
-        ...
+        # Assume that the coord index in the output matches coord index in the retrieved
+        # structure.
+        target_coord = retrieved_dataset.coords[self.coord]
+        coord_index = dataset_config[variable_name].dims.index(self.coord)
+        current_coord_name = tuple(data.coords.keys())[coord_index]
+
+        # Create an empty DataArray with the shape we want to achieve
+        new_coords = {
+            k: v.data if k != current_coord_name else target_coord.data
+            for k, v in data.coords.items()
+        }
+        tmp_data = xr.DataArray(coords=new_coords, dims=tuple(new_coords))
+
+        # Resample the data using nearest neighbor
+        new_data = data.reindex_like(other=tmp_data, method="nearest")
+
+        return new_data
