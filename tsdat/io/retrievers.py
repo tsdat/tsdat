@@ -490,4 +490,7 @@ class StorageRetriever(Retriever):
         retrieved_dataset = xr.Dataset(
             coords=retrieved_data.coords, data_vars=retrieved_data.data_vars
         )
+        for var_name, var_data in retrieved_dataset.data_vars.items():
+            # Ensure that the encoding is correct
+            var_data.encoding["dtype"] = dataset_config[var_name].dtype
         return retrieved_dataset
