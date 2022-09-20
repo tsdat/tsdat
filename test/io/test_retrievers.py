@@ -106,7 +106,11 @@ def test_storage_retriever(
     expected = xr.Dataset(
         coords={"time": pd.date_range("2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left")},  # type: ignore
         data_vars={
-            "temperature": ("time", [70, 76, 84]),
+            "temperature": (  # degF -> degC
+                "time",
+                (np.array([70, 76, 84]) - 32) * 5 / 9,
+                {"units": "degC"},
+            ),
             "humidity": ("time", [0, 30, 70]),
         },
         attrs={"datastream": "humboldt.buoy.b1"},

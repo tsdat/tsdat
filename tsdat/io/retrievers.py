@@ -434,8 +434,10 @@ class StorageRetriever(Retriever):
         for key in input_keys:
             datastream, start, end = unpack_datastream_date_str(key)
             # TODO: pad start & end according to parameters
-            dataset = storage.fetch_data(start=start, end=end, datastream=datastream)
-            input_data[key] = dataset
+            retrieved_dataset = storage.fetch_data(
+                start=start, end=end, datastream=datastream
+            )
+            input_data[key] = retrieved_dataset
 
         # Perform coord/variable retrieval
         retrieved_data, retrieval_selections = perform_data_retrieval(
@@ -444,37 +446,48 @@ class StorageRetriever(Retriever):
             data_var_rules=self.data_vars,  # type: ignore
         )
 
-        # temp = retrieved_data.data_vars["temp"]
-        # temp.rename("temperature")
-
-        # Extract, rename, and reshape (transpose) the requested DataArray objects to
-        # match the output data structure
-        for name, coord in retrieved_data.coords.items():
+        # Ensure selected coords are indexed by themselves
+        for name, coord_data in retrieved_data.coords.items():
             new_coord = xr.DataArray(
-                data=coord.data,
-                coords={name: coord.data},
+                data=coord_data.data,
+                coords={name: coord_data.data},
                 dims=(name,),
-                attrs=coord.attrs,
+                attrs=coord_data.attrs,
+                name=name,
             )
             retrieved_data.coords[name] = new_coord
-        # for name, data_var in retrieved_data.data_vars.items():
-        #     # 1. Update the coord names, values, and orders
-        #     # 2. Update the data var name
-        #     data_var_def = dataset_config.data_vars[name]
-        #     output_coords = data_var_def.dims
-        # TODO: transpose coords/dims as needed
+        # Q: Do data_vars need to be renamed or reindexed before data converters run?
 
-        # TODO: Run DataConverters on coords, then on data_vars
+        # Run data converters on coordinates, then on data variables
+        for name, coord_def in retrieval_selections.coords.items():
+            for converter in coord_def.data_converters:
+                coord_data = retrieved_data.coords[name]
+                data = converter.convert(
+                    data=coord_data,
+                    variable_name=name,
+                    dataset_config=dataset_config,
+                    retrieved_dataset=retrieved_data,
+                )
+                if data is not None:
+                    retrieved_data.coords[name] = data
+            # TODO: Add one more converter to make sure data type is correct
 
-        # tricky: make sure DataArray.coords are named correctly
-        # tricky: make sure DataArray.coords are actually coords
+        for name, var_def in retrieval_selections.data_vars.items():
+            # Q: DataArray.coords match RetrievedDataset.coords structure?
+            for converter in var_def.data_converters:
+                var_data = retrieved_data.data_vars[name]
+                data = converter.convert(
+                    data=var_data,
+                    variable_name=name,
+                    dataset_config=dataset_config,
+                    retrieved_dataset=retrieved_data,
+                )
+                if data is not None:
+                    retrieved_data.data_vars[name] = data
+            # TODO: Add one more converter to make sure data type is correct
 
-        # Apply selected DataConverters -- coords first, then data variables
-        # Modify DataConverter signature -- it should take new data structure instead of xr.Dataset:
-        # RetrievedDataset()
-        # RetrievedDataset.coords = Dict[OutputVarName, xr.DataArray]
-        # RetrievedDataset.data_vars = Dict[OutputVarName, xr.DataArray]
-
-        # Merge the RetrievedDataset structure into an xarray dataset, return
-
-        return xr.Dataset()
+        # Construct the retrieved dataset structure
+        retrieved_dataset = xr.Dataset(
+            coords=retrieved_data.coords, data_vars=retrieved_data.data_vars
+        )
+        return retrieved_dataset
