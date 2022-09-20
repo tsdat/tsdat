@@ -63,3 +63,61 @@ def test_ingest_pipeline():
         saved_dataset["first"].encoding.get("_FillValue", None) == -9999
         or saved_dataset["first"].attrs.get("_FillValue", None) == -9999
     )
+
+
+def test_transformation_pipeline():
+
+    expected = xr.Dataset(
+        coords={
+            "time": (
+                "time",
+                pd.date_range("2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left"),  # type: ignore
+                {"units": "Seconds since 1970-01-01 00:00:00"},
+            )
+        },
+        data_vars={
+            "temperature": (  # degF -> degC
+                "time",
+                (np.array([70, 76, 84]) - 32) * 5 / 9,
+                {"units": "degC", "_FillValue": -9999.0},
+            ),
+            "humidity": ("time", [0, 30, 70], {"units": "%", "_FillValue": -9999.0}),
+        },
+        attrs={
+            "datastream": "humboldt.buoy.c1",
+            "title": "title",
+            "description": "description",
+            "location_id": "humboldt",
+            "dataset_name": "buoy",
+            "data_level": "c1",
+        },
+    )
+
+    config = PipelineConfig.from_yaml(Path("test/io/yaml/vap-pipeline.yaml"))
+    pipeline = config.instantiate_pipeline()
+
+    inputs = [
+        "humboldt.buoy_z06.a1::20220405.000000::20220406.000000",
+        "humboldt.buoy_z07.a1::20220405.000000::20220406.000000",
+    ]
+
+    dataset = pipeline.run(inputs)
+
+    # Dataset returned by pipeline
+    assert_close(dataset, expected)
+    assert dataset.attrs.get("code_version") is not None
+    assert dataset.attrs.get("history") is not None
+
+    # Dataset saved to disk
+    save_path = Path(
+        "test/io/retriever-store/data/humboldt.buoy.c1/humboldt.buoy.c1.20220405.000000.nc"
+    )
+    assert save_path.exists()
+    saved_dataset: xr.Dataset = xr.open_dataset(save_path, decode_cf=True)  # type: ignore
+    assert saved_dataset.attrs.get("code_version") is not None
+    assert saved_dataset.attrs.get("history") is not None
+    assert_close(saved_dataset, expected)
+    # assert (
+    #     saved_dataset["first"].encoding.get("_FillValue", None) == -9999
+    #     or saved_dataset["first"].attrs.get("_FillValue", None) == -9999
+    # )

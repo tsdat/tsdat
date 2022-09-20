@@ -1,9 +1,9 @@
 attrs:
   title: title
   description: description
-  location_id: abc
-  dataset_name: example
-  data_level: b1
+  location_id: humboldt
+  dataset_name: buoy
+  data_level: c1
 
 coords:
   time:

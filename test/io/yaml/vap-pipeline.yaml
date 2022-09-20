@@ -1,0 +1,15 @@
+classname: tsdat.pipeline.pipelines.TransformationPipeline
+
+triggers: []
+
+retriever:
+  path: test/io/yaml/vap-retriever.yaml
+
+dataset:
+  path: test/io/yaml/vap-dataset.yaml
+
+quality:
+  path: test/config/yaml/quality.yaml
+
+storage:
+  path: test/io/yaml/vap-storage.yaml

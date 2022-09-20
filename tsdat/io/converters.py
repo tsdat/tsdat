@@ -15,7 +15,11 @@ from pydantic import validator
 from ..config.dataset import DatasetConfig
 from .base import DataConverter, RetrievedDataset
 
-__all__ = ["UnitsConverter", "StringToDatetime"]
+__all__ = [
+    "UnitsConverter",
+    "StringToDatetime",
+    "NearestNeighbor",
+]
 
 logger = logging.getLogger(__name__)
 

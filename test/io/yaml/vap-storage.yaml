@@ -1,0 +1,3 @@
+classname: tsdat.io.storage.FileSystem
+parameters:
+  storage_root: test/io/retriever-store
