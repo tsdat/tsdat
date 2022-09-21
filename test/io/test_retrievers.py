@@ -92,7 +92,9 @@ def test_storage_retriever(
 ):
     # TODO: Test with some 2D data
     storage = FileSystem(
-        parameters=FileSystem.Parameters(storage_root=Path("test/io/retriever-store"))
+        parameters=FileSystem.Parameters(
+            storage_root=Path("test/io/data/retriever-store")
+        )
     )
     inputs = [
         "humboldt.buoy_z06.a1::20220405.000000::20220406.000000",

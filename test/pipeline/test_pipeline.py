@@ -110,7 +110,7 @@ def test_transformation_pipeline():
 
     # Dataset saved to disk
     save_path = Path(
-        "test/io/retriever-store/data/humboldt.buoy.c1/humboldt.buoy.c1.20220405.000000.nc"
+        "test/io/data/retriever-store/data/humboldt.buoy.c1/humboldt.buoy.c1.20220405.000000.nc"
     )
     assert save_path.exists()
     saved_dataset: xr.Dataset = xr.open_dataset(save_path, decode_cf=True)  # type: ignore
