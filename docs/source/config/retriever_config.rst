@@ -39,7 +39,6 @@ Readers must extend the abstract class ``DataReader`` and implement the followin
 
 .. code-block:: python
 
-    @abstractmethod
     def read(self, input_key: str) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
         """-----------------------------------------------------------------------------
         Uses the input key to open a resource and load data as a xr.Dataset object or as
@@ -89,23 +88,26 @@ convert method, as defined below:
 
 .. code-block:: python
 
-    @abstractmethod
     def convert(
         self,
-        dataset: xr.Dataset,
-        dataset_config: DatasetConfig,
+        data: xr.DataArray,
         variable_name: str,
+        dataset_config: DatasetConfig,
+        retrieved_dataset: RetrievedDataset,
         **kwargs: Any,
-    ) -> xr.Dataset:
+    ) -> Optional[xr.DataArray]:
         """-----------------------------------------------------------------------------
-        Runs the data converter on the provided (retrieved) dataset.
+        Runs the data converter on the retrieved data.
 
         Args:
-            dataset (xr.Dataset): The dataset to convert.
-            dataset_config (DatasetConfig): The dataset configuration.
+            data (xr.DataArray): The retrieved DataArray to convert.
+            retrieved_dataset (RetrievedDataset): The retrieved dataset containing data
+                to convert.
+            dataset_config (DatasetConfig): The output dataset configuration.
             variable_name (str): The name of the variable to convert.
 
         Returns:
-            xr.Dataset: The converted dataset.
+            Optional[xr.DataArray]: The converted DataArray for the specified variable,
+                or None if the conversion was done in-place.
 
         -----------------------------------------------------------------------------"""

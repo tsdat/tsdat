@@ -5,7 +5,7 @@ Pipeline Configuration
 The pipeline config file ``pipeline.yaml`` describes the configuration of your pipeline:
 
 #. **Triggers** - which file input file patterns should trigger this pipeline
-#. **Ingest Class** - class name of the ingest pipeline to use
+#. **Pipeline Class** - dotted class name of the pipeline to use
 #. **Dependent Config Files** - which yaml files to use for the retriever, dataset, quality management, and storage
 
 Each pipeline template will include a starter pipeline config file in the config folder.
@@ -22,4 +22,10 @@ An annotated example of an ingest pipeline config file is provided below:
 .. literalinclude:: ../figures/pipeline.yaml
     :linenos:
     :language: yaml
-	
+
+
+You may have noticed the **overrides** option used in the dataset configuration. This option can be used to
+override or add values in the source configuration file. Here we are changing the *location_id* global
+attribute to "sgp" and adding a new attribute to the data variable named "first". Overrides enhance the
+reusability of configuration files, allowing you to define a base configuration file and override specific
+features of it as needed for instruments at different sites.
