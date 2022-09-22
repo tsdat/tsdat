@@ -109,7 +109,7 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
             try:
                 property = self.coords[name]
             except KeyError:
-                logger.error("Key '%s' is neither a data_var nor a coord.")
+                logger.error("Key '%s' is neither a data_var nor a coord.", name)
                 raise
         return property
 
