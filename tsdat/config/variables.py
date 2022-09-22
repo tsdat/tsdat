@@ -251,5 +251,5 @@ class Coordinate(Variable):
         return values
 
 
-# TODO: Variables/Coordinates via __root__=Dict[str, Variable/Coordinate]
+# IDEA: Variables/Coordinates via __root__=Dict[str, Variable/Coordinate]
 # TODO: Variables/Coordinates validators; name uniqueness, coords has time, etc

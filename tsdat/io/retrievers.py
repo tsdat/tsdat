@@ -1,6 +1,3 @@
-# TODO: Retrieval from S3; another retriever class, or parameters on the default?
-# IDEA: Implement MultiDatastreamRetriever & variable finders
-
 from datetime import datetime
 import logging
 import xarray as xr
@@ -23,7 +20,7 @@ from .base import (
 # TODO: Note that the DefaultRetriever applies DataConverters / transformations on
 # variables from all input datasets, while the new version only applies these to
 # variables that are actually retrieved. This leads to a different way of applying
-# data converters
+# data converters. Maybe they should both use the StorageRetriever approach.
 
 __all__ = ["DefaultRetriever", "StorageRetriever"]
 
@@ -292,22 +289,6 @@ def unpack_datastream_date_str(key: str) -> Tuple[str, datetime, datetime]:
     start = datetime.strptime(start_str, "%Y%m%d.%H%M%S")
     end = datetime.strptime(end_str, "%Y%m%d.%H%M%S")
     return datastream, start, end
-
-
-# TODO: Handle cases where some variable retrievals are matched by multiple
-# input keys. We must pick the strongest match:
-# i.e. say 'var1' has retrieval rules: [.*datastream.*: "variable 1", .*: "variable"]
-# then it would be matched by both input keys: ["mydatastream.b1" and "anythingelse.b1"],
-# but {'mydatastream.b1': 'variable 1'} should be the winner.
-#
-# Additionally, we must also be aware that cases like {'.*': 'variable'} may not
-# have a data variable match in the datasets we check, so we should use the
-# first working match for each
-
-#
-# Variable retrieval:
-# a) Figure out from which dataset / input key each variable should be retrieved from
-# b) Retrieve that variable from the dataset
 
 
 def perform_data_retrieval(
