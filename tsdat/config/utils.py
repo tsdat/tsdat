@@ -33,8 +33,18 @@ __all__ = [
 class YamlModel(BaseModel):
     @classmethod
     def from_yaml(cls, filepath: Path, overrides: Optional[Dict[str, Any]] = None):
+        """------------------------------------------------------------------------------------
+        Creates a python configuration object from a yaml file.
 
-        # TODO: Add docstring since this is a public-facing method
+        Args:
+            filepath (Path): The path to the yaml file
+            overrides (Optional[Dict[str, Any]], optional): Overrides to apply to the
+                yaml before instantiating the YamlModel object. Defaults to None.
+
+        Returns:
+            YamlModel: A YamlModel subclass
+
+        ------------------------------------------------------------------------------------"""
         config = read_yaml(filepath)
         if overrides:
             for pointer, new_value in overrides.items():
@@ -43,7 +53,13 @@ class YamlModel(BaseModel):
 
     @classmethod
     def generate_schema(cls, output_file: Path):
-        # TODO: Add docstring since this is a semi-public-facing method
+        """------------------------------------------------------------------------------------
+        Generates JSON schema from the model fields and type annotations.
+
+        Args:
+            output_file (Path): The path to store the JSON schema.
+
+        ------------------------------------------------------------------------------------"""
         output_file.write_text(cls.schema_json(indent=4))
 
 

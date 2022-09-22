@@ -1,10 +1,11 @@
 import xarray as xr
 from typing import Any, List
+from tsdat.io.retrievers import StorageRetriever
 
 from tsdat.utils import decode_cf
 from .base import Pipeline
 
-__all__ = ["IngestPipeline"]
+__all__ = ["IngestPipeline", "TransformationPipeline"]
 
 
 class IngestPipeline(Pipeline):
@@ -67,3 +68,51 @@ class IngestPipeline(Pipeline):
 
         -----------------------------------------------------------------------------"""
         pass
+
+
+class TransformationPipeline(IngestPipeline):
+    """---------------------------------------------------------------------------------
+    Pipeline class designed to read in standardized time series data and enhance
+    its quality and usability by combining multiple sources of data, using higher-level
+    processing techniques, etc.
+
+    ---------------------------------------------------------------------------------"""
+
+    retriever: StorageRetriever
+
+    def run(self, inputs: List[str], **kwargs: Any) -> xr.Dataset:
+        """-----------------------------------------------------------------------------
+        Runs the data pipeline on the provided inputs.
+
+        Note that input keys to TransformationPipelines are different than inputs to
+        IngestPipelines. Here each input key is expected to follow a standard format:
+
+        "datastream::start-date::end-date",
+
+        e.g., "sgp.myingest.b1::20220913.000000::20220914.000000"
+
+        This format allows the retriever to pull datastream data from the Storage API
+        for the desired dates for each desired input source.
+
+        Args:
+            inputs (List[str]): A list of input keys that the pipeline's Retriever class
+            can use to load data into the pipeline.
+
+        Returns:
+            xr.Dataset: The processed dataset.
+
+        -----------------------------------------------------------------------------"""
+
+        dataset = self.retriever.retrieve(
+            inputs, self.dataset_config, storage=self.storage
+        )
+        dataset = self.prepare_retrieved_dataset(dataset)
+        dataset = self.hook_customize_dataset(dataset)
+        dataset = self.quality.manage(dataset)
+        dataset = self.hook_finalize_dataset(dataset)
+        # HACK: Fix encoding on datetime64 variables. Use a shallow copy to retain units
+        # on datetime64 variables in the pipeline (but remove with decode_cf())
+        dataset = decode_cf(dataset)
+        self.storage.save_data(dataset)
+        self.hook_plot_dataset(dataset)
+        return dataset

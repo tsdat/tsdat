@@ -35,6 +35,7 @@ Tsdat pipelines produce standardized datasets that follow the conventions and te
    storage_config
    quality_control
    hook_functions
+   transform_config
    pydantic
 
 

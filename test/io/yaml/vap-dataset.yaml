@@ -1,0 +1,26 @@
+attrs:
+  title: title
+  description: description
+  location_id: humboldt
+  dataset_name: buoy
+  data_level: c1
+
+coords:
+  time:
+    dims: [time]
+    dtype: datetime64[s]
+    attrs:
+      units: Seconds since 1970-01-01 00:00:00
+
+data_vars:
+  temperature:
+    dims: [time]
+    dtype: float
+    attrs:
+      units: degC
+
+  humidity:
+    dims: [time]
+    dtype: float
+    attrs:
+      units: "%"

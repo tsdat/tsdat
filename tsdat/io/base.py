@@ -3,8 +3,18 @@ import contextlib
 import xarray as xr
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Pattern, Union
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    List,
+    NamedTuple,
+    Optional,
+    Pattern,
+    Union,
+)
 from abc import ABC, abstractmethod
+from pydantic import BaseModel, Extra
 from ..utils import ParameterizedClass
 from ..config.dataset import DatasetConfig
 
@@ -18,40 +28,60 @@ __all__ = [
     "FileHandler",
     "Retriever",
     "Storage",
+    "RetrievalRuleSelections",
+    "RetrievedDataset",
 ]
+
+
+# Verbose type aliases
+InputKey = str
+VarName = str
+
+
+class RetrievedDataset(NamedTuple):
+    """Maps variable names to the input DataArray the data are retrieved from."""
+
+    coords: Dict[VarName, xr.DataArray]
+    data_vars: Dict[VarName, xr.DataArray]
+
+    @classmethod
+    def from_xr_dataset(cls, dataset: xr.Dataset):
+        coords = {str(name): data for name, data in dataset.coords.items()}
+        data_vars = {str(name): data for name, data in dataset.data_vars.items()}
+        return cls(coords=coords, data_vars=data_vars)
 
 
 class DataConverter(ParameterizedClass, ABC):
     """---------------------------------------------------------------------------------
-    Base class for running data conversions on retrieved raw dataset.
+    Base class for running data conversions on retrieved raw data.
 
     ---------------------------------------------------------------------------------"""
 
     @abstractmethod
     def convert(
         self,
-        dataset: xr.Dataset,
-        dataset_config: DatasetConfig,
+        data: xr.DataArray,
         variable_name: str,
+        dataset_config: DatasetConfig,
+        retrieved_dataset: RetrievedDataset,
         **kwargs: Any,
-    ) -> xr.Dataset:
+    ) -> Optional[xr.DataArray]:
         """-----------------------------------------------------------------------------
-        Runs the data converter on the provided (retrieved) dataset.
+        Runs the data converter on the retrieved data.
 
         Args:
-            dataset (xr.Dataset): The dataset to convert.
-            dataset_config (DatasetConfig): The dataset configuration.
+            data (xr.DataArray): The retrieved DataArray to convert.
+            retrieved_dataset (RetrievedDataset): The retrieved dataset containing data
+                to convert.
+            dataset_config (DatasetConfig): The output dataset configuration.
             variable_name (str): The name of the variable to convert.
 
         Returns:
-            xr.Dataset: The converted dataset.
+            Optional[xr.DataArray]: The converted DataArray for the specified variable,
+                or None if the conversion was done in-place.
 
         -----------------------------------------------------------------------------"""
         ...
-
-
-# TODO: VariableFinder
-# TODO: DataTransformer
 
 
 class DataReader(ParameterizedClass, ABC):
@@ -204,6 +234,21 @@ class FileHandler(DataHandler):
     writer: FileWriter
 
 
+# TODO: This needs a better name
+class RetrievedVariable(BaseModel, extra=Extra.forbid):
+    """Tracks the name of the input variable and the converters to apply."""
+
+    name: str
+    data_converters: List[DataConverter] = []
+
+
+class RetrievalRuleSelections(NamedTuple):
+    """Maps variable names to the rules and conversions that should be applied."""
+
+    coords: Dict[VarName, RetrievedVariable]
+    data_vars: Dict[VarName, RetrievedVariable]
+
+
 class Retriever(ParameterizedClass, ABC):
     """---------------------------------------------------------------------------------
     Base class for retrieving data used as input to tsdat pipelines.
@@ -215,8 +260,18 @@ class Retriever(ParameterizedClass, ABC):
 
     ---------------------------------------------------------------------------------"""
 
-    readers: Dict[Pattern, Any]  # type: ignore
+    readers: Optional[Dict[Pattern, Any]]  # type: ignore
     """Mapping of readers that should be used to read data given input keys."""
+
+    coords: Dict[str, Dict[Pattern, RetrievedVariable]]  # type: ignore
+    """A dictionary mapping output coordinate names to the retrieval rules and
+    preprocessing actions (e.g., DataConverters) that should be applied to each retrieved
+    coordinate variable."""
+
+    data_vars: Dict[str, Dict[Pattern, RetrievedVariable]]  # type: ignore
+    """A dictionary mapping output data variable names to the retrieval rules and
+    preprocessing actions (e.g., DataConverters) that should be applied to each
+    retrieved data variable."""
 
     @abstractmethod
     def retrieve(
@@ -334,13 +389,10 @@ class Storage(ParameterizedClass, ABC):
         -----------------------------------------------------------------------------"""
         tmp_dir = tempfile.TemporaryDirectory()
         tmp_dirpath = Path(tmp_dir.name)
-        try:
-            yield tmp_dirpath
-        except BaseException:
-            raise
-        else:
-            for path in tmp_dirpath.glob("**/*"):
-                if path.is_file():
-                    self.save_ancillary_file(path, datastream)
-        finally:
-            tmp_dir.cleanup()
+        yield tmp_dirpath
+
+        for path in tmp_dirpath.glob("**/*"):
+            if path.is_file():
+                self.save_ancillary_file(path, datastream)
+
+        tmp_dir.cleanup()

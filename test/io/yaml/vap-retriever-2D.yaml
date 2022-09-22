@@ -1,0 +1,54 @@
+classname: tsdat.StorageRetriever
+
+coords:
+  time:
+    .*buoy_z06.*:
+      name: time
+  height:
+    .*buoy_z07.*:
+      name: height
+
+data_vars:
+  # Note:
+  temperature:
+    .*buoy_z07.*:
+      name: temp
+      data_converters:
+        # Note: NearestNeighbor on height shouldn't do anything; it already has the correct shape.
+        - classname: tsdat.NearestNeighbor
+          coord: height
+        - classname: tsdat.NearestNeighbor
+          coord: time
+        - classname: tsdat.UnitsConverter
+          input_units: degF
+
+  humidity:
+    # Note: buoy_z06 already has the correct shape for humidity (time)
+    .*buoy_z06.*:
+      name: humidity
+
+    # Should be an unused retrieval rule
+    .*buoy_z07.*:
+      name: rh
+      data_converters:
+        - classname: tsdat.NearestNeighbor
+
+  pressure:
+    # Note: buoy_z07 doesn't have "pres" data, should warn and move to buoy_z06
+    .*buoy_z07.*:
+      name: pres
+      data_converters:
+        - classname: tsdat.NearestNeighbor
+          coord: height
+
+    # Note: Applying NearestNeighbor on a non-time dimension
+    .*buoy_z06.*:
+      name: pres
+      data_converters:
+        - classname: tsdat.NearestNeighbor
+          coord: height
+
+  # Note: This variable doesn't exist in any input data sources.
+  dummy:
+    .*:
+      name: dummy

@@ -1,5 +1,3 @@
-# TODO: Implement ZarrWriter
-
 import copy
 import numpy as np
 import xarray as xr
@@ -81,14 +79,14 @@ class NetCDFWriter(FileWriter):
 class SplitNetCDFWriter(NetCDFWriter):
     """------------------------------------------------------------------------------------
     Wrapper around xarray's `Dataset.to_netcdf()` function for saving a dataset to a
-    netCDF file based on a particular time interval, and is an extension of the 
+    netCDF file based on a particular time interval, and is an extension of the
     `NetCDFWriter`.
-    Files are split (sliced) via a time interval specified in two parts, `time_interval` 
-    a literal value, and a `time_unit` character (year: "Y", month: "M", day: "D", hour: 
+    Files are split (sliced) via a time interval specified in two parts, `time_interval`
+    a literal value, and a `time_unit` character (year: "Y", month: "M", day: "D", hour:
     "h", minute: "m", second: "s").
 
-    Properties under the `to_netcdf_kwargs` parameter will be passed to 
-    `Dataset.to_netcdf()` as keyword arguments. File compression is used by default to save 
+    Properties under the `to_netcdf_kwargs` parameter will be passed to
+    `Dataset.to_netcdf()` as keyword arguments. File compression is used by default to save
     disk space. To disable compression set the `compression_level` parameter to `0`.
 
     ------------------------------------------------------------------------------------"""
