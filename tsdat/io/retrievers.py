@@ -161,6 +161,7 @@ def _rename_variables(
     for raw_name, output_name in coords_to_rename.items():
         if raw_name not in dataset:
             to_rename.pop(raw_name)
+            input_config.coords.pop(raw_name)
             logger.warning(
                 "Coordinate variable '%s' could not be retrieved from input. Please"
                 " ensure the retrieval configuration file for the '%s' coord has"
@@ -172,6 +173,7 @@ def _rename_variables(
     for raw_name, output_name in vars_to_rename.items():
         if raw_name not in dataset:
             to_rename.pop(raw_name)
+            input_config.data_vars.pop(raw_name)
             logger.warning(
                 "Data variable '%s' could not be retrieved from input. Please"
                 " ensure the retrieval configuration file for the '%s' data"
