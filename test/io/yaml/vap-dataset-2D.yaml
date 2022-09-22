@@ -1,0 +1,44 @@
+attrs:
+  title: title
+  description: description
+  location_id: humboldt
+  dataset_name: buoy_2d
+  data_level: c1
+
+coords:
+  time:
+    dims: [time]
+    dtype: datetime64[s]
+    attrs:
+      units: Seconds since 1970-01-01 00:00:00
+  height:
+    dims: [height]
+    dtype: float32
+    attrs:
+      units: m
+
+data_vars:
+  temperature:
+    dims: [time, height]
+    dtype: float
+    attrs:
+      units: degC
+
+  humidity:
+    dims: [time]
+    dtype: float
+    attrs:
+      units: "%"
+
+  pressure:
+    dims: [height]
+    dtype: float
+    attrs:
+      units: "kPa"
+
+  dummy:
+    dims: [time, height]
+    dtype: int32
+    attrs:
+      units: "1"
+      comment: "This variable doesn't exist in any input data sources."
