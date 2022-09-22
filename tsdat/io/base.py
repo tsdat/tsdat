@@ -44,12 +44,6 @@ class RetrievedDataset(NamedTuple):
     coords: Dict[VarName, xr.DataArray]
     data_vars: Dict[VarName, xr.DataArray]
 
-    def get(self, variable_name: str) -> xr.DataArray:
-        try:
-            return self.coords[variable_name]
-        except KeyError:
-            return self.data_vars[variable_name]
-
     @classmethod
     def from_xr_dataset(cls, dataset: xr.Dataset):
         coords = {str(name): data for name, data in dataset.coords.items()}
@@ -88,10 +82,6 @@ class DataConverter(ParameterizedClass, ABC):
 
         -----------------------------------------------------------------------------"""
         ...
-
-
-# TODO: VariableFinder
-# TODO: DataTransformer
 
 
 class DataReader(ParameterizedClass, ABC):
@@ -246,6 +236,8 @@ class FileHandler(DataHandler):
 
 # TODO: This needs a better name
 class RetrievedVariable(BaseModel, extra=Extra.forbid):
+    """Tracks the name of the input variable and the converters to apply."""
+
     name: str
     data_converters: List[DataConverter] = []
 
@@ -397,13 +389,10 @@ class Storage(ParameterizedClass, ABC):
         -----------------------------------------------------------------------------"""
         tmp_dir = tempfile.TemporaryDirectory()
         tmp_dirpath = Path(tmp_dir.name)
-        try:
-            yield tmp_dirpath
-        except BaseException:
-            raise
-        else:
-            for path in tmp_dirpath.glob("**/*"):
-                if path.is_file():
-                    self.save_ancillary_file(path, datastream)
-        finally:
-            tmp_dir.cleanup()
+        yield tmp_dirpath
+
+        for path in tmp_dirpath.glob("**/*"):
+            if path.is_file():
+                self.save_ancillary_file(path, datastream)
+
+        tmp_dir.cleanup()
