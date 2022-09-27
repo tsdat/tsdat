@@ -16,6 +16,7 @@ from ..config.dataset import DatasetConfig
 from .base import DataConverter, RetrievedDataset
 
 __all__ = [
+    "convert_data_type",
     "UnitsConverter",
     "StringToDatetime",
     "NearestNeighbor",
@@ -26,6 +27,20 @@ logger = logging.getLogger(__name__)
 
 # IDEA: "@data_converter()" decorator so DataConverters can be defined as functions in
 # user code. Arguments to data_converter can be parameters to the class.
+
+
+def convert_data_type(data: xr.DataArray, dtype: str) -> xr.DataArray:
+    """Converts the DataArray to the specified data type."""
+    if data.name in data.coords:
+        values = data.values.astype(dtype=dtype)  # type: ignore
+        return xr.DataArray(
+            name=data.name,
+            data=values,
+            coords={data.name: values},
+            dims=data.dims,
+            attrs=data.attrs,
+        )
+    return data.astype(dtype=dtype)  # type: ignore
 
 
 class UnitsConverter(DataConverter):

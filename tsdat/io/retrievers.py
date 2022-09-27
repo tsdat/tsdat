@@ -16,6 +16,7 @@ from .base import (
     Storage,
     VarName,
 )
+from .converters import convert_data_type
 
 # TODO: Note that the DefaultRetriever applies DataConverters / transformations on
 # variables from all input datasets, while the new version only applies these to
@@ -453,7 +454,10 @@ class StorageRetriever(Retriever):
                 )
                 if data is not None:
                     retrieved_data.coords[name] = data
-            # TODO: Add one more converter to make sure data type is correct
+            # Ensure the data type is correct
+            retrieved_data.coords[name] = convert_data_type(
+                retrieved_data.coords[name], dataset_config.coords[name].dtype
+            )
 
         for name, var_def in retrieval_selections.data_vars.items():
             # Q: DataArray.coords match RetrievedDataset.coords structure?
@@ -467,7 +471,10 @@ class StorageRetriever(Retriever):
                 )
                 if data is not None:
                     retrieved_data.data_vars[name] = data
-            # TODO: Add one more converter to make sure data type is correct
+            # Ensure the data type is correct
+            retrieved_data.data_vars[name] = convert_data_type(
+                retrieved_data.data_vars[name], dataset_config.data_vars[name].dtype
+            )
 
         # Construct the retrieved dataset structure
         retrieved_dataset = xr.Dataset(
