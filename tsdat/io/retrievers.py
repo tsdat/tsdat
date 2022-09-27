@@ -211,6 +211,13 @@ def _run_data_converters(
             if data is not None:
                 retrieved_dataset.coords[coord_name] = data
                 dataset = assign_data(dataset, data.data, coord_name)
+        dataset = assign_data(
+            dataset,
+            convert_data_type(
+                dataset[coord_name], dataset_config.coords[coord_name].dtype
+            ).data,
+            coord_name,
+        )
     for var_name, var_config in input_config.data_vars.items():
         for converter in var_config.data_converters:
             data_array = retrieved_dataset.data_vars[var_name]
@@ -220,6 +227,13 @@ def _run_data_converters(
             if data is not None:
                 retrieved_dataset.data_vars[var_name] = data
                 dataset = assign_data(dataset, data.data, var_name)
+        dataset = assign_data(
+            dataset,
+            convert_data_type(
+                dataset[var_name], dataset_config.data_vars[var_name].dtype
+            ).data,
+            var_name,
+        )
     # TODO: Convert retrieved_dataset back into the xr.Dataset and return that
     return dataset
 
