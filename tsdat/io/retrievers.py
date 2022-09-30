@@ -2,9 +2,9 @@ from datetime import datetime
 import logging
 import xarray as xr
 from pydantic import BaseModel, Extra
-from typing import Any, Dict, List, Optional, Pattern, Tuple, cast
+from typing import Any, Dict, List, Optional, Pattern, Tuple
 
-from ..utils import assign_data
+from ..utils import assign_data, equivalent_dtypes  # type: ignore
 from ..config.dataset import DatasetConfig
 from .base import (
     DataReader,
@@ -92,7 +92,7 @@ class DefaultRetriever(Retriever):
     def retrieve(
         self, input_keys: List[str], dataset_config: DatasetConfig, **kwargs: Any
     ) -> xr.Dataset:
-        raw_mapping = self._get_raw_mapping(input_keys)
+        raw_mapping = self._fetch_data(input_keys, dataset_config)
         dataset_mapping: Dict[str, xr.Dataset] = {}
         for key, dataset in raw_mapping.items():
             input_config = InputKeyRetrievalRules(
@@ -107,26 +107,24 @@ class DefaultRetriever(Retriever):
         output_dataset = self._merge_raw_mapping(dataset_mapping)
         return output_dataset
 
-    def _get_raw_mapping(self, input_keys: List[str]) -> Dict[str, xr.Dataset]:
-        dataset_mapping: Dict[str, xr.Dataset] = {}
-        input_reader_mapping = self._match_inputs(input_keys)
-        for input_key, reader in input_reader_mapping.items():  # IDEA: async
-            logger.debug("Using %s to read input_key '%s'", reader, input_key)
-            data = reader.read(input_key)
-            if isinstance(data, xr.Dataset):
-                data = {input_key: data}
-            dataset_mapping.update(data)
-        return dataset_mapping
-
-    def _match_inputs(self, input_keys: List[str]) -> Dict[str, DataReader]:
-        input_reader_mapping: Dict[str, DataReader] = {}
-        for input_key in input_keys:
+    def _fetch_data(
+        self,
+        input_keys: List[str],
+        dataset_config: DatasetConfig,
+        storage: Optional[Storage] = None,
+        **kwargs: Any,
+    ) -> Dict[InputKey, xr.Dataset]:
+        input_data: Dict[InputKey, xr.Dataset] = {}
+        for key in input_keys:
             for regex, reader in self.readers.items():  # type: ignore
-                regex = cast(Pattern[str], regex)
-                if regex.match(input_key):
-                    input_reader_mapping[input_key] = reader
+                if regex.match(key):
+                    logger.debug("Using %s to read input_key '%s'", reader, key)
+                    ret = reader.read(input_key=key)
+                    if isinstance(ret, xr.Dataset):
+                        ret = {key: ret}
+                    input_data.update(ret)
                     break
-        return input_reader_mapping
+        return input_data
 
     def _merge_raw_mapping(self, raw_mapping: Dict[str, xr.Dataset]) -> xr.Dataset:
         return xr.merge(list(raw_mapping.values()), **self.parameters.merge_kwargs)  # type: ignore
@@ -211,13 +209,11 @@ def _run_data_converters(
             if data is not None:
                 retrieved_dataset.coords[coord_name] = data
                 dataset = assign_data(dataset, data.data, coord_name)
-        dataset = assign_data(
-            dataset,
-            convert_data_type(
-                dataset[coord_name], dataset_config.coords[coord_name].dtype
-            ).data,
-            coord_name,
-        )
+        data_dtype = dataset[coord_name].dtype  # type: ignore
+        expected_dtype = dataset_config.coords[coord_name].dtype
+        if not equivalent_dtypes(data_dtype, expected_dtype):
+            new_coord = convert_data_type(dataset[coord_name], expected_dtype).data
+            dataset = assign_data(dataset, new_coord, coord_name)
     for var_name, var_config in input_config.data_vars.items():
         for converter in var_config.data_converters:
             data_array = retrieved_dataset.data_vars[var_name]
@@ -227,14 +223,11 @@ def _run_data_converters(
             if data is not None:
                 retrieved_dataset.data_vars[var_name] = data
                 dataset = assign_data(dataset, data.data, var_name)
-        dataset = assign_data(
-            dataset,
-            convert_data_type(
-                dataset[var_name], dataset_config.data_vars[var_name].dtype
-            ).data,
-            var_name,
-        )
-    # TODO: Convert retrieved_dataset back into the xr.Dataset and return that
+        data_dtype = dataset[var_name].dtype  # type: ignore
+        expected_dtype = dataset_config.data_vars[var_name].dtype
+        if not equivalent_dtypes(data_dtype, expected_dtype):
+            new_data = convert_data_type(dataset[var_name], expected_dtype).data
+            dataset = assign_data(dataset, new_data, var_name)
     return dataset
 
 

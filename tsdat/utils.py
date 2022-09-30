@@ -239,6 +239,18 @@ def get_filename(
     return f"{datastream_name}.{start_date}.{start_time}{title}{extension}"
 
 
+# np.dtype[Any] only works in python 3.9+, so we must use "type: ignore" around it here
+def equivalent_dtypes(data_dtype: np.dtype, expected_dtype: str) -> bool:  # type: ignore
+    """Checks if the data dtype is equivalent to the expected dtype."""
+    if expected_dtype == "str":
+        return data_dtype.kind == "U"
+    if expected_dtype.startswith("datetime64"):
+        # Xarray/pandas always broadcasts to datetime64[ns]:
+        # https://github.com/pandas-dev/pandas/issues/6741
+        return data_dtype == np.dtype("datetime64[ns]")
+    return str(data_dtype) == expected_dtype  # type: ignore
+
+
 # def get_raw_filename(
 #     raw_data: Union[xr.Dataset, Dict[str, xr.Dataset]], old_filename: str, config
 # ) -> str:
