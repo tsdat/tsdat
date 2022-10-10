@@ -1,4 +1,6 @@
 classname: tsdat.StorageRetriever
+# parameters:
+#   datastreams:
 
 coords:
   time:
@@ -22,6 +24,31 @@ data_vars:
         - classname: tsdat.UnitsConverter
           input_units: degF
 
+  # retriever.get_inputs --> Dict[InputKey: xr.Dataset]
+  # retriever.retrieve_variables --> Dict[VarName: Tuple[RetrievalRule, List[xr.DataArray]]
+  # --> post_retrieval_hook
+  # retriever.merge_variable_arrays  --> Dict[VarName: Tuple[RetrievalRule, xr.DataArray]]
+  # --> pre convert hook ?
+  # retrieved_data = retriever.convert_data --> Dict[VarName: xr.DataArray]
+  # --> post convert hook ?
+  # output_dataset = create_output_dataset(retrieved_data) --> xr.Dataset
+  # --> customize dataset hook
+  # apply qc
+  # --> post qc hook    <--------------- change finalize to hook_post_qc
+  # save
+  # --> plot dataset hook
+
+  # ${RUN_LOCATION} should be a substitution allowed in the regex patterns
+
+  # Of note: VAPs should always use the highest available priority input for each data variable
+  # because we are assuming that each pattern refers to a different datastream and data from different
+  # datastreams should not be combined into the same variable (at least not automatically)
+
+  # For ingests we assume that the patterns match different *files* and that matched files for the same
+  # pattern are obtained from the same instrument/source and may be merged safely.
+
+  # Per variable: retrieval rules: List[retrieval rule] which is the "- pattern: .*xyz.* \n..."" stuff
+
   humidity:
     # Note: buoy_z06 already has the correct shape for humidity (time)
     .*buoy_z06.*:
@@ -32,6 +59,12 @@ data_vars:
       name: rh
       data_converters:
         - classname: tsdat.NearestNeighbor
+
+    # # TODO: Make this a list instead of a dict: more flexible for different types of selections.
+    # - pattern: .*buoy_z07.*
+    #   name: rh
+    #   data_converters:
+    #     - classname: tsdat.NearestNeighbor
 
   pressure:
     # Note: buoy_z07 doesn't have "pres" data, should warn and move to buoy_z06
