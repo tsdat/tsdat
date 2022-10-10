@@ -14,7 +14,7 @@ class DataConverterConfig(ParameterizedConfigClass, extra=Extra.allow):
     ...
 
 
-class RetrievedVariableConfig(BaseModel, extra=Extra.allow):
+class RetrievedVariableRuleConfig(BaseModel, extra=Extra.allow):
     """Specifies how the variable should be retrieved from the raw dataset and the
     preprocessing steps (i.e. DataConverters) that should be applied."""
 
@@ -64,13 +64,13 @@ class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
         " be searched in the order they are defined and the DataReader corresponding"
         " with the first pattern that matches the input key will be used."
     )
-    coords: Dict[str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]] = Field(  # type: ignore
+    coords: Dict[str, Union[Dict[Pattern, RetrievedVariableRuleConfig], RetrievedVariableRuleConfig]] = Field(  # type: ignore
         {},
         description="A dictionary mapping output coordinate variable names to the"
         " retrieval rules and preprocessing actions (i.e. DataConverters) that should"
         " be applied to each retrieved coordinate variable.",
     )
-    data_vars: Dict[str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]] = Field(  # type: ignore
+    data_vars: Dict[str, Union[Dict[Pattern, RetrievedVariableRuleConfig], RetrievedVariableRuleConfig]] = Field(  # type: ignore
         {},
         description="A dictionary mapping output data_variable variable names to the"
         " retrieval rules and preprocessing actions (i.e. DataConverters) that should"
@@ -79,13 +79,13 @@ class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
 
     @validator("coords", "data_vars")
     @classmethod
-    def coerce_to_patterned_retriever(cls, var_dict: Dict[str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]]) -> Dict[str, Dict[Pattern[str], RetrievedVariableConfig]]:  # type: ignore
-        to_return: Dict[str, Dict[Pattern[str], RetrievedVariableConfig]] = {}  # type: ignore
+    def coerce_to_patterned_retriever(cls, var_dict: Dict[str, Union[Dict[Pattern, RetrievedVariableRuleConfig], RetrievedVariableRuleConfig]]) -> Dict[str, Dict[Pattern[str], RetrievedVariableRuleConfig]]:  # type: ignore
+        to_return: Dict[str, Dict[Pattern[str], RetrievedVariableRuleConfig]] = {}  # type: ignore
         for name, var_retriever in var_dict.items():  # type: ignore
 
-            if isinstance(var_retriever, RetrievedVariableConfig):
+            if isinstance(var_retriever, RetrievedVariableRuleConfig):
                 var_retriever = {re.compile(r".*"): var_retriever}
             to_return[name] = cast(
-                Dict[Pattern[str], RetrievedVariableConfig], var_retriever
+                Dict[Pattern[str], RetrievedVariableRuleConfig], var_retriever
             )
         return to_return

@@ -9,9 +9,9 @@ from ..config.dataset import DatasetConfig
 from .base import (
     DataReader,
     InputKey,
-    RetrievalRuleSelections,
+    SelectedRetrievalRules,
     RetrievedDataset,
-    RetrievedVariable,
+    VariableRetrievalRule,
     Retriever,
     Storage,
     VarName,
@@ -33,11 +33,11 @@ class InputKeyRetrievalRules:
     def __init__(
         self,
         input_key: InputKey,
-        coord_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
-        data_var_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
+        coord_rules: Dict[VarName, Dict[Pattern[Any], VariableRetrievalRule]],
+        data_var_rules: Dict[VarName, Dict[Pattern[Any], VariableRetrievalRule]],
     ):
-        self.coords: Dict[VarName, RetrievedVariable] = {}
-        self.data_vars: Dict[VarName, RetrievedVariable] = {}
+        self.coords: Dict[VarName, VariableRetrievalRule] = {}
+        self.data_vars: Dict[VarName, VariableRetrievalRule] = {}
 
         for name, retriever_dict in coord_rules.items():
             for pattern, variable_retriever in retriever_dict.items():
@@ -291,14 +291,14 @@ def unpack_datastream_date_str(key: str) -> Tuple[str, datetime, datetime]:
     return datastream, start, end
 
 
-def perform_data_retrieval(
+def fetch_raw_data(
     input_data: Dict[InputKey, xr.Dataset],
-    coord_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
-    data_var_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
-) -> Tuple[RetrievedDataset, RetrievalRuleSelections]:
+    coord_rules: Dict[VarName, Dict[Pattern[Any], VariableRetrievalRule]],
+    data_var_rules: Dict[VarName, Dict[Pattern[Any], VariableRetrievalRule]],
+) -> Tuple[RetrievedDataset, SelectedRetrievalRules]:
     # Rule selections
-    selected_coord_rules: Dict[VarName, RetrievedVariable] = {}
-    selected_data_var_rules: Dict[VarName, RetrievedVariable] = {}
+    selected_coord_rules: Dict[VarName, VariableRetrievalRule] = {}
+    selected_data_var_rules: Dict[VarName, VariableRetrievalRule] = {}
 
     # Retrieved dataset
     coord_data: Dict[VarName, xr.DataArray] = {}
@@ -372,7 +372,7 @@ def perform_data_retrieval(
 
     return (
         RetrievedDataset(coords=coord_data, data_vars=data_var_data),
-        RetrievalRuleSelections(
+        SelectedRetrievalRules(
             coords=selected_coord_rules, data_vars=selected_data_var_rules
         ),
     )
@@ -423,7 +423,7 @@ class StorageRetriever(Retriever):
             input_data[key] = retrieved_dataset
 
         # Perform coord/variable retrieval
-        retrieved_data, retrieval_selections = perform_data_retrieval(
+        retrieved_data, retrieval_selections = fetch_raw_data(
             input_data=input_data,
             coord_rules=self.coords,  # type: ignore
             data_var_rules=self.data_vars,  # type: ignore

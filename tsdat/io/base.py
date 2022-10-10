@@ -28,7 +28,7 @@ __all__ = [
     "FileHandler",
     "Retriever",
     "Storage",
-    "RetrievalRuleSelections",
+    "SelectedRetrievalRules",
     "RetrievedDataset",
 ]
 
@@ -36,6 +36,11 @@ __all__ = [
 # Verbose type aliases
 InputKey = str
 VarName = str
+
+
+# class XXX(NamedTuple):
+#     coords: Dict[VarName, Dict[InputKey, xr.DataArray]]
+#     data_vars: Dict[VarName, Dict[InputKey, xr.DataArray]]
 
 
 class RetrievedDataset(NamedTuple):
@@ -234,19 +239,22 @@ class FileHandler(DataHandler):
     writer: FileWriter
 
 
-# TODO: This needs a better name
-class RetrievedVariable(BaseModel, extra=Extra.forbid):
+class VariableRetrievalRule(BaseModel, extra=Extra.forbid):
     """Tracks the name of the input variable and the converters to apply."""
+
+    # TODO Document this
 
     name: str
     data_converters: List[DataConverter] = []
 
 
-class RetrievalRuleSelections(NamedTuple):
+class SelectedRetrievalRules(NamedTuple):
     """Maps variable names to the rules and conversions that should be applied."""
 
-    coords: Dict[VarName, RetrievedVariable]
-    data_vars: Dict[VarName, RetrievedVariable]
+    # TODO Document this
+
+    coords: Dict[VarName, VariableRetrievalRule]
+    data_vars: Dict[VarName, VariableRetrievalRule]
 
 
 class Retriever(ParameterizedClass, ABC):
@@ -263,12 +271,12 @@ class Retriever(ParameterizedClass, ABC):
     readers: Optional[Dict[Pattern, Any]]  # type: ignore
     """Mapping of readers that should be used to read data given input keys."""
 
-    coords: Dict[str, Dict[Pattern, RetrievedVariable]]  # type: ignore
+    coords: Dict[str, Dict[Pattern, VariableRetrievalRule]]  # type: ignore
     """A dictionary mapping output coordinate names to the retrieval rules and
     preprocessing actions (e.g., DataConverters) that should be applied to each retrieved
     coordinate variable."""
 
-    data_vars: Dict[str, Dict[Pattern, RetrievedVariable]]  # type: ignore
+    data_vars: Dict[str, Dict[Pattern, VariableRetrievalRule]]  # type: ignore
     """A dictionary mapping output data variable names to the retrieval rules and
     preprocessing actions (e.g., DataConverters) that should be applied to each
     retrieved data variable."""
