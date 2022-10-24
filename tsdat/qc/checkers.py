@@ -340,10 +340,15 @@ class _CheckDelta(_ThresholdChecker):
 
     def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
 
-        threshold = self._get_threshold(dataset, variable_name, True)
+        var_data = dataset[variable_name]
+        failures: NDArray[np.bool8] = np.zeros_like(var_data, dtype=np.bool8)  # type: ignore
 
-        data: NDArray[Any] = dataset[variable_name].data
-        axis = dataset[variable_name].get_axis_num(self.parameters.dim)
+        threshold = self._get_threshold(dataset, variable_name, True)
+        if threshold is None:
+            return failures
+
+        data: NDArray[Any] = var_data.data
+        axis = var_data.get_axis_num(self.parameters.dim)
 
         diff: NDArray[Any] = np.absolute(np.diff(data, axis=axis, prepend=data[0]))  # type: ignore
         failures = diff > threshold if self.allow_equal else diff >= threshold
