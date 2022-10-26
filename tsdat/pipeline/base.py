@@ -67,12 +67,12 @@ class Pipeline(ParameterizedClass, ABC):
             DatasetConfig.
 
         -----------------------------------------------------------------------------"""
-        output_vars = set(self.dataset_config.coords) | set(
+        output_vars = list(self.dataset_config.coords) + list(
             self.dataset_config.data_vars
         )
-        retrieved_vars = cast("set[str]", set(dataset.variables))
-        vars_to_drop = retrieved_vars - output_vars
-        vars_to_add = output_vars - retrieved_vars
+        retrieved_variables = cast(List[str], list(dataset.variables))
+        vars_to_drop = [ret for ret in retrieved_variables if ret not in output_vars]
+        vars_to_add = [out for out in output_vars if out not in retrieved_variables]
 
         dataset = dataset.drop_vars(vars_to_drop)
         dataset = self._add_dataset_variables(dataset, vars_to_add)
