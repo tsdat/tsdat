@@ -66,6 +66,23 @@ class FileSystem(Storage):
         the `storage/root` folder in the active working directory. The directory is
         created as this parameter is set, if the directory does not already exist."""
 
+        data_directory: Union[Path, str] = "data"
+        """The directory under <storage_root> where data files will be saved to. Defaults 
+        to the <storage_root>/data folder in the active working directory."""
+
+        ancillary_directory: Union[Path, str] = "ancillary"
+        """The directory under <storage_root> where ancillary files (e.g. plots) will be 
+        saved to. Defaults to the <storage_root>/data folder in the active working 
+        directory."""
+
+        by_date: bool = False
+        """Organize <data_directory> and <ancillary_directory> by the year/month/day of output 
+        files. Default is set to False."""
+
+        date_path: Path = Path("")
+        """Organize <data_directory> and <ancillary_directory> by the year/month/day of output 
+        files. Default is set to False."""
+
         file_timespan: Optional[str] = None
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
 
@@ -91,6 +108,7 @@ class FileSystem(Storage):
 
         -----------------------------------------------------------------------------"""
         datastream = dataset.attrs["datastream"]
+        self.parameters.date_path = self._create_path_by_date(dataset, self.parameters.by_date)
         filepath = self._get_dataset_filepath(dataset, datastream)
         filepath.parent.mkdir(exist_ok=True, parents=True)
         self.handler.writer.write(dataset, filepath)
@@ -132,7 +150,9 @@ class FileSystem(Storage):
         logger.info("Saved ancillary file to: %s", saved_filepath)
 
     def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
-        data_dirpath = self.parameters.storage_root / "data" / datastream
+        data_dirpath = (
+            self.parameters.storage_root / self.parameters.data_directory / datastream
+        )
         filepaths = [data_dirpath / Path(file) for file in os.listdir(data_dirpath)]
         return self._filter_between_dates(filepaths, start, end)
 
@@ -166,13 +186,34 @@ class FileSystem(Storage):
         return dataset_list
 
     def _get_dataset_filepath(self, dataset: xr.Dataset, datastream: str) -> Path:
-        datastream_dir = self.parameters.storage_root / "data" / datastream
+        datastream_dir = (
+            self.parameters.storage_root
+            / self.parameters.data_directory
+            / datastream
+            / self.parameters.date_path
+        )
         extension = self.handler.writer.file_extension
+
         return datastream_dir / get_filename(dataset, extension)
 
     def _get_ancillary_filepath(self, filepath: Path, datastream: str) -> Path:
-        anc_datastream_dir = self.parameters.storage_root / "ancillary" / datastream
+        anc_datastream_dir = (
+            self.parameters.storage_root
+            / self.parameters.ancillary_directory
+            / datastream
+            / self.parameters.date_path
+        )
         return anc_datastream_dir / filepath.name
+
+    def _create_path_by_date(self, dataset: xr.Dataset, by_date: bool) -> Path:
+        if by_date:
+            time = dataset.time[0].data.astype("datetime64[D]")
+            year = time.astype("datetime64[Y]").astype(int) + 1970
+            month = time.astype("datetime64[M]").astype(int) % 12 + 1
+            day = (time - time.astype("datetime64[M]")).astype(int) + 1
+            return Path(f"{year}/{month}/{day}")
+        else:
+            return Path("")
 
 
 class FileSystemS3(FileSystem):
@@ -190,15 +231,28 @@ class FileSystemS3(FileSystem):
     ------------------------------------------------------------------------------------"""
 
     class Parameters(BaseSettings):  # type: ignore
-        storage_root: Path = Field(Path("storage/root"), env="TSDAT_STORAGE_ROOT")
-        """The path on disk where data and ancillary files will be saved to. Defaults to
-        the `storage/root` folder in the top level of the storage bucket."""
-
         bucket: str = Field("tsdat-storage", env="TSDAT_S3_BUCKET_NAME")
         """The name of the S3 bucket that the storage class should attach to."""
 
         region: str = Field("us-west-2", env="AWS_DEFAULT_REGION")
         """The AWS region of the storage bucket. Defaults to "us-west-2"."""
+
+        storage_root: Path = Field(Path("root"), env="TSDAT_STORAGE_ROOT")
+        """The path on disk where data and ancillary files will be saved to. Defaults to
+        the `root` folder in the top level of the storage bucket."""
+
+        data_directory: Union[Path, str] = "data"
+        """The directory under <storage_root> where data files will be saved to. Defaults 
+        to the <storage_root>/data folder in the active working directory."""
+
+        ancillary_directory: Union[Path, str] = "ancillary"
+        """The directory under <storage_root> where ancillary files (e.g. plots) will be 
+        saved to. Defaults to the <storage_root>/data folder in the active working 
+        directory."""
+
+        by_date: bool = False
+        """Organize <data_directory> and <ancillary_directory> by the year/month/day of output 
+        files. Default is set to False."""
 
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
         """Keyword arguments to xr.merge. Note: this will only be called if the
@@ -270,6 +324,9 @@ class FileSystemS3(FileSystem):
 
     def save_data(self, dataset: xr.Dataset):
         datastream: str = dataset.attrs["datastream"]
+        self.parameters.date_path = self._create_path_by_date(
+            dataset, self.parameters.by_date
+        )
         filename = get_filename(dataset, self.handler.extension)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -291,7 +348,14 @@ class FileSystemS3(FileSystem):
         logger.info("Saved %s ancillary file to: %s", str(s3_filepath))
 
     def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
-        prefix = str(self.parameters.storage_root / "data" / datastream) + "/"
+        prefix = (
+            str(
+                self.parameters.storage_root
+                / self.parameters.data_directory
+                / datastream
+            )
+            + "/"
+        )
         objects = self.bucket.objects.filter(Prefix=prefix)
         filepaths = [
             Path(obj.key) for obj in objects if obj.key.endswith(self.handler.extension)
