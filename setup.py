@@ -7,7 +7,7 @@ README = Path("README.md").read_text()
 requirements = Path("requirements.txt").read_text().strip().splitlines()
 REQUIREMENTS = [req for req in requirements if not req.startswith("#")]
 
-VERSION = os.environ["TSDAT_VERSION"]
+VERSION = os.getenv("TSDAT_VERSION")
 
 
 setuptools.setup(
