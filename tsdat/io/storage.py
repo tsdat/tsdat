@@ -79,12 +79,9 @@ class FileSystem(Storage):
         """Organize <data_directory> and <ancillary_directory> by the year/month/day of output 
         files. Default is set to False."""
 
-        date_path: Path = Path("")
-        """Organize <data_directory> and <ancillary_directory> by the year/month/day of output 
-        files. Default is set to False."""
-
         file_timespan: Optional[str] = None
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
+        date_path: Path = Path("")
 
         @validator("storage_root")
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
@@ -108,7 +105,9 @@ class FileSystem(Storage):
 
         -----------------------------------------------------------------------------"""
         datastream = dataset.attrs["datastream"]
-        self.parameters.date_path = self._create_path_by_date(dataset, self.parameters.by_date)
+        self.parameters.date_path = self._create_path_by_date(
+            dataset, self.parameters.by_date
+        )
         filepath = self._get_dataset_filepath(dataset, datastream)
         filepath.parent.mkdir(exist_ok=True, parents=True)
         self.handler.writer.write(dataset, filepath)
@@ -238,8 +237,8 @@ class FileSystemS3(FileSystem):
         """The AWS region of the storage bucket. Defaults to "us-west-2"."""
 
         storage_root: Path = Field(Path("root"), env="TSDAT_STORAGE_ROOT")
-        """The path on disk where data and ancillary files will be saved to. Defaults to
-        the `root` folder in the top level of the storage bucket."""
+        """The high-level path on the S3 bucket where data and ancillary files will be 
+        saved to. Defaults to the `root` folder in the top level of the storage bucket."""
 
         data_directory: Union[Path, str] = "data"
         """The directory under <storage_root> where data files will be saved to. Defaults 
@@ -257,6 +256,8 @@ class FileSystemS3(FileSystem):
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
         """Keyword arguments to xr.merge. Note: this will only be called if the
         DataReader returns a dictionary of xr.Datasets for a single saved file."""
+
+        date_path: Path = Path("")
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
 
