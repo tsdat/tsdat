@@ -68,16 +68,16 @@ class FileSystem(Storage):
 
         data_directory: Union[Path, str] = "data"
         """The directory under <storage_root> where data files will be saved to. Defaults 
-        to the <storage_root>/data folder in the active working directory."""
+        to `<storage_root>/data` in the active working directory."""
 
         ancillary_directory: Union[Path, str] = "ancillary"
         """The directory under <storage_root> where ancillary files (e.g. plots) will be 
-        saved to. Defaults to the <storage_root>/data folder in the active working 
+        saved to. Defaults to `<storage_root>/ancillary` in the active working 
         directory."""
 
         by_date: bool = False
-        """Organize <data_directory> and <ancillary_directory> by the year/month/day of output 
-        files. Default is set to False."""
+        """Organize <data_directory> and <ancillary_directory> by `year/month/day` of the
+        first timestep in the dataset. Default is set to False."""
 
         file_timespan: Optional[str] = None
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
@@ -237,21 +237,21 @@ class FileSystemS3(FileSystem):
         """The AWS region of the storage bucket. Defaults to "us-west-2"."""
 
         storage_root: Path = Field(Path("root"), env="TSDAT_STORAGE_ROOT")
-        """The high-level path on the S3 bucket where data and ancillary files will be 
-        saved to. Defaults to the `root` folder in the top level of the storage bucket."""
+        """The high-level path on the S3 bucket where all other data will be 
+        saved to. Defaults to `<bucket>/root` in the top level of the storage bucket."""
 
         data_directory: Union[Path, str] = "data"
         """The directory under <storage_root> where data files will be saved to. Defaults 
-        to the <storage_root>/data folder in the active working directory."""
+        to `<storage_root>/data` in the active working directory."""
 
         ancillary_directory: Union[Path, str] = "ancillary"
         """The directory under <storage_root> where ancillary files (e.g. plots) will be 
-        saved to. Defaults to the <storage_root>/data folder in the active working 
+        saved to. Defaults to `<storage_root>/ancillary` in the active working 
         directory."""
 
         by_date: bool = False
-        """Organize <data_directory> and <ancillary_directory> by the year/month/day of output 
-        files. Default is set to False."""
+        """Organize <data_directory> and <ancillary_directory> by "year/month/day" of the
+        first timestep in the dataset. Default is set to False."""
 
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
         """Keyword arguments to xr.merge. Note: this will only be called if the
