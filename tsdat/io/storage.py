@@ -83,13 +83,6 @@ class FileSystem(Storage):
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
         date_path: Path = Path("")
 
-        @validator("storage_root")
-        def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
-            if not storage_root.is_dir():
-                logger.info("Creating storage root at: %s", storage_root.as_posix())
-                storage_root.mkdir(parents=True)
-            return storage_root
-
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
     handler: FileHandler = Field(default_factory=NetCDFHandler)
 
