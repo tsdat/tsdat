@@ -142,7 +142,7 @@ class SplitNetCDFWriter(NetCDFWriter):
             ds_temp = dataset.sel(time=slice(t1, t2))
 
             new_filename = get_filename(ds_temp, self.file_extension)
-            new_filepath = filepath.with_name(new_filename) # type: ignore
+            new_filepath = filepath.with_name(new_filename)  # type: ignore
 
             ds_temp.to_netcdf(new_filepath, **to_netcdf_kwargs)  # type: ignore
 
@@ -206,13 +206,12 @@ class CSVWriter(FileWriter):
 
         if d1:
             # Save 1D variables
-            dim1_filepath = filepath.with_stem(name + ".1D")  # type: ignore
             d2.extend(
                 [v for v in dataset.coords if v != "time"]
             )  # add 2D coordinates to remove list
             ds_1d = dataset.drop_vars(d2)  # drop 2D variables
             df_1d = ds_1d.to_dataframe()
-            df_1d.to_csv(dim1_filepath, **self.parameters.to_csv_kwargs)  # type: ignore
+            df_1d.to_csv(filepath, **self.parameters.to_csv_kwargs)  # type: ignore
 
         if d2:
             # Save 2D variables

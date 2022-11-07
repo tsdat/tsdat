@@ -163,7 +163,7 @@ def test_csv_writer(sample_dataset: xr.Dataset, sample_dataframe: pd.DataFrame):
 
     tmp_file = Path(tmp_dir.name) / "test_writer.csv"
     writer.write(sample_dataset, tmp_file)
-    df: pd.DataFrame = pd.read_csv(tmp_file.with_name("test_writer.1D.csv"))  # type: ignore
+    df: pd.DataFrame = pd.read_csv(tmp_file)  # type: ignore
     assert_frame_equal(df, expected)
 
     tmp_dir.cleanup()
@@ -199,7 +199,7 @@ def test_zarr_writer(sample_dataset: xr.Dataset):
     "handler_class, output_key",
     [
         (NetCDFHandler, "test_dataset.nc"),
-        (CSVHandler, "test_dataframe.csv"),
+        (CSVHandler, "test_dataframe.1D.csv"),
         (ParquetHandler, "test_dataframe.parquet"),
         (ZarrHandler, "test_dataset.zarr"),
     ],
