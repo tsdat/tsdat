@@ -1,7 +1,9 @@
 import copy
+import warnings
 import numpy as np
+import pandas as pd
 import xarray as xr
-from typing import Any, Dict, Iterable, List, Optional, cast
+from typing import Any, Dict, Iterable, List, Optional, cast, Hashable
 from pathlib import Path
 from pydantic import BaseModel, Extra
 from .base import FileWriter
@@ -140,7 +142,7 @@ class SplitNetCDFWriter(NetCDFWriter):
             ds_temp = dataset.sel(time=slice(t1, t2))
 
             new_filename = get_filename(ds_temp, self.file_extension)
-            new_filepath = filepath.with_name(new_filename)
+            new_filepath = filepath.with_name(new_filename) # type: ignore
 
             ds_temp.to_netcdf(new_filepath, **to_netcdf_kwargs)  # type: ignore
 
@@ -169,8 +171,55 @@ class CSVWriter(FileWriter):
         # QUESTION: Can we reliably write the dataset metadata to a separate file such
         # that it can always be retrieved? If not, should we declare this as a format
         # incapable of "round-tripping" (i.e., ds != read(write(ds)) for csv format)?
-        df = dataset.to_dataframe(self.parameters.dim_order)  # type: ignore
-        df.to_csv(filepath, **self.parameters.to_csv_kwargs)  # type: ignore
+        d1: List[Hashable] = []
+        d2: List[Hashable] = []
+        for var in dataset:
+            shp = dataset[var].shape
+            if len(shp) <= 1:
+                d1.append(var)
+            elif len(shp) == 2:
+                d2.append(var)
+            else:
+                warnings.warn(
+                    "CSV writer cannot save variables with more than 2 dimensions."
+                )
+
+        name = filepath.stem  # type: ignore
+
+        # Save header data
+        header_filepath = filepath.with_stem(name + ".hdr")  # type: ignore
+        header = dataset.attrs
+        with open(str(header_filepath), "w", newline="\n") as fp:
+            for key in header:
+                fp.write(f"{key},{header[key]}\n")
+
+        # Save variable metadata
+        metadata_filepath = filepath.with_stem(name + ".attrs")  # type: ignore
+        var_metadata: List[Dict[str, Any]] = []
+        for var in dataset:
+            attrs = dataset[var].attrs
+            attrs.update({"name": var})
+            var_metadata.append(attrs)
+        df_metadata = pd.DataFrame(var_metadata)
+        df_metadata = df_metadata.set_index("name")  # type: ignore
+        df_metadata.to_csv(metadata_filepath)
+
+        if d1:
+            # Save 1D variables
+            dim1_filepath = filepath.with_stem(name + ".1D")  # type: ignore
+            d2.extend(
+                [v for v in dataset.coords if v != "time"]
+            )  # add 2D coordinates to remove list
+            ds_1d = dataset.drop_vars(d2)  # drop 2D variables
+            df_1d = ds_1d.to_dataframe()
+            df_1d.to_csv(dim1_filepath, **self.parameters.to_csv_kwargs)  # type: ignore
+
+        if d2:
+            # Save 2D variables
+            dim2_filepath = filepath.with_stem(name + ".2D")  # type: ignore
+            ds_2d = dataset.drop_vars(d1)  # drop 1D variables
+            df_2d = ds_2d.to_dataframe(self.parameters.dim_order)  # type: ignore
+            df_2d.to_csv(dim2_filepath, **self.parameters.to_csv_kwargs)  # type: ignore
 
 
 class ParquetWriter(FileWriter):
