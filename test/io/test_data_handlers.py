@@ -163,7 +163,7 @@ def test_csv_writer(sample_dataset: xr.Dataset, sample_dataframe: pd.DataFrame):
 
     tmp_file = Path(tmp_dir.name) / "test_writer.csv"
     writer.write(sample_dataset, tmp_file)
-    df: pd.DataFrame = pd.read_csv(tmp_file)  # type: ignore
+    df: pd.DataFrame = pd.read_csv(tmp_file.with_name("test_writer.1D.csv"))  # type: ignore
     assert_frame_equal(df, expected)
 
     tmp_dir.cleanup()
