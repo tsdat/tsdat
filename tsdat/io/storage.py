@@ -288,7 +288,7 @@ class FileSystemS3(FileSystem):
     def save_ancillary_file(self, filepath: Path, datastream: str):
         s3_filepath = self._get_ancillary_filepath(filepath, datastream)
         self.bucket.upload_file(Filename=str(filepath), Key=str(s3_filepath))
-        logger.info("Saved %s ancillary file to: %s", str(s3_filepath))
+        logger.info("Saved %s ancillary file to: %s", filepath.name, str(s3_filepath))
 
     def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
         prefix = str(self.parameters.storage_root / "data" / datastream) + "/"
