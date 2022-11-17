@@ -58,9 +58,9 @@ def test_fail_if_invalid_global_attributes():
         "doi": 1.0,  # Not strictly a string
         "institution": 1.0,  # Not strictly a string
         "references": 1.0,  # Not strictly a string
-        "location_id": "ab",  # Too short
+        "location_id": "",  # Too short
         "dataset_name": "ab",  # Too short
-        "qualifier": "ab",  # Too short
+        "qualifier": "",  # Too short
         "temporal": "A1",  # Doesn't match regex (a-z)
         "data_level": "1234",  # Too long
     }
@@ -72,9 +72,9 @@ def test_fail_if_invalid_global_attributes():
         "doi\n  str type expected",
         "institution\n  str type expected",
         "references\n  str type expected",
-        "location_id\n  ensure this value has at least 3 characters",
+        "location_id\n  ensure this value has at least 1 character",
         "dataset_name\n  ensure this value has at least 3 characters",
-        "qualifier\n  ensure this value has at least 3 characters",
+        "qualifier\n  ensure this value has at least 1 character",
         "temporal\n  string does not match regex",
         "data_level\n  ensure this value has at most 3 characters",
     ]

@@ -300,9 +300,9 @@
                 },
                 "location_id": {
                     "title": "Location Id",
-                    "description": "A label or acronym for the location where the data were obtained from. Only lowercase alphanumeric characters and '_' are allowed.",
-                    "minLength": 3,
-                    "pattern": "^[a-z0-9_]+$",
+                    "description": "A label or acronym for the location where the data were obtained from. Only alphanumeric characters and '_' are allowed.",
+                    "minLength": 1,
+                    "pattern": "^[a-zA-Z0-9_]+$",
                     "type": "string"
                 },
                 "dataset_name": {
@@ -314,9 +314,9 @@
                 },
                 "qualifier": {
                     "title": "Qualifier",
-                    "description": "An optional string which distinguishes these data from other datasets produced by the same instrument. Only lowercase alphanumeric characters and '_' are allowed.",
-                    "minLength": 3,
-                    "pattern": "^[a-z0-9_]+$",
+                    "description": "An optional string which distinguishes these data from other datasets produced by the same instrument. Only alphanumeric characters and '_' are allowed.",
+                    "minLength": 1,
+                    "pattern": "^[a-zA-Z0-9_]+$",
                     "type": "string"
                 },
                 "temporal": {
