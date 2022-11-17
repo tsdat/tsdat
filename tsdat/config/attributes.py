@@ -66,10 +66,10 @@ class GlobalAttributes(AttributeModel):
         " needed."
     )
     location_id: str = Field(
-        min_length=3,
-        regex=r"^[a-z0-9_]+$",  # lowercase alphanumeric and '_' characters
+        min_length=1,
+        regex=r"^[a-zA-Z0-9_]+$",  # alphanumeric and '_' characters
         description="A label or acronym for the location where the data were obtained"
-        " from. Only lowercase alphanumeric characters and '_' are allowed.",
+        " from. Only alphanumeric characters and '_' are allowed.",
     )
     dataset_name: str = Field(
         min_length=3,
@@ -79,11 +79,11 @@ class GlobalAttributes(AttributeModel):
         " alphanumeric characters and '_' are allowed.",
     )
     qualifier: Optional[str] = Field(
-        min_length=3,
-        regex=r"^[a-z0-9_]+$",  # lowercase alphanumeric and '_' characters
+        min_length=1,
+        regex=r"^[a-zA-Z0-9_]+$",  # lowercase alphanumeric and '_' characters
         description="An optional string which distinguishes these data from other"
-        " datasets produced by the same instrument. Only lowercase alphanumeric"
-        " characters and '_' are allowed.",
+        " datasets produced by the same instrument. Only alphanumeric characters"
+        " and '_' are allowed.",
     )
     temporal: Optional[str] = Field(
         min_length=2,
