@@ -168,9 +168,8 @@ class CSVWriter(FileWriter):
     def write(
         self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
     ) -> None:
-        # QUESTION: Can we reliably write the dataset metadata to a separate file such
-        # that it can always be retrieved? If not, should we declare this as a format
-        # incapable of "round-tripping" (i.e., ds != read(write(ds)) for csv format)?
+        # QUESTION: Is this format capable of "round-tripping"?
+        # (i.e., ds != read(write(ds)) for csv format)
         d1: List[Hashable] = []
         d2: List[Hashable] = []
         for var in dataset:
@@ -187,14 +186,14 @@ class CSVWriter(FileWriter):
         name = filepath.stem  # type: ignore
 
         # Save header data
-        header_filepath = filepath.with_stem(name + ".hdr")  # type: ignore
+        header_filepath = filepath.with_suffix(".hdr.csv")  # type: ignore
         header = dataset.attrs
         with open(str(header_filepath), "w", newline="\n") as fp:
             for key in header:
                 fp.write(f"{key},{header[key]}\n")
 
         # Save variable metadata
-        metadata_filepath = filepath.with_stem(name + ".attrs")  # type: ignore
+        metadata_filepath = filepath.with_suffix(".attrs.csv")  # type: ignore
         var_metadata: List[Dict[str, Any]] = []
         for var in dataset:
             attrs = dataset[var].attrs
@@ -215,7 +214,7 @@ class CSVWriter(FileWriter):
 
         if d2:
             # Save 2D variables
-            dim2_filepath = filepath.with_stem(name + ".2D")  # type: ignore
+            dim2_filepath = filepath.with_suffix(".2D.csv")  # type: ignore
             ds_2d = dataset.drop_vars(d1)  # drop 1D variables
             df_2d = ds_2d.to_dataframe(self.parameters.dim_order)  # type: ignore
             df_2d.to_csv(dim2_filepath, **self.parameters.to_csv_kwargs)  # type: ignore
