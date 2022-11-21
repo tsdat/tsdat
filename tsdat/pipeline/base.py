@@ -75,6 +75,7 @@ class Pipeline(ParameterizedClass, ABC):
         vars_to_add = [out for out in output_vars if out not in retrieved_variables]
 
         dataset = dataset.drop_vars(vars_to_drop)
+        dataset = self._add_dataset_dtypes(dataset)
         dataset = self._add_dataset_variables(dataset, vars_to_add)
         dataset = self._add_dataset_attrs(dataset, output_vars)
         # TODO: reorder dataset coords / data vars to match the order in the config file
@@ -97,6 +98,12 @@ class Pipeline(ParameterizedClass, ABC):
                 data = np.array(data, dtype=dtype)  # type: ignore
 
             dataset[name] = xr.DataArray(data=data, dims=dims)
+        return dataset
+
+    def _add_dataset_dtypes(self, dataset: xr.Dataset) -> xr.Dataset:
+        for name in dataset.data_vars:
+            dtype = self.dataset_config[name].dtype  # type: ignore
+            dataset[name] = dataset[name].astype(dtype)
         return dataset
 
     def _add_dataset_attrs(
