@@ -4,6 +4,7 @@ from pydantic import BaseModel, Extra, Field
 from typing import Literal
 from numpy.typing import NDArray
 from .base import QualityHandler
+from ..utils import record_corrections_applied
 
 
 __all__ = [
@@ -13,20 +14,6 @@ __all__ = [
     "RemoveFailedValues",
     "SortDatasetByCoordinate",
 ]
-
-# def record_correction(self, variable_name: str):
-#     """If a correction was made to variable data to fix invalid values
-#     as detected by a quality check, this method will record the fix
-#     to the appropriate variable attribute.  The correction description
-#     will come from the handler params which get set in the pipeline config
-#     file.
-
-#     :param variable_name: Name
-#     :type variable_name: str
-#     """
-#     correction = self.params.get("correction", None)
-#     if correction:
-#         utils.record_corrections_applied(self.ds, variable_name, correction)
 
 
 class DataQualityError(ValueError):
@@ -135,6 +122,8 @@ class SortDatasetByCoordinate(QualityHandler):
         ascending: bool = True
         """Whether to sort the dataset in ascending order. Defaults to True."""
 
+        correction: str = "Coordinate data was sorted in order to ensure monotonicity."
+
     parameters: Parameters = Parameters()
 
     def run(
@@ -142,4 +131,7 @@ class SortDatasetByCoordinate(QualityHandler):
     ) -> xr.Dataset:
         if failures.any():
             dataset = dataset.sortby(variable_name, ascending=self.parameters.ascending)  # type: ignore
+            record_corrections_applied(
+                dataset, variable_name, self.parameters.correction
+            )
         return dataset

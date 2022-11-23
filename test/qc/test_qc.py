@@ -219,7 +219,8 @@ def test_sortdataset_by_coordinate(sample_dataset: xr.Dataset):
 
     failures: NDArray[np.bool8] = np.bool8([True, True, True, True])  # type: ignore
 
-    handler = SortDatasetByCoordinate()
+    handler = SortDatasetByCoordinate(parameters=dict(correction="Sorted time data!"))  # type: ignore
     dataset = handler.run(input_dataset, "time", failures)
 
     assert_close(dataset, expected)
+    assert dataset.time.attrs.get("corrections_applied") == ["Sorted time data!"]
