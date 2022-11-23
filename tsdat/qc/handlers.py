@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
-from pydantic import BaseModel, Extra, Field
-from typing import Literal
+from pydantic import BaseModel, Extra, Field, validator
+from typing import Any, Literal
 from numpy.typing import NDArray
 from .base import QualityHandler
 from ..utils import record_corrections_applied
@@ -80,6 +80,14 @@ class RecordQualityResults(QualityHandler):
 
         meaning: str
         """A string that describes the test applied."""
+
+        @validator("assessment", pre=True)
+        def to_lower(cls, assessment: Any) -> str:
+            if isinstance(assessment, str):
+                return assessment.lower()
+            raise ValueError(
+                f"assessment must be 'bad' or 'indeterminate', not {assessment}"
+            )
 
     parameters: Parameters
 
