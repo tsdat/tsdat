@@ -347,7 +347,7 @@ class Storage(ParameterizedClass, ABC):
         Args:
             start (datetime): The start time bound.
             end (datetime): The end time bound.
-            datastream (str): The name of the datastream to fetch.
+            filepath (Path): The path to the data directory to look for.
 
         Returns:
             xr.Dataset: The fetched dataset.
@@ -363,8 +363,9 @@ class Storage(ParameterizedClass, ABC):
         Ancillary files are plots or other non-dataset metadata files.
 
         Args:
-            filepath (Path): Where the file that should be saved is currently located.
-            datastream (str): The datastream that the ancillary file is associated with.
+            temp_filepath (Path): Where the file that should be saved is currently
+                located.
+            dataset (xr.Dataset): Dataset that the ancillary file is associated with.
 
         -----------------------------------------------------------------------------"""
         ...
@@ -379,8 +380,7 @@ class Storage(ParameterizedClass, ABC):
         context manager.
 
         Args:
-            datastream (str): The datastream associated with any files written to the
-                uploadable directory.
+            dataset (xr.Dataset): Dataset that the ancillary file is associated with.
 
         Yields:
             Generator[Path, None, None]: A temporary directory whose contents should be

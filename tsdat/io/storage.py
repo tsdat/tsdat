@@ -67,17 +67,18 @@ class FileSystem(Storage):
         created as this parameter is set, if the directory does not already exist."""
 
         data_directory: Union[Path, str] = "data"
-        """The directory under <storage_root> where data files will be saved to. Defaults 
-        to `<storage_root>/data` in the active working directory."""
-
-        ancillary_directory: Union[Path, str] = "ancillary"
-        """The directory under <storage_root> where ancillary files (e.g. plots) will be 
-        saved to. Defaults to `<storage_root>/ancillary` in the active working 
+        """The directory under <storage_root>/<datastream> where data files will be saved 
+        to. Defaults to `<storage_root>/<datastream>/data` in the active working 
         directory."""
 
+        ancillary_directory: Union[Path, str] = "ancillary"
+        """The directory under <storage_root>/<datastream> where ancillary files (e.g. 
+        plots) will be saved to. Defaults to `<storage_root>/<datastream>/ancillary` in the 
+        active working directory."""
+
         by_date: bool = False
-        """Organize <data_directory> and <ancillary_directory> by `year/month/day` of the
-        first timestep in the dataset. Default is set to False."""
+        """Organize <storage_root>/<datastream> by `year/month/day` of the first timestep in 
+        each dataset. Default is set to False."""
 
         file_timespan: Optional[str] = None
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
@@ -110,7 +111,9 @@ class FileSystem(Storage):
         Saves an ancillary filepath to the datastream's ancillary storage area.
 
         Args:
-            dataset (xr.Dataset): The dataset whose ancillary files will be saved
+            temp_filepath (Path): Where the file that should be saved is currently
+                located.
+            dataset (xr.Dataset): Dataset that the ancillary file is associated with.
 
         -----------------------------------------------------------------------------"""
         # TODO in hook_plot_dataset, "with self.storage.uploadable_dir(datastream) as tmp_dir:"
@@ -134,7 +137,7 @@ class FileSystem(Storage):
         Args:
             start (datetime): The minimum datetime to fetch.
             end (datetime): The maximum datetime to fetch.
-            filepath (str): The path to the data directory to look for.
+            filepath (path): The path to the data directory to look for.
 
         Returns:
             xr.Dataset: A dataset containing all the data in the storage area that spans
@@ -171,8 +174,8 @@ class FileSystem(Storage):
 
     def _open_data_files(self, *filepaths: Path) -> List[xr.Dataset]:
         dataset_list: List[xr.Dataset] = []
-        for filepath in filepaths:
-            data = self.handler.reader.read(filepath.as_posix())
+        for filepath in filepaths:  # type: ignore
+            data = self.handler.reader.read(filepath.as_posix())  # type: ignore
             if isinstance(data, dict):
                 data = xr.merge(data.values())  # type: ignore
             dataset_list.append(data)
@@ -230,17 +233,18 @@ class FileSystemS3(FileSystem):
         saved to. Defaults to `<bucket>/root` in the top level of the storage bucket."""
 
         data_directory: Union[Path, str] = "data"
-        """The directory under <storage_root> where data files will be saved to. Defaults 
-        to `<storage_root>/data` in the active working directory."""
-
-        ancillary_directory: Union[Path, str] = "ancillary"
-        """The directory under <storage_root> where ancillary files (e.g. plots) will be 
-        saved to. Defaults to `<storage_root>/ancillary` in the active working 
+        """The directory under <bucket>/root/<datastream> where data files will be saved 
+        to. Defaults to `<bucket>/root/<datastream>/data` in the active working 
         directory."""
 
+        ancillary_directory: Union[Path, str] = "ancillary"
+        """The directory under <bucket>/root/<datastream> where ancillary files (e.g. 
+        plots) will be saved to. Defaults to `<bucket>/root/<datastream>/ancillary` in the 
+        active working directory."""
+
         by_date: bool = False
-        """Organize <data_directory> and <ancillary_directory> by "year/month/day" of the
-        first timestep in the dataset. Default is set to False."""
+        """Organize <bucket>/root/<datastream> by `year/month/day` of the first timestep in 
+        each dataset. Default is set to False."""
 
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
         """Keyword arguments to xr.merge. Note: this will only be called if the
@@ -397,13 +401,13 @@ class ZarrLocalStorage(Storage):
         created as this parameter is set, if the directory does not already exist."""
 
         ancillary_directory: Union[Path, str] = "ancillary"
-        """The directory under <storage_root> where ancillary files (e.g. plots) will be 
-        saved to. Defaults to `<storage_root>/ancillary` in the active working 
-        directory."""
+        """The directory under <storage_root>/<datastream> where ancillary files (e.g. 
+        plots) will be saved to. Defaults to `<storage_root>/<datastream>/ancillary` in the 
+        active working directory."""
 
         by_date: bool = False
-        """Organize <data_directory> and <ancillary_directory> by `year/month/day` of the
-        first timestep in the dataset. Default is set to False."""
+        """Organize <storage_root>/<datastream> by `year/month/day` of the first timestep in 
+        each dataset. Default is set to False."""
 
     parameters: Parameters = Field(default_factory=Parameters)
     handler: ZarrHandler = Field(default_factory=ZarrHandler)
@@ -432,7 +436,9 @@ class ZarrLocalStorage(Storage):
         Saves an ancillary filepath to the datastream's ancillary storage area.
 
         Args:
-            dataset (xr.Dataset): The dataset whose ancillary files will be saved
+            temp_filepath (Path): Where the file that should be saved is currently
+                located.
+            dataset (xr.Dataset): Dataset that the ancillary file is associated with.
 
         -----------------------------------------------------------------------------"""
         # TODO in hook_plot_dataset, "with self.storage.uploadable_dir(datastream) as tmp_dir:"
@@ -453,7 +459,7 @@ class ZarrLocalStorage(Storage):
         Args:
             start (datetime): The minimum datetime to fetch (inclusive).
             end (datetime): The maximum datetime to fetch (exclusive).
-            datastream (str): The datastream id to search for.
+            filepath (path): The path to the data directory to look for.
 
         Returns:
             xr.Dataset: A dataset containing all the data in the storage area that spans
