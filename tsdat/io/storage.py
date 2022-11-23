@@ -134,7 +134,7 @@ class FileSystem(Storage):
         Args:
             start (datetime): The minimum datetime to fetch.
             end (datetime): The maximum datetime to fetch.
-            datastream (str): The datastream id to search for.
+            filepath (str): The path to the data directory to look for.
 
         Returns:
             xr.Dataset: A dataset containing all the data in the storage area that spans
@@ -192,7 +192,6 @@ class FileSystem(Storage):
 
     def _get_base_filepath(self, dataset: xr.Dataset, by_date: bool) -> Path:
         datastream = dataset.attrs["datastream"]
-
         if by_date:
             time = dataset.time[0].data.astype("datetime64[D]")
             year = time.astype("datetime64[Y]").astype(int) + 1970
@@ -330,19 +329,14 @@ class FileSystemS3(FileSystem):
         )
 
     def save_ancillary_file(self, temp_filepath: Path, dataset: xr.Dataset):
-        s3_filepath = self._get_ancillary_filepath(temp_filepath, dataset, self.parameters.by_date)
+        s3_filepath = self._get_ancillary_filepath(
+            temp_filepath, dataset, self.parameters.by_date
+        )
         self.bucket.upload_file(Filename=str(temp_filepath), Key=str(s3_filepath))
         logger.info("Saved %s ancillary file to: %s", str(s3_filepath))
 
     def _find_data(self, start: datetime, end: datetime, filepath: Path) -> List[Path]:
         prefix = str(filepath) + "/"
-        #     str(
-        #         self.parameters.storage_root
-        #         / self.parameters.data_directory
-        #         / datastream
-        #     )
-        #     + "/"
-        # )
         objects = self.bucket.objects.filter(Prefix=prefix)
         filepaths = [
             Path(obj.key) for obj in objects if obj.key.endswith(self.handler.extension)
@@ -425,7 +419,7 @@ class ZarrLocalStorage(Storage):
             dataset (xr.Dataset): The dataset to save.
 
         -----------------------------------------------------------------------------"""
-        dataset_path = self._get_dataset_path(dataset, self.parameters.by_date)
+        dataset_path = self._get_dataset_filepath(dataset, self.parameters.by_date)
 
         dataset_path.mkdir(exist_ok=True, parents=True)
         self.handler.writer.write(dataset, dataset_path)
@@ -466,12 +460,11 @@ class ZarrLocalStorage(Storage):
             the specified datetimes.
 
         -----------------------------------------------------------------------------"""
-        datastream_path = self._get_dataset_path(filepath)
-        full_dataset = self.handler.reader.read(datastream_path.as_posix())
+        full_dataset = self.handler.reader.read(filepath.as_posix())
         dataset_in_range = full_dataset.sel(time=slice(start, end))
         return dataset_in_range.compute()  # type: ignore
 
-    def _get_dataset_path(self, dataset: xr.Dataset, by_date: bool) -> Path:
+    def _get_dataset_filepath(self, dataset: xr.Dataset, by_date: bool) -> Path:
         base_filepath = self._get_base_filepath(dataset, by_date)
         extension = self.handler.writer.file_extension
         return base_filepath / (base_filepath.name + extension)
@@ -484,7 +477,6 @@ class ZarrLocalStorage(Storage):
 
     def _get_base_filepath(self, dataset: xr.Dataset, by_date: bool) -> Path:
         datastream = dataset.attrs["datastream"]
-
         if by_date:
             time = dataset.time[0].data.astype("datetime64[D]")
             year = time.astype("datetime64[Y]").astype(int) + 1970

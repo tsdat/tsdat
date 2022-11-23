@@ -337,7 +337,7 @@ class Storage(ParameterizedClass, ABC):
     #     ...
 
     @abstractmethod
-    def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
+    def fetch_data(self, start: datetime, end: datetime, filepath: Path) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Fetches a dataset from the storage area.
 

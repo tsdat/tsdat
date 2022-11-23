@@ -53,7 +53,7 @@ def test_ingest_pipeline():
 
     # Dataset saved to disk
     save_path = Path(
-        "storage/root/data/sgp.example.b1/sgp.example.b1.20220324.214300.nc"
+        "storage/root/sgp.example.b1/data/sgp.example.b1.20220324.214300.nc"
     )
     saved_dataset: xr.Dataset = xr.open_dataset(save_path)  # type: ignore
     assert_close(saved_dataset, expected)
@@ -78,7 +78,7 @@ def test_transformation_pipeline():
         data_vars={
             "temperature": (  # degF -> degC
                 "time",
-                (np.array([70, 76, 84]) - 32) * 5 / 9,
+                (np.array([70, 76, 84]) - 32) * 5 / 9,  # type: ignore
                 {"units": "degC", "_FillValue": -9999.0},
             ),
             "humidity": ("time", [0, 30, 70], {"units": "%", "_FillValue": -9999.0}),
@@ -110,7 +110,7 @@ def test_transformation_pipeline():
 
     # Dataset saved to disk
     save_path = Path(
-        "test/io/data/retriever-store/data/humboldt.buoy.c1/humboldt.buoy.c1.20220405.000000.nc"
+        "test/io/data/retriever-store/humboldt.buoy.c1/data/humboldt.buoy.c1.20220405.000000.nc"
     )
     assert save_path.exists()
     saved_dataset: xr.Dataset = xr.open_dataset(save_path, decode_cf=True)  # type: ignore

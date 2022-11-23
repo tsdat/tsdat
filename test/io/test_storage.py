@@ -90,7 +90,7 @@ def s3_storage(aws_credentials: Any):
         ("s3_storage", "sample_dataset"),
     ],
 )
-def test_storage_saves_and_fetches_data(
+def test_storage_saves_data(
     storage_fixture: str,
     dataset_fixture: str,
     request: pytest.FixtureRequest,
@@ -99,7 +99,7 @@ def test_storage_saves_and_fetches_data(
     storage: Storage = request.getfixturevalue(storage_fixture)
     input_dataset: xr.Dataset = request.getfixturevalue(dataset_fixture)
 
-    # main data
+    # data files
     expected_dataset: xr.Dataset = input_dataset.copy(deep=True)  # type: ignore
     storage.save_data(dataset=input_dataset)
 
@@ -114,13 +114,6 @@ def test_storage_saves_and_fetches_data(
         / "ancillary_file.txt"
     )
 
-    # fetch data
-    dataset = storage.fetch_data(
-        start=datetime.fromisoformat("2022-04-05 00:00:00"),
-        end=datetime.fromisoformat("2022-04-06 00:00:00"),
-        datastream="sgp.testing-storage.a0",
-    )
-
     assert_close(input_dataset, expected_dataset)  # storage should not modify inputs
     if "file" in storage_fixture or "zarr" in storage_fixture:
         assert expected_filepath.is_file()
@@ -130,4 +123,92 @@ def test_storage_saves_and_fetches_data(
         obj = storage.get_obj(expected_filepath)
         assert obj is not None
         obj.delete()  # type: ignore
+
+
+@pytest.mark.parametrize(
+    "storage_fixture, dataset_fixture",
+    [
+        ("file_storage", "sample_dataset"),
+    ],
+)
+def test_file_storage_fetches_data(
+    storage_fixture: str,
+    dataset_fixture: str,
+    request: pytest.FixtureRequest,
+):
+    # pytest can't pass fixtures through pytest.mark.parametrize so we use this approach
+    storage: Storage = request.getfixturevalue(storage_fixture)
+    input_dataset: xr.Dataset = request.getfixturevalue(dataset_fixture)
+
+    # main data
+    expected_dataset: xr.Dataset = input_dataset.copy(deep=True)  # type: ignore
+    storage.save_data(dataset=input_dataset)
+
+    # Fetch data
+    filepath = storage._get_dataset_filepath(input_dataset, by_date=False)
+    dataset = storage.fetch_data(
+        start=datetime.fromisoformat("2022-04-05 00:00:00"),
+        end=datetime.fromisoformat("2022-04-06 00:00:00"),
+        filepath=filepath.parent,  # type: ignore
+    )
+    assert_close(dataset, expected_dataset)
+
+
+@pytest.mark.parametrize(
+    "storage_fixture, dataset_fixture",
+    [
+        ("s3_storage", "sample_dataset"),
+    ],
+)
+def test_s3_storage_fetches_data(
+    storage_fixture: str,
+    dataset_fixture: str,
+    request: pytest.FixtureRequest,
+):
+    # pytest can't pass fixtures through pytest.mark.parametrize so we use this approach
+    storage: Storage = request.getfixturevalue(storage_fixture)
+    input_dataset: xr.Dataset = request.getfixturevalue(dataset_fixture)
+
+    # main data
+    expected_dataset: xr.Dataset = input_dataset.copy(deep=True)  # type: ignore
+    storage.save_data(dataset=input_dataset)
+
+    # Fetch data
+    filepath = storage._get_dataset_filepath(input_dataset, by_date=False)
+    dataset = storage.fetch_data(
+        start=datetime.fromisoformat("2022-04-05 00:00:00"),
+        end=datetime.fromisoformat("2022-04-06 00:00:00"),
+        filepath=filepath,  # type: ignore
+    )
+
+    assert_close(dataset, expected_dataset)
+
+
+@pytest.mark.parametrize(
+    "storage_fixture, dataset_fixture",
+    [
+        ("zarr_storage", "sample_dataset"),
+    ],
+)
+def test_zarr_storage_fetches_data(
+    storage_fixture: str,
+    dataset_fixture: str,
+    request: pytest.FixtureRequest,
+):
+    # pytest can't pass fixtures through pytest.mark.parametrize so we use this approach
+    storage: Storage = request.getfixturevalue(storage_fixture)
+    input_dataset: xr.Dataset = request.getfixturevalue(dataset_fixture)
+
+    # main data
+    expected_dataset: xr.Dataset = input_dataset.copy(deep=True)  # type: ignore
+    storage.save_data(dataset=input_dataset)
+
+    # Fetch data
+    filepath = storage._get_dataset_filepath(input_dataset, by_date=False)
+    dataset = storage.fetch_data(
+        start=datetime.fromisoformat("2022-04-05 00:00:00"),
+        end=datetime.fromisoformat("2022-04-06 00:00:00"),
+        filepath=filepath,  # type: ignore
+    )
+
     assert_close(dataset, expected_dataset)
