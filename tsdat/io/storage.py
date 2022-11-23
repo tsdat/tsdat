@@ -81,7 +81,6 @@ class FileSystem(Storage):
 
         file_timespan: Optional[str] = None
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
-        date_path: Path = Path("")
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
     handler: FileHandler = Field(default_factory=NetCDFHandler)
@@ -97,16 +96,35 @@ class FileSystem(Storage):
             dataset (xr.Dataset): The dataset to save.
 
         -----------------------------------------------------------------------------"""
-        datastream = dataset.attrs["datastream"]
-        self.parameters.date_path = self._create_path_by_date(
-            dataset, self.parameters.by_date
-        )
-        filepath = self._get_dataset_filepath(dataset, datastream)
-        filepath.parent.mkdir(exist_ok=True, parents=True)
-        self.handler.writer.write(dataset, filepath)
-        logger.info("Saved %s dataset to %s", datastream, filepath.as_posix())
 
-    def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
+        data_filepath = self._get_dataset_filepath(dataset, self.parameters.by_date)
+
+        data_filepath.parent.mkdir(exist_ok=True, parents=True)
+        self.handler.writer.write(dataset, data_filepath)
+        logger.info(
+            "Saved %s dataset to %s", dataset.datastream, data_filepath.as_posix()
+        )
+
+    def save_ancillary_file(self, temp_filepath: Path, dataset: xr.Dataset):
+        """-----------------------------------------------------------------------------
+        Saves an ancillary filepath to the datastream's ancillary storage area.
+
+        Args:
+            dataset (xr.Dataset): The dataset whose ancillary files will be saved
+
+        -----------------------------------------------------------------------------"""
+        # TODO in hook_plot_dataset, "with self.storage.uploadable_dir(datastream) as tmp_dir:"
+        # needs to be changed from datastream to dataset
+
+        ancillary_filepath = self._get_ancillary_filepath(
+            temp_filepath, dataset, self.parameters.by_date
+        )
+
+        ancillary_filepath.parent.mkdir(exist_ok=True, parents=True)
+        saved_filepath = shutil.copy2(temp_filepath, ancillary_filepath)
+        logger.info("Saved ancillary file to: %s", saved_filepath)
+
+    def fetch_data(self, start: datetime, end: datetime, filepath: Path) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Fetches data for a given datastream between a specified time range.
 
@@ -123,29 +141,12 @@ class FileSystem(Storage):
             the specified datetimes.
 
         -----------------------------------------------------------------------------"""
-        data_files = self._find_data(start, end, datastream)
+        data_files = self._find_data(start, end, filepath)
         datasets = self._open_data_files(*data_files)
         return xr.merge(datasets, **self.parameters.merge_fetched_data_kwargs)  # type: ignore
 
-    def save_ancillary_file(self, filepath: Path, datastream: str):
-        """-----------------------------------------------------------------------------
-        Saves an ancillary filepath to the datastream's ancillary storage area.
-
-        Args:
-            filepath (Path): The path to the ancillary file.
-            datastream (str): The datastream that the file is related to.
-
-        -----------------------------------------------------------------------------"""
-        ancillary_filepath = self._get_ancillary_filepath(filepath, datastream)
-        ancillary_filepath.parent.mkdir(exist_ok=True, parents=True)
-        saved_filepath = shutil.copy2(filepath, ancillary_filepath)
-        logger.info("Saved ancillary file to: %s", saved_filepath)
-
-    def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
-        data_dirpath = (
-            self.parameters.storage_root / self.parameters.data_directory / datastream
-        )
-        filepaths = [data_dirpath / Path(file) for file in os.listdir(data_dirpath)]
+    def _find_data(self, start: datetime, end: datetime, filepath: Path) -> List[Path]:
+        filepaths = [filepath / Path(file) for file in os.listdir(filepath)]
         return self._filter_between_dates(filepaths, start, end)
 
     def _filter_between_dates(
@@ -177,35 +178,31 @@ class FileSystem(Storage):
             dataset_list.append(data)
         return dataset_list
 
-    def _get_dataset_filepath(self, dataset: xr.Dataset, datastream: str) -> Path:
-        datastream_dir = (
-            self.parameters.storage_root
-            / self.parameters.data_directory
-            / datastream
-            / self.parameters.date_path
-        )
+    def _get_dataset_filepath(self, dataset: xr.Dataset, by_date: bool) -> Path:
+        base_filepath = self._get_base_filepath(dataset, by_date)
         extension = self.handler.writer.file_extension
+        filename = get_filename(dataset, extension)
+        return base_filepath / self.parameters.data_directory / filename
 
-        return datastream_dir / get_filename(dataset, extension)
+    def _get_ancillary_filepath(
+        self, temp_filepath: Path, dataset: xr.Dataset, by_date: bool
+    ) -> Path:
+        base_filepath = self._get_base_filepath(dataset, by_date)
+        return base_filepath / self.parameters.ancillary_directory / temp_filepath.name
 
-    def _get_ancillary_filepath(self, filepath: Path, datastream: str) -> Path:
-        anc_datastream_dir = (
-            self.parameters.storage_root
-            / self.parameters.ancillary_directory
-            / datastream
-            / self.parameters.date_path
-        )
-        return anc_datastream_dir / filepath.name
+    def _get_base_filepath(self, dataset: xr.Dataset, by_date: bool) -> Path:
+        datastream = dataset.attrs["datastream"]
 
-    def _create_path_by_date(self, dataset: xr.Dataset, by_date: bool) -> Path:
         if by_date:
             time = dataset.time[0].data.astype("datetime64[D]")
             year = time.astype("datetime64[Y]").astype(int) + 1970
             month = time.astype("datetime64[M]").astype(int) % 12 + 1
             day = (time - time.astype("datetime64[M]")).astype(int) + 1
-            return Path(f"{year}/{month}/{day}")
+            date_path = Path(f"{year}/{month}/{day}")
         else:
-            return Path("")
+            date_path = Path("")
+
+        return self.parameters.storage_root / datastream / date_path
 
 
 class FileSystemS3(FileSystem):
@@ -317,39 +314,35 @@ class FileSystemS3(FileSystem):
         return round(time() / seconds)
 
     def save_data(self, dataset: xr.Dataset):
-        datastream: str = dataset.attrs["datastream"]
-        self.parameters.date_path = self._create_path_by_date(
-            dataset, self.parameters.by_date
-        )
         filename = get_filename(dataset, self.handler.extension)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_filepath = Path(tmp_dir) / filename
             self.handler.writer.write(dataset, tmp_filepath)
-            s3_filepath = self._get_dataset_filepath(dataset, datastream)
+            s3_filepath = self._get_dataset_filepath(dataset, self.parameters.by_date)
             self.bucket.upload_file(Filename=str(tmp_filepath), Key=str(s3_filepath))
 
         logger.info(
             "Saved %s dataset to %s in AWS S3 bucket %s",
-            datastream,
+            dataset.datastream,
             str(s3_filepath),
             self.parameters.bucket,
         )
 
-    def save_ancillary_file(self, filepath: Path, datastream: str):
-        s3_filepath = self._get_ancillary_filepath(filepath, datastream)
-        self.bucket.upload_file(Filename=str(filepath), Key=str(s3_filepath))
+    def save_ancillary_file(self, temp_filepath: Path, dataset: xr.Dataset):
+        s3_filepath = self._get_ancillary_filepath(temp_filepath, dataset, self.parameters.by_date)
+        self.bucket.upload_file(Filename=str(temp_filepath), Key=str(s3_filepath))
         logger.info("Saved %s ancillary file to: %s", str(s3_filepath))
 
-    def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
-        prefix = (
-            str(
-                self.parameters.storage_root
-                / self.parameters.data_directory
-                / datastream
-            )
-            + "/"
-        )
+    def _find_data(self, start: datetime, end: datetime, filepath: Path) -> List[Path]:
+        prefix = str(filepath) + "/"
+        #     str(
+        #         self.parameters.storage_root
+        #         / self.parameters.data_directory
+        #         / datastream
+        #     )
+        #     + "/"
+        # )
         objects = self.bucket.objects.filter(Prefix=prefix)
         filepaths = [
             Path(obj.key) for obj in objects if obj.key.endswith(self.handler.extension)
@@ -409,6 +402,15 @@ class ZarrLocalStorage(Storage):
         the `storage/root` folder in the active working directory. The directory is
         created as this parameter is set, if the directory does not already exist."""
 
+        ancillary_directory: Union[Path, str] = "ancillary"
+        """The directory under <storage_root> where ancillary files (e.g. plots) will be 
+        saved to. Defaults to `<storage_root>/ancillary` in the active working 
+        directory."""
+
+        by_date: bool = False
+        """Organize <data_directory> and <ancillary_directory> by `year/month/day` of the
+        first timestep in the dataset. Default is set to False."""
+
     parameters: Parameters = Field(default_factory=Parameters)
     handler: ZarrHandler = Field(default_factory=ZarrHandler)
 
@@ -423,13 +425,34 @@ class ZarrLocalStorage(Storage):
             dataset (xr.Dataset): The dataset to save.
 
         -----------------------------------------------------------------------------"""
-        datastream = dataset.attrs["datastream"]
-        dataset_path = self._get_dataset_path(datastream)
+        dataset_path = self._get_dataset_path(dataset, self.parameters.by_date)
+
         dataset_path.mkdir(exist_ok=True, parents=True)
         self.handler.writer.write(dataset, dataset_path)
-        logger.info("Saved %s dataset to %s", datastream, dataset_path.as_posix())
+        logger.info(
+            "Saved %s dataset to %s", dataset.datastream, dataset_path.as_posix()
+        )
 
-    def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
+    def save_ancillary_file(self, temp_filepath: Path, dataset: xr.Dataset):
+        """-----------------------------------------------------------------------------
+        Saves an ancillary filepath to the datastream's ancillary storage area.
+
+        Args:
+            dataset (xr.Dataset): The dataset whose ancillary files will be saved
+
+        -----------------------------------------------------------------------------"""
+        # TODO in hook_plot_dataset, "with self.storage.uploadable_dir(datastream) as tmp_dir:"
+        # needs to be changed from datastream to dataset
+
+        ancillary_filepath = self._get_ancillary_filepath(
+            temp_filepath, dataset, self.parameters.by_date
+        )
+
+        ancillary_filepath.parent.mkdir(exist_ok=True, parents=True)
+        saved_filepath = shutil.copy2(temp_filepath, ancillary_filepath)
+        logger.info("Saved ancillary file to: %s", saved_filepath)
+
+    def fetch_data(self, start: datetime, end: datetime, filepath: Path) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Fetches data for a given datastream between a specified time range.
 
@@ -443,33 +466,35 @@ class ZarrLocalStorage(Storage):
             the specified datetimes.
 
         -----------------------------------------------------------------------------"""
-        datastream_path = self._get_dataset_path(datastream)
+        datastream_path = self._get_dataset_path(filepath)
         full_dataset = self.handler.reader.read(datastream_path.as_posix())
         dataset_in_range = full_dataset.sel(time=slice(start, end))
         return dataset_in_range.compute()  # type: ignore
 
-    def save_ancillary_file(self, filepath: Path, datastream: str):
-        """-----------------------------------------------------------------------------
-        Saves an ancillary filepath to the datastream's ancillary storage area.
-
-        Args:
-            filepath (Path): The path to the ancillary file.
-            datastream (str): The datastream that the file is related to.
-
-        -----------------------------------------------------------------------------"""
-        ancillary_filepath = self._get_ancillary_filepath(filepath, datastream)
-        ancillary_filepath.parent.mkdir(exist_ok=True, parents=True)
-        saved_filepath = shutil.copy2(filepath, ancillary_filepath)
-        logger.info("Saved ancillary file to: %s", saved_filepath)
-
-    def _get_dataset_path(self, datastream: str) -> Path:
-        datastream_dir = self.parameters.storage_root / "data" / datastream
+    def _get_dataset_path(self, dataset: xr.Dataset, by_date: bool) -> Path:
+        base_filepath = self._get_base_filepath(dataset, by_date)
         extension = self.handler.writer.file_extension
-        return datastream_dir.parent / (datastream_dir.name + extension)
+        return base_filepath / (base_filepath.name + extension)
 
-    def _get_ancillary_filepath(self, filepath: Path, datastream: str) -> Path:
-        anc_datastream_dir = self.parameters.storage_root / "ancillary" / datastream
-        return anc_datastream_dir / filepath.name
+    def _get_ancillary_filepath(
+        self, temp_filepath: Path, dataset: xr.Dataset, by_date: bool
+    ) -> Path:
+        base_filepath = self._get_base_filepath(dataset, by_date)
+        return base_filepath / self.parameters.ancillary_directory / temp_filepath.name
+
+    def _get_base_filepath(self, dataset: xr.Dataset, by_date: bool) -> Path:
+        datastream = dataset.attrs["datastream"]
+
+        if by_date:
+            time = dataset.time[0].data.astype("datetime64[D]")
+            year = time.astype("datetime64[Y]").astype(int) + 1970
+            month = time.astype("datetime64[M]").astype(int) % 12 + 1
+            day = (time - time.astype("datetime64[M]")).astype(int) + 1
+            date_path = Path(f"{year}/{month}/{day}")
+        else:
+            date_path = Path("")
+
+        return self.parameters.storage_root / datastream / date_path
 
 
 # HACK: Update forward refs to get around error I couldn't replicate with simpler code

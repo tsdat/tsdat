@@ -356,7 +356,7 @@ class Storage(ParameterizedClass, ABC):
         ...
 
     @abstractmethod
-    def save_ancillary_file(self, filepath: Path, datastream: str):
+    def save_ancillary_file(self, temp_filepath: Path, dataset: xr.Dataset):
         """-----------------------------------------------------------------------------
         Saves an ancillary file to the storage area for the specified datastream.
 
@@ -370,7 +370,7 @@ class Storage(ParameterizedClass, ABC):
         ...
 
     @contextlib.contextmanager
-    def uploadable_dir(self, datastream: str) -> Generator[Path, None, None]:
+    def uploadable_dir(self, dataset: xr.Dataset) -> Generator[Path, None, None]:
         """-----------------------------------------------------------------------------
         Context manager that can be used to upload many ancillary files at once.
 
@@ -393,6 +393,6 @@ class Storage(ParameterizedClass, ABC):
 
         for path in tmp_dirpath.glob("**/*"):
             if path.is_file():
-                self.save_ancillary_file(path, datastream)
+                self.save_ancillary_file(path, dataset)
 
         tmp_dir.cleanup()
