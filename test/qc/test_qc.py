@@ -1,10 +1,12 @@
+import logging
 from typing import Any, Dict
-import xarray as xr
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+import xarray as xr
 from numpy.typing import NDArray
-import pytest
 from pytest import fixture
+
 from tsdat.qc.checkers import *
 from tsdat.qc.handlers import *
 from tsdat.testing import assert_close
@@ -174,7 +176,7 @@ def test_valid_delta():
     assert np.array_equal(results, expected)  # type: ignore
 
 
-def test_monotonic_check_ignores_string_vars(capsys: pytest.CaptureFixture[str]):
+def test_monotonic_check_ignores_string_vars(caplog: Any):
     ds = xr.Dataset(
         coords={
             "time": pd.date_range("2022-03-24 21:43:00", "2022-03-24 21:45:00", periods=3),  # type: ignore
@@ -185,8 +187,14 @@ def test_monotonic_check_ignores_string_vars(capsys: pytest.CaptureFixture[str])
         },
     )
     expected = np.array([False, False, False, False])
-    results = CheckMonotonic().run(ds, "dir")  # type: ignore
+
+    with caplog.at_level(logging.WARNING):
+        results = CheckMonotonic().run(ds, "dir")  # type: ignore
     assert np.array_equal(results, expected)  # type: ignore
+    assert (
+        "Variable 'dir' has dtype '<U1', which is currently not supported for monotonicity checks."
+        in caplog.text
+    )
 
 
 def test_check_delta_classes(sample_dataset: xr.Dataset):

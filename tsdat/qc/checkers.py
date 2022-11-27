@@ -1,9 +1,11 @@
+import logging
 import numpy as np
 import xarray as xr
 from pydantic import BaseModel, Extra, validator
 from typing import Any, Dict, List, Optional, Union
 from numpy.typing import NDArray
 from .base import QualityChecker
+
 
 __all__ = [
     "CheckMissing",
@@ -24,6 +26,8 @@ __all__ = [
     "CheckFailDelta",
     "CheckWarnDelta",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 class CheckMissing(QualityChecker):
@@ -77,7 +81,17 @@ class CheckMonotonic(QualityChecker):
     parameters: Parameters = Parameters()
 
     def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
+
         variable = dataset[variable_name]
+
+        if variable.values.dtype.kind in {"U", "S"}:  # type: ignore
+            logger.warning(
+                "Variable '%s' has dtype '%s', which is currently not supported for"
+                " monotonicity checks.",
+                variable_name,
+                variable.values.dtype,  # type: ignore
+            )
+            return np.full(variable.shape, False, dtype=np.bool8)
 
         axis = self.get_axis(variable)
         diff: NDArray[Any] = np.diff(variable.data, axis=axis)  # type: ignore
