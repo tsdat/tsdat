@@ -3,6 +3,7 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 from numpy.typing import NDArray
+import pytest
 from pytest import fixture
 from tsdat.qc.checkers import *
 from tsdat.qc.handlers import *
