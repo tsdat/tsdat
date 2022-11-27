@@ -350,7 +350,8 @@ class _CheckDelta(_ThresholdChecker):
         data: NDArray[Any] = var_data.data
         axis = var_data.get_axis_num(self.parameters.dim)
 
-        diff: NDArray[Any] = np.absolute(np.diff(data, axis=axis, prepend=data[0]))  # type: ignore
+        prepend = np.expand_dims(np.take(data, 0, axis=axis), axis=axis)  # type: ignore
+        diff: NDArray[Any] = np.absolute(np.diff(data, axis=axis, prepend=prepend))  # type: ignore
         failures = diff > threshold if self.allow_equal else diff >= threshold
 
         return failures
