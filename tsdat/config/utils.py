@@ -23,6 +23,7 @@ from typing import (
 
 __all__ = [
     "ParameterizedConfigClass",
+    "Overrideable",
     "recursive_instantiate",
     "read_yaml",
     "get_code_version",
@@ -67,8 +68,25 @@ Config = TypeVar("Config", bound=BaseModel)
 
 
 class Overrideable(YamlModel, GenericModel, Generic[Config], extra=Extra.forbid):
-    path: FilePath
-    overrides: Dict[str, Any] = {}
+    path: FilePath = Field(
+        description="Path to the configuration file to borrow configurations from.\n"
+        "Note that this path is relative to the project root, so you should include any"
+        " paths in between the project root and your config file.\n"
+        "E.g., `pipelines/lidar/config/dataset.yaml`"
+    )
+
+    overrides: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Overrides to apply to the config file referenced by `path`.\n"
+        "Overrides are defined in `key`: `value` pairs, where the `key` is a pointer to"
+        " the object in the config file to override and the `value` is what should"
+        " replace it.\n"
+        "The format of the keys is a cross between path-like structures and a python"
+        " dictionary. For example, to change the 'location_id' property on the python"
+        " object `obj = {'attrs': {'location_id': 'abc'}, 'data_vars': {...}}` to 'sgp'"
+        " you would write `/attrs/location_id: 'sgp'`.\n"
+        "Overrides are implemented using https://python-json-pointer.readthedocs.io/en/latest/tutorial.html",
+    )
 
     # def get_defaults_dict(self) -> Dict[Any, Any]:
     #     txt = self.path.read_text()
