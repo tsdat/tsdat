@@ -38,7 +38,7 @@ def sample_dataset() -> xr.Dataset:
 
 @fixture
 def file_storage():
-    storage = FileSystem(parameters={"storage_root": Path.cwd() / "test/storage_root"})  # type: ignore
+    storage = FileSystem(parameters=FileSystem.Parameters(storage_root=Path.cwd() / "test/storage_root"))  # type: ignore
     try:
         yield storage
     finally:
@@ -47,7 +47,9 @@ def file_storage():
 
 @fixture
 def zarr_storage():
-    storage = ZarrLocalStorage(parameters={"storage_root": Path.cwd() / "test/storage_root"})  # type: ignore
+    storage = ZarrLocalStorage(
+        parameters=ZarrLocalStorage.Parameters(**{"storage_root": Path.cwd() / "test/storage_root"})  # type: ignore
+    )
     try:
         yield storage
     finally:
@@ -70,11 +72,13 @@ def s3_storage(aws_credentials: Any):
     s3.start(), sts.start()  # type: ignore
     storage_root = Path("test/storage_root")
     storage = FileSystemS3(
-        parameters={
-            "bucket": "tsdat-core",
-            "storage_root": storage_root,
-            "region": "us-east-1",
-        },  # type: ignore
+        parameters=FileSystemS3.Parameters(
+            **{
+                "bucket": "tsdat-core",
+                "storage_root": storage_root,
+                "region": "us-east-1",
+            },  # type: ignore
+        )
     )
     try:
         yield storage

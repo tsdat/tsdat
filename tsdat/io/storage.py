@@ -1,22 +1,23 @@
-from functools import lru_cache
 import logging
 import os
+import re
 import shutil
-from time import time
-import xarray as xr
+import tempfile
 from datetime import datetime
-from pydantic import BaseSettings, validator, Field
+from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
-from .base import Storage
-from .handlers import FileHandler, NetCDFHandler, ZarrHandler
-from ..utils import get_filename
+from time import time
+from typing import Any, Dict, List, Match, Optional, Union
 
 import boto3
 import botocore.exceptions
+import pandas as pd
+import xarray as xr
+from pydantic import BaseSettings, Field, root_validator, validator
 
-import tempfile
-
+from ..utils import get_filename
+from .base import Storage
+from .handlers import FileHandler, NetCDFHandler, ZarrHandler
 
 __all__ = ["FileSystem", "FileSystemS3", "ZarrLocalStorage"]
 
@@ -66,8 +67,31 @@ class FileSystem(Storage):
         the `storage/root` folder in the active working directory. The directory is
         created as this parameter is set, if the directory does not already exist."""
 
+        data_folder: Path = Field(Path("data"))
+        """The directory under storage_root/ where datastream data folders and files
+        should be saved to. Defaults to `data/`."""
+
+        ancillary_folder: Path = Path("ancillary")
+        """The directory under storage_root/ where datastream ancillary folders and
+        files should be saved to. This is primarily used for plots. Defaults to
+        `ancillary/`."""
+
+        # TODO: Add improved documentation for storage path parameters
+        data_storage_path: Path = Path("{storage_root}/{data_folder}/{datastream}")
+        """The directory structure that should be used when data files are saved. Allows
+        substitution of common variables and parameters using curly braces '{}'."""
+
+        ancillary_storage_path: Path = Path(
+            "{storage_root}/{ancillary_folder}/{datastream}"
+        )
+        """The directory structure that should be used when ancillary files are saved.
+        Allows substitution of common variables and parameters using curly braces '{}'."""
+
         file_timespan: Optional[str] = None
+
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
+        """Keyword arguments to xr.merge. Note: this will only be called if the
+        DataReader returns a dictionary of xr.Datasets for a single saved file."""
 
         @validator("storage_root")
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
@@ -75,6 +99,27 @@ class FileSystem(Storage):
                 logger.info("Creating storage root at: %s", storage_root.as_posix())
                 storage_root.mkdir(parents=True)
             return storage_root
+
+        @root_validator()
+        def resolve_static_substitutions(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+            substitutions = {
+                "storage_root": lambda: str(values["storage_root"]),
+                "data_folder": lambda: str(values["data_folder"]),
+                "ancillary_folder": lambda: str(values["ancillary_folder"]),
+            }
+
+            def resolve(path: Path) -> Path:
+                def _try_sub(match: Match[str]) -> str:
+                    # group(1) returns string without {}, group(0) returns with {}
+                    # result is we only do replacements that we can actually do.
+                    return substitutions.get(match.group(1), lambda: match.group(0))()
+
+                return Path(re.sub(r"\{(.*?)\}", _try_sub, path.as_posix()))
+
+            values["data_storage_path"] = resolve(values["data_storage_path"])
+            values["ancillary_storage_path"] = resolve(values["ancillary_storage_path"])
+
+            return values
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
     handler: FileHandler = Field(default_factory=NetCDFHandler)
@@ -131,6 +176,7 @@ class FileSystem(Storage):
         saved_filepath = shutil.copy2(filepath, ancillary_filepath)
         logger.info("Saved ancillary file to: %s", saved_filepath)
 
+    # TODO: Fix search logic to use semi-resolved data_storage_path
     def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
         data_dirpath = self.parameters.storage_root / "data" / datastream
         filepaths = [data_dirpath / Path(file) for file in os.listdir(data_dirpath)]
@@ -165,14 +211,104 @@ class FileSystem(Storage):
             dataset_list.append(data)
         return dataset_list
 
-    def _get_dataset_filepath(self, dataset: xr.Dataset, datastream: str) -> Path:
-        datastream_dir = self.parameters.storage_root / "data" / datastream
+    def _substitute_data_filepath_parts(self, dataset: xr.Dataset) -> Path:
+        substitute_str = self.parameters.data_storage_path.as_posix()
+
+        def get_time_fmt(fmt: str) -> str:
+            return pd.to_datetime(dataset.time.values[0]).strftime(fmt)  # type: ignore
+
+        substitutions = {
+            "datastream": lambda: dataset.attrs.get("datastream"),
+            "location_id": lambda: dataset.attrs.get("location_id"),
+            "data_level": lambda: dataset.attrs.get("data_level"),
+            "%Y": lambda: get_time_fmt("%Y"),
+            "%m": lambda: get_time_fmt("%m"),
+            "%d": lambda: get_time_fmt("%d"),
+            "%H": lambda: get_time_fmt("%H"),
+            "%M": lambda: get_time_fmt("%M"),
+            "%S": lambda: get_time_fmt("%S"),
+        }
+
+        def make_sub(match: Match[str]) -> str:
+            return str(substitutions[match.group(1)]())
+
+        return Path(re.sub(r"\{(.*?)\}", make_sub, substitute_str))
+
+    def _substitute_ancillary_filepath_parts(
+        self, filepath: Path, datastream: Optional[str]
+    ) -> Path:
+        substitute_str = self.parameters.ancillary_storage_path.as_posix()
+
+        start: Optional[datetime] = None
+
+        try:
+            # Assumes filepath is standardized
+            filename_parts = filepath.name.split(".")
+            assert len(filename_parts) >= 5
+
+            loc_id = filename_parts[0]
+            # dataset_name = filename_parts[1].split("-")[0]
+            data_level = filename_parts[2]
+            datastream = ".".join(filename_parts[:3])
+            start_date_time = ".".join(filename_parts[3:5])
+            start = datetime.strptime(start_date_time, "%Y%m%d.%H%M%S")
+        except AssertionError:  # filename not standardized; require datastream
+            logger.warning(
+                "Attempting to store file with unstandardized filename. This will be"
+                " deprecated in a future release of tsdat. Please use"
+                " `tsdat.utils.get_filename()` to get a standardized filename for your"
+                " ancillary file."
+            )
+            if datastream is None:
+                raise ValueError(
+                    "Argument 'datastream' must be provided to the"
+                    " 'save_ancillary_file()' method if not saving an ancillary file"
+                    " with a tsdat-standardized name."
+                )
+            loc_id, _, data_level = datastream.split(".")
+
+        def get_time_fmt(fmt: str) -> str:
+            if start is None:
+                raise ValueError(
+                    f"Substitution '{fmt}' cannot be used with an unstandardized"
+                    " filename. Please modify the `ancillary_storage_path` config"
+                    " parameter or use `tsdat.utils.get_filename()` to get a"
+                    " standardized filename for your ancillary file."
+                )
+            return start.strftime(fmt)
+
+        substitutions = {
+            "datastream": lambda: datastream,
+            "location_id": lambda: loc_id,
+            "data_level": lambda: data_level,
+            "ext": lambda: filepath.suffix,
+            "%Y": lambda: get_time_fmt("%Y"),
+            "%m": lambda: get_time_fmt("%m"),
+            "%d": lambda: get_time_fmt("%d"),
+            "%H": lambda: get_time_fmt("%H"),
+            "%M": lambda: get_time_fmt("%M"),
+            "%S": lambda: get_time_fmt("%S"),
+        }
+
+        def make_sub(match: Match[str]) -> str:
+            return str(substitutions[match.group(1)]())
+
+        return Path(re.sub(r"\{(.*?)\}", make_sub, substitute_str))
+
+    def _get_dataset_filepath(
+        self, dataset: xr.Dataset, datastream: Optional[str] = None
+    ) -> Path:
+        datastream_dir = self._substitute_data_filepath_parts(dataset)
         extension = self.handler.writer.file_extension
         return datastream_dir / get_filename(dataset, extension)
 
-    def _get_ancillary_filepath(self, filepath: Path, datastream: str) -> Path:
-        anc_datastream_dir = self.parameters.storage_root / "ancillary" / datastream
-        return anc_datastream_dir / filepath.name
+    def _get_ancillary_filepath(
+        self, filepath: Path, datastream: Optional[str] = None
+    ) -> Path:
+        return (
+            self._substitute_ancillary_filepath_parts(filepath, datastream=datastream)
+            / filepath.name
+        )
 
 
 class FileSystemS3(FileSystem):
@@ -189,7 +325,7 @@ class FileSystemS3(FileSystem):
 
     ------------------------------------------------------------------------------------"""
 
-    class Parameters(BaseSettings):  # type: ignore
+    class Parameters(FileSystem.Parameters):  # type: ignore
         storage_root: Path = Field(Path("storage/root"), env="TSDAT_STORAGE_ROOT")
         """The path on disk where data and ancillary files will be saved to. Defaults to
         the `storage/root` folder in the top level of the storage bucket."""
