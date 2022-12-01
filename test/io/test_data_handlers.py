@@ -199,7 +199,7 @@ def test_zarr_writer(sample_dataset: xr.Dataset):
     "handler_class, output_key",
     [
         (NetCDFHandler, "test_dataset.nc"),
-        (CSVHandler, "test_dataframe.csv"),
+        (CSVHandler, "test_dataframe.1D.csv"),
         (ParquetHandler, "test_dataframe.parquet"),
         (ZarrHandler, "test_dataset.zarr"),
     ],
