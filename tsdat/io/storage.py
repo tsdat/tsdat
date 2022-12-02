@@ -1,5 +1,4 @@
 import logging
-import os
 import re
 import shutil
 import tempfile
@@ -7,7 +6,7 @@ from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from time import time
-from typing import Any, Dict, List, Match, Optional, Union
+from typing import Any, Dict, List, Match, Optional, Tuple, Union
 
 import boto3
 import botocore.exceptions
@@ -36,6 +35,48 @@ __all__ = ["FileSystem", "FileSystemS3", "ZarrLocalStorage"]
 # start_time += file_time_interval
 # until start_time + file_time_interval >= timestamp of the last point of the dataset
 logger = logging.getLogger(__name__)
+
+
+def _resolve(text: str, substitutions: Dict[str, str]) -> str:
+    """Resolves {variables} in the text with their substitions."""
+
+    def _try_sub(match: Match[str]) -> str:
+        # group(1) returns string without {}, group(0) returns with {}
+        # result is we only do replacements that we can actually do.
+        return substitutions.get(match.group(1), match.group(0))
+
+    return re.sub(r"\{(.*?)\}", _try_sub, text)
+
+
+def resolve_datastream_substitutions(text: str, datastream: str) -> str:
+    """Resolves datastream-specific {variable} substitutions in a text string."""
+
+    ds_parts = datastream.split(".")
+    assert len(ds_parts) == 3  # loc.name[-qual][-temp].lvl
+
+    substitutions = {
+        "datastream": datastream,
+        "location_id": ds_parts[0],
+        "data_level": ds_parts[2],
+    }
+
+    return _resolve(text, substitutions)
+
+
+def extract_time_substitutions(
+    semi_resolved: str, start: datetime, end: datetime
+) -> Tuple[Path, str]:
+    """Extracts the root path above unresolved time substitutions and provides a pattern to search below that."""
+    path = semi_resolved
+    pattern = "*"
+    if (split := semi_resolved.find("{")) != -1:
+        year = str(start.year) if start.year == end.year else "*"
+        month = str(start.month) if year and start.month == end.month else "*"
+        day = "*"
+        substitutions = dict(year=year, month=month, day=day)
+        pattern = _resolve(semi_resolved[split:], substitutions) + "/*"
+        path = semi_resolved[:split]
+    return Path(path), pattern
 
 
 class FileSystem(Storage):
@@ -76,7 +117,6 @@ class FileSystem(Storage):
         files should be saved to. This is primarily used for plots. Defaults to
         `ancillary/`."""
 
-        # TODO: Add improved documentation for storage path parameters
         data_storage_path: Path = Path("{storage_root}/{data_folder}/{datastream}")
         """The directory structure that should be used when data files are saved. Allows
         substitution of common variables and parameters using curly braces '{}'."""
@@ -103,21 +143,17 @@ class FileSystem(Storage):
         @root_validator()
         def resolve_static_substitutions(cls, values: Dict[str, Any]) -> Dict[str, Any]:
             substitutions = {
-                "storage_root": lambda: str(values["storage_root"]),
-                "data_folder": lambda: str(values["data_folder"]),
-                "ancillary_folder": lambda: str(values["ancillary_folder"]),
+                "storage_root": str(values["storage_root"]),
+                "data_folder": str(values["data_folder"]),
+                "ancillary_folder": str(values["ancillary_folder"]),
             }
 
-            def resolve(path: Path) -> Path:
-                def _try_sub(match: Match[str]) -> str:
-                    # group(1) returns string without {}, group(0) returns with {}
-                    # result is we only do replacements that we can actually do.
-                    return substitutions.get(match.group(1), lambda: match.group(0))()
-
-                return Path(re.sub(r"\{(.*?)\}", _try_sub, path.as_posix()))
-
-            values["data_storage_path"] = resolve(values["data_storage_path"])
-            values["ancillary_storage_path"] = resolve(values["ancillary_storage_path"])
+            values["data_storage_path"] = Path(
+                _resolve(str(values["data_storage_path"]), substitutions)
+            )
+            values["ancillary_storage_path"] = Path(
+                _resolve(str(values["ancillary_storage_path"]), substitutions)
+            )
 
             return values
 
@@ -176,10 +212,15 @@ class FileSystem(Storage):
         saved_filepath = shutil.copy2(filepath, ancillary_filepath)
         logger.info("Saved ancillary file to: %s", saved_filepath)
 
-    # TODO: Fix search logic to use semi-resolved data_storage_path
     def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
-        data_dirpath = self.parameters.storage_root / "data" / datastream
-        filepaths = [data_dirpath / Path(file) for file in os.listdir(data_dirpath)]
+        # Need to resolve datastream-specific substitutions (semi-static), then
+        # somehow resolve the time-dependent substitutions enough to search for the data
+        unresolved = self.parameters.data_storage_path.as_posix()
+        semi_resolved = resolve_datastream_substitutions(unresolved, datastream)
+        root_path, pattern = extract_time_substitutions(semi_resolved, start, end)
+        filepaths = list(root_path.glob(pattern))
+        # data_dirpath = self.parameters.storage_root / "data" / datastream
+        # filepaths = [data_dirpath / Path(file) for file in os.listdir(data_dirpath)]
         return self._filter_between_dates(filepaths, start, end)
 
     def _filter_between_dates(
@@ -221,12 +262,9 @@ class FileSystem(Storage):
             "datastream": lambda: dataset.attrs.get("datastream"),
             "location_id": lambda: dataset.attrs.get("location_id"),
             "data_level": lambda: dataset.attrs.get("data_level"),
-            "%Y": lambda: get_time_fmt("%Y"),
-            "%m": lambda: get_time_fmt("%m"),
-            "%d": lambda: get_time_fmt("%d"),
-            "%H": lambda: get_time_fmt("%H"),
-            "%M": lambda: get_time_fmt("%M"),
-            "%S": lambda: get_time_fmt("%S"),
+            "year": lambda: get_time_fmt("%Y"),
+            "month": lambda: get_time_fmt("%m"),
+            "day": lambda: get_time_fmt("%d"),
         }
 
         def make_sub(match: Match[str]) -> str:
@@ -242,14 +280,15 @@ class FileSystem(Storage):
         start: Optional[datetime] = None
 
         try:
-            # Assumes filepath is standardized
+            # Filepath should be like loc.name[-qual][temp].lvl.date.time[.title].ext
+            #                         ^^^^^^ datastream ^^^^^^^
             filename_parts = filepath.name.split(".")
             assert len(filename_parts) >= 5
 
             loc_id = filename_parts[0]
             # dataset_name = filename_parts[1].split("-")[0]
             data_level = filename_parts[2]
-            datastream = ".".join(filename_parts[:3])
+            datastream = datastream or ".".join(filename_parts[:3])
             start_date_time = ".".join(filename_parts[3:5])
             start = datetime.strptime(start_date_time, "%Y%m%d.%H%M%S")
         except AssertionError:  # filename not standardized; require datastream
@@ -282,12 +321,9 @@ class FileSystem(Storage):
             "location_id": lambda: loc_id,
             "data_level": lambda: data_level,
             "ext": lambda: filepath.suffix,
-            "%Y": lambda: get_time_fmt("%Y"),
-            "%m": lambda: get_time_fmt("%m"),
-            "%d": lambda: get_time_fmt("%d"),
-            "%H": lambda: get_time_fmt("%H"),
-            "%M": lambda: get_time_fmt("%M"),
-            "%S": lambda: get_time_fmt("%S"),
+            "year": lambda: get_time_fmt("%Y"),
+            "month": lambda: get_time_fmt("%m"),
+            "day": lambda: get_time_fmt("%d"),
         }
 
         def make_sub(match: Match[str]) -> str:

@@ -46,6 +46,20 @@ def file_storage():
 
 
 @fixture
+def file_storage_v2():
+    storage = FileSystem(
+        parameters=FileSystem.Parameters(
+            storage_root="test/storage_root",
+            data_storage_path="{storage_root}/{year}/{datastream}",
+        )  # type: ignore
+    )
+    try:
+        yield storage
+    finally:
+        shutil.rmtree(storage.parameters.storage_root)
+
+
+@fixture
 def zarr_storage():
     storage = ZarrLocalStorage(
         parameters=ZarrLocalStorage.Parameters(**{"storage_root": Path.cwd() / "test/storage_root"})  # type: ignore
@@ -91,6 +105,7 @@ def s3_storage(aws_credentials: Any):
     "storage_fixture, dataset_fixture",
     [
         ("file_storage", "sample_dataset"),
+        ("file_storage_v2", "sample_dataset"),
         ("zarr_storage", "sample_dataset"),
         ("s3_storage", "sample_dataset"),
     ],
