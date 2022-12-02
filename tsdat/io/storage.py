@@ -270,20 +270,25 @@ class FileSystemS3(FileSystem):
 
     def save_data(self, dataset: xr.Dataset):
         datastream: str = dataset.attrs["datastream"]
-        filename = get_filename(dataset, self.handler.extension)
+        standard_fpath = self._get_dataset_filepath(dataset, datastream)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_filepath = Path(tmp_dir) / filename
-            self.handler.writer.write(dataset, tmp_filepath)
-            s3_filepath = self._get_dataset_filepath(dataset, datastream)
-            self.bucket.upload_file(Filename=str(tmp_filepath), Key=str(s3_filepath))
+            tmp_filepath = Path(tmp_dir) / standard_fpath
+            tmp_filepath.parent.mkdir(parents=True, exist_ok=True)
 
-        logger.info(
-            "Saved %s dataset to %s in AWS S3 bucket %s",
-            datastream,
-            str(s3_filepath),
-            self.parameters.bucket,
-        )
+            self.handler.writer.write(dataset, tmp_filepath)
+
+            for filepath in Path(tmp_dir).glob("**/*"):
+                if filepath.is_dir():
+                    continue
+                s3_filepath = filepath.relative_to(tmp_dir).as_posix()
+                self.bucket.upload_file(Filename=filepath.as_posix(), Key=s3_filepath)
+                logger.info(
+                    "Saved %s data file to s3://%s/%s",
+                    datastream,
+                    self.parameters.bucket,
+                    s3_filepath,
+                )
 
     def save_ancillary_file(self, filepath: Path, datastream: str):
         s3_filepath = self._get_ancillary_filepath(filepath, datastream)
