@@ -238,7 +238,7 @@ class FileHandler(DataHandler):
 class RetrievedVariable(BaseModel, extra=Extra.forbid):
     """Tracks the name of the input variable and the converters to apply."""
 
-    name: str
+    name: Union[str, List[str]]
     data_converters: List[DataConverter] = []
 
 

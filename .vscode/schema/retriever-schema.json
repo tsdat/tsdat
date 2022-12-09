@@ -114,7 +114,10 @@
                 "name": {
                     "title": "Name",
                     "description": "The exact name of the variable in the raw dataset returned by the DataReader.",
-                    "type": "string"
+                    "type": [
+                        "string",
+                        "array"
+                    ]
                 },
                 "data_converters": {
                     "title": "Data Converters",

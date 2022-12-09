@@ -18,9 +18,9 @@ class RetrievedVariableConfig(BaseModel, extra=Extra.allow):
     """Specifies how the variable should be retrieved from the raw dataset and the
     preprocessing steps (i.e. DataConverters) that should be applied."""
 
-    name: str = Field(
-        description="The exact name of the variable in the raw dataset returned by the"
-        " DataReader."
+    name: Union[str, List[str]] = Field(
+        description="The exact name or list of names of the variable in the raw dataset" 
+        "returned by the DataReader."
     )
     data_converters: List[DataConverterConfig] = Field(
         [],

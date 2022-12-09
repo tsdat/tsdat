@@ -146,19 +146,37 @@ def _rename_variables(
 
     -----------------------------------------------------------------------------"""
     to_rename: Dict[str, str] = {}  # {raw_name: output_name}
-    coords_to_rename = {
-        c.name: output_name for output_name, c in input_config.coords.items()
-    }
-    vars_to_rename = {
-        v.name: output_name for output_name, v in input_config.data_vars.items()
-    }
+
+    coords_to_rename: Dict[str, str] = {}
+    for output_name, c in input_config.coords.items():
+        if type(c.name) == list:
+            for n in c.name:
+                coords_to_rename[n] = output_name
+        else:
+            coords_to_rename[c.name] = output_name  # type: ignore
+
+    vars_to_rename: Dict[str, str] = {}
+    for output_name, v in input_config.data_vars.items():
+        if type(v.name) == list:
+            for n in v.name:
+                vars_to_rename[n] = output_name
+        else:
+            vars_to_rename[v.name] = output_name  # type: ignore
+
     to_rename.update(coords_to_rename)
     to_rename.update(vars_to_rename)
 
+    # Check for multiple raw names here
     for raw_name, output_name in coords_to_rename.items():
         if raw_name not in dataset:
             to_rename.pop(raw_name)
-            input_config.coords.pop(raw_name)
+            n = input_config.data_vars[output_name].name  # type: ignore
+            if type(n) == list:
+                n.remove(raw_name)  # type: ignore
+                if len(n) == 1:
+                    input_config.data_vars[output_name].name = n[0]
+            else:
+                input_config.coords.pop(output_name)
             logger.warning(
                 "Coordinate variable '%s' could not be retrieved from input. Please"
                 " ensure the retrieval configuration file for the '%s' coord has"
@@ -167,10 +185,17 @@ def _rename_variables(
                 raw_name,
                 output_name,
             )
+
     for raw_name, output_name in vars_to_rename.items():
         if raw_name not in dataset:
             to_rename.pop(raw_name)
-            input_config.data_vars.pop(raw_name)
+            n = input_config.data_vars[output_name].name  # type: ignore
+            if type(n) == list:
+                n.remove(raw_name)  # type: ignore
+                if len(n) == 1:
+                    input_config.data_vars[output_name].name = n[0]
+            else:
+                input_config.data_vars.pop(output_name)
             logger.warning(
                 "Data variable '%s' could not be retrieved from input. Please"
                 " ensure the retrieval configuration file for the '%s' data"
