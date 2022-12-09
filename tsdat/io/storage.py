@@ -101,6 +101,9 @@ class FileSystem(Storage):
     # e.g., datastream = location.dataset_name[-qualifier][-temporal].data_level,
     # filename = datastream.YYYYMMDD.hhmmss.<extension>
     # filepath = <storage root>/location/datastream/filename
+    # NOTE: StorageFile or similar work will likely require the dataset object or dataset
+    # config object, which means fetch data and other methods that need to search for data
+    # will also need to be provided with this info.
 
     class Parameters(BaseSettings):
         storage_root: Path = Path.cwd() / "storage" / "root"
@@ -119,19 +122,48 @@ class FileSystem(Storage):
 
         data_storage_path: Path = Path("{storage_root}/{data_folder}/{datastream}")
         """The directory structure that should be used when data files are saved. Allows
-        substitution of common variables and parameters using curly braces '{}'."""
+        substitution of the following parameters using curly braces '{}':
+        
+        * ``storage_root``: the value from the ``storage_root`` parameter.
+        * ``data_folder``:  the value from the ``data_folder`` parameter.
+        * ``ancillary_folder``:  the value from the ``ancillary_folder`` parameter.
+        * ``datastream``: the ``datastream`` as defined in the dataset configuration file.
+        * ``location_id``: the ``location_id`` as defined in the dataset configuration file.
+        * ``data_level``: the ``data_level`` as defined in the dataset configuration file.
+        * ``year``: the year of the first timestamp in the file.
+        * ``month``: the month of the first timestamp in the file.
+        * ``day``: the day of the first timestamp in the file.
+
+        Defaults to ``{storage_root}/{data_folder}/{datastream}``.
+        """
 
         ancillary_storage_path: Path = Path(
             "{storage_root}/{ancillary_folder}/{datastream}"
         )
         """The directory structure that should be used when ancillary files are saved.
-        Allows substitution of common variables and parameters using curly braces '{}'."""
+        Allows substitution of the following parameters using curly braces '{}':
+        
+        * ``storage_root``: the value from the ``storage_root`` parameter.
+        * ``data_folder``:  the value from the ``data_folder`` parameter.
+        * ``ancillary_folder``:  the value from the ``ancillary_folder`` parameter.
+        * ``datastream``: the ``datastream`` as defined in the dataset configuration file.
+        * ``location_id``: the ``location_id`` as defined in the dataset configuration file.
+        * ``data_level``: the ``data_level`` as defined in the dataset configuration file.
+        * ``ext``: the file extension (e.g., 'png', 'gif').
+        * ``year``: the year of the first timestamp in the file.
+        * ``month``: the month of the first timestamp in the file.
+        * ``day``: the day of the first timestamp in the file.
 
-        file_timespan: Optional[str] = None
+        Defaults to ``{storage_root}/{ancillary_folder}/{datastream}``.
+        """
+
+        file_timespan: Optional[str] = None  # Unused
 
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
-        """Keyword arguments to xr.merge. Note: this will only be called if the
-        DataReader returns a dictionary of xr.Datasets for a single saved file."""
+        """Keyword arguments passed to xr.merge.
+        
+        Note that this will only be called if the DataReader returns a dictionary of
+        xr.Datasets for a single input key."""
 
         @validator("storage_root")
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
@@ -141,7 +173,9 @@ class FileSystem(Storage):
             return storage_root
 
         @root_validator()
-        def resolve_static_substitutions(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        def _resolve_static_substitutions(
+            cls, values: Dict[str, Any]
+        ) -> Dict[str, Any]:
             substitutions = {
                 "storage_root": str(values["storage_root"]),
                 "data_folder": str(values["data_folder"]),
@@ -213,14 +247,10 @@ class FileSystem(Storage):
         logger.info("Saved ancillary file to: %s", saved_filepath)
 
     def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
-        # Need to resolve datastream-specific substitutions (semi-static), then
-        # somehow resolve the time-dependent substitutions enough to search for the data
         unresolved = self.parameters.data_storage_path.as_posix()
         semi_resolved = resolve_datastream_substitutions(unresolved, datastream)
         root_path, pattern = extract_time_substitutions(semi_resolved, start, end)
         filepaths = list(root_path.glob(pattern))
-        # data_dirpath = self.parameters.storage_root / "data" / datastream
-        # filepaths = [data_dirpath / Path(file) for file in os.listdir(data_dirpath)]
         return self._filter_between_dates(filepaths, start, end)
 
     def _filter_between_dates(
@@ -354,7 +384,7 @@ class FileSystemS3(FileSystem):
     Args:
         parameters (Parameters): File-system and AWS-specific parameters, such as the root
             path to where files should be saved, or additional keyword arguments to
-            specific functions used by the storage API. See the S3Storage.Parameters
+            specific functions used by the storage API. See the FileSystemS3.Parameters
             class for more details.
         handler (FileHandler): The FileHandler class that should be used to handle data
             I/O within the storage API.
@@ -362,24 +392,46 @@ class FileSystemS3(FileSystem):
     ------------------------------------------------------------------------------------"""
 
     class Parameters(FileSystem.Parameters):  # type: ignore
+        """Additional parameters for S3 storage.
+
+        Note that all settings and parameters from ``Filesystem.Parameters`` are also
+        supported by ``FileSystemS3.Parameters``."""
+
         storage_root: Path = Field(Path("storage/root"), env="TSDAT_STORAGE_ROOT")
-        """The path on disk where data and ancillary files will be saved to. Defaults to
-        the `storage/root` folder in the top level of the storage bucket."""
+        """The path on disk where data and ancillary files will be saved to.
+        
+        Note:
+            This parameter can also be set via the ``TSDAT_STORAGE_ROOT`` environment
+            variable.
+
+        Defaults to the ``storage/root`` folder in the top level of the storage bucket.
+        """
 
         bucket: str = Field("tsdat-storage", env="TSDAT_S3_BUCKET_NAME")
-        """The name of the S3 bucket that the storage class should attach to."""
+        """The name of the S3 bucket that the storage class should use.
+        
+        Note:
+            This parameter can also be set via the ``TSDAT_S3_BUCKET_NAME`` environment
+            variable.
+        """
 
         region: str = Field("us-west-2", env="AWS_DEFAULT_REGION")
-        """The AWS region of the storage bucket. Defaults to "us-west-2"."""
+        """The AWS region of the storage bucket.
+        
+        Note:
+            This parameter can also be set via the ``AWS_DEFAULT_REGION`` environment
+            variable.
+        
+        Defaults to ``us-west-2``."""
 
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
-        """Keyword arguments to xr.merge. Note: this will only be called if the
+        """Keyword arguments to xr.merge. This will only be called if the
         DataReader returns a dictionary of xr.Datasets for a single saved file."""
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
 
     @validator("parameters")
-    def check_authentication(cls, parameters: Parameters):
+    def _check_authentication(cls, parameters: Parameters):
         session = FileSystemS3._get_session(
             region=parameters.region, timehash=FileSystemS3._get_timehash()
         )
@@ -393,7 +445,7 @@ class FileSystemS3(FileSystem):
         return parameters
 
     @validator("parameters")
-    def ensure_bucket_exists(cls, parameters: Parameters):
+    def _ensure_bucket_exists(cls, parameters: Parameters):
         session = FileSystemS3._get_session(
             region=parameters.region, timehash=FileSystemS3._get_timehash()
         )
@@ -406,14 +458,14 @@ class FileSystemS3(FileSystem):
         return parameters
 
     @property
-    def session(self):
+    def _session(self):
         return FileSystemS3._get_session(
             region=self.parameters.region, timehash=FileSystemS3._get_timehash()
         )
 
     @property
-    def bucket(self):
-        s3 = self.session.resource("s3", region_name=self.parameters.region)  # type: ignore
+    def _bucket(self):
+        s3 = self._session.resource("s3", region_name=self.parameters.region)  # type: ignore
         return s3.Bucket(name=self.parameters.bucket)
 
     @staticmethod
@@ -454,7 +506,7 @@ class FileSystemS3(FileSystem):
                 if filepath.is_dir():
                     continue
                 s3_filepath = filepath.relative_to(tmp_dir).as_posix()
-                self.bucket.upload_file(Filename=filepath.as_posix(), Key=s3_filepath)
+                self._bucket.upload_file(Filename=filepath.as_posix(), Key=s3_filepath)
                 logger.info(
                     "Saved %s data file to s3://%s/%s",
                     datastream,
@@ -464,12 +516,12 @@ class FileSystemS3(FileSystem):
 
     def save_ancillary_file(self, filepath: Path, datastream: str):
         s3_filepath = self._get_ancillary_filepath(filepath, datastream)
-        self.bucket.upload_file(Filename=str(filepath), Key=str(s3_filepath))
+        self._bucket.upload_file(Filename=str(filepath), Key=str(s3_filepath))
         logger.info("Saved %s ancillary file to: %s", filepath.name, str(s3_filepath))
 
     def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
         prefix = str(self.parameters.storage_root / "data" / datastream) + "/"
-        objects = self.bucket.objects.filter(Prefix=prefix)
+        objects = self._bucket.objects.filter(Prefix=prefix)
         filepaths = [
             Path(obj.key) for obj in objects if obj.key.endswith(self.handler.extension)
         ]
@@ -480,7 +532,7 @@ class FileSystemS3(FileSystem):
         with tempfile.TemporaryDirectory() as tmp_dir:
             for s3_filepath in filepaths:
                 tmp_filepath = str(Path(tmp_dir) / s3_filepath.name)
-                self.bucket.download_file(
+                self._bucket.download_file(
                     Key=str(s3_filepath),
                     Filename=tmp_filepath,
                 )
@@ -491,11 +543,11 @@ class FileSystemS3(FileSystem):
                 dataset_list.append(data)
         return dataset_list
 
-    def exists(self, key: Union[Path, str]) -> bool:
-        return self.get_obj(str(key)) is not None
+    def _exists(self, key: Union[Path, str]) -> bool:
+        return self._get_obj(str(key)) is not None
 
-    def get_obj(self, key: Union[Path, str]):
-        objects = self.bucket.objects.filter(Prefix=str(key))
+    def _get_obj(self, key: Union[Path, str]):
+        objects = self._bucket.objects.filter(Prefix=str(key))
         try:
             return next(obj for obj in objects if obj.key == str(key))
         except StopIteration:

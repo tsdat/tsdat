@@ -97,7 +97,7 @@ def s3_storage(aws_credentials: Any):
     try:
         yield storage
     finally:
-        storage.bucket.objects.filter(Prefix=str(storage_root)).delete()
+        storage._bucket.objects.filter(Prefix=str(storage_root)).delete()
         s3.stop(), sts.stop()  # type: ignore
 
 
@@ -197,8 +197,8 @@ def test_filesystem_s3_saves_ancillary_files(s3_storage: FileSystemS3):
     s3_storage.save_ancillary_file(
         filepath=ancillary_filepath, datastream="sgp.testing-storage.a0"
     )
-    assert s3_storage.exists(expected_filepath)
-    obj = s3_storage.get_obj(expected_filepath)
+    assert s3_storage._exists(expected_filepath)
+    obj = s3_storage._get_obj(expected_filepath)
     assert obj is not None
     obj.delete()
 
@@ -206,7 +206,7 @@ def test_filesystem_s3_saves_ancillary_files(s3_storage: FileSystemS3):
     with s3_storage.uploadable_dir(datastream="sgp.testing-storage.a0") as tmp_dir:
         ancillary_filepath = tmp_dir / "ancillary_file.txt"
         ancillary_filepath.write_text("foobar")
-    assert s3_storage.exists(expected_filepath)
-    obj = s3_storage.get_obj(expected_filepath)
+    assert s3_storage._exists(expected_filepath)
+    obj = s3_storage._get_obj(expected_filepath)
     assert obj is not None
     obj.delete()
