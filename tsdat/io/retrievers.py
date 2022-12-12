@@ -145,12 +145,13 @@ def _rename_variables(
         xr.Dataset: The simplified raw dataset.
 
     -----------------------------------------------------------------------------"""
+
     def rename_vars(input_data: Dict[VarName, RetrievedVariable]):
-        # Run through list of retreiver variables and organizes them into 
+        # Run through list of retreiver variables and organizes them into
         # a simple {input: output} dictionary
         data_to_rename: Dict[str, str] = {}
         for output_name, d in input_data.items():
-            if type(d.name) == list:
+            if isinstance(d.name, list):
                 for n in d.name:
                     data_to_rename[n] = output_name
             else:
@@ -162,7 +163,7 @@ def _rename_variables(
     ):
         # Drop output_name from input_config.coords or input_config.data_vars
         n = input_data[output_name].name  # type: ignore
-        if type(n) == list:
+        if isinstance(n, list):
             n.remove(raw_name)  # type: ignore
             if len(n) == 1:
                 input_data[output_name].name = n[0]
