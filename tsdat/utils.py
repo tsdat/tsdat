@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import xarray as xr
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from pydantic import BaseModel, Extra
 from numpy.typing import NDArray
 from tstring import Template
@@ -259,6 +259,40 @@ def get_filename(
         start_date=start_date,
         start_time=start_time,
     )
+
+
+def get_fields_from_dataset(
+    dataset: xr.Dataset,
+) -> Dict[str, Optional[Union[str, Callable[[], str]]]]:
+    def get_time_fmt(fmt: str) -> str:
+        return pd.to_datetime(dataset.time.values[0]).strftime(fmt)  # type: ignore
+
+    return dict(
+        datastream=dataset.attrs.get("datastream"),
+        location_id=dataset.attrs.get("location_id"),
+        data_level=dataset.attrs.get("data_level"),
+        year=lambda: get_time_fmt("%Y"),
+        month=lambda: get_time_fmt("%m"),
+        day=lambda: get_time_fmt("%d"),
+    )
+
+
+def get_fields_from_datastream(datastream: str) -> Dict[str, Optional[str]]:
+    # assumes datastream = loc.name[-qual][-temp].lvl
+    ds_parts = datastream.split(".")
+    assert len(ds_parts) == 3
+
+    name_qual_temp = ds_parts[1].split("-")
+    assert len(name_qual_temp) <= 3
+
+    return {
+        "datastream": datastream,
+        "location_id": ds_parts[0],
+        "dataset_name": name_qual_temp[0],
+        "qualifier": name_qual_temp[1] if len(name_qual_temp) >= 2 else None,
+        "temporal": name_qual_temp[2] if len(name_qual_temp) == 3 else None,
+        "data_level": ds_parts[2],
+    }
 
 
 # IDEA: Method to print a summary of the list of problems with the data
