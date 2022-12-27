@@ -6,13 +6,14 @@ from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from time import time
-from typing import Any, Dict, List, Match, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Match, Optional, Tuple, Union
 
 import boto3
 import botocore.exceptions
 import pandas as pd
 import xarray as xr
 from pydantic import BaseSettings, Field, root_validator, validator
+from tstring import Template
 
 from ..utils import get_filename
 from .base import Storage
@@ -206,7 +207,7 @@ class FileSystem(Storage):
 
         -----------------------------------------------------------------------------"""
         datastream = dataset.attrs["datastream"]
-        filepath = self._get_dataset_filepath(dataset, datastream)
+        filepath = self._get_dataset_filepath(dataset)
         filepath.parent.mkdir(exist_ok=True, parents=True)
         self.handler.writer.write(dataset, filepath)
         logger.info("Saved %s dataset to %s", datastream, filepath.as_posix())
@@ -282,34 +283,17 @@ class FileSystem(Storage):
             dataset_list.append(data)
         return dataset_list
 
-    def _substitute_data_filepath_parts(self, dataset: xr.Dataset) -> Path:
-        substitute_str = self.parameters.data_storage_path.as_posix()
-
-        def get_time_fmt(fmt: str) -> str:
-            return pd.to_datetime(dataset.time.values[0]).strftime(fmt)  # type: ignore
-
-        substitutions = {
-            "datastream": lambda: dataset.attrs.get("datastream"),
-            "location_id": lambda: dataset.attrs.get("location_id"),
-            "data_level": lambda: dataset.attrs.get("data_level"),
-            "year": lambda: get_time_fmt("%Y"),
-            "month": lambda: get_time_fmt("%m"),
-            "day": lambda: get_time_fmt("%d"),
-        }
-
-        def make_sub(match: Match[str]) -> str:
-            return str(substitutions[match.group(1)]())
-
-        return Path(re.sub(r"\{(.*?)\}", make_sub, substitute_str))
-
     def _substitute_ancillary_filepath_parts(
         self, filepath: Path, datastream: Optional[str]
     ) -> Path:
-        substitute_str = self.parameters.ancillary_storage_path.as_posix()
+        ancillary_stub_path = Template(
+            self.parameters.ancillary_storage_path.as_posix()
+        )
 
         start: Optional[datetime] = None
 
         try:
+            # TODO: Extract logic for splitting filepath/name into component parts
             # Filepath should be like loc.name[-qual][temp].lvl.date.time[.title].ext
             #                         ^^^^^^ datastream ^^^^^^^
             filename_parts = filepath.name.split(".")
@@ -346,25 +330,23 @@ class FileSystem(Storage):
                 )
             return start.strftime(fmt)
 
-        substitutions = {
-            "datastream": lambda: datastream,
-            "location_id": lambda: loc_id,
-            "data_level": lambda: data_level,
-            "ext": lambda: filepath.suffix,
-            "year": lambda: get_time_fmt("%Y"),
-            "month": lambda: get_time_fmt("%m"),
-            "day": lambda: get_time_fmt("%d"),
-        }
+        return Path(
+            ancillary_stub_path.substitute(
+                datastream=datastream,
+                location_id=loc_id,
+                data_level=data_level,
+                ext=filepath.suffix,
+                year=lambda: get_time_fmt("%Y"),
+                month=lambda: get_time_fmt("%m"),
+                day=lambda: get_time_fmt("%d"),
+            )
+        )
 
-        def make_sub(match: Match[str]) -> str:
-            return str(substitutions[match.group(1)]())
-
-        return Path(re.sub(r"\{(.*?)\}", make_sub, substitute_str))
-
-    def _get_dataset_filepath(
-        self, dataset: xr.Dataset, datastream: Optional[str] = None
-    ) -> Path:
-        datastream_dir = self._substitute_data_filepath_parts(dataset)
+    def _get_dataset_filepath(self, dataset: xr.Dataset) -> Path:
+        data_stub_path = Template(self.parameters.data_storage_path.as_posix())
+        datastream_dir = Path(
+            data_stub_path.substitute(get_fields_from_dataset(dataset))
+        )
         extension = self.handler.writer.file_extension
         return datastream_dir / get_filename(dataset, extension)
 
@@ -375,6 +357,27 @@ class FileSystem(Storage):
             self._substitute_ancillary_filepath_parts(filepath, datastream=datastream)
             / filepath.name
         )
+
+
+# TODO: This needs to be done for custom naming scheme implementation
+# def get_fields_from_datastream(datastream: str) -> Dict[str, Optional[str]]:
+#     ...
+
+
+def get_fields_from_dataset(
+    dataset: xr.Dataset,
+) -> Dict[str, Optional[Union[str, Callable[[], str]]]]:
+    def get_time_fmt(fmt: str) -> str:
+        return pd.to_datetime(dataset.time.values[0]).strftime(fmt)  # type: ignore
+
+    return dict(
+        datastream=dataset.attrs.get("datastream"),
+        location_id=dataset.attrs.get("location_id"),
+        data_level=dataset.attrs.get("data_level"),
+        year=lambda: get_time_fmt("%Y"),
+        month=lambda: get_time_fmt("%m"),
+        day=lambda: get_time_fmt("%d"),
+    )
 
 
 class FileSystemS3(FileSystem):
@@ -494,7 +497,7 @@ class FileSystemS3(FileSystem):
 
     def save_data(self, dataset: xr.Dataset):
         datastream: str = dataset.attrs["datastream"]
-        standard_fpath = self._get_dataset_filepath(dataset, datastream)
+        standard_fpath = self._get_dataset_filepath(dataset)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_filepath = Path(tmp_dir) / standard_fpath
