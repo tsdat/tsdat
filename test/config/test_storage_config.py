@@ -174,6 +174,8 @@ def test_storage_config_produces_expected_dict():
     storage_config_model = StorageConfig.from_yaml(
         Path("test/config/yaml/storage.yaml")
     )
+    # ignore parameters since those can be specific to the storage class
+    storage_config_model.parameters = {}
     assert model_to_dict(storage_config_model) == expected_dict
 
 

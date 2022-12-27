@@ -23,14 +23,14 @@ Storage Classes
 Currently there are two provided storage classes:
 
 #. ``FileSystem`` - saves to local filesystem
-#. ``S3Storage`` - saves to an AWS S3 bucket (requires an AWS account with admin privileges)
+#. ``FileSystemS3`` - saves to an AWS S3 bucket (requires an AWS account with admin privileges)
 
 Both classes save datasets to file, and the user can specify the output file format(s) via the ``handler`` parameter of
 the config file.
 
 .. note::
-   The S3Storage class is meant to work with the AWS Pipeline Template which is currently being refactored and
-   will be included in a subsequent release.
+   The FileSystemS3 class is meant to work with the AWS Pipeline Template which is currently being refactored and
+   will be included in a subsequent release by mid-late 2023.
 
 .. note::
    To implement custom storage, such as storing in a database, you can extend the ``tsdat.io.base.Storage`` class.

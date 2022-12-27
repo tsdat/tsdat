@@ -1,22 +1,21 @@
-from functools import lru_cache
 import logging
-import os
 import shutil
-from time import time
-import xarray as xr
+import tempfile
 from datetime import datetime
-from pydantic import BaseSettings, validator, Field
+from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
-from .base import Storage
-from .handlers import FileHandler, NetCDFHandler, ZarrHandler
-from ..utils import get_filename
+from time import time
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import boto3
 import botocore.exceptions
+import xarray as xr
+from pydantic import BaseSettings, Field, root_validator, validator
+from tstring import Template
 
-import tempfile
-
+from ..utils import get_fields_from_datastream, get_filename, get_fields_from_dataset
+from .base import Storage
+from .handlers import FileHandler, NetCDFHandler, ZarrHandler
 
 __all__ = ["FileSystem", "FileSystemS3", "ZarrLocalStorage"]
 
@@ -59,6 +58,9 @@ class FileSystem(Storage):
     # e.g., datastream = location.dataset_name[-qualifier][-temporal].data_level,
     # filename = datastream.YYYYMMDD.hhmmss.<extension>
     # filepath = <storage root>/location/datastream/filename
+    # NOTE: StorageFile or similar work will likely require the dataset object or dataset
+    # config object, which means fetch data and other methods that need to search for data
+    # will also need to be provided with this info.
 
     class Parameters(BaseSettings):
         storage_root: Path = Path.cwd() / "storage" / "root"
@@ -66,8 +68,60 @@ class FileSystem(Storage):
         the `storage/root` folder in the active working directory. The directory is
         created as this parameter is set, if the directory does not already exist."""
 
-        file_timespan: Optional[str] = None
+        data_folder: Path = Field(Path("data"))
+        """The directory under storage_root/ where datastream data folders and files
+        should be saved to. Defaults to `data/`."""
+
+        ancillary_folder: Path = Path("ancillary")
+        """The directory under storage_root/ where datastream ancillary folders and
+        files should be saved to. This is primarily used for plots. Defaults to
+        `ancillary/`."""
+
+        data_storage_path: Path = Path("{storage_root}/{data_folder}/{datastream}")
+        """The directory structure that should be used when data files are saved. Allows
+        substitution of the following parameters using curly braces '{}':
+        
+        * ``storage_root``: the value from the ``storage_root`` parameter.
+        * ``data_folder``:  the value from the ``data_folder`` parameter.
+        * ``ancillary_folder``:  the value from the ``ancillary_folder`` parameter.
+        * ``datastream``: the ``datastream`` as defined in the dataset configuration file.
+        * ``location_id``: the ``location_id`` as defined in the dataset configuration file.
+        * ``data_level``: the ``data_level`` as defined in the dataset configuration file.
+        * ``year``: the year of the first timestamp in the file.
+        * ``month``: the month of the first timestamp in the file.
+        * ``day``: the day of the first timestamp in the file.
+        * ``extension``: the file extension used by the output file writer.
+
+        Defaults to ``{storage_root}/{data_folder}/{datastream}``.
+        """
+
+        ancillary_storage_path: Path = Path(
+            "{storage_root}/{ancillary_folder}/{datastream}"
+        )
+        """The directory structure that should be used when ancillary files are saved.
+        Allows substitution of the following parameters using curly braces '{}':
+        
+        * ``storage_root``: the value from the ``storage_root`` parameter.
+        * ``data_folder``:  the value from the ``data_folder`` parameter.
+        * ``ancillary_folder``:  the value from the ``ancillary_folder`` parameter.
+        * ``datastream``: the ``datastream`` as defined in the dataset configuration file.
+        * ``location_id``: the ``location_id`` as defined in the dataset configuration file.
+        * ``data_level``: the ``data_level`` as defined in the dataset configuration file.
+        * ``ext``: the file extension (e.g., 'png', 'gif').
+        * ``year``: the year of the first timestamp in the file.
+        * ``month``: the month of the first timestamp in the file.
+        * ``day``: the day of the first timestamp in the file.
+
+        Defaults to ``{storage_root}/{ancillary_folder}/{datastream}``.
+        """
+
+        file_timespan: Optional[str] = None  # Unused
+
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
+        """Keyword arguments passed to xr.merge.
+        
+        Note that this will only be called if the DataReader returns a dictionary of
+        xr.Datasets for a single input key."""
 
         @validator("storage_root")
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
@@ -75,6 +129,29 @@ class FileSystem(Storage):
                 logger.info("Creating storage root at: %s", storage_root.as_posix())
                 storage_root.mkdir(parents=True)
             return storage_root
+
+        @root_validator()
+        def _resolve_static_substitutions(
+            cls, values: Dict[str, Any]
+        ) -> Dict[str, Any]:
+            substitutions = {
+                "storage_root": str(values["storage_root"]),
+                "data_folder": str(values["data_folder"]),
+                "ancillary_folder": str(values["ancillary_folder"]),
+            }
+
+            values["data_storage_path"] = Path(
+                Template(str(values["data_storage_path"])).substitute(
+                    substitutions, allow_missing=True
+                )
+            )
+            values["ancillary_storage_path"] = Path(
+                Template(str(values["ancillary_storage_path"])).substitute(
+                    substitutions, allow_missing=True
+                )
+            )
+
+            return values
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
     handler: FileHandler = Field(default_factory=NetCDFHandler)
@@ -91,7 +168,7 @@ class FileSystem(Storage):
 
         -----------------------------------------------------------------------------"""
         datastream = dataset.attrs["datastream"]
-        filepath = self._get_dataset_filepath(dataset, datastream)
+        filepath = self._get_dataset_filepath(dataset)
         filepath.parent.mkdir(exist_ok=True, parents=True)
         self.handler.writer.write(dataset, filepath)
         logger.info("Saved %s dataset to %s", datastream, filepath.as_posix())
@@ -132,8 +209,16 @@ class FileSystem(Storage):
         logger.info("Saved ancillary file to: %s", saved_filepath)
 
     def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
-        data_dirpath = self.parameters.storage_root / "data" / datastream
-        filepaths = [data_dirpath / Path(file) for file in os.listdir(data_dirpath)]
+        unresolved = self.parameters.data_storage_path.as_posix()
+        extension = self.handler.writer.file_extension
+        extension = extension if not extension.startswith(".") else extension[1:]
+        semi_resolved = Template(unresolved).substitute(
+            get_fields_from_datastream(datastream),
+            allow_missing=True,
+            extension=extension,
+        )
+        root_path, pattern = self._extract_time_substitutions(semi_resolved, start, end)
+        filepaths = list(root_path.glob(pattern))  # FIXME
         return self._filter_between_dates(filepaths, start, end)
 
     def _filter_between_dates(
@@ -165,14 +250,97 @@ class FileSystem(Storage):
             dataset_list.append(data)
         return dataset_list
 
-    def _get_dataset_filepath(self, dataset: xr.Dataset, datastream: str) -> Path:
-        datastream_dir = self.parameters.storage_root / "data" / datastream
+    def _substitute_ancillary_filepath_parts(
+        self, filepath: Path, datastream: Optional[str]
+    ) -> Path:
+        ancillary_stub_path = Template(
+            self.parameters.ancillary_storage_path.as_posix()
+        )
+
+        start: Optional[datetime] = None
+
+        try:
+            # TODO: Extract logic for splitting filepath/name into component parts
+            # Filepath should be like loc.name[-qual][temp].lvl.date.time[.title].ext
+            #                         ^^^^^^ datastream ^^^^^^^
+            filename_parts = filepath.name.split(".")
+            assert len(filename_parts) >= 5
+
+            loc_id = filename_parts[0]
+            # dataset_name = filename_parts[1].split("-")[0]
+            data_level = filename_parts[2]
+            datastream = datastream or ".".join(filename_parts[:3])
+            start_date_time = ".".join(filename_parts[3:5])
+            start = datetime.strptime(start_date_time, "%Y%m%d.%H%M%S")
+        except AssertionError:  # filename not standardized; require datastream
+            logger.warning(
+                "Attempting to store file with unstandardized filename. This will be"
+                " deprecated in a future release of tsdat. Please use"
+                " `tsdat.utils.get_filename()` to get a standardized filename for your"
+                " ancillary file."
+            )
+            if datastream is None:
+                raise ValueError(
+                    "Argument 'datastream' must be provided to the"
+                    " 'save_ancillary_file()' method if not saving an ancillary file"
+                    " with a tsdat-standardized name."
+                )
+            loc_id, _, data_level = datastream.split(".")
+
+        def get_time_fmt(fmt: str) -> str:
+            if start is None:
+                raise ValueError(
+                    f"Substitution '{fmt}' cannot be used with an unstandardized"
+                    " filename. Please modify the `ancillary_storage_path` config"
+                    " parameter or use `tsdat.utils.get_filename()` to get a"
+                    " standardized filename for your ancillary file."
+                )
+            return start.strftime(fmt)
+
+        return Path(
+            ancillary_stub_path.substitute(
+                datastream=datastream,
+                location_id=loc_id,
+                data_level=data_level,
+                ext=filepath.suffix,
+                year=lambda: get_time_fmt("%Y"),
+                month=lambda: get_time_fmt("%m"),
+                day=lambda: get_time_fmt("%d"),
+            )
+        )
+
+    def _get_dataset_filepath(self, dataset: xr.Dataset) -> Path:
+        data_stub_path = Template(self.parameters.data_storage_path.as_posix())
         extension = self.handler.writer.file_extension
+        extension = extension if not extension.startswith(".") else extension[1:]
+        datastream_dir = Path(
+            data_stub_path.substitute(
+                get_fields_from_dataset(dataset),
+                extension=extension,
+            )
+        )
         return datastream_dir / get_filename(dataset, extension)
 
-    def _get_ancillary_filepath(self, filepath: Path, datastream: str) -> Path:
-        anc_datastream_dir = self.parameters.storage_root / "ancillary" / datastream
-        return anc_datastream_dir / filepath.name
+    def _get_ancillary_filepath(
+        self, filepath: Path, datastream: Optional[str] = None
+    ) -> Path:
+        return (
+            self._substitute_ancillary_filepath_parts(filepath, datastream=datastream)
+            / filepath.name
+        )
+
+    def _extract_time_substitutions(
+        self, template_str: str, start: datetime, end: datetime
+    ) -> Tuple[Path, str]:
+        """Extracts the root path above unresolved time substitutions and provides a pattern to search below that."""
+        year = start.strftime("%Y") if start.year == end.year else "*"
+        month = (
+            start.strftime("%m") if year != "*" and start.month == end.month else "*"
+        )
+        resolved = Template(template_str).substitute(year=year, month=month, day="*")
+        if (split := resolved.find("*")) != -1:
+            return Path(resolved[:split]), resolved[split:] + "/*"
+        return Path(resolved), "*"
 
 
 class FileSystemS3(FileSystem):
@@ -182,32 +350,54 @@ class FileSystemS3(FileSystem):
     Args:
         parameters (Parameters): File-system and AWS-specific parameters, such as the root
             path to where files should be saved, or additional keyword arguments to
-            specific functions used by the storage API. See the S3Storage.Parameters
+            specific functions used by the storage API. See the FileSystemS3.Parameters
             class for more details.
         handler (FileHandler): The FileHandler class that should be used to handle data
             I/O within the storage API.
 
     ------------------------------------------------------------------------------------"""
 
-    class Parameters(BaseSettings):  # type: ignore
+    class Parameters(FileSystem.Parameters):  # type: ignore
+        """Additional parameters for S3 storage.
+
+        Note that all settings and parameters from ``Filesystem.Parameters`` are also
+        supported by ``FileSystemS3.Parameters``."""
+
         storage_root: Path = Field(Path("storage/root"), env="TSDAT_STORAGE_ROOT")
-        """The path on disk where data and ancillary files will be saved to. Defaults to
-        the `storage/root` folder in the top level of the storage bucket."""
+        """The path on disk where data and ancillary files will be saved to.
+        
+        Note:
+            This parameter can also be set via the ``TSDAT_STORAGE_ROOT`` environment
+            variable.
+
+        Defaults to the ``storage/root`` folder in the top level of the storage bucket.
+        """
 
         bucket: str = Field("tsdat-storage", env="TSDAT_S3_BUCKET_NAME")
-        """The name of the S3 bucket that the storage class should attach to."""
+        """The name of the S3 bucket that the storage class should use.
+        
+        Note:
+            This parameter can also be set via the ``TSDAT_S3_BUCKET_NAME`` environment
+            variable.
+        """
 
         region: str = Field("us-west-2", env="AWS_DEFAULT_REGION")
-        """The AWS region of the storage bucket. Defaults to "us-west-2"."""
+        """The AWS region of the storage bucket.
+        
+        Note:
+            This parameter can also be set via the ``AWS_DEFAULT_REGION`` environment
+            variable.
+        
+        Defaults to ``us-west-2``."""
 
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
-        """Keyword arguments to xr.merge. Note: this will only be called if the
+        """Keyword arguments to xr.merge. This will only be called if the
         DataReader returns a dictionary of xr.Datasets for a single saved file."""
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
 
     @validator("parameters")
-    def check_authentication(cls, parameters: Parameters):
+    def _check_authentication(cls, parameters: Parameters):
         session = FileSystemS3._get_session(
             region=parameters.region, timehash=FileSystemS3._get_timehash()
         )
@@ -221,7 +411,7 @@ class FileSystemS3(FileSystem):
         return parameters
 
     @validator("parameters")
-    def ensure_bucket_exists(cls, parameters: Parameters):
+    def _ensure_bucket_exists(cls, parameters: Parameters):
         session = FileSystemS3._get_session(
             region=parameters.region, timehash=FileSystemS3._get_timehash()
         )
@@ -234,14 +424,14 @@ class FileSystemS3(FileSystem):
         return parameters
 
     @property
-    def session(self):
+    def _session(self):
         return FileSystemS3._get_session(
             region=self.parameters.region, timehash=FileSystemS3._get_timehash()
         )
 
     @property
-    def bucket(self):
-        s3 = self.session.resource("s3", region_name=self.parameters.region)  # type: ignore
+    def _bucket(self):
+        s3 = self._session.resource("s3", region_name=self.parameters.region)  # type: ignore
         return s3.Bucket(name=self.parameters.bucket)
 
     @staticmethod
@@ -270,7 +460,7 @@ class FileSystemS3(FileSystem):
 
     def save_data(self, dataset: xr.Dataset):
         datastream: str = dataset.attrs["datastream"]
-        standard_fpath = self._get_dataset_filepath(dataset, datastream)
+        standard_fpath = self._get_dataset_filepath(dataset)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_filepath = Path(tmp_dir) / standard_fpath
@@ -282,7 +472,7 @@ class FileSystemS3(FileSystem):
                 if filepath.is_dir():
                     continue
                 s3_filepath = filepath.relative_to(tmp_dir).as_posix()
-                self.bucket.upload_file(Filename=filepath.as_posix(), Key=s3_filepath)
+                self._bucket.upload_file(Filename=filepath.as_posix(), Key=s3_filepath)
                 logger.info(
                     "Saved %s data file to s3://%s/%s",
                     datastream,
@@ -292,12 +482,12 @@ class FileSystemS3(FileSystem):
 
     def save_ancillary_file(self, filepath: Path, datastream: str):
         s3_filepath = self._get_ancillary_filepath(filepath, datastream)
-        self.bucket.upload_file(Filename=str(filepath), Key=str(s3_filepath))
+        self._bucket.upload_file(Filename=str(filepath), Key=str(s3_filepath))
         logger.info("Saved %s ancillary file to: %s", filepath.name, str(s3_filepath))
 
     def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
         prefix = str(self.parameters.storage_root / "data" / datastream) + "/"
-        objects = self.bucket.objects.filter(Prefix=prefix)
+        objects = self._bucket.objects.filter(Prefix=prefix)
         filepaths = [
             Path(obj.key) for obj in objects if obj.key.endswith(self.handler.extension)
         ]
@@ -308,7 +498,7 @@ class FileSystemS3(FileSystem):
         with tempfile.TemporaryDirectory() as tmp_dir:
             for s3_filepath in filepaths:
                 tmp_filepath = str(Path(tmp_dir) / s3_filepath.name)
-                self.bucket.download_file(
+                self._bucket.download_file(
                     Key=str(s3_filepath),
                     Filename=tmp_filepath,
                 )
@@ -319,18 +509,18 @@ class FileSystemS3(FileSystem):
                 dataset_list.append(data)
         return dataset_list
 
-    def exists(self, key: Union[Path, str]) -> bool:
-        return self.get_obj(str(key)) is not None
+    def _exists(self, key: Union[Path, str]) -> bool:
+        return self._get_obj(str(key)) is not None
 
-    def get_obj(self, key: Union[Path, str]):
-        objects = self.bucket.objects.filter(Prefix=str(key))
+    def _get_obj(self, key: Union[Path, str]):
+        objects = self._bucket.objects.filter(Prefix=str(key))
         try:
             return next(obj for obj in objects if obj.key == str(key))
         except StopIteration:
             return None
 
 
-class ZarrLocalStorage(Storage):
+class ZarrLocalStorage(FileSystem):
     """---------------------------------------------------------------------------------
     Handles data storage and retrieval for zarr archives on a local filesystem.
 
@@ -350,31 +540,29 @@ class ZarrLocalStorage(Storage):
 
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseSettings):
-        storage_root: Path = Path.cwd() / "storage" / "root"
-        """The path on disk where data and ancillary files will be saved to. Defaults to
-        the `storage/root` folder in the active working directory. The directory is
-        created as this parameter is set, if the directory does not already exist."""
+    class Parameters(FileSystem.Parameters):
+        data_storage_path: Path = Path(
+            "{storage_root}/{data_folder}"  # /{datastream}.{extension}
+        )
+        """The directory structure that should be used when data files are saved. Allows
+        substitution of the following parameters using curly braces '{}':
+        
+        * ``storage_root``: the value from the ``storage_root`` parameter.
+        * ``data_folder``:  the value from the ``data_folder`` parameter.
+        * ``ancillary_folder``:  the value from the ``ancillary_folder`` parameter.
+        * ``datastream``: the ``datastream`` as defined in the dataset configuration file.
+        * ``location_id``: the ``location_id`` as defined in the dataset configuration file.
+        * ``data_level``: the ``data_level`` as defined in the dataset configuration file.
+        * ``year``: the year of the first timestamp in the file.
+        * ``month``: the month of the first timestamp in the file.
+        * ``day``: the day of the first timestamp in the file.
+        * ``extension``: the file extension used by the output file writer.
 
-    parameters: Parameters = Field(default_factory=Parameters)
+        Defaults to ``{storage_root}/{data_folder}/{datastream}.{extension}``.
+        """
+
+    parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
     handler: ZarrHandler = Field(default_factory=ZarrHandler)
-
-    def save_data(self, dataset: xr.Dataset):
-        """-----------------------------------------------------------------------------
-        Saves a dataset to the storage area.
-
-        At a minimum, the dataset must have a 'datastream' global attribute and must
-        have a 'time' variable with a np.datetime64-like data type.
-
-        Args:
-            dataset (xr.Dataset): The dataset to save.
-
-        -----------------------------------------------------------------------------"""
-        datastream = dataset.attrs["datastream"]
-        dataset_path = self._get_dataset_path(datastream)
-        dataset_path.mkdir(exist_ok=True, parents=True)
-        self.handler.writer.write(dataset, dataset_path)
-        logger.info("Saved %s dataset to %s", datastream, dataset_path.as_posix())
 
     def fetch_data(self, start: datetime, end: datetime, datastream: str) -> xr.Dataset:
         """-----------------------------------------------------------------------------
@@ -390,33 +578,48 @@ class ZarrLocalStorage(Storage):
             the specified datetimes.
 
         -----------------------------------------------------------------------------"""
-        datastream_path = self._get_dataset_path(datastream)
-        full_dataset = self.handler.reader.read(datastream_path.as_posix())
+        data_files = self._find_data(start=start, end=end, datastream=datastream)
+        full_dataset = self.handler.reader.read(data_files[0].as_posix())
         dataset_in_range = full_dataset.sel(time=slice(start, end))
         return dataset_in_range.compute()  # type: ignore
 
-    def save_ancillary_file(self, filepath: Path, datastream: str):
-        """-----------------------------------------------------------------------------
-        Saves an ancillary filepath to the datastream's ancillary storage area.
-
-        Args:
-            filepath (Path): The path to the ancillary file.
-            datastream (str): The datastream that the file is related to.
-
-        -----------------------------------------------------------------------------"""
-        ancillary_filepath = self._get_ancillary_filepath(filepath, datastream)
-        ancillary_filepath.parent.mkdir(exist_ok=True, parents=True)
-        saved_filepath = shutil.copy2(filepath, ancillary_filepath)
-        logger.info("Saved ancillary file to: %s", saved_filepath)
-
-    def _get_dataset_path(self, datastream: str) -> Path:
-        datastream_dir = self.parameters.storage_root / "data" / datastream
+    def _get_dataset_filepath(self, dataset: xr.Dataset) -> Path:
+        data_stub_path = Template(self.parameters.data_storage_path.as_posix())
         extension = self.handler.writer.file_extension
-        return datastream_dir.parent / (datastream_dir.name + extension)
+        extension = extension if not extension.startswith(".") else extension[1:]
+        datastream_dir = Path(
+            data_stub_path.substitute(
+                get_fields_from_dataset(dataset),
+                extension=extension,
+            )
+        )
+        return datastream_dir / f"{dataset.attrs['datastream']}.{extension}"
 
-    def _get_ancillary_filepath(self, filepath: Path, datastream: str) -> Path:
-        anc_datastream_dir = self.parameters.storage_root / "ancillary" / datastream
-        return anc_datastream_dir / filepath.name
+    def _find_data(self, start: datetime, end: datetime, datastream: str) -> List[Path]:
+        unresolved = self.parameters.data_storage_path.as_posix()
+        extension = self.handler.writer.file_extension
+        extension = extension if not extension.startswith(".") else extension[1:]
+        semi_resolved = Template(unresolved).substitute(
+            get_fields_from_datastream(datastream),
+            allow_missing=True,
+            extension=extension,
+        )
+        root_path, pattern = self._extract_time_substitutions(semi_resolved, start, end)
+        pattern += f"{datastream}.{extension}"  # zarr folder for the datastream, not included by pattern
+        return list(root_path.glob(pattern))
+
+    def _extract_time_substitutions(
+        self, template_str: str, start: datetime, end: datetime
+    ) -> Tuple[Path, str]:
+        """Extracts the root path above unresolved time substitutions and provides a pattern to search below that."""
+        year = start.strftime("%Y") if start.year == end.year else "*"
+        month = (
+            start.strftime("%m") if year != "*" and start.month == end.month else "*"
+        )
+        resolved = Template(template_str).substitute(year=year, month=month, day="*")
+        if (split := resolved.find("*")) != -1:
+            return Path(resolved[:split]), resolved[split:]
+        return Path(resolved), ""
 
 
 # HACK: Update forward refs to get around error I couldn't replicate with simpler code

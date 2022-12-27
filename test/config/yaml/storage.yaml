@@ -1,4 +1,11 @@
 classname: tsdat.io.storage.FileSystem
+# parameters:
+#   # All these parameters are optional and the values shown below are the defaults
+#   storage_root: storage/root
+#   data_folder: data
+#   ancillary_folder: ancillary
+#   data_storage_path: "{storage_root}/{data_folder}/{datastream}"
+#   ancillary_storage_path: "{storage_root}/{ancillary_folder}/{datastream}"
 
 handler:
   classname: tsdat.io.handlers.NetCDFHandler

@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
 import xarray as xr
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from pydantic import BaseModel, Extra
 from numpy.typing import NDArray
+from tstring import Template
 
 __all__ = [
     "ParameterizedClass",
@@ -13,7 +14,18 @@ __all__ = [
     "get_start_time",
     "get_start_date_and_time_str",
     "get_filename",
+    "get_datastream",
+    "DATASTREAM_TEMPLATE",
+    "FILENAME_TEMPLATE",
 ]
+
+DATASTREAM_TEMPLATE = Template(
+    "{location_id}.{dataset_name}[-{qualifier}][-{temporal}].{data_level}"
+)
+
+FILENAME_TEMPLATE = Template(
+    "{datastream}.{start_date}.{start_time}[.{title}].{extension}"
+)
 
 
 class ParameterizedClass(BaseModel, extra=Extra.forbid):
@@ -207,6 +219,10 @@ def get_start_date_and_time_str(dataset: xr.Dataset) -> Tuple[str, str]:
     return timestamp.strftime("%Y%m%d"), timestamp.strftime("%H%M%S")
 
 
+def get_datastream(**global_attrs: str) -> str:
+    return DATASTREAM_TEMPLATE.substitute(global_attrs)
+
+
 def get_filename(
     dataset: xr.Dataset, extension: str, title: Optional[str] = None
 ) -> str:
@@ -232,144 +248,51 @@ def get_filename(
         str: The filename constructed from provided parameters.
 
     ---------------------------------------------------------------------------------"""
-    datastream_name = dataset.attrs["datastream"]
+    if extension.startswith("."):
+        extension = extension[1:]
+
     start_date, start_time = get_start_date_and_time_str(dataset)
-    title = "" if title is None else f".{title}"
-    extension = extension if extension.startswith(".") else f".{extension}"
-    return f"{datastream_name}.{start_date}.{start_time}{title}{extension}"
+    return FILENAME_TEMPLATE.substitute(
+        dataset.attrs,  # type: ignore
+        extension=extension,
+        title=title,
+        start_date=start_date,
+        start_time=start_time,
+    )
 
 
-# def get_raw_filename(
-#     raw_data: Union[xr.Dataset, Dict[str, xr.Dataset]], old_filename: str, config
-# ) -> str:
-#     """Returns the appropriate raw filename of the raw dataset according to
-#     MHKIT-Cloud naming conventions. Uses the config object to parse the
-#     start date and time from the raw dataset for use in the new filename.
+def get_fields_from_dataset(
+    dataset: xr.Dataset,
+) -> Dict[str, Optional[Union[str, Callable[[], str]]]]:
+    def get_time_fmt(fmt: str) -> str:
+        return pd.to_datetime(dataset.time.values[0]).strftime(fmt)  # type: ignore
 
-#     The new filename will follow the MHKIT-Cloud Data standards for raw
-#     filenames, ie: `datastream_name.date.time.raw.old_filename`, where the
-#     data level used in the datastream_name is `00`.
-
-#     :param raw_data: The raw data as an xarray dataset or a dictionary
-#         of form {str: xr.Dataset}.
-#     :type raw_data: Union[xr.Dataset, Dict[str, xr.Dataset]]
-#     :param old_filename: The name of the original raw file.
-#     :type old_filename: str
-#     :param config: The Config object used to assist reading time data from
-#         the raw_dataset.
-#     :type config: Config
-#     :return: The standardized filename of the raw file.
-#     :rtype: str
-#     """
-#     original_filename = os.path.basename(old_filename)
-#     raw_datastream_name = config.pipeline_definition.input_datastream_name
-#     time_var = config.dataset_definition.get_variable("time")
-
-#     if isinstance(raw_data, xr.Dataset):
-#         raw_data = {old_filename: raw_data}
-
-#     date_times: List[str] = []
-#     for filename, ds in raw_data.items():
-#         try:
-#             start_date, start_time = DSUtil.get_raw_start_time(ds, time_var)
-#             date_time = f"{start_date}.{start_time}"
-#             date_times.append(date_time)
-#         except KeyError:
-#             warnings.warn(
-#                 f"Could not retrieve `time` from {filename} with retrieval name {time_var}"
-#             )
-#     assert len(date_times), f"Failed to create new filename from {old_filename}"
-
-#     start_date_time = min(date_times)
-#     return f"{raw_datastream_name}.{start_date_time}.raw.{original_filename}"
+    return dict(
+        datastream=dataset.attrs.get("datastream"),
+        location_id=dataset.attrs.get("location_id"),
+        data_level=dataset.attrs.get("data_level"),
+        year=lambda: get_time_fmt("%Y"),
+        month=lambda: get_time_fmt("%m"),
+        day=lambda: get_time_fmt("%d"),
+    )
 
 
-# def plot_qc(
-#     ds: xr.Dataset, variable_name: str, filename: str = None, **kwargs
-# ) -> act.plotting.TimeSeriesDisplay:
-#     """Create a QC plot for the given variable.  This is based on the ACT library:
-#     https://arm-doe.github.io/ACT/source/auto_examples/plot_qc.html#sphx-glr-source-auto-examples-plot-qc-py
+def get_fields_from_datastream(datastream: str) -> Dict[str, Optional[str]]:
+    # assumes datastream = loc.name[-qual][-temp].lvl
+    ds_parts = datastream.split(".")
+    assert len(ds_parts) == 3
 
-#     We provide a convenience wrapper method for basic QC plots of a variable, but
-#     we recommend to use ACT directly and look at their examples for more complex plots
-#     like plotting variables in two different datasets.
+    name_qual_temp = ds_parts[1].split("-")
+    assert len(name_qual_temp) <= 3
 
-#     TODO: Depending on use cases, we will likely add more arguments to be able to quickly produce
-#     the most common types of QC plots.
+    return {
+        "datastream": datastream,
+        "location_id": ds_parts[0],
+        "dataset_name": name_qual_temp[0],
+        "qualifier": name_qual_temp[1] if len(name_qual_temp) >= 2 else None,
+        "temporal": name_qual_temp[2] if len(name_qual_temp) == 3 else None,
+        "data_level": ds_parts[2],
+    }
 
-#     :param ds: A dataset
-#     :type ds: xr.Dataset
-#     :param variable_name: The variable to plot
-#     :type variable_name: str
-#     :param filename: The filename for the image.  Saves the plot as this filename if provided.
-#     :type filename: str, optional
-#     """
-#     datastream_name = DSUtil.get_datastream_name(ds=ds)
-#     display = act.plotting.TimeSeriesDisplay(
-#         ds, subplot_shape=(2,), ds_name=datastream_name, **kwargs
-#     )
-
-#     # Plot temperature data in top plot
-#     display.plot(variable_name, subplot_index=(0,))
-
-#     # Plot QC data
-#     display.qc_flag_block_plot(variable_name, subplot_index=(1,))
-
-#     if filename:
-#         plt.savefig(filename)
-
-#     return display
-
-
-# def get_raw_start_time(
-#     raw_ds: xr.Dataset, time_var_definition: "tsdat.config.VariableDefinition"
-# ) -> Tuple[str, str]:
-#     """Convenience method to get the start date and time from a raw xarray
-#     dataset. This uses `time_var_definition.get_input_name()` as the
-#     dataset key for the time variable and additionally uses the input's
-#     `Converter` object if applicable.
-
-#     :param raw_ds: A raw dataset (not standardized)
-#     :type raw_ds: xr.Dataset
-#     :param time_var_definition: The 'time' variable definition from the
-#         pipeline config
-#     :type time_var_definition: VariableDefinition
-#     :return: A tuple of strings representing the first time data point
-#         in the dataset.  The first string is the day in 'yyyymmdd' format.
-#         The second string is the time in 'hhmmss' format.
-#     :rtype: Tuple[str, str]
-#     """
-#     time_var_name = time_var_definition.get_input_name()
-#     time_data = raw_ds[time_var_name].data
-
-#     time64_data = time_var_definition.run_converter(time_data)
-
-#     start_datetime64 = np.min(time64_data)
-#     return DSUtil.datetime64_to_string(start_datetime64)
-
-# def datetime64_to_timestamp(variable_data: NDArray[Any]) -> NDArray[np.int64]:
-#     """Converts each datetime64 value to a timestamp in same units as
-#     the variable (eg., seconds, nanoseconds).
-
-#     :param variable_data: ndarray of variable data
-#     :type variable_data: np.ndarray
-#     :return: An ndarray of the same shape, with time values converted to
-#         long timestamps (e.g., int64)
-#     :rtype: np.ndarray
-#     """
-#     return variable_data.astype(pd.Timestamp).astype(np.int64)  # type: ignore
-
-
-# def datetime64_to_string(datetime64: np.datetime64) -> Tuple[str, str]:
-#     """Convert a datetime64 object to formatted string.
-
-#     :param datetime64: The datetime64 object
-#     :type datetime64: Union[np.ndarray, np.datetime64]
-#     :return: A tuple of strings representing the formatted date.  The first string is
-#         the day in 'yyyymmdd' format.  The second string is the time in 'hhmmss' format.
-#     :rtype: Tuple[str, str]
-#     """
-#     datetime_: datetime.datetime = act.utils.datetime64_to_datetime(datetime64)[0]  # type: ignore
-#     return datetime_.strftime("%Y%m%d"), datetime_.strftime("%H%M%S")
 
 # IDEA: Method to print a summary of the list of problems with the data

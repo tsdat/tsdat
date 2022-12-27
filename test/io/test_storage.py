@@ -38,7 +38,21 @@ def sample_dataset() -> xr.Dataset:
 
 @fixture
 def file_storage():
-    storage = FileSystem(parameters={"storage_root": Path.cwd() / "test/storage_root"})  # type: ignore
+    storage = FileSystem(parameters=FileSystem.Parameters(storage_root=Path.cwd() / "test/storage_root"))  # type: ignore
+    try:
+        yield storage
+    finally:
+        shutil.rmtree(storage.parameters.storage_root)
+
+
+@fixture
+def file_storage_v2():
+    storage = FileSystem(
+        parameters=FileSystem.Parameters(
+            storage_root="test/storage_root",
+            data_storage_path="{storage_root}/{year}/{month}/{day}/{datastream}",
+        )  # type: ignore
+    )
     try:
         yield storage
     finally:
@@ -47,7 +61,9 @@ def file_storage():
 
 @fixture
 def zarr_storage():
-    storage = ZarrLocalStorage(parameters={"storage_root": Path.cwd() / "test/storage_root"})  # type: ignore
+    storage = ZarrLocalStorage(
+        parameters=ZarrLocalStorage.Parameters(**{"storage_root": Path.cwd() / "test/storage_root"})  # type: ignore
+    )
     try:
         yield storage
     finally:
@@ -70,16 +86,18 @@ def s3_storage(aws_credentials: Any):
     s3.start(), sts.start()  # type: ignore
     storage_root = Path("test/storage_root")
     storage = FileSystemS3(
-        parameters={
-            "bucket": "tsdat-core",
-            "storage_root": storage_root,
-            "region": "us-east-1",
-        },  # type: ignore
+        parameters=FileSystemS3.Parameters(
+            **{
+                "bucket": "tsdat-core",
+                "storage_root": storage_root,
+                "region": "us-east-1",
+            },  # type: ignore
+        )
     )
     try:
         yield storage
     finally:
-        storage.bucket.objects.filter(Prefix=str(storage_root)).delete()
+        storage._bucket.objects.filter(Prefix=str(storage_root)).delete()
         s3.stop(), sts.stop()  # type: ignore
 
 
@@ -87,6 +105,7 @@ def s3_storage(aws_credentials: Any):
     "storage_fixture, dataset_fixture",
     [
         ("file_storage", "sample_dataset"),
+        ("file_storage_v2", "sample_dataset"),
         ("zarr_storage", "sample_dataset"),
         ("s3_storage", "sample_dataset"),
     ],
@@ -178,8 +197,8 @@ def test_filesystem_s3_saves_ancillary_files(s3_storage: FileSystemS3):
     s3_storage.save_ancillary_file(
         filepath=ancillary_filepath, datastream="sgp.testing-storage.a0"
     )
-    assert s3_storage.exists(expected_filepath)
-    obj = s3_storage.get_obj(expected_filepath)
+    assert s3_storage._exists(expected_filepath)
+    obj = s3_storage._get_obj(expected_filepath)
     assert obj is not None
     obj.delete()
 
@@ -187,7 +206,7 @@ def test_filesystem_s3_saves_ancillary_files(s3_storage: FileSystemS3):
     with s3_storage.uploadable_dir(datastream="sgp.testing-storage.a0") as tmp_dir:
         ancillary_filepath = tmp_dir / "ancillary_file.txt"
         ancillary_filepath.write_text("foobar")
-    assert s3_storage.exists(expected_filepath)
-    obj = s3_storage.get_obj(expected_filepath)
+    assert s3_storage._exists(expected_filepath)
+    obj = s3_storage._get_obj(expected_filepath)
     assert obj is not None
     obj.delete()

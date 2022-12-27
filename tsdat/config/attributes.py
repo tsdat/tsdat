@@ -12,6 +12,7 @@ from pydantic import (
 from pydantic.fields import ModelField
 from typing import Any, Dict, Optional
 from .utils import get_code_version
+from ..utils import get_datastream
 
 
 class AttributeModel(BaseModel, extra=Extra.allow):
@@ -151,10 +152,5 @@ class GlobalAttributes(AttributeModel):
     @classmethod
     def add_datastream_field(cls, values: Dict[str, StrictStr]) -> Dict[str, StrictStr]:
         if not values["datastream"]:
-            loc = values["location_id"]
-            name = values["dataset_name"]
-            qual = "-" + values["qualifier"] if values["qualifier"] else ""
-            temp = "-" + values["temporal"] if values["temporal"] else ""
-            lvl = values["data_level"]
-            values["datastream"] = f"{loc}.{name}{qual}{temp}.{lvl}"
+            values["datastream"] = get_datastream(**values)
         return values

@@ -1,3 +1,7 @@
+# TODO:
+# parameters:
+#   datastream: {location_id}.{dataset_name}[-{qualifier}][-{temporal}].date.time.{data_level}
+
 attrs:
   title: title
   description: description
