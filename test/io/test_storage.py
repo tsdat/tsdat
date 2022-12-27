@@ -50,7 +50,7 @@ def file_storage_v2():
     storage = FileSystem(
         parameters=FileSystem.Parameters(
             storage_root="test/storage_root",
-            data_storage_path="{storage_root}/{year}/{datastream}",
+            data_storage_path="{storage_root}/{year}/{month}/{day}/{datastream}",
         )  # type: ignore
     )
     try:

@@ -36,18 +36,6 @@ __all__ = ["FileSystem", "FileSystemS3", "ZarrLocalStorage"]
 logger = logging.getLogger(__name__)
 
 
-def extract_time_substitutions(
-    template_str: str, start: datetime, end: datetime
-) -> Tuple[Path, str]:
-    """Extracts the root path above unresolved time substitutions and provides a pattern to search below that."""
-    year = str(start.year) if start.year == end.year else "*"
-    month = str(start.month) if year != "*" and start.month == end.month else "*"
-    resolved = Template(template_str).substitute(year=year, month=month, day="*")
-    if (split := resolved.find("*")) != -1:
-        return Path(resolved[:split]), resolved[split:] + "/*"
-    return Path(resolved), "*"
-
-
 class FileSystem(Storage):
     """------------------------------------------------------------------------------------
     Handles data storage and retrieval for file-based data formats.
@@ -345,8 +333,10 @@ class FileSystem(Storage):
         self, template_str: str, start: datetime, end: datetime
     ) -> Tuple[Path, str]:
         """Extracts the root path above unresolved time substitutions and provides a pattern to search below that."""
-        year = str(start.year) if start.year == end.year else "*"
-        month = str(start.month) if year != "*" and start.month == end.month else "*"
+        year = start.strftime("%Y") if start.year == end.year else "*"
+        month = (
+            start.strftime("%m") if year != "*" and start.month == end.month else "*"
+        )
         resolved = Template(template_str).substitute(year=year, month=month, day="*")
         if (split := resolved.find("*")) != -1:
             return Path(resolved[:split]), resolved[split:] + "/*"
@@ -622,8 +612,10 @@ class ZarrLocalStorage(FileSystem):
         self, template_str: str, start: datetime, end: datetime
     ) -> Tuple[Path, str]:
         """Extracts the root path above unresolved time substitutions and provides a pattern to search below that."""
-        year = str(start.year) if start.year == end.year else "*"
-        month = str(start.month) if year != "*" and start.month == end.month else "*"
+        year = start.strftime("%Y") if start.year == end.year else "*"
+        month = (
+            start.strftime("%m") if year != "*" and start.month == end.month else "*"
+        )
         resolved = Template(template_str).substitute(year=year, month=month, day="*")
         if (split := resolved.find("*")) != -1:
             return Path(resolved[:split]), resolved[split:]
