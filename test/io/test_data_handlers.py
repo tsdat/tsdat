@@ -156,20 +156,25 @@ def test_split_netcdf_writer(sample_dataset_w_time: xr.Dataset):
     tmp_dir.cleanup()
 
 
-def test_csv_writer(sample_dataset: xr.Dataset, sample_dataframe: pd.DataFrame):
-    expected = sample_dataframe.copy(deep=True)
+def test_csv_writer(sample_dataset_w_time: xr.Dataset):
+    expected = sample_dataset_w_time.to_dataframe()
     writer = CSVWriter()
     tmp_dir = tempfile.TemporaryDirectory()
 
     tmp_file = Path(tmp_dir.name) / "test_writer.csv"
-    writer.write(sample_dataset, tmp_file)
-    df: pd.DataFrame = pd.read_csv(tmp_file)  # type: ignore
+    writer.write(sample_dataset_w_time, tmp_file)
+    df: pd.DataFrame = pd.read_csv(  # type: ignore
+        tmp_file.with_suffix(".time.1d.csv"),
+        index_col=0,
+        parse_dates=True,
+        infer_datetime_format=True,
+    )
     assert_frame_equal(df, expected)
 
     tmp_dir.cleanup()
 
 
-def test_parquet_writer(sample_dataset: xr.Dataset, sample_dataframe: pd.DataFrame):
+def test_parquet_writer(sample_dataset: xr.Dataset):
     expected = sample_dataset.to_dataframe()
     writer = ParquetWriter()
     tmp_dir = tempfile.TemporaryDirectory()
@@ -199,7 +204,7 @@ def test_zarr_writer(sample_dataset: xr.Dataset):
     "handler_class, output_key",
     [
         (NetCDFHandler, "test_dataset.nc"),
-        (CSVHandler, "test_dataframe.1D.csv"),
+        (CSVHandler, "test_dataframe.time.1d.csv"),
         (ParquetHandler, "test_dataframe.parquet"),
         (ZarrHandler, "test_dataset.zarr"),
     ],
