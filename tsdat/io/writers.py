@@ -251,10 +251,10 @@ class CSVWriter(FileWriter):
             )
 
         # convert organized 2 dimension data to CSV
-        sectionLen = len(dim_dict["time"])  # type: ignore
         for dim in twoDdataCont:  # type: ignore
             two_dim_df = pd.DataFrame()
             twoDF = []
+            sectionLen = len(dim_dict["time"])  # type: ignore
             for i in range(0, len(twoDdata[dim])):  # type: ignore
                 tempDF = pd.DataFrame(
                     index=list(range(i * sectionLen, (i + 1) * sectionLen))

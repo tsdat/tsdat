@@ -156,15 +156,15 @@ def test_split_netcdf_writer(sample_dataset_w_time: xr.Dataset):
     tmp_dir.cleanup()
 
 
-def test_csv_writer(sample_dataset_w_time: xr.Dataset):
-    expected = sample_dataset_w_time.to_dataframe()
+def test_csv_writer(sample_dataset: xr.Dataset):
+    expected = sample_dataset.to_dataframe()
     writer = CSVWriter()
     tmp_dir = tempfile.TemporaryDirectory()
 
     tmp_file = Path(tmp_dir.name) / "test_writer.csv"
-    writer.write(sample_dataset_w_time, tmp_file)
+    writer.write(sample_dataset, tmp_file)
     df: pd.DataFrame = pd.read_csv(  # type: ignore
-        tmp_file.with_suffix(".time.1d.csv"),
+        tmp_file.with_suffix(".index.1d.csv"),
         index_col=0,
         parse_dates=True,
         infer_datetime_format=True,
@@ -204,7 +204,6 @@ def test_zarr_writer(sample_dataset: xr.Dataset):
     "handler_class, output_key",
     [
         (NetCDFHandler, "test_dataset.nc"),
-        (CSVHandler, "test_dataframe.time.1d.csv"),
         (ParquetHandler, "test_dataframe.parquet"),
         (ZarrHandler, "test_dataset.zarr"),
     ],
@@ -222,6 +221,22 @@ def test_file_handlers(
     tmp_file = Path(tmp_dir.name) / output_key
     handler.writer.write(sample_dataset, tmp_file)
     dataset = handler.reader.read(tmp_file.as_posix())
+    assert isinstance(dataset, xr.Dataset)
+    assert_close(dataset, expected, check_fill_value=False)
+
+    tmp_dir.cleanup()
+
+
+def test_csv_file_hander(sample_dataset: xr.Dataset):
+    handler = CSVHandler()  # type: ignore
+    output_key = "test_dataframe.csv"
+    expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
+
+    tmp_dir = tempfile.TemporaryDirectory()
+
+    tmp_file = Path(tmp_dir.name) / output_key
+    handler.writer.write(sample_dataset, tmp_file)
+    dataset = handler.reader.read(tmp_file.with_suffix(".index.1d.csv").as_posix())
     assert isinstance(dataset, xr.Dataset)
     assert_close(dataset, expected, check_fill_value=False)
 
