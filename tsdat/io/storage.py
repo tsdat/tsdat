@@ -128,7 +128,6 @@ class FileSystem(Storage):
             if not storage_root.is_dir():
                 logger.info("Creating storage root at: %s", storage_root.as_posix())
                 storage_root.mkdir(parents=True)
-            raise ValueError("This shouldn't run!!")
             return storage_root
 
         @root_validator()
