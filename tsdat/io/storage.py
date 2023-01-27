@@ -128,6 +128,7 @@ class FileSystem(Storage):
             if not storage_root.is_dir():
                 logger.info("Creating storage root at: %s", storage_root.as_posix())
                 storage_root.mkdir(parents=True)
+            raise ValueError("This shouldn't run!!")
             return storage_root
 
         @root_validator()
@@ -393,6 +394,10 @@ class FileSystemS3(FileSystem):
         merge_fetched_data_kwargs: Dict[str, Any] = dict()
         """Keyword arguments to xr.merge. This will only be called if the
         DataReader returns a dictionary of xr.Datasets for a single saved file."""
+
+        @validator("storage_root")
+        def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
+            return storage_root  # HACK: Don't run parent validator to create storage root file
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
 
