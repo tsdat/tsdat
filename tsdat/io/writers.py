@@ -1,10 +1,9 @@
 import copy
 import warnings
-import collections
 import numpy as np
 import pandas as pd
 import xarray as xr
-from typing import Any, Dict, Iterable, List, Optional, cast
+from typing import Any, Dict, Iterable, List, Optional, cast, Hashable
 from pathlib import Path
 from pydantic import BaseModel, Extra
 from .base import FileWriter
@@ -171,104 +170,58 @@ class CSVWriter(FileWriter):
     ) -> None:
         # QUESTION: Is this format capable of "round-tripping"?
         # (i.e., ds != read(write(ds)) for csv format)
-        attribute_df = pd.DataFrame()
-        attributes = ["name"]
-
-        twoDdata = {}
-        twoDdataCont = collections.defaultdict(dict)  # type: ignore
-        oneDdata = {}
-        oneDdataCont = collections.defaultdict(dict)  # type: ignore
-
-        # header
-        header_df = pd.DataFrame.from_dict(dataset.attrs, orient="index")
-        header_df.to_csv(
-            filepath.with_suffix(".header.csv"),  # type: ignore
-            header=False,
-        )
-
-        # dimensions/coordinates
-        dim_dict = {}
-        for dim in dataset.dims:
-            dim_dict[dim] = dataset[dim].to_numpy()  # type: ignore
-        dim_df = pd.DataFrame.from_dict(dim_dict, orient="index")
-        dim_df.to_csv(
-            filepath.with_suffix(".dims.csv"),  # type: ignore
-            header=False,
-        )
-        # dimensions/coordinates
-
+        d1: List[Hashable] = []
+        d2: List[Hashable] = []
+        d2_coord: List[Hashable] = []
         for var in dataset:
-            # set attributes
-            attrs_dict = {}
-            attrs_dict["name"] = var
-            for att in dataset[var].attrs:
-                if att not in attributes:
-                    attributes.append(att)
-                attrs_dict[att] = dataset[var].attrs[att]
-            df_dictionary = pd.DataFrame([attrs_dict])
-            attribute_df = pd.concat([attribute_df, df_dictionary], ignore_index=True)  # type: ignore
-            # set attributes
-
-            dims = [coor for coor in dataset[var].coords]  # get dimensions of variable
-
-            # organize 1 dimension data
-            if len(dataset[var].to_numpy().shape) == 1 and len(dims) == 1:  # type: ignore
-                oneDdata[dims[0]] = dataset[var].coords[dims[0]].to_numpy()  # type: ignore
-                oneDdataCont[dims[0]][var] = dataset[var].to_numpy()  # type: ignore
-            # organize 1 dimension data
-
-            # organize 2 dimension data
-            elif (
-                len(dataset[var].to_numpy().shape) == 2  # type: ignore
-                and len(dims) == 2
-                and "time" in dims
-            ):
-                tempD = ""
-                for coord in dataset[var].coords:
-                    if coord != "time":
-                        twoDdata[coord] = dataset[var].coords[coord].to_numpy()  # type: ignore
-                        tempD = coord  # type: ignore
-                twoDdataCont[tempD][var] = dataset[var].to_numpy()  # type: ignore
-            # organize 2 dimension dat
-
-            # other dim data
+            shp = dataset[var].shape
+            if len(shp) <= 1:
+                d1.append(var)
+            elif len(shp) == 2:
+                d2.append(var)
+                d2_coord.extend([v for v in dataset.coords if v != "time"])
             else:
-                warnings.warn("Cannot convert " + var + " to .CSV")  # type: ignore
-            # other dim data
-
-        attribute_df.to_csv(
-            filepath.with_suffix(".attrs.csv"),  # type: ignore
-            index=False,
-        )
-
-        # convert organized 1 dimension data to CSV
-        for dim in oneDdataCont:  # type: ignore
-            one_dim_df = pd.DataFrame.from_dict(oneDdataCont[dim])  # type: ignore
-            one_dim_df.insert(0, dim, oneDdata[dim])  # type: ignore
-            one_dim_df.to_csv(
-                filepath.with_suffix("." + dim + ".1d.csv"),  # type: ignore
-                index=False,
-            )
-
-        # convert organized 2 dimension data to CSV
-        for dim in twoDdataCont:  # type: ignore
-            two_dim_df = pd.DataFrame()
-            twoDF = []
-            sectionLen = len(dim_dict["time"])  # type: ignore
-            for i in range(0, len(twoDdata[dim])):  # type: ignore
-                tempDF = pd.DataFrame(
-                    index=list(range(i * sectionLen, (i + 1) * sectionLen))
+                warnings.warn(
+                    "CSV writer cannot save variables with more than 2 dimensions."
                 )
-                tempDF["Time"] = dim_dict["time"]  # type: ignore
-                for var in twoDdataCont[dim]:  # type: ignore
-                    tempDF[var] = twoDdataCont[dim][var][:, i]  # type: ignore
-                tempDF.insert(0, dim, twoDdata[dim][i])  # type: ignore
-                twoDF.append(tempDF)  # type: ignore
-            two_dim_df = pd.concat(twoDF)  # type: ignore
-            two_dim_df.to_csv(
-                filepath.with_suffix("." + dim + ".2d.csv"),  # type: ignore
-                index=False,
-            )
+
+        # Save header data
+        header_filepath = filepath.with_suffix(".hdr.csv")  # type: ignore
+        header = dataset.attrs
+        with open(str(header_filepath), "w", newline="\n") as fp:
+            for key in header:
+                fp.write(f"{key},{header[key]}\n")
+
+        # Save variable metadata
+        metadata_filepath = filepath.with_suffix(".attrs.csv")  # type: ignore
+        var_metadata: List[Dict[str, Any]] = []
+        for var in dataset:
+            attrs = dataset[var].attrs
+            attrs.update({"name": var})
+            var_metadata.append(attrs)
+        df_metadata = pd.DataFrame(var_metadata)
+        df_metadata = df_metadata.set_index("name")  # type: ignore
+        df_metadata.to_csv(metadata_filepath)
+
+        if d1:
+            # Save 1D variables
+            dim1_filepath = filepath.with_suffix(".time.1d.csv")  # type: ignore
+            ds_1d = dataset.drop_vars(d2)  # drop 2D variables
+            ds_1d = dataset.drop_vars(d2_coord)
+            df_1d = ds_1d.to_dataframe()
+            df_1d.to_csv(dim1_filepath, **self.parameters.to_csv_kwargs)  # type: ignore
+
+        if d2:
+            # Save 2D variables
+            for coord in d2_coord:
+                dim2_filepath = filepath.with_suffix("." + coord + ".2d.csv")  # type: ignore
+                ds_2d = dataset.drop_vars(d1)  # drop 1D variables
+                other_dim_vars = [
+                    v for v in dataset.data_vars if coord not in dataset[v].dims
+                ]
+                ds_2d = dataset.drop_vars(other_dim_vars)
+                df_2d = ds_2d.to_dataframe(self.parameters.dim_order)  # type: ignore
+                df_2d.to_csv(dim2_filepath, **self.parameters.to_csv_kwargs)  # type: ignore
 
 
 class ParquetWriter(FileWriter):

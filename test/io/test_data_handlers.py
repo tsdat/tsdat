@@ -164,7 +164,7 @@ def test_csv_writer(sample_dataset: xr.Dataset):
     tmp_file = Path(tmp_dir.name) / "test_writer.csv"
     writer.write(sample_dataset, tmp_file)
     df: pd.DataFrame = pd.read_csv(  # type: ignore
-        tmp_file.with_suffix(".index.1d.csv"),
+        tmp_file.with_suffix(".time.1d.csv"),
         index_col=0,
         parse_dates=True,
         infer_datetime_format=True,
@@ -236,7 +236,7 @@ def test_csv_file_hander(sample_dataset: xr.Dataset):
 
     tmp_file = Path(tmp_dir.name) / output_key
     handler.writer.write(sample_dataset, tmp_file)
-    dataset = handler.reader.read(tmp_file.with_suffix(".index.1d.csv").as_posix())
+    dataset = handler.reader.read(tmp_file.with_suffix(".time.1d.csv").as_posix())
     assert isinstance(dataset, xr.Dataset)
     assert_close(dataset, expected, check_fill_value=False)
 
