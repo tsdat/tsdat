@@ -172,14 +172,13 @@ class CSVWriter(FileWriter):
         # (i.e., ds != read(write(ds)) for csv format)
         d1: List[Hashable] = []
         d2: List[Hashable] = []
-        d2_coord: List[Hashable] = []
+        d2_coord: List[Hashable] = [v for v in dataset.coords if v != "time"]
         for var in dataset:
             shp = dataset[var].shape
             if len(shp) <= 1:
                 d1.append(var)
             elif len(shp) == 2:
                 d2.append(var)
-                d2_coord.extend([v for v in dataset.coords if v != "time"])
             else:
                 warnings.warn(
                     "CSV writer cannot save variables with more than 2 dimensions."
@@ -207,7 +206,7 @@ class CSVWriter(FileWriter):
             # Save 1D variables
             dim1_filepath = filepath.with_suffix(".time.1d.csv")  # type: ignore
             ds_1d = dataset.drop_vars(d2)  # drop 2D variables
-            ds_1d = dataset.drop_vars(d2_coord)
+            ds_1d = ds_1d.drop_vars(d2_coord)
             df_1d = ds_1d.to_dataframe()
             df_1d.to_csv(dim1_filepath, **self.parameters.to_csv_kwargs)  # type: ignore
 
@@ -219,7 +218,7 @@ class CSVWriter(FileWriter):
                 other_dim_vars = [
                     v for v in dataset.data_vars if coord not in dataset[v].dims
                 ]
-                ds_2d = dataset.drop_vars(other_dim_vars)
+                ds_2d = ds_2d.drop_vars(other_dim_vars)
                 df_2d = ds_2d.to_dataframe(self.parameters.dim_order)  # type: ignore
                 df_2d.to_csv(dim2_filepath, **self.parameters.to_csv_kwargs)  # type: ignore
 
