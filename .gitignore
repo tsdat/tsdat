@@ -12,3 +12,11 @@ coverage.xml
 typings/
 .mypy_cache/
 storage/root/
+/cds3/core.c
+/cds3/core.cpython-39-x86_64-linux-gnu.so
+/cds3/enums.c
+/cds3/enums.cpython-39-x86_64-linux-gnu.so
+/cds3/core.c
+/cds3/core.cpython-39-x86_64-linux-gnu.so
+/cds3/enums.c
+/cds3/enums.cpython-39-x86_64-linux-gnu.so

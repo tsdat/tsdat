@@ -69,7 +69,7 @@ your choice.
 3. Run the following commands to create and activate your `conda` environment
 
     ```
-    conda create --name tsdat python=3.8
+    conda env create -f conda_environment. yml
     conda activate tsdat
     pip install -r requirements-dev.txt
     ```
