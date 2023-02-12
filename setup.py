@@ -13,14 +13,15 @@ REQUIREMENTS = [req for req in requirements if not req.startswith("#")]
 
 VERSION = os.environ["TSDAT_VERSION"]
 
+
 def pkgconfig(lib, opt):
     res = check_output(["pkg-config", opt, lib]).decode('utf-8').strip()
     return [re.compile(r'^-[ILl]').sub('', m) for m in res.split()]
 
+
 cds3_incdirs = pkgconfig("cds3", '--cflags-only-I')
 cds3_libdirs = pkgconfig("cds3", '--libs-only-L')
 cds3_libs    = pkgconfig("cds3", '--libs-only-l')
-
 cds3_incdirs.append(numpy.get_include())
 
 cds3 = Extension(
@@ -39,6 +40,20 @@ cds3_enums = Extension(
     library_dirs    = cds3_libdirs,
     libraries       = cds3_libs,
     runtime_library_dirs = cds3_libdirs
+)
+
+trans_incdirs = pkgconfig("trans", '--cflags-only-I')
+trans_libdirs = pkgconfig("trans", '--libs-only-L')
+trans_libs    = pkgconfig("trans", '--libs-only-l')
+trans_incdirs.append(numpy.get_include())
+
+trans = Extension(
+    name            = 'trans.core',
+    sources         = ['trans/core.pyx'],
+    include_dirs    = trans_incdirs,
+    library_dirs    = trans_libdirs,
+    libraries       = trans_libs,
+    runtime_library_dirs = trans_libdirs
 )
 
 setup(
@@ -62,7 +77,7 @@ setup(
         "Intended Audience :: Science/Research",
         "Operating System :: OS Independent",
     ],
-    ext_modules=cythonize([cds3,cds3_enums]),
+    ext_modules=cythonize([cds3,cds3_enums,trans]),
     packages=find_packages(exclude=["test"]),
     package_data={"tsdat": ["py.typed"]},
     include_package_data=True,

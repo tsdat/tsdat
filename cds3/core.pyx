@@ -2055,8 +2055,7 @@ cdef class VarArray(Object):
         pass
 
 
-def cds_parse_transform_params(CDSGroup *group, char *string, const char *path):
-
+def parse_transform_params(Group group, object string):
     """-----------------------------------------------------------------------------------------------------------------
     Parse a text string containing transformation parameters and apply the transform parameters to the provided
     group object.  Groups should be one of two types:
@@ -2077,38 +2076,30 @@ def cds_parse_transform_params(CDSGroup *group, char *string, const char *path):
         overridden for a specific variable and dimension (e.g., ceil_backscatter:time)
 
     If you are setting input datastream parameters, the string should have this format:
+        "
+        time:range = 600;
+        "
 
-    time:transform=TRANS_BIN_AVERAGE;
-    time:interval=600;
-    time:alignment=0;
-    time:length=144;
-    time:start=240;
-    time:width=360;
+    Note that some transform parameters (like range) are set on input datastreams, and others (like transform type or
+    bin width) are set on coordinate systems.  You have to make sure the right parameters get passed for each type
+    of object.
 
- *
- *  Transformation parameters must be specified in the text string
- *  using the following format:
- *
- *  object_name:param_name = value;
- *
- *  where value can be a string, a number, or an array of comma
- *  separated numeric values. The value can span multiple lines
- *  but must be terminated with a semicolon.
- *
- *  Error messages from this function are sent to the message handler
- *  (see msngr_init_log() and msngr_init_mail()).
- *
- *  @param  group  - pointer to the CDSGroup
- *  @param  string - text string containing the transformation params
- *  @param  path   - full path to the directory to look for transformation
- *                   parameter files if #include is used in the specified
- *                   text string.
- *
- *  @return
- *    -  1 if successful
- *    -  0 if an error occurred
+    Parameters
+    ----------
+    parent : cds3.core.Group
+        Pointer to the CDSGroup you will apply the transform parameters to (either a coordinate system or input datastream)
+    string : object
+        text string containing the transformation params
+
+    Returns
+    -------
+     -  1 if successful
+     -  0 if an error occurred
     -----------------------------------------------------------------------------------------------------------------"""
-    pass
+
+    cdef object byte_string = _to_byte_c_string(string)      # Convert python string to c string
+    cdef CDSGroup *cds_group = group.c_ob                    # Get underlying C pointer
+    return cds_parse_transform_params(cds_group, byte_string, NULL)
 
 
 def print_all(object file_like, Group group, int flags):

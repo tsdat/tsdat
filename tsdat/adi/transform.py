@@ -44,6 +44,8 @@ Parameters:
         It should have placeholder variables created for all the data and qc variables (every data variable must have
         a qc variable created).  All the values can be missing or Nan - doesn't matter because transform code will overwrite them.
 
+        * We also need to create the bounds vars for the coordinates
+
 What this method does:
     Transform will transform data variable and qc variable values in place
 
@@ -61,7 +63,10 @@ Steps:
         * Note tsdat does not make users define a coordinate system name, so we will use 'coord_sys' or similar since
             we only allow 1 coordinate system per process.
 
+        * Note:  this must be done in cython
+
     2) Convert the output xarray object into a CDS Group set of objects (same as above)
+        I think that we need to create the 'trans_data' object
 
     3) Convert the transform parameters into a map of strings.  Key is the data stream or coordinate system name, the
        value is transform parameters string in ADI format.

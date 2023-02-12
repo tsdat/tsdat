@@ -729,6 +729,13 @@ cdef extern from "cds3.h" nogil:
     # Library Version
     char *cds_lib_version()
 
+    # New method to parse transform params and apply to object
+    int cds_parse_transform_params(
+            CDSGroup *group,
+            char *string,
+            const char *path)
+
+
 #******************************************************************************
 # DEPRECATED
 #******************************************************************************
