@@ -42,6 +42,29 @@ cds3_enums = Extension(
     runtime_library_dirs = cds3_libdirs
 )
 
+dsproc3_incdirs = pkgconfig("dsproc3", '--cflags-only-I')
+dsproc3_libdirs = pkgconfig("dsproc3", '--libs-only-L')
+dsproc3_libs    = pkgconfig("dsproc3", '--libs-only-l')
+dsproc3_incdirs.append(numpy.get_include())
+
+dsproc3 = Extension(
+    name            = 'dsproc3.core',
+    sources         = ['dsproc3/core.pyx'],
+    include_dirs    = dsproc3_incdirs,
+    library_dirs    = dsproc3_libdirs,
+    libraries       = dsproc3_libs,
+    runtime_library_dirs = dsproc3_libdirs
+)
+
+dsproc3_enums = Extension(
+    name            = 'dsproc3.enums',
+    sources         = ['dsproc3/enums.pyx'],
+    include_dirs    = dsproc3_incdirs,
+    library_dirs    = dsproc3_libdirs,
+    libraries       = dsproc3_libs,
+    runtime_library_dirs = dsproc3_libdirs
+)
+
 trans_incdirs = pkgconfig("trans", '--cflags-only-I')
 trans_libdirs = pkgconfig("trans", '--libs-only-L')
 trans_libs    = pkgconfig("trans", '--libs-only-l')
@@ -77,7 +100,7 @@ setup(
         "Intended Audience :: Science/Research",
         "Operating System :: OS Independent",
     ],
-    ext_modules=cythonize([cds3,cds3_enums,trans]),
+    ext_modules=cythonize([cds3, cds3_enums, dsproc3, dsproc3_enums, trans]),
     packages=find_packages(exclude=["test"]),
     package_data={"tsdat": ["py.typed"]},
     include_package_data=True,

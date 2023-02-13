@@ -20,3 +20,7 @@ TODO: add TSDAT_VERSION and PKG_CONFIG_PATH to .bashrc
 TODO: How to get PyCharm to find C headers so you won't get errors in the
 cython pyx files?  I tried to attach the include/ folder from
 my anaconda environment, but that did not work.
+
+
+Updating conda environment
+conda env update --file conda_environment.yml --prune

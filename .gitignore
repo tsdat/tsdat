@@ -22,3 +22,10 @@ storage/root/
 /cds3/enums.cpython-39-x86_64-linux-gnu.so
 /trans/core.c
 /trans/core.cpython-39-x86_64-linux-gnu.so
+/dsproc3/core.c
+/cds3/core.pypy39-pp73-x86_64-linux-gnu.so
+/dsproc3/core.pypy39-pp73-x86_64-linux-gnu.so
+/trans/core.pypy39-pp73-x86_64-linux-gnu.so
+/dsproc3/enums.c
+/cds3/enums.pypy39-pp73-x86_64-linux-gnu.so
+/dsproc3/enums.pypy39-pp73-x86_64-linux-gnu.so

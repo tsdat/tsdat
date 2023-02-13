@@ -2101,7 +2101,6 @@ def parse_transform_params(Group group, object string):
     cdef CDSGroup *cds_group = group.c_ob                    # Get underlying C pointer
     return cds_parse_transform_params(cds_group, byte_string, NULL)
 
-
 def print_all(object file_like, Group group, int flags):
     cdef FILE *fp
     cdef int fd
