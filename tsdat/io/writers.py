@@ -172,6 +172,7 @@ class CSVWriter(FileWriter):
         # (i.e., ds != read(write(ds)) for csv format)
         d1: List[Hashable] = []
         d2: List[Hashable] = []
+        d2_coord: List[Hashable] = [v for v in dataset.coords if v != "time"]
         for var in dataset:
             shp = dataset[var].shape
             if len(shp) <= 1:
@@ -182,8 +183,6 @@ class CSVWriter(FileWriter):
                 warnings.warn(
                     "CSV writer cannot save variables with more than 2 dimensions."
                 )
-
-        name = filepath.stem  # type: ignore
 
         # Save header data
         header_filepath = filepath.with_suffix(".hdr.csv")  # type: ignore
@@ -205,19 +204,25 @@ class CSVWriter(FileWriter):
 
         if d1:
             # Save 1D variables
-            d2.extend(
-                [v for v in dataset.coords if v != "time"]
-            )  # add 2D coordinates to remove list
+            dim1_filepath = filepath.with_suffix(".time.1d.csv")  # type: ignore
             ds_1d = dataset.drop_vars(d2)  # drop 2D variables
+            ds_1d = ds_1d.drop_vars(d2_coord)
             df_1d = ds_1d.to_dataframe()
-            df_1d.to_csv(filepath, **self.parameters.to_csv_kwargs)  # type: ignore
+            df_1d.to_csv(dim1_filepath, **self.parameters.to_csv_kwargs)  # type: ignore
 
         if d2:
             # Save 2D variables
-            dim2_filepath = filepath.with_suffix(".2D.csv")  # type: ignore
-            ds_2d = dataset.drop_vars(d1)  # drop 1D variables
-            df_2d = ds_2d.to_dataframe(self.parameters.dim_order)  # type: ignore
-            df_2d.to_csv(dim2_filepath, **self.parameters.to_csv_kwargs)  # type: ignore
+            for coord in d2_coord:
+                dim2_filepath = filepath.with_suffix("." + coord + ".2d.csv")  # type: ignore
+                ds_2d = dataset.drop_vars(d1)  # drop 1D variables
+                other_dim_vars = [
+                    v for v in ds_2d.data_vars if coord not in ds_2d[v].dims
+                ]
+                other_coords = d2_coord.copy()
+                other_coords.remove(coord)
+                ds_2d = ds_2d.drop_vars(other_dim_vars + other_coords)
+                df_2d = ds_2d.to_dataframe(self.parameters.dim_order)  # type: ignore
+                df_2d.to_csv(dim2_filepath, **self.parameters.to_csv_kwargs)  # type: ignore
 
 
 class ParquetWriter(FileWriter):
