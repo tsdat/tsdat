@@ -216,9 +216,11 @@ class CSVWriter(FileWriter):
                 dim2_filepath = filepath.with_suffix("." + coord + ".2d.csv")  # type: ignore
                 ds_2d = dataset.drop_vars(d1)  # drop 1D variables
                 other_dim_vars = [
-                    v for v in dataset.data_vars if coord not in dataset[v].dims
+                    v for v in ds_2d.data_vars if coord not in ds_2d[v].dims
                 ]
-                ds_2d = ds_2d.drop_vars(other_dim_vars)
+                other_coords = d2_coord.copy()
+                other_coords.remove(coord)
+                ds_2d = ds_2d.drop_vars(other_dim_vars + other_coords)
                 df_2d = ds_2d.to_dataframe(self.parameters.dim_order)  # type: ignore
                 df_2d.to_csv(dim2_filepath, **self.parameters.to_csv_kwargs)  # type: ignore
 
