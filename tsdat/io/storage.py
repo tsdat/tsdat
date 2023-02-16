@@ -394,6 +394,10 @@ class FileSystemS3(FileSystem):
         """Keyword arguments to xr.merge. This will only be called if the
         DataReader returns a dictionary of xr.Datasets for a single saved file."""
 
+        @validator("storage_root")
+        def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
+            return storage_root  # HACK: Don't run parent validator to create storage root file
+
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
 
     @validator("parameters")
