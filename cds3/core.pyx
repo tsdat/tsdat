@@ -1916,6 +1916,18 @@ cdef class Var(Object):
             raise ValueError("Unknown CDSDataType")
         return array,missing_py
 
+    def attach_data(self, unsigned long datap, size_t sample_count):
+        self.c_ob.data.vp = <void*> datap
+        self.c_ob.sample_count = sample_count
+
+    def detach_data(self):
+        self.c_ob.data.vp = NULL
+        self.c_ob.sample_count = 0
+
+    def get_pointer(self):
+        # This is just so I can make sure the datap got set correctly
+        return <unsigned long>cds_get_var_datap(self.c_ob, 0)
+
     cpdef np.ndarray get_datap(self, size_t sample_start=0):
         """Get an ndarray for the the data in a CDS variable.
         

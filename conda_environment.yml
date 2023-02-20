@@ -5,7 +5,7 @@ channels:
   - arm-doe
   - conda-forge
 dependencies:
-  - python=3.9
+  - python=3.9.15
   - libcds3
   - libtrans
   - libdsproc3

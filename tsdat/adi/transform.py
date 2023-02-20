@@ -18,6 +18,15 @@ OUTPUT_DATASTREAM = 'output_ds'
 INPUT_DATASTREAM = 'input_ds'
 
 
+class ADITransformationTypes:
+    # Allowed ADI transform algorithms - these are the values that can be used in transformation_type parameter
+    TRANS_AUTO = 'TRANS_AUTO'
+    TRANS_INTERPOLATE = 'TRANS_INTERPOLATE'
+    TRANS_SUBSAMPLE = 'TRANS_SUBSAMPLE'
+    TRANS_BIN_AVERAGE = 'TRANS_BIN_AVERAGE'
+    TRANS_PASSTHROUGH = 'TRANS_PASSTHROUGH'
+
+
 class TransformParameterConverter:
 
     # Maps which type of object ADI needs to apply the transform parameters to
@@ -72,7 +81,7 @@ class TransformParameterConverter:
                 dim_name = variable['dim']
                 value = variable['value']
 
-                if parameter_type == self.COORDINATE_SYSTEM:
+                if parameter_type == COORDINATE_SYSTEM:
                     # Use our special coordinate system as the file name
                     file_name = COORDINATE_SYSTEM
                 else:
@@ -98,11 +107,6 @@ class TransformParameterConverter:
             # If this parameter is range and value is LENGTH_OF_PROCESSING_INTERVAL, then we can't save the parameter
             # because ADI doesn't recognize LENGTH_OF_PROCESSING_INTERVAL as a valid option.
             print('Omitting range=LENGTH_OF_PROCESSING_INTERVAL since it is not recognized by ADI and is the default.')
-
-        elif parameter_name == 'transform' and value == 'AUTO':
-            # If this parameter is tranform and value is AUTO, then we can't save the parameter because ADI doesn't
-            # recognize AUTO as a valid option.
-            print('Omitting transform=AUTO since it is not recognized by ADI and is the default.')
 
         else:
             # If this is qc_mask parameter, then we have to convert the value from a binary string to integer
@@ -218,7 +222,7 @@ class AdiTransformer:
                 "coordinate_system_defaults": [
                   {
                     "dim": "range",
-                    "default_value": "TRANS_PASSTHROUGH"
+                    "default_value": "TRANS_AUTO"
                   },
                   {
                     "dim": "time",
@@ -313,7 +317,7 @@ class AdiTransformer:
             vars: List[cds3.Var] = group.get_vars()
             for var in vars:
                 if var.get_name() != 'time':
-                    dsproc.detatch_var_data(var)
+                    var.detach_data()
     
         detatch_vars(adi_dataset)
     
@@ -359,7 +363,7 @@ class AdiTransformer:
         dims = xr_input_var.sizes  # dict of dims and their lengths (i.e., {'time': 1440} )
         for dim_name in dims:
             # Note that we assume that time dimension will always be named 'time'
-            is_unlimited = 1 if dim_name != 'time' else 0
+            is_unlimited = 1 if dim_name == 'time' else 0
             dim_size = dims[dim_name]
             obs_group.define_dim(dim_name, dim_size, is_unlimited)
     
@@ -420,8 +424,8 @@ class AdiTransformer:
         ds_group = cds3.Group.define(cs_group, OUTPUT_DATASTREAM)
     
         # Now add the data variables to the datastream group
-        self._add_variable_to_adi(xr_output_var, ds_group)
-        self._add_variable_to_adi(xr_output_qc_var, ds_group)
+        self._add_variable_to_adi(xr_output_var, ds_group, coordinate_system_name=COORDINATE_SYSTEM)
+        self._add_variable_to_adi(xr_output_qc_var, ds_group, coordinate_system_name=COORDINATE_SYSTEM)
     
         return transformed_data
 
@@ -596,7 +600,7 @@ class AdiTransformer:
         else:
             # Just use the same data pointer to the numpy ndarray
             sample_count = xr_var.sizes[dim_names[0]]
-            dsproc.attach_var_data(adi_var, xr_var.data, sample_count)
+            adi_var.attach_data(xr_var.data.__array_interface__['data'][0], sample_count)
     
         # Add the coordinate system name to a VarTag object for the variable (not sure if we need this for transform)
         if coordinate_system_name:
@@ -614,8 +618,7 @@ class AdiTransformer:
         timevals = np.around(timevals, 6)
     
         # Set the timevals in seconds in ADI
-        sample_count = xr_var.sizes[xr_var.dims[0]]
-        dsproc.set_sample_timevals(adi_var, 0, sample_count, timevals)
+        dsproc.set_sample_timevals(adi_var, 0, timevals)
     
     def _get_cds_type(self, value: Any) -> int:
         """-----------------------------------------------------------------------

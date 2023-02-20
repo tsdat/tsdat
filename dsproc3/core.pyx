@@ -3467,28 +3467,6 @@ def init_var_data_index(
         return None
     return var.get_datap(sample_start)
 
-cpdef attach_var_data(cds3.core.Var var, size_t sample_count, np.ndarray data_nd):
-    """-------------------------------------------------------------------------
-    Attach the existing data array in memory to this variable's object.  This
-    is used so we can share data between xarray DataArray and ADI.  Callers MUST
-    remember to detatch_data before deleting this object, or the xarray data will
-    be lost and the application will crash.
-    -------------------------------------------------------------------------"""
-    cdef void *datap = <void *>(data_nd.__array_interface__['data'][0])
-    var.c_ob.data.vp = datap
-    var.c_ob.sample_count = sample_count
-
-def detatch_var_data(cds3.core.Var var):
-    """-------------------------------------------------------------------------
-    Detach the existing data array in memory from this CDSVar object.  This
-    is used so we can share data between xarray DataArray and ADI.  Callers MUST
-    remember to detatch_data before deleting this Var object, or the xarray data
-    will be lost and the application will crash.
-    -------------------------------------------------------------------------"""
-    cdef void *datap = NULL
-    cdef size_t sample_count = 0
-    var.c_ob.data.vp = datap
-    var.c_ob.sample_count = sample_count
 
 def set_var_data(
             cds3.core.Var var,
