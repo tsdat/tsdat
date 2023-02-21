@@ -11,6 +11,28 @@ import dsproc3 as dsproc
 import trans
 
 
+try:
+    import cds3
+    import dsproc3 as dsproc
+    import trans
+
+    CDSObject = cds3.Object
+    CDSGroup = cds3.Group
+    CDSVar = cds3.Var
+except ImportError:
+    print(
+        "Warning: ADI libraries are not installed. Some time series transformation"
+        " functions may not work."
+    )
+    cds3 = None
+    dsproc = None
+    trans = None
+
+    CDSGroup = Any
+    CDSVar = Any
+    CDSObject = Any
+
+
 # We will always use the same coordinate system, input datastream, and output datastream name for every ADI dataset
 # conversion, since tsdat only will allow one coordinate system and libtrans doesn't care what the names are.
 COORDINATE_SYSTEM = 'coord_sys'
@@ -447,7 +469,7 @@ class AdiTransformer:
         self._free_memory(retrieved_dataset)
         self._free_memory(transformed_dataset)
     
-    def _free_memory(self, adi_dataset: cds3.Group):
+    def _free_memory(self, adi_dataset: CDSGroup):
         # First we MUST walk through the object tree and detatch data pointers for all variables. We need
         #   to do this because the group delete will delete everything in the hierarchy, and we don't want  to
         #   delete the data because it's being shared with xarray.
@@ -467,7 +489,7 @@ class AdiTransformer:
         #  After all the variable data has been detached, then we can delete the group.
         cds3.Group.delete(adi_dataset)
     
-    def _create_adi_retrieved_dataset(self, xr_input_var: xr.DataArray, xr_input_qc_var: xr.DataArray) -> cds3.Group:
+    def _create_adi_retrieved_dataset(self, xr_input_var: xr.DataArray, xr_input_qc_var: xr.DataArray) -> CDSGroup:
         """-----------------------------------------------------------------------------------------------------------------
         Create the following structure in ADI:
     
@@ -523,7 +545,7 @@ class AdiTransformer:
         return dataset_group
     
     def _create_adi_transformed_dataset(self, 
-                                        xr_output_var: xr.DataArray, xr_output_qc_var: xr.DataArray) -> cds3.Group:
+                                        xr_output_var: xr.DataArray, xr_output_qc_var: xr.DataArray) -> CDSGroup:
         """-----------------------------------------------------------------------------------------------------------------
         Create the following structure in ADI:
     
@@ -572,7 +594,7 @@ class AdiTransformer:
     
         return transformed_data
 
-    def _update_xr_attrs(self, xr_var: xr.DataArray, adi_var: cds3.Var):
+    def _update_xr_attrs(self, xr_var: xr.DataArray, adi_var: CDSVar):
         adi_atts: List[cds3.Att] = adi_var.get_atts()
         xr_attrs = {}
         qc_attrs = {}
@@ -591,7 +613,7 @@ class AdiTransformer:
         for name, value in xr_attrs.items():
             xr_var.attrs[name] = value
     
-    def _add_atts_to_adi(self, xr_atts_dict: Dict, adi_obj: cds3.Object):
+    def _add_atts_to_adi(self, xr_atts_dict: Dict, adi_obj: CDSObject):
 
         atts = xr_atts_dict
 
@@ -721,7 +743,7 @@ class AdiTransformer:
 
         return adi_qc_atts
 
-    def _add_variable_to_adi(self, xr_var: xr.DataArray, parent_group: cds3.Group, coordinate_system_name: str = None):
+    def _add_variable_to_adi(self, xr_var: xr.DataArray, parent_group: CDSGroup, coordinate_system_name: str = None):
         """-----------------------------------------------------------------------------------------------------------------
         Add a variable specified by an xarray DataArray to the given ADI dataset.
     
@@ -749,7 +771,7 @@ class AdiTransformer:
         if coordinate_system_name:
             dsproc.set_var_coordsys_name(adi_var, coordinate_system_name)
      
-    def _set_time_variable_data(self, xr_var: xr.DataArray, adi_var: cds3.Var):
+    def _set_time_variable_data(self, xr_var: xr.DataArray, adi_var: CDSVar):
         """-----------------------------------------------------------------------------------------------------------------
         For time values, we actually have to create a copy.  We can't rely on the data pointer for time, because the times
         are converted into datetime64 objects for xarray.
