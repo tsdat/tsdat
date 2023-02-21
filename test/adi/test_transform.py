@@ -98,7 +98,18 @@ def test_transform():
             "coordinate_system_defaults": [
                 {
                     "dim": "time",
-                    "default_value": 86400  # 24 hours
+                    "default_value": 43200  # 12 hours
+                }
+            ],
+            "input_datastream_defaults": [],
+            "variables": []
+        },
+        "alignment": {
+            "name": "width",
+            "coordinate_system_defaults": [
+                {
+                    "dim": "time",
+                    "default_value": 'LEFT'  # Left align
                 }
             ],
             "input_datastream_defaults": [],

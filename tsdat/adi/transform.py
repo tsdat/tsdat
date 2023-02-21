@@ -27,6 +27,22 @@ class ADITransformationTypes:
     TRANS_PASSTHROUGH = 'TRANS_PASSTHROUGH'
 
 
+class ADIAlignments:
+    LEFT = 'LEFT'
+    CENTER = 'CENTER'
+    RIGHT = 'RIGHT'
+
+    label_to_int = {
+        LEFT: 0,
+        CENTER: .5,
+        RIGHT: 1
+    }
+
+    @staticmethod
+    def get_adi_value(parameter_value: str):
+        return ADIAlignments.label_to_int.get(parameter_value)
+
+
 class TransformParameterConverter:
 
     # Maps which type of object ADI needs to apply the transform parameters to
@@ -103,6 +119,9 @@ class TransformParameterConverter:
             if base_var_name and base_var_name[0:3] != 'qc_':
                 variable_name = f'qc_{base_var_name}'
 
+        elif parameter_name == 'alignment':
+            value = ADIAlignments.get_adi_value(value)
+
         if parameter_name == 'range' and value == 'LENGTH_OF_PROCESSING_INTERVAL':
             # If this parameter is range and value is LENGTH_OF_PROCESSING_INTERVAL, then we can't save the parameter
             # because ADI doesn't recognize LENGTH_OF_PROCESSING_INTERVAL as a valid option.
@@ -171,7 +190,132 @@ class TransformParameterConverter:
 
 
 class AdiTransformer:
-    
+
+    def transform_new(self,
+                      input_dataset: xr.Dataset,
+                      output_dataset: xr.Dataset,
+                      transform_parameters: Dict
+                      ):
+        """-------------------------------------------------------------------------------------------------------------
+        This function will use ADI libraries to transform one data variable to the shape defined for the output.
+        This function will also fill out the output qc_ variable with the appropriate qc status from the transform
+        algorithm.
+
+        The output variable and output qc_ variables' data will be written in place.  Any variable attribute values
+        that were added by adi will be copied back to the output variables.
+
+        Caller does not need to call this transform method for any 1-d variables where TRANS_PASSTHROUGH would apply.
+        However, if there are two dimensions (say time and height), and the user only wants to transform one dimension
+        (for example, time data is mapped to the input, but height data needs to be averaged), then you would need to
+        call this transform and use TRANS_PASSTHROUGH for all the mapped dimension and a different transformation
+        algorithm for any non-mapped dimensions.
+
+        If all dimensions are mapped and caller does not call this method, then all input values and input qc values
+        must be copied over to the output by the caller.  Also in this case the caller should add a 'source' attribute
+        on the variable to explain what datastream the value came from.
+
+        Parameters
+        ----------
+        input_dataset : xarray.Dataset
+            An xarray dataset containing:
+            1) A data variable to be transformed
+            2) Zero or one qc_variable that contains qc flags for the data variable.  The qc_ variable must have the
+                exact same base name as the data variable.  For example, if the data variable is named 'temperature',
+                then the qc variable must be named qc_temperature.
+            3) One or more coordinate variables matching the coordinates on the data variable
+            4) Zero or more bounds variables, one for each coordinate variable.  Bounds variables specify the front
+                edge and back edge of the bins used to compute the input data values.  If no bounds variables are
+                provided, ADI will assume each data point is a single, instantaneous value.  If bounds variables
+                are not present in the input data files, if the user knows what the bin widths and alignments were for
+                the input datastreams, they can specify these values via the width and alignment transformation
+                parameters (note that these parameters are for the input datastreams, not coordinate system defaults).
+
+            * Note that if range transform parameters were set on any datastreams, the xarray data must have at least
+             'range' amount of extra data retrieved before and after the day being processed (if it exists).
+
+            * Note that the input variables should have been renamed to use the name from the output dataset.  So
+                we should rename input variables to match their output names BEFORE we pass them to this method.
+
+            * Note that variable dimensions should have been renamed to match their names in the output variable.
+
+        output_dataset : xarray.Dataset
+            An xarray dataset where the transformed data will go.  The output dataset must contain:
+            1) One or more coordinate variables with the shape of the defined output
+            2) One empty data variable with the same shape as its coordinate variables.  The transformed values will be
+                filled in by ADI.
+            3) One empty qc variable with the same shape as its coordinate variables.  The qc flags and bit metadata
+                attributes will be filled in by this function
+            4) One or more bounds variables, one for each coordinate variable.  The bounds variables will contain the
+                front edge and back edge of each bin for each output coord data point.  The bounds variable values can
+                computed from the coordinate data points and the width and alignment transformation parameters.
+
+                If the user does not specify bin width or alignment, then we use CENTER alignment by default and we
+                compute the bid width as the median of all the deltas between coordinate points.
+
+        transform_parameters : Dict
+
+            A compressed set of transformation parameters that apply just to the specific data variable being
+            transformed.  The following is the minimal set used for our initial release (more ADI parameters can be
+            added later, as they will be supported by the back end).
+
+            transform_parameters = {
+
+                # Transformation_type defines the algorithm to use. This parameter should be defined by the converter.
+                # Valid values are:
+                #     TRANS_AUTO (This will average if there are more input points than output points, otherwise, interpolate)
+                #     TRANS_INTERPOLATE
+                #     TRANS_SUBSAMPLE   (i.e., nearest neighbor)
+                #     TRANS_BIN_AVERAGE
+                #     TRANS_PASSTHROUGH (all values passed directly through from the input, no transform takes place)
+
+                "transformation_type": {
+                    "time": "TRANS_AUTO"
+                },
+
+                # Range specifies how far the transformer should look for the next good value when performing
+                # subsample or interpolate transforms.
+                # Range is always in same units as coord (e.g., seconds in this case).
+                #  * Note that if range transform parameters are set for any datastreams, the xarray data must have at
+                #  least 'range' amount of extra data retrieved before and after the day being processed (if it exists)!
+                "range": {
+                    "time": 1800
+                },
+
+                # Width applies only when using bin averaging, and it specifies the width of the bin that was used to
+                # determine a specific point.  Width is always in same units as coord.
+                # Only use width if user wants to make the bin width different than the delta between points (e.g., for
+                # smoothing data)
+                "width": {
+                    "time": 600
+                }
+
+                # Alignment applies only when using bin averaging, and it specifies where in the bin the data point is
+                # located.  Valid values are:
+                #    LEFT
+                #    CENTER
+                #    RIGHT
+                # Default is CENTER
+                "alignment": {
+                    "time": LEFT
+                }
+            }
+
+            TODO: Longer term, we should support front edge/back edge, width, and/or alignment parameters for input
+                datastreams in order to provide more specific bounds on the data points.  For now we won't set these and
+                the transformer will use the default values, which is to assume each data point is instantaneous and
+                there is no bin.
+
+        Returns
+        -------
+        Void - transforms are done in-place on output_dataset
+        -------------------------------------------------------------------------------------------------------------"""
+        # TODO: Update the main algorithm to use datasets instead of input/output variables
+        # TODO: Fix bug where qc attributes were added for non-qc variables
+        # TODO: Update the TransformParameterConverter to use this new streamlined format
+        # TODO: If the input or output dataset has bounds variables, then we must convert these to front edge/back edge
+        #   transformation parameters.
+        pass
+
     def transform(self, 
                   input_var: xr.DataArray,
                   input_qc_var: xr.DataArray,
@@ -262,7 +406,6 @@ class AdiTransformer:
               }
             }
 
-            * Note that width and alignment parameters are applied to the coordinate system group
             TODO: Longer term, we should support front edge/back edge, width, and/or alignment parameters for input
                 datastreams in order to provide more specific bounds on the data points.  For now we won't set these and the
                 transformer will use the default values, which is to assume center alignment and the front and back edge
