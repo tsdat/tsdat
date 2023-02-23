@@ -8,7 +8,7 @@ import logging
 import xarray as xr
 import pandas as pd
 import numpy as np
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 from numpy.typing import NDArray
 from pydantic import validator
 
@@ -221,3 +221,38 @@ class NearestNeighbor(DataConverter):
         new_data = data.reindex_like(other=tmp_data, method="nearest")
 
         return new_data
+
+
+class CreateTimeGrid(DataConverter):
+    frequency: str
+    """The frequency of time points. This is passed to pd.timedelta_range as the 'freq'
+    argument. E.g., '30s', '5min', '10min', '1H', etc."""
+
+    def convert(
+        self,
+        data: xr.DataArray,
+        variable_name: str,
+        dataset_config: DatasetConfig,
+        retrieved_dataset: RetrievedDataset,
+        time_span: Optional[Tuple[str, str]] = None,
+        **kwargs: Any,
+    ) -> Optional[xr.DataArray]:
+        assert (
+            time_span is not None
+        ), "time_span argument required for CreateTimeGrid variable"
+        start = pd.to_datetime(time_span[0], format="%Y%m%d.%H%M%S")
+        end = pd.to_datetime(time_span[1], format="%Y%m%d.%H%M%S")
+        time_deltas = pd.timedelta_range(
+            start="0 days",
+            end=end - start,
+            freq=self.frequency,
+            closed="left",
+        )
+        date_times = time_deltas + start
+
+        return xr.DataArray(
+            name=variable_name,
+            data=date_times,
+            dims=variable_name,
+            attrs={"units": "Seconds since 1970-01-01 00:00:00"},
+        )

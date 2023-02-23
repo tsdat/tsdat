@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
+import pandas as pd
 import xarray as xr
-from pydantic import BaseModel, Extra
-from typing import Any, Dict, List, Optional, Pattern, Tuple, cast
+from pydantic import BaseModel, Extra, Field
+from typing import Any, Dict, List, Literal, Optional, Pattern, Tuple, cast
 
 from ..utils import assign_data
 from ..config.dataset import DatasetConfig
@@ -335,29 +336,16 @@ def perform_data_retrieval(
                 break
             for input_key, dataset in input_data.items():
                 if pattern.match(input_key):
-                    if variable_retriever.name in dataset.variables:
-                        logger.info(
-                            "Coordinate '%s' retrieved from '%s': '%s'",
-                            name,
-                            input_key,
-                            variable_retriever.name,
-                        )
-                        selected_coord_rules[name] = variable_retriever
-                        coord_data[name] = dataset[variable_retriever.name]
-                        break
-                    else:
-                        logger.warning(
-                            "Input key matched regex pattern but no matching variable"
-                            " could be found in the input dataset:\n"
-                            "\tCoordinate: %s\n"
-                            "\tInput Variable: %s\n"
-                            "\tPattern: %s\n"
-                            "\tInput Key: %s\n",
-                            name,
-                            variable_retriever.name,
-                            pattern.pattern,
-                            input_key,
-                        )
+                    logger.info(
+                        "Coordinate '%s' retrieved from '%s': '%s'",
+                        name,
+                        input_key,
+                        variable_retriever.name,
+                    )
+                    selected_coord_rules[name] = variable_retriever
+                    coord_data[name] = dataset.get(
+                        variable_retriever.name, xr.DataArray()
+                    )
         if name not in selected_coord_rules:
             logger.warning("Could not retrieve coordinate '%s'.", name)
 
@@ -402,8 +390,47 @@ def perform_data_retrieval(
     )
 
 
+class GlobalARMTransformParams(BaseModel):
+    # TODO: Make the values be a regex that maps to their current value (default to .*)
+    # TODO: Make this optional
+    alignment: Dict[str, Literal["LEFT", "RIGHT", "CENTER"]]
+    dim_range: Dict[str, str] = Field(..., alias="range")
+    width: Dict[str, str]
+
+    def get_alignment_for_input_and_dim(
+        self, input_key: str, dim: str
+    ) -> Literal["LEFT", "RIGHT", "CENTER"]:
+        return self.alignment[dim]
+
+    def get_range_for_input_and_dim(self, input_key: str, dim: str) -> str:
+        return self.dim_range[dim]
+
+    def get_width_for_input_and_dim(self, input_key: str, dim: str) -> str:
+        return self.width[dim]
+
+
 class StorageRetriever(Retriever):
     """Retriever API for pulling input data from the storage area."""
+
+    class TransParameters(BaseModel):
+        trans_params: Optional[GlobalARMTransformParams] = Field(
+            default=None, alias="adi_transformation_parameters"
+        )
+
+    parameters: Optional[TransParameters] = None
+
+    def __parse_inputs(
+        self, input_keys: List[str]
+    ) -> Tuple[List[str], List[str], List[str]]:
+        datastreams: List[str] = []
+        start_dates: List[str] = []
+        end_dates: List[str] = []
+        for key in input_keys:
+            datastream, start_date, end_date = key.split("::")
+            datastreams.append(datastream)
+            start_dates.append(start_date)
+            end_dates.append(end_date)
+        return datastreams, start_dates, end_dates
 
     def retrieve(
         self,
@@ -436,15 +463,9 @@ class StorageRetriever(Retriever):
         ------------------------------------------------------------------------------------"""
         assert storage is not None, "Missing required 'storage' parameter."
 
-        # Use the Storage API to fetch input data
-        input_data: Dict[InputKey, xr.Dataset] = {}
-        for key in input_keys:
-            datastream, start, end = unpack_datastream_date_str(key)
-            # TODO: pad start & end according to parameters
-            retrieved_dataset = storage.fetch_data(
-                start=start, end=end, datastream=datastream
-            )
-            input_data[key] = retrieved_dataset
+        datastreams, start_times, end_times = self.__parse_inputs(input_keys)
+
+        input_data = self.__fetch_inputs(input_keys, storage)
 
         # Perform coord/variable retrieval
         retrieved_data, retrieval_selections = perform_data_retrieval(
@@ -455,6 +476,9 @@ class StorageRetriever(Retriever):
 
         # Ensure selected coords are indexed by themselves
         for name, coord_data in retrieved_data.coords.items():
+            if coord_data.equals(xr.DataArray()):
+                # Hopefully it will be created by a data converter
+                continue
             new_coord = xr.DataArray(
                 data=coord_data.data,
                 coords={name: coord_data.data},
@@ -466,6 +490,7 @@ class StorageRetriever(Retriever):
         # Q: Do data_vars need to be renamed or reindexed before data converters run?
 
         # Run data converters on coordinates, then on data variables
+        # TODO: support CreateGridVariable converter -- basically nothing retrieved
         for name, coord_def in retrieval_selections.coords.items():
             for converter in coord_def.data_converters:
                 coord_data = retrieved_data.coords[name]
@@ -474,13 +499,12 @@ class StorageRetriever(Retriever):
                     variable_name=name,
                     dataset_config=dataset_config,
                     retrieved_dataset=retrieved_data,
+                    time_span=(start_times[0], end_times[0]),
                 )
                 if data is not None:
                     retrieved_data.coords[name] = data
-            # TODO: Add one more converter to make sure data type is correct
 
         for name, var_def in retrieval_selections.data_vars.items():
-            # Q: DataArray.coords match RetrievedDataset.coords structure?
             for converter in var_def.data_converters:
                 var_data = retrieved_data.data_vars[name]
                 data = converter.convert(
@@ -491,13 +515,38 @@ class StorageRetriever(Retriever):
                 )
                 if data is not None:
                     retrieved_data.data_vars[name] = data
-            # TODO: Add one more converter to make sure data type is correct
 
         # Construct the retrieved dataset structure
+        # TODO: validate dimension alignment
         retrieved_dataset = xr.Dataset(
-            coords=retrieved_data.coords, data_vars=retrieved_data.data_vars
+            coords=retrieved_data.coords,
+            data_vars=retrieved_data.data_vars,
         )
+
+        # Fix the dtype encoding
         for var_name, var_data in retrieved_dataset.data_vars.items():
-            # Ensure that the encoding is correct
             var_data.encoding["dtype"] = dataset_config[var_name].dtype
+
         return retrieved_dataset
+
+    def __get_retrieval_padding(self, input_key: str) -> timedelta:
+        if self.parameters is None or self.parameters.trans_params is None:
+            return timedelta()
+        params = self.parameters.trans_params
+        return max(
+            pd.Timedelta(params.get_range_for_input_and_dim(input_key, "time")),
+            pd.Timedelta(params.get_width_for_input_and_dim(input_key, "time")),
+        )
+
+    def __fetch_inputs(
+        self, input_keys: List[str], storage: Storage
+    ) -> Dict[InputKey, xr.Dataset]:
+        input_data: Dict[InputKey, xr.Dataset] = {}
+        for key in input_keys:
+            padding = self.__get_retrieval_padding(key)
+            datastream, start, end = unpack_datastream_date_str(key)
+            retrieved_dataset = storage.fetch_data(
+                start=start - padding, end=end + padding, datastream=datastream
+            )
+            input_data[key] = retrieved_dataset
+        return input_data
