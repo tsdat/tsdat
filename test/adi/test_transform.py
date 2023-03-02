@@ -35,28 +35,36 @@ def test_transform():
                 input_qc_foo_values,  # type: ignore
                 {
                     "units": "1",
-                    "long_name": "Quality check results",
-                    "flag_masks": [1],
-                    "flag_meanings": ["Value is equal to _FillValue or NaN"],
-                    "flag_assessments": ["Bad"]
+                    "long_name": "Quality check results on variable: foo",
                 },
             ),
         },
     )
 
+    # Output data points are at midnight and noon for same day.  12 hour bins, left alignment.
     output_foo_values = np.zeros(2)  # default data type is float64
     output_qc_foo_values = np.zeros(2, dtype=np.int32)  # use ints for qc values
+    output_time_values =pd.date_range("2023-02-01", "2023-02-02", periods=2 + 1, inclusive="left")
+    output_lower_bound = output_time_values
+    output_upper_bound = output_time_values + np.timedelta64(12, 'h')
+    output_time_bounds_values = np.vstack((output_lower_bound, output_upper_bound)).T
 
-    # Data points at midnight and noon for same day
     output_dataset = xr.Dataset(
         coords={
             "time": (
                 "time",
-                pd.date_range("2023-02-01", "2023-02-02", periods=2 + 1, inclusive="left"),  # type: ignore
+                output_time_values,
                 {"units": "Seconds since 1970-01-01 00:00:00"},
-            ),
+            )
         },
         data_vars={
+            "time_bounds": (
+                ("time", "bound"),
+                output_time_bounds_values,  # type: ignore
+                {
+                    "long_name": "Time cell bounds",
+                },
+            ),
             "foo": (
                 "time",
                 output_foo_values,  # type: ignore
@@ -68,56 +76,22 @@ def test_transform():
             "qc_foo": (
                 "time",
                 output_qc_foo_values,  # type: ignore
-                {
-                    "units": "1",
-                    "long_name": "Quality check results",
-                    "flag_masks": [1],
-                    "flag_meanings": ["Value is equal to _FillValue or NaN"],
-                    "flag_assessments": ["Bad"]
-                },
             ),
         },
     )
 
     # Do the default transformation, which will be bin averaging in this case.
-    # We MUST always set bin width.  Alignment will default to center
+    # We do not have to set width if bounds variables are provided on the output dataset.
+    # Alignment will default to center if not passed.
     transform_parameters = {
         "transformation_type": {
-            "name": "transformation_type",
-            "coordinate_system_defaults": [
-                {
-                    "dim": "time",
-                    "default_value": "TRANS_AUTO"
-                }
-            ],
-            "input_datastream_defaults": [],
-            "variables": []
-        },
-        "width": {
-            "name": "width",
-            "coordinate_system_defaults": [
-                {
-                    "dim": "time",
-                    "default_value": 43200  # 12 hours
-                }
-            ],
-            "input_datastream_defaults": [],
-            "variables": []
+            "time": "TRANS_AUTO"
         },
         "alignment": {
-            "name": "width",
-            "coordinate_system_defaults": [
-                {
-                    "dim": "time",
-                    "default_value": 'LEFT'  # Left align
-                }
-            ],
-            "input_datastream_defaults": [],
-            "variables": []
+            "time": 'LEFT'
         }
     }
 
-    AdiTransformer().transform(input_dataset.foo, input_dataset.qc_foo, output_dataset.foo, output_dataset.qc_foo,
-                               transform_parameters)
+    AdiTransformer().transform('foo', input_dataset, output_dataset, transform_parameters)
 
     print('done')

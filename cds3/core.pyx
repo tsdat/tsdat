@@ -2067,6 +2067,42 @@ cdef class VarArray(Object):
         pass
 
 
+def set_front_edge_param(Group group, object dim_name, size_t length, np.ndarray data_nd):
+    """-----------------------------------------------------------------------------------------------------------------
+    Set the front_edge transform parameter.  Use this method in conjunction with a bounds variable.  Front edge
+    represents the first column in the 2-column bounds array for a coordinate variable.  This is used for bin
+    averaging.
+
+    Parameters
+    ----------
+    group : Group
+        If you are setting bounds on an input dataset, then you should pass the obs group.  If you are setting bounds
+        on the output transformed dataset, then you need to pass the coordinate system group.
+    dim_name : str
+        The name of the dimension the bounds belong to.
+    length :
+        The length of the 1-d data array
+
+    data_nd : np.ndarray
+        The data array as a numpy ndarray.  Data type MUST be double/float.
+
+    Returns
+    -------
+     -  1 if successful
+     -  0 if an error occurred
+    -----------------------------------------------------------------------------------------------------------------"""
+
+    cdef object b_dim_name = _to_byte_c_string(dim_name)  # convert to C string
+    cdef CDSGroup *cds_group = group.c_ob # Get underlying C pointer
+    cds_set_transform_param(cds_group, b_dim_name, "front_edge", CDS_DOUBLE, length, data_nd.data)
+
+
+def set_back_edge_param(Group group, object dim_name, size_t length, np.ndarray data_nd):
+    cdef object b_dim_name = _to_byte_c_string(dim_name)  # convert to C string
+    cdef CDSGroup *cds_group = group.c_ob # Get underlying C pointer
+    cds_set_transform_param(cds_group, b_dim_name, "back_edge", CDS_DOUBLE, length, data_nd.data)
+
+
 def parse_transform_params(Group group, object string):
     """-----------------------------------------------------------------------------------------------------------------
     Parse a text string containing transformation parameters and apply the transform parameters to the provided
