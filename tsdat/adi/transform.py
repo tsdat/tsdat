@@ -3,7 +3,7 @@ import re
 from typing import Any, Dict, List
 
 import xarray as xr
-from xarray.core.coordinates import DataArrayCoordinates
+from xarray.core.coordinates import DataArrayCoordinates, DatasetCoordinates
 import numpy as np
 
 import cds3
@@ -39,6 +39,35 @@ COORDINATE_SYSTEM = 'coord_sys'
 OUTPUT_DATASTREAM = 'output_ds'
 INPUT_DATASTREAM = 'input_ds'
 
+adi_qc_atts = {
+    "bit_1_description": "QC_BAD:  Transformation could not finish, value set to missing_value.",
+    "bit_1_assessment": "Bad",
+    "bit_2_description": "QC_INDETERMINATE:  Some, or all, of the input values used to create this output value had a QC assessment of Indeterminate.",
+    "bit_2_assessment": "Indeterminate",
+    "bit_3_description": "QC_INTERPOLATE:  Indicates a non-standard interpolation using points other than the two that bracket the target index was applied.",
+    "bit_3_assessment": "Indeterminate",
+    "bit_4_description": "QC_EXTRAPOLATE:  Indicates extrapolation is performed out from two points on the same side of the target index.",
+    "bit_4_assessment": "Indeterminate",
+    "bit_5_description": "QC_NOT_USING_CLOSEST:  Nearest good point is not the nearest actual point.",
+    "bit_5_assessment": "Indeterminate",
+    "bit_6_description": "QC_SOME_BAD_INPUTS:  Some, but not all, of the inputs in the averaging window were flagged as bad and excluded from the transform.",
+    "bit_6_assessment": "Indeterminate",
+    "bit_7_description": "QC_ZERO_WEIGHT:  The weights for all the input points to be averaged for this output bin were set to zero.",
+    "bit_7_assessment": "Indeterminate",
+    "bit_8_description": "QC_OUTSIDE_RANGE:  No input samples exist in the transformation region, value set to missing_value.",
+    "bit_8_assessment": "Bad",
+    "bit_9_description": "QC_ALL_BAD_INPUTS:  All the input values in the transformation region are bad, value set to missing_value.",
+    "bit_9_assessment": "Bad",
+    "bit_10_description": "QC_BAD_STD:  Standard deviation over averaging interval is greater than limit set by transform parameter std_bad_max.",
+    "bit_10_assessment": "Bad",
+    "bit_11_description": "QC_INDETERMINATE_STD:  Standard deviation over averaging interval is greater than limit set by transform parameter std_ind_max.",
+    "bit_11_assessment": "Indeterminate",
+    "bit_12_description": "QC_BAD_GOODFRAC:  Fraction of good and indeterminate points over averaging interval are less than limit set by transform parameter goodfrac_bad_min.",
+    "bit_12_assessment": "Bad",
+    "bit_13_description": "QC_INDETERMINATE_GOODFRAC:  Fraction of good and indeterminate points over averaging interval is less than limit set by transform parameter goodfrac_ind_min.",
+    "bit_13_assessment": "Indeterminate"
+}
+
 
 class ADITransformationTypes:
     # Allowed ADI transform algorithms - these are the values that can be used in transformation_type parameter
@@ -72,6 +101,8 @@ class TransformParameterConverter:
         "transformation_type": COORDINATE_SYSTEM,
         "width": COORDINATE_SYSTEM,
         "alignment": COORDINATE_SYSTEM,
+        "input_datastream_alignment": INPUT_DATASTREAM,
+        "input_datastream_width": INPUT_DATASTREAM,
         "range": INPUT_DATASTREAM,
         "qc_mask": INPUT_DATASTREAM,
         "missing_value": INPUT_DATASTREAM,
@@ -82,52 +113,41 @@ class TransformParameterConverter:
         "goodfrac_bad_min": COORDINATE_SYSTEM
     }
     
-    def convert_to_adi_format(self, pcm_transform_parameters: Dict) -> Dict[str, str]:
+    def convert_to_adi_format(self, transform_parameters: Dict) -> Dict[str, str]:
         transforms = {}
+        """ 
+        Example of input dictionary structure:
+        
+        transform_parameters = {
+                "transformation_type": {
+                    "time": "TRANS_AUTO"
+                },
+                "range": {
+                    "time": 1800
+                },
+                "alignment": {
+                    "time": LEFT
+                }
+        }
+        """
 
-        for parameter_name, transform_parameter in pcm_transform_parameters.items():
+        for parameter_name, transform_parameter in transform_parameters.items():
             parameter_type = self.transform_param_type.get(parameter_name)
             transform_parameter_name = self._get_adi_transform_parameter_name(parameter_name, parameter_type)
 
-            # Check if the transform parameter object is technically empty - if it is, then just skip it
-            if self._is_transform_parameter_empty(transform_parameter):
-                continue
-
-            # First find any coordinate system defaults and add a row to the coordinate system file
-            coordinate_system_defaults = transform_parameter.get('coordinate_system_defaults', [])
-            for coord_system_default in coordinate_system_defaults:
-                file_name = COORDINATE_SYSTEM
-                dim_name = coord_system_default.get('dim')
-                value = coord_system_default.get('default_value')
-                self._write_transform_parameter_row(transforms, file_name, None, dim_name, transform_parameter_name,
-                                                    value)
-
-            # Then find any input datastream defaults and add a row to the input datastream file
-            input_datastream_defaults = transform_parameter.get('input_datastream_defaults', [])
-            for datastream_default in input_datastream_defaults:
-                file_name = INPUT_DATASTREAM
-                dim_name = datastream_default.get('dim')
-                value = datastream_default.get('default_value')
-                self._write_transform_parameter_row(transforms, file_name, None, dim_name, transform_parameter_name,
-                                                    value)
-
-            # Then loop through all the variables and add a row to either the input_datastream file or coordinate_system
-            # file, depending upon the type
-            variables = transform_parameter.get('variables', [])
-            for variable in variables:
-                variable_name = variable['name']
-                dim_name = variable['dim']
-                value = variable['value']
+            # TODO: for now we are not supporting variable overrides or datastream-specific overrides.
+            #   When we do, we will need to revise this syntax.  For now, the keys are the dimensions and the
+            #   values are the defaults
+            for dim_name, value in transform_parameter.items():
 
                 if parameter_type == COORDINATE_SYSTEM:
-                    # Use our special coordinate system as the file name
                     file_name = COORDINATE_SYSTEM
-                else:
-                    # Use our special input datastream as the file name
+                    self._write_transform_parameter_row(transforms, file_name, None, dim_name, transform_parameter_name,
+                                                        value)
+                else:  # INPUT_DATASTREAM
                     file_name = INPUT_DATASTREAM
-
-                self._write_transform_parameter_row(transforms, file_name, variable_name, dim_name,
-                                                    transform_parameter_name, value)
+                    self._write_transform_parameter_row(transforms, file_name, None, dim_name, transform_parameter_name,
+                                                        value)
 
         return transforms
 
@@ -184,15 +204,6 @@ class TransformParameterConverter:
 
         return int_value
 
-    def _is_transform_parameter_empty(self, parameter):
-
-        has_coordinate_system_defaults = True if parameter.get('coordinate_system_defaults') else False
-        has_input_datastream_defaults = True if parameter.get('input_datastream_defaults') else False
-        has_variable_overrides = True if parameter.get('variables') else False
-
-        empty = not has_coordinate_system_defaults and not has_input_datastream_defaults and not has_variable_overrides
-        return empty
-
     def _get_adi_transform_parameter_name(self, parameter_name: str, file_type: str):
         """
         Convert transform parameter name from PCM format to names used in adi transform files.
@@ -213,7 +224,8 @@ class TransformParameterConverter:
 
 class AdiTransformer:
 
-    def transform_new(self,
+    def transform(self,
+                      variable_name: str,
                       input_dataset: xr.Dataset,
                       output_dataset: xr.Dataset,
                       transform_parameters: Dict
@@ -238,12 +250,17 @@ class AdiTransformer:
 
         Parameters
         ----------
+        variable_name: str
+            The name of the variable being transformed.  It should have the same name in both the input and output
+            datasets.
         input_dataset : xarray.Dataset
             An xarray dataset containing:
             1) A data variable to be transformed
             2) Zero or one qc_variable that contains qc flags for the data variable.  The qc_ variable must have the
                 exact same base name as the data variable.  For example, if the data variable is named 'temperature',
                 then the qc variable must be named qc_temperature.
+                The qc_variable must not have any qc attributes set.  They will all be set by the transformer to
+                specific bits that cannot be changed.
             3) One or more coordinate variables matching the coordinates on the data variable
             4) Zero or more bounds variables, one for each coordinate variable.  Bounds variables specify the front
                 edge and back edge of the bins used to compute the input data values.  If no bounds variables are
@@ -251,6 +268,9 @@ class AdiTransformer:
                 are not present in the input data files, if the user knows what the bin widths and alignments were for
                 the input datastreams, they can specify these values via the width and alignment transformation
                 parameters (note that these parameters are for the input datastreams, not coordinate system defaults).
+
+                Bounds values must be the same units as their corresponding coordinate variable.  Exact values should
+                be used instead of offsets.
 
             * Note that if range transform parameters were set on any datastreams, the xarray data must have at least
              'range' amount of extra data retrieved before and after the day being processed (if it exists).
@@ -307,6 +327,7 @@ class AdiTransformer:
                 # determine a specific point.  Width is always in same units as coord.
                 # Only use width if user wants to make the bin width different than the delta between points (e.g., for
                 # smoothing data)
+                # NOTE: You do not have to set width if you provide bounds variables on the output dataset!
                 "width": {
                     "time": 600
                 }
@@ -322,149 +343,41 @@ class AdiTransformer:
                 }
             }
 
-            TODO: Longer term, we should support front edge/back edge, width, and/or alignment parameters for input
-                datastreams in order to provide more specific bounds on the data points.  For now we won't set these and
-                the transformer will use the default values, which is to assume each data point is instantaneous and
-                there is no bin.
-
         Returns
         -------
         Void - transforms are done in-place on output_dataset
         -------------------------------------------------------------------------------------------------------------"""
-        # TODO: Update the main algorithm to use datasets instead of input/output variables
-        # TODO: Fix bug where qc attributes were added for non-qc variables
-        # TODO: Update the TransformParameterConverter to use this new streamlined format
-        # TODO: If the input or output dataset has bounds variables, then we must convert these to front edge/back edge
-        #   transformation parameters.
-        pass
 
-    def transform(self, 
-                  input_var: xr.DataArray,
-                  input_qc_var: xr.DataArray,
-                  output_var: xr.DataArray,
-                  output_qc_var: xr.DataArray,
-                  pcm_transform_parameters: Dict):
-        """-----------------------------------------------------------------------------------------------------------------
-        This function will use ADI libraries to transform the input_var to the shape defined for the output_var.
-        The transform will also fill out the output_qc_var with the approriate qc status from the transform algorithm.
-    
-        The output_var and output_qc_var's data will be written in place.  Any variable attribute values that were added by
-        adi will be copied back to the output variables.
-    
-        Parameters
-        ----------
-        input_var : xr.DataArray
-            Input variable to be transformed.
-    
-            * Note that if range transform parameters were set on any datastreams, the xarray data must have at least
-             'range' amount of extra data retrieved before and after the day being processed (if it exists).
-    
-            * Note that the input variables should have been renamed to use the name from the output dataset.  So
-                we should rename input variables to match their output names BEFORE we pass them to this method.
-    
-            * Note that variable dimensions should have been renamed to match their names in the output variable.
-    
-        input_qc_var : xr.DataArray
-            If there is a companion QC variable associated with the input var, then it should be passed.  Otherwise, pass
-            None.
-    
-            * Note variable name and dimensions should be renamed BEFORE this method is called, same as input_var above.
-    
-        output_var : xr.DataArray
-            Xarray data array for the output variable.  It should have the coordinates set to the output shape and
-            placeholder values for the data.  The transform will overwrite the values.
-    
-        output_qc_var : xr.DataArray
-            Xarray data array for the output qc variable.  It should have the coordinates set to the output shape and
-            placeholder values for the data.   The transform will overwrite the values and set variable attributes.
-    
-        pcm_transform_parameters : Dict
-            Transformation params in streamlined PCM json format.  We don't need all the same details because
-            there will only be one input datastream and one coordinate system:
-
-            {
-              "transformation_type": {
-                "name": "transformation_type",
-                "coordinate_system_defaults": [
-                  {
-                    "dim": "range",
-                    "default_value": "TRANS_AUTO"
-                  },
-                  {
-                    "dim": "time",
-                    "default_value": "AUTO"
-                  }
-                ],
-                "input_datastream_defaults": [],
-                "variables": [
-                  {
-                    "name": "ceil_backscatter",
-                    "value": "TRANS_PASSTHROUGH",
-                    "dim": "time"
-                  },
-                  {
-                    "name": "met_cmh_vapor_pressure",
-                    "value": "TRANS_SUBSAMPLE",
-                    "dim": "time"
-                  }
-                ]
-              },
-              "range": {
-                "name": "range",
-                "coordinate_system_defaults": [],
-                "input_datastream_defaults": [
-                  {
-                    "dim": "time",
-                    "default_value": "600"
-                  }
-                ],
-                "variables": [
-                  {
-                    "name": "met_cmh_vapor_pressure",
-                    "value": "300",
-                    "dim": "time"
-                  }
-                ]
-              }
-            }
-
-            TODO: Longer term, we should support front edge/back edge, width, and/or alignment parameters for input
-                datastreams in order to provide more specific bounds on the data points.  For now we won't set these and the
-                transformer will use the default values, which is to assume center alignment and the front and back edge
-                are the previous andsubsequent points, respectively.
-    
-        -----------------------------------------------------------------------------------------------------------------"""
-    
         # First convert the input and output variables into ADI format
-        retrieved_dataset: cds3.Group = self._create_adi_retrieved_dataset(input_var, input_qc_var)
-        transformed_dataset: cds3.Group = self._create_adi_transformed_dataset(output_var, output_qc_var)
-    
+        retrieved_dataset: cds3.Group = self._create_adi_retrieved_dataset(variable_name, input_dataset)
+        transformed_dataset: cds3.Group = self._create_adi_transformed_dataset(variable_name, output_dataset)
+        qc_variable_name = f'qc_{variable_name}'
+
         # Now convert the tranform parameters into ADI format
-        adi_transform_parameters = TransformParameterConverter().convert_to_adi_format(pcm_transform_parameters)
-    
+        adi_transform_parameters = TransformParameterConverter().convert_to_adi_format(transform_parameters)
+
         # Now apply the coordinate system transform parameters to the coordinate system group
         if COORDINATE_SYSTEM in adi_transform_parameters:
             params = adi_transform_parameters.get(COORDINATE_SYSTEM)
             cs_group = transformed_dataset.get_groups()[0]
             cds3.parse_transform_params(cs_group, params)
-    
+
         # now apply the input datastream transform parameters to the obs group
         if INPUT_DATASTREAM in adi_transform_parameters:
             params = adi_transform_parameters.get(INPUT_DATASTREAM)
             obs_group = retrieved_dataset.get_groups()[0].get_groups()[0]
             cds3.parse_transform_params(obs_group, params)
-    
+
         # Now run the transform
-        adi_input_var = retrieved_dataset.get_groups()[0].get_groups()[0].get_var(input_var.name)
-        adi_input_qc_var = retrieved_dataset.get_groups()[0].get_groups()[0].get_var(input_qc_var.name)
-        adi_output_var = transformed_dataset.get_groups()[0].get_groups()[0].get_var(output_var.name)
-        adi_output_qc_var = transformed_dataset.get_groups()[0].get_groups()[0].get_var(output_qc_var.name)
+        adi_input_var = retrieved_dataset.get_groups()[0].get_groups()[0].get_var(variable_name)
+        adi_input_qc_var = retrieved_dataset.get_groups()[0].get_groups()[0].get_var(qc_variable_name)
+        adi_output_var = transformed_dataset.get_groups()[0].get_groups()[0].get_var(variable_name)
+        adi_output_qc_var = transformed_dataset.get_groups()[0].get_groups()[0].get_var(qc_variable_name)
         trans.transform_driver(adi_input_var, adi_input_qc_var, adi_output_var, adi_output_qc_var)
-    
+
         # Now copy any changed variable attributes back to the xr out variables.
-        self._update_xr_attrs(output_var, adi_output_var)
-        self._update_xr_attrs(output_qc_var, adi_output_qc_var)
-    
+        self._update_xr_attrs(variable_name, output_dataset, transformed_dataset)
+
         # Now free up memory from created adi data structures
         self._free_memory(retrieved_dataset)
         self._free_memory(transformed_dataset)
@@ -478,18 +391,18 @@ class AdiTransformer:
             subgroups = group.get_groups()
             for subgroup in subgroups:
                 detatch_vars(subgroup)
-    
+
             vars: List[cds3.Var] = group.get_vars()
             for var in vars:
                 if var.get_name() != 'time':
                     var.detach_data()
-    
+
         detatch_vars(adi_dataset)
-    
+
         #  After all the variable data has been detached, then we can delete the group.
         cds3.Group.delete(adi_dataset)
     
-    def _create_adi_retrieved_dataset(self, xr_input_var: xr.DataArray, xr_input_qc_var: xr.DataArray) -> CDSGroup:
+    def _create_adi_retrieved_dataset(self, variable_name: str, input_dataset: xr.Dataset) -> CDSGroup:
         """-----------------------------------------------------------------------------------------------------------------
         Create the following structure in ADI:
     
@@ -500,9 +413,9 @@ class AdiTransformer:
     
         Parameters
         ----------
-        xr_input_var
-        xr_input_qc_var
-    
+        variable_name : str
+        input_dataset : xr.Dataset
+
         Returns
         -------
         retrieved_dataset : cds3.Group
@@ -525,6 +438,8 @@ class AdiTransformer:
         obs_group = cds3.Group.define(datastream_group, 'obs1')
     
         # Now add dimensions to the obs
+        xr_input_var = input_dataset[variable_name]
+        xr_input_qc_var = input_dataset[f'qc_{variable_name}']
         dims = xr_input_var.sizes  # dict of dims and their lengths (i.e., {'time': 1440} )
         for dim_name in dims:
             # Note that we assume that time dimension will always be named 'time'
@@ -537,15 +452,17 @@ class AdiTransformer:
         for dim_name in coords.dims:
             dim_var = coords.get(dim_name)
             self._add_variable_to_adi(dim_var, obs_group)
-    
+
         # Now add the data variables to the obs group
         self._add_variable_to_adi(xr_input_var, obs_group)
         self._add_variable_to_adi(xr_input_qc_var, obs_group)
-    
+
+        # Now add the bounds transform parameters (if they apply)
+        self._set_bounds_transform_parameters(variable_name, input_dataset, obs_group)
+
         return dataset_group
     
-    def _create_adi_transformed_dataset(self, 
-                                        xr_output_var: xr.DataArray, xr_output_qc_var: xr.DataArray) -> CDSGroup:
+    def _create_adi_transformed_dataset(self, variable_name: str, output_dataset: xr.Dataset) -> CDSGroup:
         """-----------------------------------------------------------------------------------------------------------------
         Create the following structure in ADI:
     
@@ -557,8 +474,8 @@ class AdiTransformer:
     
         Parameters
         ----------
-        xr_output_var
-        xr_output_qc_var
+        variable_name : str
+        output_dataset : xr.Dataset
     
         Returns
         -------
@@ -571,6 +488,7 @@ class AdiTransformer:
         cs_group = cds3.Group.define(transformed_data, COORDINATE_SYSTEM)
     
         # Now add the dimensions to the coordinate system group
+        xr_output_var = output_dataset[variable_name]
         dims = xr_output_var.sizes  # dict of dims and their lengths (i.e., {'time': 1440} )
         for dim_name in dims:
             # Note that we assume that time dimension will always be named 'time'
@@ -589,30 +507,36 @@ class AdiTransformer:
         ds_group = cds3.Group.define(cs_group, OUTPUT_DATASTREAM)
     
         # Now add the data variables to the datastream group
+        xr_output_qc_var = output_dataset[f'qc_{variable_name}']
         self._add_variable_to_adi(xr_output_var, ds_group, coordinate_system_name=COORDINATE_SYSTEM)
         self._add_variable_to_adi(xr_output_qc_var, ds_group, coordinate_system_name=COORDINATE_SYSTEM)
-    
+
+        # Now add the bounds transform parameters (if they apply)
+        self._set_bounds_transform_parameters(variable_name, output_dataset, cs_group)
+
         return transformed_data
 
-    def _update_xr_attrs(self, xr_var: xr.DataArray, adi_var: CDSVar):
+    def _update_xr_attrs(self, variable_name: str, output_dataset: xr.Dataset, transformed_dataset: CDSGroup):
+        # Sync the transform attributes back to the xarray variable and qc_variable
+        adi_var = transformed_dataset.get_groups()[0].get_groups()[0].get_var(variable_name)
+        xr_var = output_dataset.get(variable_name)
+
+        # First copy over any attributes that were set on the adi data variable back to xarray:
         adi_atts: List[cds3.Att] = adi_var.get_atts()
-        xr_attrs = {}
-        qc_attrs = {}
-
-        # We have to back-convert any qc variables
-        for att in adi_atts:
-            att_name = att.get_name()
-            att_value = dsproc.get_att_value(adi_var, att.get_name(), att.get_type())
-            if att_name.startswith('bit_'):
-                qc_attrs[att_name] = att_value
-            elif att_name != 'flag_method':
-                xr_attrs[att_name] = att_value
-
-        xr_attrs.update(self._back_convert_qc_atts(qc_attrs))
-
+        xr_attrs = {att.get_name(): dsproc.get_att_value(adi_var, att.get_name(), att.get_type()) for att in adi_atts}
         for name, value in xr_attrs.items():
             xr_var.attrs[name] = value
-    
+
+        # Now set all of the qc attributes
+        qc_var = output_dataset.get(f'qc_{variable_name}')
+        xr_attrs = {
+            "units": 1,
+            "long_name": f"Quality check results on variable: {variable_name}"
+        }
+        xr_attrs.update(self._back_convert_qc_atts(adi_qc_atts))
+        for name, value in xr_attrs.items():
+            qc_var.attrs[name] = value
+
     def _add_atts_to_adi(self, xr_atts_dict: Dict, adi_obj: CDSObject):
 
         atts = xr_atts_dict
@@ -643,7 +567,7 @@ class AdiTransformer:
             if status < 1:
                 raise Exception(f'Could not create attribute {att_name}')
 
-    def _back_convert_qc_atts(self, adi_qc_atts: Dict):
+    def _back_convert_qc_atts(self, adi_qc_atts: Dict) -> Dict:
         """-------------------------------------------------------------------------------------------------------------
         We are converting from exploded ADI format:
             bit_1_description = "Value is equal to _FillValue or NaN"
@@ -776,15 +700,24 @@ class AdiTransformer:
         For time values, we actually have to create a copy.  We can't rely on the data pointer for time, because the times
         are converted into datetime64 objects for xarray.
         -----------------------------------------------------------------------------------------------------------------"""
-        # astype will produce nanosecond precision, so we have to convert to seconds
-        timevals = xr_var.data.astype('float') / 1000000000
-    
-        # We have to truncate to 6 decimal places so it matches ADI
-        timevals = np.around(timevals, 6)
-    
+        # Convert numpy datetime64 to seconds
+        timevals = self._convert_time_data(xr_var)
+
         # Set the timevals in seconds in ADI
         dsproc.set_sample_timevals(adi_var, 0, timevals)
-    
+
+    def _convert_time_data(self, xr_array: xr.DataArray) -> np.ndarray:
+        # astype will produce nanosecond precision, so we have to convert to seconds
+        timevals = xr_array.data.astype('float') / 1000000000
+
+        # We have to truncate to 6 decimal places so it matches ADI
+        timevals = np.around(timevals, 6)
+
+        return timevals
+
+    def _convert_non_time_bounds_data(self, xr_array: xr.DataArray) -> np.ndarray:
+        return xr_array.data.astype('float')
+
     def _get_cds_type(self, value: Any) -> int:
         """-----------------------------------------------------------------------
         For a given Python data value, convert the data type into the corresponding
@@ -819,3 +752,27 @@ class AdiTransformer:
             cds_type = dsproc.dtype_to_cds_type(val.dtype)
     
         return cds_type
+
+    def _set_bounds_transform_parameters(self, variable_name: str, xr_dataset: xr.Dataset, obs_or_coord_group: cds3.Group):
+        # Get the bounds variable for each dimension used by our variable.  If no bounds variable exists, then skip.
+        # Bounds variable saves the offset for each data point instead of full value
+        for dim in xr_dataset[variable_name].dims:
+            bounds_var: xr.DataArray = xr_dataset.get(f'{dim}_bounds')
+
+            if bounds_var is not None:
+                front_edge = bounds_var[0]   # Front edge is the first column of bounds var
+                back_edge = bounds_var[1]    # Back edge is the second column of bounds var
+
+                # We have to make sure that the data are converted to floats to set the transform parameter properly
+                front_data: np.ndarray
+                back_data: np.ndarray
+                if dim == 'time':
+                    front_data = self._convert_time_data(front_edge)
+                    back_data = self._convert_time_data(back_edge)
+                else:
+                    front_data = self._convert_non_time_bounds_data(front_edge)
+                    back_data = self._convert_non_time_bounds_data(back_edge)
+
+                cds3.set_front_edge_param(obs_or_coord_group, dim, front_edge.size, front_data)
+                cds3.set_back_edge_param(obs_or_coord_group, dim, back_edge.size, back_data)
+
