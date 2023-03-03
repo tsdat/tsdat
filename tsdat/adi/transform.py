@@ -6,11 +6,6 @@ import xarray as xr
 from xarray.core.coordinates import DataArrayCoordinates, DatasetCoordinates
 import numpy as np
 
-import cds3
-import dsproc3 as dsproc
-import trans
-
-
 try:
     import cds3
     import dsproc3 as dsproc
@@ -753,7 +748,7 @@ class AdiTransformer:
     
         return cds_type
 
-    def _set_bounds_transform_parameters(self, variable_name: str, xr_dataset: xr.Dataset, obs_or_coord_group: cds3.Group):
+    def _set_bounds_transform_parameters(self, variable_name: str, xr_dataset: xr.Dataset, obs_or_coord_group: CDSGroup):
         # Get the bounds variable for each dimension used by our variable.  If no bounds variable exists, then skip.
         # Bounds variable saves the offset for each data point instead of full value
         for dim in xr_dataset[variable_name].dims:
