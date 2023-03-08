@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
 import logging
+import re
 import pandas as pd
 import xarray as xr
-from pydantic import BaseModel, Extra, Field
-from typing import Any, Dict, List, Literal, Optional, Pattern, Tuple, cast
+from pydantic import BaseModel, Extra, Field, validator
+from typing import Any, Dict, List, Literal, Optional, Pattern, Tuple, Union, cast
 
 from ..utils import assign_data
 from ..config.dataset import DatasetConfig
@@ -17,6 +18,9 @@ from .base import (
     Storage,
     VarName,
 )
+
+OutputVarName = str
+
 
 # TODO: Note that the DefaultRetriever applies DataConverters / transformations on
 # variables from all input datasets, while the new version only applies these to
@@ -37,6 +41,7 @@ class InputKeyRetrievalRules:
         coord_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
         data_var_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
     ):
+        self.input_key = input_key
         self.coords: Dict[VarName, RetrievedVariable] = {}
         self.data_vars: Dict[VarName, RetrievedVariable] = {}
 
@@ -321,6 +326,8 @@ def perform_data_retrieval(
     coord_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
     data_var_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
 ) -> Tuple[RetrievedDataset, RetrievalRuleSelections]:
+    # TODO: Also retrieve QC and Bounds variables -- possibly in ancillary structure?
+
     # Rule selections
     selected_coord_rules: Dict[VarName, RetrievedVariable] = {}
     selected_data_var_rules: Dict[VarName, RetrievedVariable] = {}
@@ -342,10 +349,13 @@ def perform_data_retrieval(
                         input_key,
                         variable_retriever.name,
                     )
-                    selected_coord_rules[name] = variable_retriever
                     coord_data[name] = dataset.get(
                         variable_retriever.name, xr.DataArray()
                     )
+                    if not coord_data[name].equals(xr.DataArray()):
+                        variable_retriever.source = input_key
+                    selected_coord_rules[name] = variable_retriever
+                    break
         if name not in selected_coord_rules:
             logger.warning("Could not retrieve coordinate '%s'.", name)
 
@@ -356,20 +366,20 @@ def perform_data_retrieval(
                 break
             for input_key, dataset in input_data.items():
                 if pattern.match(input_key):
-                    if variable_retriever.name in dataset.variables:
-                        logger.info(
-                            "Variable '%s' retrieved from '%s': '%s'",
-                            name,
-                            input_key,
-                            variable_retriever.name,
-                        )
-                        selected_data_var_rules[name] = variable_retriever
-                        data_var_data[name] = dataset[variable_retriever.name]
-                        break
-                    else:
+                    logger.info(
+                        "Variable '%s' retrieved from '%s': '%s'",
+                        name,
+                        input_key,
+                        variable_retriever.name,
+                    )
+                    data_var_data[name] = dataset.get(
+                        variable_retriever.name, xr.DataArray()
+                    )
+                    if data_var_data[name].equals(xr.DataArray()):
                         logger.warning(
                             "Input key matched regex pattern but no matching variable"
-                            " could be found in the input dataset:\n"
+                            " could be found in the input dataset. A value of"
+                            " xr.DataArray() will be used instead.\n"
                             "\tVariable: %s\n"
                             "\tInput Variable: %s\n"
                             "\tPattern: %s\n"
@@ -379,6 +389,9 @@ def perform_data_retrieval(
                             pattern.pattern,
                             input_key,
                         )
+                    variable_retriever.source = input_key
+                    selected_data_var_rules[name] = variable_retriever
+                    break
         if name not in selected_data_var_rules:
             logger.warning("Could not retrieve variable '%s'.", name)
 
@@ -389,24 +402,45 @@ def perform_data_retrieval(
         ),
     )
 
+    # TODO: set default dim_range for time dim (ARM uses 1 day)
+
 
 class GlobalARMTransformParams(BaseModel):
-    # TODO: Make the values be a regex that maps to their current value (default to .*)
     # TODO: Make this optional
-    alignment: Dict[str, Literal["LEFT", "RIGHT", "CENTER"]]
-    dim_range: Dict[str, str] = Field(..., alias="range")
-    width: Dict[str, str]
+    alignment: Dict[Pattern, Dict[str, Literal["LEFT", "RIGHT", "CENTER"]]]  # type: ignore
+    dim_range: Dict[Pattern, Dict[str, int]] = Field(..., alias="range")  # type: ignore
+    width: Dict[Pattern, Dict[str, int]]  # type: ignore
 
-    def get_alignment_for_input_and_dim(
-        self, input_key: str, dim: str
-    ) -> Literal["LEFT", "RIGHT", "CENTER"]:
-        return self.alignment[dim]
+    @validator("alignment", "dim_range", "width", pre=True)
+    def default_pattern(cls, d: Dict[Any, Any]) -> Dict[Pattern[str], Dict[str, str]]:
+        if not d:
+            return {}
+        pattern_dict: Dict[Pattern[str], Dict[str, str]] = {}
+        for k, v in d.items():
+            if isinstance(v, dict):
+                pattern_dict[re.compile(k)] = v
+            else:
+                pattern_dict[re.compile(r".*")] = {k: v}
+        return pattern_dict
 
-    def get_range_for_input_and_dim(self, input_key: str, dim: str) -> str:
-        return self.dim_range[dim]
+    def select_parameters(self, input_key: str) -> Dict[str, Dict[str, Any]]:
+        selected_params: Dict[str, Dict[str, Any]] = {}
+        for pattern, params in self.alignment.items():
+            if pattern.match(input_key):
+                selected_params["alignment"] = params
+                break
 
-    def get_width_for_input_and_dim(self, input_key: str, dim: str) -> str:
-        return self.width[dim]
+        for pattern, params in self.dim_range.items():
+            if pattern.match(input_key):
+                selected_params["range"] = params
+                break
+
+        for pattern, params in self.width.items():
+            if pattern.match(input_key):
+                selected_params["width"] = params
+                break
+
+        return selected_params
 
 
 class StorageRetriever(Retriever):
@@ -463,7 +497,7 @@ class StorageRetriever(Retriever):
         ------------------------------------------------------------------------------------"""
         assert storage is not None, "Missing required 'storage' parameter."
 
-        datastreams, start_times, end_times = self.__parse_inputs(input_keys)
+        _, start_times, end_times = self.__parse_inputs(input_keys)
 
         input_data = self.__fetch_inputs(input_keys, storage)
 
@@ -477,7 +511,6 @@ class StorageRetriever(Retriever):
         # Ensure selected coords are indexed by themselves
         for name, coord_data in retrieved_data.coords.items():
             if coord_data.equals(xr.DataArray()):
-                # Hopefully it will be created by a data converter
                 continue
             new_coord = xr.DataArray(
                 data=coord_data.data,
@@ -493,25 +526,31 @@ class StorageRetriever(Retriever):
         # TODO: support CreateGridVariable converter -- basically nothing retrieved
         for name, coord_def in retrieval_selections.coords.items():
             for converter in coord_def.data_converters:
+                # TODO: Identify InputKey and then pass input_data[input_key] to the converter
                 coord_data = retrieved_data.coords[name]
                 data = converter.convert(
                     data=coord_data,
                     variable_name=name,
                     dataset_config=dataset_config,
                     retrieved_dataset=retrieved_data,
-                    time_span=(start_times[0], end_times[0]),
+                    time_span=(start_times[0], end_times[0]),  # Better name
+                    input_dataset=input_data.get(coord_def.source),
                 )
                 if data is not None:
                     retrieved_data.coords[name] = data
 
         for name, var_def in retrieval_selections.data_vars.items():
             for converter in var_def.data_converters:
+                # TODO: Identify InputKey and then pass input_data[input_key] to the converter
                 var_data = retrieved_data.data_vars[name]
                 data = converter.convert(
                     data=var_data,
                     variable_name=name,
                     dataset_config=dataset_config,
                     retrieved_dataset=retrieved_data,
+                    retriever=self,
+                    input_dataset=input_data.get(var_def.source),
+                    input_key=var_def.source,
                 )
                 if data is not None:
                     retrieved_data.data_vars[name] = data
@@ -532,10 +571,10 @@ class StorageRetriever(Retriever):
     def __get_retrieval_padding(self, input_key: str) -> timedelta:
         if self.parameters is None or self.parameters.trans_params is None:
             return timedelta()
-        params = self.parameters.trans_params
+        params = self.parameters.trans_params.select_parameters(input_key)
         return max(
-            pd.Timedelta(params.get_range_for_input_and_dim(input_key, "time")),
-            pd.Timedelta(params.get_width_for_input_and_dim(input_key, "time")),
+            pd.Timedelta(params["range"].get("time", "0s")),
+            pd.Timedelta(params["width"].get("time", "0s")),
         )
 
     def __fetch_inputs(
@@ -550,3 +589,64 @@ class StorageRetriever(Retriever):
             )
             input_data[key] = retrieved_dataset
         return input_data
+
+
+# class ImprovedDefaultRetriever(Retriever):
+
+#     # TODO: Need some way to also retrieve ancillary variables (QC and Bounds)
+
+#     def get_input_datasets(
+#         self, input_keys: List[str], **kwargs: Any
+#     ) -> Dict[InputKey, xr.Dataset]:
+#         """Reads in the input data and returns a map of input_key: xr.Dataset."""
+#         input_datasets: Dict[InputKey, xr.Dataset] = {}
+#         assert self.readers is not None  # type: ignore
+#         for input_key in input_keys:
+#             for pattern, reader in self.readers.items():  # type: ignore
+#                 if pattern.match(input_key):  # type: ignore
+#                     input_datasets[input_key] = reader.read(input_key, **kwargs)
+#                     break
+#         return input_datasets
+
+#     def retrieve_variable_arrays(
+#         self, input_datasets: Dict[InputKey, xr.Dataset], **kwargs: Any
+#     ) -> Dict[OutputVarName, Tuple[Pattern[str], List[xr.DataArray]]]:
+#         """Uses retrieval config parameters to extract the variable data arrays that can
+#         be retrieved. For each variable, only the first matching pattern is considered.
+#         """
+#         ...
+
+#     def select_retrieved_variables(
+#         self,
+#         retrieved_variable_arrays: Dict[
+#             OutputVarName, Tuple[Pattern[str], List[xr.DataArray]]
+#         ],
+#         method: Literal["merge", "first"],  # if merge then combine, if first then idx 0
+#         **kwargs: Any,
+#     ) -> Dict[OutputVarName, Tuple[Pattern[str], xr.DataArray]]:
+#         ...
+
+#     def convert_data(
+#         self,
+#         retrieved_variables: Dict[OutputVarName, Tuple[Pattern[str], xr.DataArray]],
+#         input_datasets: Dict[InputKey, xr.Dataset],  # Needed to get bounds/qc
+#         **kwargs: Any,
+#     ) -> Dict[OutputVarName, Tuple[Pattern[str], xr.DataArray]]:
+#         ...
+
+#     def create_output_dataset(
+#         self,
+#         converted_data: Dict[OutputVarName, Tuple[Pattern[str], xr.DataArray]],
+#         # More needed here
+#     ) -> xr.Dataset:
+#         ...
+
+#     def retrieve(
+#         self,
+#         input_keys: List[str],
+#         dataset_config: DatasetConfig,
+#         **kwargs: Any,
+#     ) -> xr.Dataset:
+#         raise NotImplementedError(
+#             "ImprovedDefaultRetriever does not implement the 'retrieve' method"
+#         )

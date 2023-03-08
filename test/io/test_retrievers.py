@@ -173,3 +173,92 @@ def test_storage_retriever_2D(
     )
 
     xr.testing.assert_allclose(retrieved_dataset, expected)  # type: ignore
+
+
+def test_storage_retriever_transformations(vap_dataset_config: DatasetConfig):
+    storage_retriever: StorageRetriever = recursive_instantiate(
+        RetrieverConfig.from_yaml(Path("test/io/yaml/vap-retriever-transform.yaml"))
+    )
+    storage = FileSystem(
+        parameters=FileSystem.Parameters(
+            storage_root=Path("test/io/data/retriever-store")
+        )
+    )
+
+    ds = xr.Dataset(
+        coords={
+            "timestamp": pd.to_datetime(
+                [
+                    "2022-04-13 14:00:00",
+                    "2022-04-13 14:10:00",
+                    "2022-04-13 14:20:00",
+                    "2022-04-13 14:30:00",
+                    "2022-04-13 14:40:00",
+                    "2022-04-13 14:50:00",
+                ]
+            )
+        },
+        data_vars={
+            "timestamp_bounds": (
+                ("timestamp", "bound"),
+                (
+                    [
+                        pd.to_datetime(["2022-04-13 13:55:00", "2022-04-13 14:05:00"]),
+                        pd.to_datetime(["2022-04-13 14:05:00", "2022-04-13 14:15:00"]),
+                        pd.to_datetime(["2022-04-13 14:15:00", "2022-04-13 14:25:00"]),
+                        pd.to_datetime(["2022-04-13 14:25:00", "2022-04-13 14:35:00"]),
+                        pd.to_datetime(["2022-04-13 14:35:00", "2022-04-13 14:45:00"]),
+                        pd.to_datetime(["2022-04-13 14:45:00", "2022-04-13 14:55:00"]),
+                    ]
+                ),
+                {"comment": "bounds for time variable"},
+            ),
+            "temp": (
+                "timestamp",
+                [0.0, 1.0, 2.0, -9999.0, 4.0, 5.0],
+                {"units": "degC", "_FillValue": -9999},
+            ),
+            "qc_temp": (
+                "timestamp",
+                [0, 0, 0, 1, 0, 0],
+                {
+                    "flag_values": "1",
+                    "flag_assessments": "Bad",
+                    "flag_meanings": "Value_equal_to_missing_value",
+                },
+            ),
+            "rh": (
+                "timestamp",
+                [59, 60, 61, 62, 63, 64],
+                {"comment": "test case with no units attr"},
+            ),
+        },
+        attrs={"datastream": "test.trans_inputs.a1"},
+    )
+    path = Path(
+        "test/io/data/retriever-store/data/test.trans_inputs.a1/test.trans_inputs.a1.20220413.140000.nc"
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    ds.to_netcdf(path)  # type: ignore
+    inputs = [
+        "test.trans_inputs.a1::20220413.140000::20220413.150000",
+    ]
+
+    retrieved_dataset = storage_retriever.retrieve(
+        inputs, dataset_config=vap_dataset_config, storage=storage
+    )
+
+    expected = xr.Dataset(
+        coords={"time": pd.date_range("2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left")},  # type: ignore
+        data_vars={
+            "temperature": (  # degF -> degC
+                "time",
+                (np.array([70, 76, 84]) - 32) * 5 / 9,
+                {"units": "degC"},
+            ),
+            "humidity": ("time", [0, 30, 70]),
+        },
+        attrs={"datastream": "humboldt.buoy.b1"},
+    )
+
+    xr.testing.assert_allclose(retrieved_dataset, expected)  # type: ignore

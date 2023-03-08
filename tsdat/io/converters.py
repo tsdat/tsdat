@@ -1,24 +1,35 @@
-# IDEA: Implement MultiDimensionalGrouper (better name needed. goes from collection of 1D
-# variables to one 2D variable)
+# IDEA: Implement MultiDimensionalGrouper to group collection of 1D variables into a 2D
+# variable. (will need a better name)
 # IDEA: Use the flyweight pattern to limit memory usage if identical converters would
 # be created.
+import logging
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
 
 import act  # type: ignore
-import logging
-import xarray as xr
-import pandas as pd
 import numpy as np
-from typing import Any, Dict, Optional, Tuple
+import pandas as pd
+import xarray as xr
 from numpy.typing import NDArray
 from pydantic import validator
+from xarray.core.dtypes import is_datetime_like  # type: ignore
 
-from ..config.dataset import DatasetConfig
 from .base import DataConverter, RetrievedDataset
+
+if TYPE_CHECKING:
+    # Prevent any chance of runtime circular imports for typing-only imports
+    from ..config.dataset import DatasetConfig
+    from .retrievers import StorageRetriever
+
 
 __all__ = [
     "UnitsConverter",
     "StringToDatetime",
     "NearestNeighbor",
+    "CreateTimeGrid",
+    "TransformAuto",
+    "TransformAverage",
+    "TransformInterpolate",
+    "TransformNearest",
 ]
 
 logger = logging.getLogger(__name__)
@@ -51,7 +62,7 @@ class UnitsConverter(DataConverter):
         self,
         data: xr.DataArray,
         variable_name: str,
-        dataset_config: DatasetConfig,
+        dataset_config: "DatasetConfig",
         retrieved_dataset: RetrievedDataset,
         **kwargs: Any,
     ) -> Optional[xr.DataArray]:
@@ -75,8 +86,9 @@ class UnitsConverter(DataConverter):
         ):
             if not output_units:
                 logger.warning(
-                    "Output units for variable %s could not be found. Please ensure these"
-                    " are set in the dataset configuration file for the specified variable.",
+                    "Output units for variable %s could not be found. Please ensure"
+                    " these are set in the dataset configuration file for the specified"
+                    " variable.",
                     variable_name,
                 )
             return None
@@ -156,11 +168,15 @@ class StringToDatetime(DataConverter):
         self,
         data: xr.DataArray,
         variable_name: str,
-        dataset_config: DatasetConfig,
+        dataset_config: "DatasetConfig",
         retrieved_dataset: RetrievedDataset,
         **kwargs: Any,
     ) -> Optional[xr.DataArray]:
-        dt = pd.to_datetime(data.data, format=self.format, **self.to_datetime_kwargs)  # type: ignore
+        dt: Any = pd.to_datetime(
+            data.data,
+            format=self.format,
+            **self.to_datetime_kwargs,
+        )
 
         if self.timezone and self.timezone != "UTC":
             dt = dt.tz_localize(self.timezone).tz_convert("UTC")  # type: ignore
@@ -200,7 +216,7 @@ class NearestNeighbor(DataConverter):
         self,
         data: xr.DataArray,
         variable_name: str,
-        dataset_config: DatasetConfig,
+        dataset_config: "DatasetConfig",
         retrieved_dataset: RetrievedDataset,
         **kwargs: Any,
     ) -> Optional[xr.DataArray]:
@@ -224,7 +240,7 @@ class NearestNeighbor(DataConverter):
 
 
 class CreateTimeGrid(DataConverter):
-    frequency: str
+    interval: str
     """The frequency of time points. This is passed to pd.timedelta_range as the 'freq'
     argument. E.g., '30s', '5min', '10min', '1H', etc."""
 
@@ -232,7 +248,7 @@ class CreateTimeGrid(DataConverter):
         self,
         data: xr.DataArray,
         variable_name: str,
-        dataset_config: DatasetConfig,
+        dataset_config: "DatasetConfig",
         retrieved_dataset: RetrievedDataset,
         time_span: Optional[Tuple[str, str]] = None,
         **kwargs: Any,
@@ -245,7 +261,7 @@ class CreateTimeGrid(DataConverter):
         time_deltas = pd.timedelta_range(
             start="0 days",
             end=end - start,
-            freq=self.frequency,
+            freq=self.interval,
             closed="left",
         )
         date_times = time_deltas + start
@@ -256,3 +272,170 @@ class CreateTimeGrid(DataConverter):
             dims=variable_name,
             attrs={"units": "Seconds since 1970-01-01 00:00:00"},
         )
+
+
+class _ADIBaseTransformer(DataConverter):
+
+    transformation_type: str
+    coord: str = "ALL"
+
+    def convert(
+        self,
+        data: xr.DataArray,
+        variable_name: str,
+        dataset_config: "DatasetConfig",
+        retrieved_dataset: RetrievedDataset,
+        retriever: Optional["StorageRetriever"] = None,
+        input_dataset: Optional[xr.Dataset] = None,
+        input_key: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Optional[xr.DataArray]:
+        if variable_name in dataset_config.coords:
+            raise ValueError(
+                f"{self.__repr_name__} cannot be used for coordinate variables."
+                f" Offending coord: '{variable_name}'."
+            )
+        data = data.copy()  # prevent object metadata changes accidentally propagating
+
+        assert retriever is not None
+        assert retriever.parameters is not None
+        assert retriever.parameters.trans_params is not None
+        assert input_dataset is not None
+        assert input_key is not None
+
+        output_coord_names = dataset_config[variable_name].dims
+        input_coord_names = list(data.coords)
+        coord_rename_map = {
+            _input_name: _output_name
+            for _input_name, _output_name in zip(input_coord_names, output_coord_names)
+        }
+
+        # Input dataset structure
+        input_qc = input_dataset.get(f"qc_{data.name}")
+        if input_qc is not None:
+            input_qc.name = f"qc_{variable_name}"  # rename to match output
+
+        input_bounds_vars: List[xr.DataArray] = []
+        for i, input_coord_name in enumerate(data.coords):
+            coord_bound = input_dataset.get(f"{input_coord_name}_bounds")
+            if coord_bound is not None:
+                coord_bound.name = f"{output_coord_names[i]}_bounds"  # rename
+                input_bounds_vars.append(coord_bound)
+
+        trans_input_ds = xr.Dataset(
+            coords=data.coords,
+            data_vars={
+                v.name: v for v in [data, input_qc, *input_bounds_vars] if v is not None
+            },
+        ).rename(coord_rename_map)
+
+        # Output dataset structure
+        # Just contains the coordinates
+        output_coord_data = {n: retrieved_dataset.coords[n] for n in output_coord_names}
+        trans_output_ds = xr.Dataset(output_coord_data)
+        trans_output_ds[variable_name] = xr.DataArray(
+            coords=output_coord_data,
+            dims=output_coord_names,
+            # attrs=dataset_config[variable_name].attrs,
+        ).fillna(-9999)
+        trans_output_ds[f"qc_{variable_name}"] = xr.full_like(
+            trans_output_ds[variable_name],
+            fill_value=0,
+        )
+
+        trans_params = retriever.parameters.trans_params.select_parameters(input_key)
+        for coord_name in output_coord_names:
+            # TODO optionally set default width to median of distance between points
+            width = trans_params["width"].get(coord_name)
+            align = trans_params["alignment"].get(coord_name)
+            if (width is not None) and (align is not None):
+                # TODO: Get bounds if they already exist?
+                bounds = self._create_bounds(
+                    output_coord_data[coord_name], alignment=align, width=width
+                )
+                output_coord_data[f"{coord_name}_bounds"] = bounds
+
+        trans_type: Dict[str, str] = {}
+        if self.coord == "ALL":
+            for coord_name in output_coord_names:
+                trans_type[coord_name] = self.transformation_type
+        elif isinstance(self.coord, str):  # TODO: possibly support list of str
+            for coord_name in output_coord_names:
+                if coord_name == self.coord:
+                    trans_type[coord_name] = self.transformation_type
+                else:
+                    trans_type[coord_name] = "TRANS_PASSTHROUGH"
+        trans_params["transformation_type"] = trans_type
+
+        try:
+            from tsdat.adi.transform import AdiTransformer
+
+            transformer = AdiTransformer()
+            transformer.transform(
+                variable_name=variable_name,
+                input_dataset=trans_input_ds,
+                output_dataset=trans_output_ds,
+                transform_parameters=trans_params,
+            )
+        except Exception as e:
+            logger.exception(
+                "Encountered an error running transformer. Please ensure necessary"
+                " dependencies are installed."
+            )
+            raise e
+
+        retrieved_dataset.data_vars[variable_name] = trans_output_ds[variable_name]
+        retrieved_dataset.data_vars[f"qc_{variable_name}"] = trans_output_ds[
+            f"qc_{variable_name}"
+        ]
+
+        return None
+
+    @staticmethod
+    def _create_bounds(
+        coordinate: xr.DataArray,
+        alignment: Literal["LEFT", "RIGHT", "CENTER"],
+        width: Any,
+    ) -> xr.DataArray:
+        coord_vals = coordinate.data
+
+        units = ""
+        if isinstance(width, str):
+            width, units = float(width[:-1]), width[-1]
+
+        if is_datetime_like(coordinate.dtype):  # type: ignore
+            coord_vals = np.array([np.datetime64(val) for val in coord_vals])
+            width = np.timedelta64(int(width), units or "s")
+
+        if alignment == "LEFT":
+            begin = coord_vals
+            end = coord_vals + width
+        elif alignment == "CENTER":
+            begin = coord_vals - width / 2
+            end = coord_vals + width / 2
+        elif alignment == "RIGHT":
+            begin = coord_vals - width
+            end = coord_vals
+
+        bounds_array = np.stack((begin, end), axis=-1)
+        return xr.DataArray(
+            bounds_array,
+            dims=[coordinate.name, "bound"],
+            coords={coordinate.name: coordinate},
+        )
+
+
+class TransformAuto(_ADIBaseTransformer):
+    transformation_type: str = "TRANS_AUTO"
+
+
+class TransformAverage(_ADIBaseTransformer):
+    transformation_type: str = "TRANS_BIN_AVERAGE"
+
+
+class TransformInterpolate(_ADIBaseTransformer):
+    transformation_type: str = "TRANS_INTERPOLATE"
+
+
+class TransformNearest(_ADIBaseTransformer):
+    transformation_type: str = "TRANS_SUBSAMPLE"
