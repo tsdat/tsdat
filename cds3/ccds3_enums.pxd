@@ -34,6 +34,7 @@ cdef extern from "cds3.h" nogil:
     signed char CDS_FILL_BYTE
     short       CDS_FILL_SHORT
     int         CDS_FILL_INT
+    long long   CDS_FILL_INT64
     float       CDS_FILL_FLOAT
     double      CDS_FILL_DOUBLE
 
@@ -46,6 +47,8 @@ cdef extern from "cds3.h" nogil:
     short       CDS_MIN_SHORT
     int         CDS_MAX_INT
     int         CDS_MIN_INT
+    long long   CDS_MAX_INT64
+    long long   CDS_MIN_INT64
     float       CDS_MAX_FLOAT
     float       CDS_MIN_FLOAT
     double      CDS_MAX_DOUBLE
@@ -74,6 +77,7 @@ cdef extern from "cds3.h" nogil:
         CDS_BYTE
         CDS_SHORT
         CDS_INT
+        CDS_INT64
         CDS_FLOAT
         CDS_DOUBLE
 

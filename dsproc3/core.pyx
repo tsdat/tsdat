@@ -1283,6 +1283,10 @@ cdef inline void* _alloc_single(CDSDataType cds_type, object initial_value=None)
         retval = malloc(sizeof(int))
         if initial_value is not None:
             (<int*>retval)[0] = initial_value
+    elif cds_type == CDS_INT64:
+        retval = malloc(sizeof(long long))
+        if initial_value is not None:
+            (<long long*>retval)[0] = initial_value
     elif cds_type == CDS_FLOAT:
         retval = malloc(sizeof(float))
         if initial_value is not None:
@@ -1313,6 +1317,9 @@ cdef inline object _convert_single(CDSDataType cds_type, void *value):
     elif cds_type == CDS_INT:
         retval = (<int*>value)[0];
         free(<int*>value)
+    elif cds_type == CDS_INT64:
+        retval = (<long long*>value)[0];
+        free(<long long*>value)
     elif cds_type == CDS_FLOAT:
         retval = (<float*>value)[0];
         free(<float*>value)
@@ -1342,6 +1349,8 @@ cdef inline int cds_type_to_dtype(CDSDataType cds_type) except -1:
         return np.NPY_SHORT
     elif cds_type == CDS_INT:
         return np.NPY_INT
+    elif cds_type == CDS_INT64:
+        return np.NPY_INT64
     elif cds_type == CDS_FLOAT:
         return np.NPY_FLOAT
     elif cds_type == CDS_DOUBLE:
@@ -1362,6 +1371,8 @@ cpdef inline np.dtype cds_type_to_dtype_obj(CDSDataType cds_type):
         return np.dtype(np.int16)
     elif cds_type == CDS_INT:
         return np.dtype(np.int32)
+    elif cds_type == CDS_INT64:
+        return np.dtype(np.int64)
     elif cds_type == CDS_FLOAT:
         return np.dtype(np.float32)
     elif cds_type == CDS_DOUBLE:
@@ -1384,6 +1395,8 @@ cpdef inline int dtype_to_cds_type(np.dtype dtype) except -1:
         return CDS_SHORT
     elif dtype == np.dtype(np.int32):
         return CDS_INT
+    elif dtype == np.dtype(np.int64):
+        return CDS_INT64
     elif dtype == np.dtype(np.float32):
         return CDS_FLOAT
     elif dtype == np.dtype(np.float64):
@@ -2508,6 +2521,7 @@ def define_var(
     cdef signed char min_byte, max_byte, missing_byte, fill_byte
     cdef short min_short, max_short, missing_short, fill_short
     cdef int min_int, max_int, missing_int, fill_int
+    cdef long long min_long, max_long, missing_long, fill_long
     cdef float min_float, max_float, missing_float, fill_float
     cdef double min_double, max_double, missing_double, fill_double
     cdef const char **c_dim_names = <const_char**>malloc(len(dim_names) * sizeof(char*))
@@ -2608,6 +2622,19 @@ def define_var(
         if fill_value is not None:
             fill_int = fill_value
             fill_ptr = &fill_int
+    elif cds_type == CDS_INT64:
+        if valid_min is not None:
+            min_long = valid_min
+            min_ptr = &min_long
+        if valid_max is not None:
+            max_long = valid_max
+            max_ptr = &max_long
+        if missing_value is not None:
+            missing_long = missing_value
+            missing_ptr = &missing_long
+        if fill_value is not None:
+            fill_long = fill_value
+            fill_ptr = &fill_long
     elif cds_type == CDS_FLOAT:
         if valid_min is not None:
             min_float = valid_min

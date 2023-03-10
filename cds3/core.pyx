@@ -76,6 +76,8 @@ cdef inline int cds_type_to_dtype(CDSDataType cds_type) except -1:
         return np.NPY_SHORT
     elif cds_type == CDS_INT:
         return np.NPY_INT
+    elif cds_type == CDS_INT64:
+        return np.NPY_INT64
     elif cds_type == CDS_FLOAT:
         return np.NPY_FLOAT
     elif cds_type == CDS_DOUBLE:
@@ -95,6 +97,8 @@ cdef inline np.dtype cds_type_to_dtype_obj(CDSDataType cds_type):
         return np.dtype(np.int16)
     elif cds_type == CDS_INT:
         return np.dtype(np.int32)
+    elif cds_type == CDS_INT64:
+        return np.dtype(np.int64)
     elif cds_type == CDS_FLOAT:
         return np.dtype(np.float32)
     elif cds_type == CDS_DOUBLE:
@@ -1482,6 +1486,8 @@ cdef class Var(Object):
             fill_value = (<short*>fill_value_arr)[0]
         elif cds_type == CDS_INT:
             fill_value = (<int*>fill_value_arr)[0]
+        elif cds_type == CDS_INT64:
+            fill_value = (<long long*>fill_value_arr)[0]
         elif cds_type == CDS_FLOAT:
             fill_value = (<float*>fill_value_arr)[0]
         elif cds_type == CDS_DOUBLE:
@@ -1512,6 +1518,8 @@ cdef class Var(Object):
             return (<short*>fill_ptr)[0]
         elif cds_type == CDS_INT:
             return (<int*>fill_ptr)[0]
+        elif cds_type == CDS_INT64:
+            return (<long long*>fill_ptr)[0]
         elif cds_type == CDS_FLOAT:
             return (<float*>fill_ptr)[0]
         elif cds_type == CDS_DOUBLE:
@@ -1866,6 +1874,7 @@ cdef class Var(Object):
         cdef signed char missing_signed_char
         cdef short missing_short
         cdef int missing_int
+        cdef long long missing_long
         cdef float missing_float
         cdef double missing_double
         cdef object missing_py
@@ -1879,6 +1888,8 @@ cdef class Var(Object):
             missing_ptr = &missing_short
         elif cds_type == CDS_INT:
             missing_ptr = &missing_int
+        elif cds_type == CDS_INT64:
+            missing_ptr = &missing_long
         elif cds_type == CDS_FLOAT:
             missing_ptr = &missing_float
         elif cds_type == CDS_DOUBLE:
@@ -1908,6 +1919,8 @@ cdef class Var(Object):
             missing_py = missing_short
         elif cds_type == CDS_INT:
             missing_py = missing_int
+        elif cds_type == CDS_INT64:
+            missing_py = missing_long
         elif cds_type == CDS_FLOAT:
             missing_py = missing_float
         elif cds_type == CDS_DOUBLE:
