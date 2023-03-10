@@ -532,8 +532,14 @@ class AdiTransformer:
         for name, value in xr_attrs.items():
             qc_var.attrs[name] = value
 
-    def _add_atts_to_adi(self, xr_atts_dict: Dict, adi_obj: CDSObject):
+    def _add_atts_to_adi(self, xr_var: xr.DataArray, adi_obj: CDSObject):
 
+        encoding_atts = {
+            att: xr_var.encoding[att]
+            for att in ["_FillValue", "source"]
+            if att in xr_var.encoding
+        }
+        xr_atts_dict = {**encoding_atts, **xr_var.attrs}
         atts = xr_atts_dict
 
         # If this is a qc variable, then we need to convert over the qc attributes
@@ -675,7 +681,7 @@ class AdiTransformer:
         adi_var = dsproc.define_var(parent_group, xr_var.name, cds_type, dim_names)
     
         # Now assign attributes
-        self._add_atts_to_adi(xr_var.attrs, adi_var)
+        self._add_atts_to_adi(xr_var, adi_var)
     
         # Now set the variable's data
         if xr_var.name == 'time':
@@ -755,8 +761,8 @@ class AdiTransformer:
             bounds_var: xr.DataArray = xr_dataset.get(f'{dim}_bounds')
 
             if bounds_var is not None:
-                front_edge = bounds_var[0]   # Front edge is the first column of bounds var
-                back_edge = bounds_var[1]    # Back edge is the second column of bounds var
+                front_edge = bounds_var.T[0]   # Front edge is the first column of bounds var
+                back_edge = bounds_var.T[1]    # Back edge is the second column of bounds var
 
                 # We have to make sure that the data are converted to floats to set the transform parameter properly
                 front_data: np.ndarray
