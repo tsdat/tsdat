@@ -599,7 +599,7 @@ class AdiTransformer:
         for att_name, att_value in adi_qc_atts.items():
             match = bit_pattern.match(att_name)
             if match:
-                bit_number = match.groups()[0]
+                bit_number = int(match.groups()[0])
                 att_type = match.groups()[1]
 
                 if bit_number not in bit_metadata:
@@ -616,7 +616,7 @@ class AdiTransformer:
         flag_assessments = []
         for bit_number in sorted_bit_numbers:
             metadata = bit_metadata.get(bit_number)
-            power = int(bit_number) - 1
+            power = bit_number - 1
             mask = int(math.pow(2, power))
             flag_masks.append(mask)
             flag_meanings.append(metadata.get('description'))
@@ -684,7 +684,7 @@ class AdiTransformer:
         self._add_atts_to_adi(xr_var, adi_var)
     
         # Now set the variable's data
-        if xr_var.name == 'time':
+        if np.issubdtype(xr_var.dtype, np.datetime64):
             # If this is time, then we have to convert the values because xarray time is different
             self._set_time_variable_data(xr_var, adi_var)
         else:
@@ -767,7 +767,7 @@ class AdiTransformer:
                 # We have to make sure that the data are converted to floats to set the transform parameter properly
                 front_data: np.ndarray
                 back_data: np.ndarray
-                if dim == 'time':
+                if np.issubdtype(bounds_var.dtype, np.datetime64):
                     front_data = self._convert_time_data(front_edge)
                     back_data = self._convert_time_data(back_edge)
                 else:
