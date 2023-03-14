@@ -2,10 +2,11 @@ FROM ubuntu:22.04
 
 # Install cython build requirements
 RUN apt-get update && \
+    apt-get install -y git && \
     apt-get install -y build-essential && \
+    apt-get install -y pkg-config && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-# TODO: pkg-config
 
 # Install conda
 RUN apt-get update && \
@@ -21,14 +22,21 @@ ENV PATH=/root/miniconda3/bin:$PATH
 
 # Copy the conda environment file into the container
 RUN mkdir /app
-COPY conda_environment.yml /app/
-
-# Create conda environment
-RUN conda env create -f /app/conda_environment.yml && \
-    echo "conda activate tsdat" >> ~/.bashrc
+COPY conda_environment.yml requirements.txt requirements-dev.txt /app/
 
 # Set up working directory
 WORKDIR /app
+
+# Create conda environment
+RUN conda env create -f conda_environment.yml && \
+    echo "conda activate tsdat" >> ~/.bashrc
+
+SHELL ["conda", "run", "-n", "tsdat", "/bin/bash", "-c"]
+# ENV CONDA_DEFAULT_ENV tsdat
+
+RUN pip install -r requirements-dev.txt
+
+WORKDIR /workspaces/tsdat
 
 CMD ["tail", "-f", "/dev/null"]
 
