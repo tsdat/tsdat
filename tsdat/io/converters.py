@@ -39,6 +39,43 @@ logger = logging.getLogger(__name__)
 # user code. Arguments to data_converter can be parameters to the class.
 
 
+def _create_bounds(
+    coordinate: xr.DataArray,
+    alignment: Literal["LEFT", "RIGHT", "CENTER"],
+    width: Any,
+) -> xr.DataArray:
+    """Creates coordinate bounds with the specified alignment and bound width."""
+    coord_vals = coordinate.data
+
+    units = ""
+    if isinstance(width, str):
+        for i, s in enumerate(width):
+            if s.isalpha():
+                break
+        width, units = float(width[:i]), width[i:]
+
+    if np.issubdtype(coordinate.dtype, np.datetime64):  # type: ignore
+        coord_vals = np.array([np.datetime64(val) for val in coord_vals])
+        width = np.timedelta64(int(width), units or "s")
+
+    if alignment == "LEFT":
+        begin = coord_vals
+        end = coord_vals + width
+    elif alignment == "CENTER":
+        begin = coord_vals - width / 2
+        end = coord_vals + width / 2
+    elif alignment == "RIGHT":
+        begin = coord_vals - width
+        end = coord_vals
+
+    bounds_array = np.stack((begin, end), axis=-1)  # type: ignore
+    return xr.DataArray(
+        bounds_array,
+        dims=[coordinate.name, "bound"],
+        coords={coordinate.name: coordinate},
+    )
+
+
 class UnitsConverter(DataConverter):
     """---------------------------------------------------------------------------------
     Converts the units of a retrieved variable to specified output units.
@@ -248,16 +285,20 @@ class CreateTimeGrid(DataConverter):
         self,
         data: xr.DataArray,
         variable_name: str,
-        dataset_config: "DatasetConfig",
-        retrieved_dataset: RetrievedDataset,
+        dataset_config: Optional["DatasetConfig"] = None,
+        retrieved_dataset: Optional[RetrievedDataset] = None,
+        retriever: Optional["StorageRetriever"] = None,
         time_span: Optional[Tuple[str, str]] = None,
+        input_key: Optional[str] = None,
         **kwargs: Any,
     ) -> Optional[xr.DataArray]:
-        assert (
-            time_span is not None
-        ), "time_span argument required for CreateTimeGrid variable"
-        start = pd.to_datetime(time_span[0], format="%Y%m%d.%H%M%S")
-        end = pd.to_datetime(time_span[1], format="%Y%m%d.%H%M%S")
+        if time_span is None:
+            raise ValueError("time_span argument required for CreateTimeGrid variable")
+
+        # TODO: if not time_span, then get the time range from the retrieved data
+
+        start = pd.to_datetime(time_span[0], format="%Y%m%d.%H%M%S")  # type: ignore
+        end = pd.to_datetime(time_span[1], format="%Y%m%d.%H%M%S")  # type: ignore
         time_deltas = pd.timedelta_range(
             start="0 days",
             end=end - start,
@@ -266,12 +307,31 @@ class CreateTimeGrid(DataConverter):
         )
         date_times = time_deltas + start
 
-        return xr.DataArray(
+        time_grid = xr.DataArray(
             name=variable_name,
             data=date_times,
             dims=variable_name,
             attrs={"units": "Seconds since 1970-01-01 00:00:00"},
         )
+
+        if (
+            retrieved_dataset is not None
+            and input_key is not None
+            and retriever is not None
+            and retriever.parameters is not None
+            and retriever.parameters.trans_params is not None
+            and (
+                params := retriever.parameters.trans_params.select_parameters(input_key)
+            )
+            is not None
+        ):
+            width = params["width"].get(variable_name)
+            alignment = params["alignment"].get(variable_name)
+            if width is not None and alignment is not None:
+                bounds = _create_bounds(time_grid, alignment=alignment, width=width)
+                retrieved_dataset.data_vars[f"{variable_name}_bound"] = bounds
+
+        return time_grid
 
 
 class _ADIBaseTransformer(DataConverter):
@@ -311,9 +371,10 @@ class _ADIBaseTransformer(DataConverter):
         }
 
         # Input dataset structure
-        input_qc = input_dataset.get(f"qc_{data.name}")
-        if input_qc is not None:
-            input_qc.name = f"qc_{variable_name}"  # rename to match output
+        input_qc = input_dataset.get(
+            f"qc_{data.name}", xr.full_like(data, 0).astype(int)
+        )
+        input_qc.name = f"qc_{variable_name}"  # rename to match output
 
         input_bounds_vars: List[xr.DataArray] = []
         for i, input_coord_name in enumerate(data.coords):
@@ -322,12 +383,21 @@ class _ADIBaseTransformer(DataConverter):
                 coord_bound.name = f"{output_coord_names[i]}_bounds"  # rename
                 input_bounds_vars.append(coord_bound)
 
+        data.name = variable_name
         trans_input_ds = xr.Dataset(
             coords=data.coords,
             data_vars={
                 v.name: v for v in [data, input_qc, *input_bounds_vars] if v is not None
             },
         ).rename(coord_rename_map)
+
+        # NAs must be filled in order for the transformation to work successfully
+        trans_input_ds[variable_name].fillna(
+            trans_input_ds[variable_name].attrs.get(
+                "_Fillvalue",
+                trans_input_ds[variable_name].encoding.get("_FillValue", -9999),
+            )
+        )
 
         # Output dataset structure
         # Just contains the coordinates
@@ -336,12 +406,12 @@ class _ADIBaseTransformer(DataConverter):
         trans_output_ds[variable_name] = xr.DataArray(
             coords=output_coord_data,
             dims=output_coord_names,
-            # attrs=dataset_config[variable_name].attrs,
+            attrs={"missing_value": -9999, "_FillValue": -9999, **data.attrs},
         ).fillna(-9999)
         trans_output_ds[f"qc_{variable_name}"] = xr.full_like(
             trans_output_ds[variable_name],
             fill_value=0,
-        )
+        ).astype(int)
 
         trans_params = retriever.parameters.trans_params.select_parameters(input_key)
         for coord_name in output_coord_names:
@@ -350,10 +420,11 @@ class _ADIBaseTransformer(DataConverter):
             align = trans_params["alignment"].get(coord_name)
             if (width is not None) and (align is not None):
                 # TODO: Get bounds if they already exist?
-                bounds = self._create_bounds(
+                bounds = _create_bounds(
                     output_coord_data[coord_name], alignment=align, width=width
                 )
-                output_coord_data[f"{coord_name}_bounds"] = bounds
+                trans_output_ds[f"{coord_name}_bounds"] = bounds
+            # TODO: Try to get bounds created by the CreateTimeGrid converter
 
         trans_type: Dict[str, str] = {}
         if self.coord == "ALL":
@@ -390,39 +461,6 @@ class _ADIBaseTransformer(DataConverter):
         ]
 
         return None
-
-    @staticmethod
-    def _create_bounds(
-        coordinate: xr.DataArray,
-        alignment: Literal["LEFT", "RIGHT", "CENTER"],
-        width: Any,
-    ) -> xr.DataArray:
-        coord_vals = coordinate.data
-
-        units = ""
-        if isinstance(width, str):
-            width, units = float(width[:-1]), width[-1]
-
-        if is_datetime_like(coordinate.dtype):  # type: ignore
-            coord_vals = np.array([np.datetime64(val) for val in coord_vals])
-            width = np.timedelta64(int(width), units or "s")
-
-        if alignment == "LEFT":
-            begin = coord_vals
-            end = coord_vals + width
-        elif alignment == "CENTER":
-            begin = coord_vals - width / 2
-            end = coord_vals + width / 2
-        elif alignment == "RIGHT":
-            begin = coord_vals - width
-            end = coord_vals
-
-        bounds_array = np.stack((begin, end), axis=-1)
-        return xr.DataArray(
-            bounds_array,
-            dims=[coordinate.name, "bound"],
-            coords={coordinate.name: coordinate},
-        )
 
 
 class TransformAuto(_ADIBaseTransformer):

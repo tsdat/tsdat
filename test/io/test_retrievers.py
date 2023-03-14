@@ -50,6 +50,11 @@ def vap_dataset_config_2D() -> DatasetConfig:
 
 
 @fixture
+def vap_transform_dataset_config() -> DatasetConfig:
+    return DatasetConfig.from_yaml(Path("test/io/yaml/vap-dataset-transform.yaml"))
+
+
+@fixture
 def dataset_config() -> DatasetConfig:
     return DatasetConfig.from_yaml(Path("test/config/yaml/dataset.yaml"))
 
@@ -175,7 +180,7 @@ def test_storage_retriever_2D(
     xr.testing.assert_allclose(retrieved_dataset, expected)  # type: ignore
 
 
-def test_storage_retriever_transformations(vap_dataset_config: DatasetConfig):
+def test_storage_retriever_transformations(vap_transform_dataset_config: DatasetConfig):
     storage_retriever: StorageRetriever = recursive_instantiate(
         RetrieverConfig.from_yaml(Path("test/io/yaml/vap-retriever-transform.yaml"))
     )
@@ -241,11 +246,11 @@ def test_storage_retriever_transformations(vap_dataset_config: DatasetConfig):
     path.parent.mkdir(parents=True, exist_ok=True)
     ds.to_netcdf(path)  # type: ignore
     inputs = [
-        "test.trans_inputs.a1::20220413.140000::20220413.150000",
+        "test.trans_inputs.a1::20220413.000000::20220414.000000",
     ]
 
     retrieved_dataset = storage_retriever.retrieve(
-        inputs, dataset_config=vap_dataset_config, storage=storage
+        inputs, dataset_config=vap_transform_dataset_config, storage=storage
     )
 
     expected = xr.Dataset(

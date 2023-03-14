@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
 import re
@@ -415,12 +416,12 @@ class GlobalARMTransformParams(BaseModel):
     def default_pattern(cls, d: Dict[Any, Any]) -> Dict[Pattern[str], Dict[str, str]]:
         if not d:
             return {}
-        pattern_dict: Dict[Pattern[str], Dict[str, str]] = {}
+        pattern_dict: Dict[Pattern[str], Dict[str, str]] = defaultdict(dict)
         for k, v in d.items():
             if isinstance(v, dict):
                 pattern_dict[re.compile(k)] = v
             else:
-                pattern_dict[re.compile(r".*")] = {k: v}
+                pattern_dict[re.compile(r".*")][k] = v
         return pattern_dict
 
     def select_parameters(self, input_key: str) -> Dict[str, Dict[str, Any]]:
@@ -448,7 +449,7 @@ class StorageRetriever(Retriever):
 
     class TransParameters(BaseModel):
         trans_params: Optional[GlobalARMTransformParams] = Field(
-            default=None, alias="adi_transformation_parameters"
+            default=None, alias="transformation_parameters"
         )
 
     parameters: Optional[TransParameters] = None
@@ -523,10 +524,8 @@ class StorageRetriever(Retriever):
         # Q: Do data_vars need to be renamed or reindexed before data converters run?
 
         # Run data converters on coordinates, then on data variables
-        # TODO: support CreateGridVariable converter -- basically nothing retrieved
         for name, coord_def in retrieval_selections.coords.items():
             for converter in coord_def.data_converters:
-                # TODO: Identify InputKey and then pass input_data[input_key] to the converter
                 coord_data = retrieved_data.coords[name]
                 data = converter.convert(
                     data=coord_data,
@@ -535,13 +534,14 @@ class StorageRetriever(Retriever):
                     retrieved_dataset=retrieved_data,
                     time_span=(start_times[0], end_times[0]),  # Better name
                     input_dataset=input_data.get(coord_def.source),
+                    retriever=self,
+                    input_key=coord_def.source,
                 )
                 if data is not None:
                     retrieved_data.coords[name] = data
 
         for name, var_def in retrieval_selections.data_vars.items():
             for converter in var_def.data_converters:
-                # TODO: Identify InputKey and then pass input_data[input_key] to the converter
                 var_data = retrieved_data.data_vars[name]
                 data = converter.convert(
                     data=var_data,
@@ -564,7 +564,11 @@ class StorageRetriever(Retriever):
 
         # Fix the dtype encoding
         for var_name, var_data in retrieved_dataset.data_vars.items():
-            var_data.encoding["dtype"] = dataset_config[var_name].dtype
+            output_var_cfg = dataset_config.data_vars.get(var_name)
+            if output_var_cfg is not None:
+                dtype = output_var_cfg.dtype
+                retrieved_dataset[var_name] = var_data.astype(dtype)
+                var_data.encoding["dtype"] = dtype
 
         return retrieved_dataset
 

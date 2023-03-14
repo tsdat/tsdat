@@ -1,12 +1,18 @@
 classname: tsdat.io.retrievers.StorageRetriever
 parameters:
-  adi_transformation_parameters:
-    width:
-      time: 600   # This is a coordinate system default (per dimension)
+  transformation_parameters:
     alignment:
       time: CENTER   # This is a coordinate system default (per dimension)
+      time_30min: RIGHT
+      time_60min: LEFT
     range:
-      time: 300
+      time: 900
+      time_30min: 900
+      time_60min: 900
+    width:
+      time: 300   # This is a coordinate system default (per dimension)
+      time_30min: 1800
+      time_60min: 3600 
       # time:   # Use this format to set input datastream default (per dimension)
       #   .*buoy_z06\.a1.*: 1800s
       #   .*: 240s
@@ -26,42 +32,48 @@ parameters:
 coords:
   # This means that all variables dimensioned by time will be mapped onto the time grid from buoy_z06.a1
   # Also need example of creating based on regular interval
-  time:
-    .*test\.trans_inputs\.a1.*:
-      name: timestamp
+  # time:
+  #   .*test\.trans_inputs\.a1.*:
+  #     name: timestamp
     
-  time2:
+  time:
     name: NA
     data_converters:
       - classname: tsdat.io.converters.CreateTimeGrid
-        interval: 1min
+        interval: 5min
+
+  time_30min:
+    name: NA
+    data_converters:
+      - classname: tsdat.io.converters.CreateTimeGrid
+        interval: 30min
+
+  time_60min:
+    name: NA
+    data_converters:
+      - classname: tsdat.io.converters.CreateTimeGrid
+        interval: 1H
+
 
 data_vars: 
-  temperature:
-    .*test\.trans_inputs\.a1.*:
-      name: temp
-      data_converters:
-        - classname: tsdat.io.converters.TransformAuto
-         # We decided to have a converter class for all the adi transform methods
-        # - classname: tsdat.io.converters.Interpolate
-        # - classname: tsdat.io.converters.BinAverage
-        # - classname: tsdat.io.converters.BinAuto
-          coord: time  # If user does not put any coords, it will transform all coords.  If user only puts one coord, we assume the other coord will be TRANS_PASSTHROUGH.
-        - classname: tsdat.io.converters.UnitsConverter
-          input_units: degF
+  temperature_5min:
+    name: temp
+    data_converters:
+      - classname: tsdat.io.converters.TransformInterpolate
+        coord: time
 
-  # temperature:
-  #   .*buoy_z07\.a1.*:
-  #     name: temp
-  #     data_converters:
-  #       - classname: tsdat.io.converters.NearestNeighbor
-  #         coord: time
-  #       - classname: tsdat.io.converters.UnitsConverter
-  #         input_units: degF
+  temperature_30min:
+    name: temp
+    data_converters:
+      - classname: tsdat.io.converters.TransformAuto
+
+  temperature_60min:
+    name: temp
+    data_converters:
+      - classname: tsdat.io.converters.TransformAverage
 
   humidity:
-    .*test\.trans_inputs\.a1.*:
-      name: rh
-      data_converters:
-        - classname: tsdat.io.converters.NearestNeighbor
-          coord: time
+    name: rh
+    data_converters:
+      - classname: tsdat.io.converters.TransformNearest
+        coord: time
