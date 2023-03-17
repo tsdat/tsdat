@@ -427,18 +427,18 @@ class GlobalARMTransformParams(BaseModel):
     def select_parameters(self, input_key: str) -> Dict[str, Dict[str, Any]]:
         selected_params: Dict[str, Dict[str, Any]] = {}
         for pattern, params in self.alignment.items():
-            if pattern.match(input_key):
-                selected_params["alignment"] = params
+            if pattern.match(input_key) is not None:
+                selected_params["alignment"] = params.copy()
                 break
 
         for pattern, params in self.dim_range.items():
-            if pattern.match(input_key):
-                selected_params["range"] = params
+            if pattern.match(input_key) is not None:
+                selected_params["range"] = params.copy()
                 break
 
         for pattern, params in self.width.items():
-            if pattern.match(input_key):
-                selected_params["width"] = params
+            if pattern.match(input_key) is not None:
+                selected_params["width"] = params.copy()
                 break
 
         return selected_params

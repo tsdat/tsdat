@@ -377,6 +377,9 @@ class AdiTransformer:
         self._free_memory(retrieved_dataset)
         self._free_memory(transformed_dataset)
     
+    def _is_timelike(self, var: CDSVar) -> bool:
+        return "time" in var.get_name()
+    
     def _free_memory(self, adi_dataset: CDSGroup):
         # First we MUST walk through the object tree and detatch data pointers for all variables. We need
         #   to do this because the group delete will delete everything in the hierarchy, and we don't want  to
@@ -389,7 +392,7 @@ class AdiTransformer:
 
             vars: List[cds3.Var] = group.get_vars()
             for var in vars:
-                if var.get_name() != 'time':
+                if not self._is_timelike(var):
                     var.detach_data()
 
         detatch_vars(adi_dataset)

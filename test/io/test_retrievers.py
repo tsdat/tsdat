@@ -190,16 +190,16 @@ def test_storage_retriever_transformations(vap_transform_dataset_config: Dataset
         )
     )
 
-    ds = xr.Dataset(
+    input_dataset = xr.Dataset(
         coords={
             "timestamp": pd.to_datetime(
                 [
-                    "2022-04-13 14:00:00",
-                    "2022-04-13 14:10:00",
-                    "2022-04-13 14:20:00",
-                    "2022-04-13 14:30:00",
-                    "2022-04-13 14:40:00",
-                    "2022-04-13 14:50:00",
+                    "2022-04-13 14:00:00",  # 0
+                    "2022-04-13 14:10:00",  # 1
+                    "2022-04-13 14:20:00",  # 2
+                    "2022-04-13 14:30:00",  # -9999
+                    "2022-04-13 14:40:00",  # 4
+                    "2022-04-13 14:50:00",  # 5
                 ]
             )
         },
@@ -244,26 +244,82 @@ def test_storage_retriever_transformations(vap_transform_dataset_config: Dataset
         "test/io/data/retriever-store/data/test.trans_inputs.a1/test.trans_inputs.a1.20220413.140000.nc"
     )
     path.parent.mkdir(parents=True, exist_ok=True)
-    ds.to_netcdf(path)  # type: ignore
+    input_dataset.to_netcdf(path)  # type: ignore
     inputs = [
         "test.trans_inputs.a1::20220413.000000::20220414.000000",
     ]
 
-    retrieved_dataset = storage_retriever.retrieve(
+    ds = storage_retriever.retrieve(
         inputs, dataset_config=vap_transform_dataset_config, storage=storage
     )
 
-    expected = xr.Dataset(
-        coords={"time": pd.date_range("2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left")},  # type: ignore
-        data_vars={
-            "temperature": (  # degF -> degC
-                "time",
-                (np.array([70, 76, 84]) - 32) * 5 / 9,
-                {"units": "degC"},
-            ),
-            "humidity": ("time", [0, 30, 70]),
-        },
-        attrs={"datastream": "humboldt.buoy.b1"},
+    for var in [
+        "temperature_5min",
+        "temperature_30min",
+        "temperature_60min",
+        "humidity",
+    ]:
+        assert (
+            var in ds.data_vars
+        ), f"{var} is expected to be in dataset. Found: {list(ds)}"
+        assert (
+            f"qc_{var}" in ds.data_vars
+        ), f"qc_{var} is expected to be in dataset. Found: {list(ds)}"
+
+    t5min = ds["temperature_5min"]
+    assert "TRANS_INTERPOLATE" in t5min.attrs.get("cell_transform", "")
+    np.testing.assert_equal(
+        t5min.sel(  # type: ignore
+            time=slice("2022-04-13 13:50:00", "2022-04-13 15:00:00")
+        ).values,
+        np.array([-9999, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, -9999]),
     )
 
-    xr.testing.assert_allclose(retrieved_dataset, expected)  # type: ignore
+    t30min = ds["temperature_30min"]
+    assert "TRANS_BIN_AVERAGE" in t30min.attrs.get("cell_transform", "")
+    np.testing.assert_equal(
+        t30min.sel(  # type: ignore
+            time_30min=slice("2022-04-13 13:30:00", "2022-04-13 15:30:00")
+        ).values,
+        np.array([-9999, 0, 1.2, 4.5, -9999]),
+    )
+
+    t60min = ds["temperature_60min"]
+    assert "TRANS_BIN_AVERAGE" in t60min.attrs.get("cell_transform", "")
+    np.testing.assert_equal(
+        t60min.sel(  # type: ignore
+            time_60min=slice("2022-04-13 12:00:00", "2022-04-13 15:00:00")
+        ).values,
+        np.array([-9999, 0, 8 / 3, -9999]),
+    )
+
+    humidity = ds["humidity"]
+    assert "TRANS_SUBSAMPLE" in humidity.attrs.get("cell_transform", "")
+    np.testing.assert_equal(
+        humidity.sel(  # type: ignore
+            time=slice("2022-04-13 13:40:00", "2022-04-13 15:10:00")
+        ).values,
+        np.array(
+            [
+                -9999,
+                59,
+                59,
+                59,
+                59,
+                59,
+                60,
+                60,
+                61,
+                61,
+                62,
+                62,
+                63,
+                63,
+                64,
+                64,
+                64,
+                64,
+                -9999,
+            ]
+        ),
+    )

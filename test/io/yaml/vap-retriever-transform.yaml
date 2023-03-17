@@ -7,8 +7,8 @@ parameters:
       time_60min: LEFT
     range:
       time: 900
-      time_30min: 900
-      time_60min: 900
+      time_30min: 0
+      time_60min: 0
     width:
       time: 300   # This is a coordinate system default (per dimension)
       time_30min: 1800
@@ -77,3 +77,4 @@ data_vars:
     data_converters:
       - classname: tsdat.io.converters.TransformNearest
         coord: time
+        # range: 0s  # don't try to use data points outside of time bounds
