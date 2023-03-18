@@ -21,6 +21,9 @@ jobs:
           channels: arm-doe,conda-forge
           activate-environment: tsdat
       - run: python -m pip install -r requirements-dev.txt
+        shell: bash -el {0}
       - run: coverage run -m pytest
+        shell: bash -el {0}
       - run: coverage xml
+        shell: bash -el {0}
       - uses: codecov/codecov-action@v2
