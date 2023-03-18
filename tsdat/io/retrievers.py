@@ -351,9 +351,9 @@ def perform_data_retrieval(
                         variable_retriever.name,
                     )
                     coord_data[name] = dataset.get(
-                        variable_retriever.name, xr.DataArray()
+                        variable_retriever.name, xr.DataArray([])
                     )
-                    if not coord_data[name].equals(xr.DataArray()):
+                    if not coord_data[name].equals(xr.DataArray([])):
                         variable_retriever.source = input_key
                     selected_coord_rules[name] = variable_retriever
                     break
@@ -374,13 +374,13 @@ def perform_data_retrieval(
                         variable_retriever.name,
                     )
                     data_var_data[name] = dataset.get(
-                        variable_retriever.name, xr.DataArray()
+                        variable_retriever.name, xr.DataArray([])
                     )
-                    if data_var_data[name].equals(xr.DataArray()):
+                    if data_var_data[name].equals(xr.DataArray([])):
                         logger.warning(
                             "Input key matched regex pattern but no matching variable"
                             " could be found in the input dataset. A value of"
-                            " xr.DataArray() will be used instead.\n"
+                            " xr.DataArray([]) will be used instead.\n"
                             "\tVariable: %s\n"
                             "\tInput Variable: %s\n"
                             "\tPattern: %s\n"
@@ -511,7 +511,7 @@ class StorageRetriever(Retriever):
 
         # Ensure selected coords are indexed by themselves
         for name, coord_data in retrieved_data.coords.items():
-            if coord_data.equals(xr.DataArray()):
+            if coord_data.equals(xr.DataArray([])):
                 continue
             new_coord = xr.DataArray(
                 data=coord_data.data,

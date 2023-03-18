@@ -1,46 +1,12 @@
 classname: tsdat.io.retrievers.StorageRetriever
-# This is the format we want to use for transformation params to set the coorinate system or input datastream defaults.
-# Later if user wants to override by variable, they would set that in the converter parameters.
-parameters:
-  adi_transformation_parameters:
-    width:
-      time: 300s   # This is a coordinate system default (per dimension)
-    alignment:
-      time: LEFT   # This is a coordinate system default (per dimension)
-    range:
-      time:   # Use this format to set input datastream default (per dimension)
-        .*buoy_z06\.a1.*: 1800s
-        .*: 240s
-
-
-# parameters:
-# Flag to filter out bad qc values by input source
-# filter_bad_qc:
-#   .*: false
-
-# How far to look on either direction of a data point for the nearest value
-# range:
-#   time:
-#     .*buoy_z06\.a1.*: 1800s
-#     .*: 240s
-
 coords:
-  # This means that all variables dimensioned by time will be mapped onto the time grid from buoy_z06.a1
-  # Also need example of creating based on regular interval
+  # This means that all variables dimensioned by time will be mapped onto the time grid
+  # from buoy_z06.a1. Also need example of creating based on regular interval
   time:
     .*buoy_z06\.a1.*:
       name: time
 
-data_vars:
-  temperature_adi:
-    .*buoy_z07\.a1.*:
-      name: temp
-      data_converters:
-        - classname: tsdat.io.converters.AdiAuto  # We decided to have a converter class for all the adi transform methods
-          coord: time  # If user does not put any coords, it will transform all coords.  If user only puts one coord, we assume the other coord will be TRANS_PASSTHROUGH.
-        - classname: tsdat.io.converters.UnitsConverter
-          input_units: degF
-
+data_vars: 
   temperature:
     .*buoy_z07\.a1.*:
       name: temp

@@ -7,6 +7,7 @@ from tsdat import (
     StringToDatetime,
     UnitsConverter,
     RetrievedDataset,
+    TransformAuto,
 )
 
 
