@@ -17,6 +17,9 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           environment-file: conda_environment.yml
+          mamba-version: "*"
+          channels: arm-doe,conda-forge
+          activate-environment: tsdat
       - run: python -m pip install -r requirements-dev.txt
       - run: coverage run -m pytest
       - run: coverage xml
