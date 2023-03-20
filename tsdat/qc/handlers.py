@@ -1,9 +1,10 @@
-from typing import Any, List, Literal, Tuple, Union
+import warnings
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra, Field, validator
+from pydantic import BaseModel, Extra, root_validator, validator
 
 from ..utils import record_corrections_applied
 from .base import QualityHandler
@@ -101,8 +102,11 @@ class RecordQualityResults(QualityHandler):
     ------------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel, extra=Extra.forbid):
-        bit: int = Field(ge=1, lt=32)
-        """The bit number (e.g., 1, 2, 3, ...) used to indicate if the check passed.
+        bit: Optional[int] = None
+        """DEPRECATED
+
+        The bit number (e.g., 1, 2, 3, ...) used to indicate if the check passed.
+
         The quality results are bitpacked into an integer array to preserve space. For
         example, if 'check #0' uses bit 0 and fails, and 'check #1' uses bit 1 and fails
         then the resulting value on the qc variable would be 2^(0) + 2^(1) = 3. If we
@@ -113,6 +117,15 @@ class RecordQualityResults(QualityHandler):
 
         meaning: str
         """A string that describes the test applied."""
+
+        @root_validator(pre=True)
+        def deprecate_bit_parameter(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+            if "bit" in values:
+                warnings.warn(
+                    "The 'bit' argument is deprecated, please remove it.",
+                    category=DeprecationWarning,
+                )
+            return values
 
         @validator("assessment", pre=True)
         def to_lower(cls, assessment: Any) -> str:
@@ -130,11 +143,22 @@ class RecordQualityResults(QualityHandler):
         dataset.qcfilter.add_test(
             variable_name,
             index=failures,
-            test_number=self.parameters.bit,
+            test_number=self.get_next_bit_number(dataset, variable_name),
             test_meaning=self.parameters.meaning,
             test_assessment=self.parameters.assessment,
         )
         return dataset
+
+    def get_next_bit_number(self, dataset: xr.Dataset, variable_name: str) -> int:
+        if (qc_var := dataset.get(f"qc_{variable_name}")) is None:
+            return 1
+        masks = qc_var.attrs.get("flag_masks")
+        if not isinstance(masks, list):
+            raise ValueError(
+                f"QC Variable {qc_var.name} is not standardized. Expected 'flag_masks'"
+                f" attribute to be like [1, 2, ...], but found '{masks}'"
+            )
+        return len(masks) + 1  # type: ignore
 
 
 class RemoveFailedValues(QualityHandler):
