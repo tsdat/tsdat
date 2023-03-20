@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Optional
+import warnings
 import numpy as np
+from pint import PintError, UnitRegistry
 from pydantic import (
     BaseModel,
     Extra,
@@ -10,6 +12,9 @@ from pydantic import (
 )
 from .attributes import AttributeModel
 
+
+ureg = UnitRegistry()
+ureg.define("unitless = count = 1")  # type: ignore
 
 __all__ = [
     "VariableAttributes",
@@ -109,11 +114,20 @@ class VariableAttributes(AttributeModel):
         " mistaken for a physical value or data point.",
     )
 
-    # TODO: Validate units using pint registry
-    # ureg = pint.UnitRegistry(autoconvert_offset_to_baseunit=True)
-    # ureg.define('percent = 0.01*count = %')
-    # ureg.define('unitless = count = 1')
-    # try: ureg(units) except: ValueError(units not valid)
+    @validator("units")
+    def validate_unit(cls, unit_str: str) -> str:
+        # Not recognized by pint, but we want it to be valid
+        if unit_str == "%" or unit_str.startswith("Seconds since"):
+            return unit_str
+        # Validate with pint unit registry
+        try:
+            ureg(unit_str)
+        except PintError:
+            warnings.warn(
+                f"'{unit_str}' is not a valid unit or combination of units. The string"
+                " will be kept as-is."
+            )
+        return unit_str
 
     @root_validator
     @classmethod

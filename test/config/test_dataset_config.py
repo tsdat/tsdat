@@ -1,3 +1,4 @@
+import warnings
 import pytest
 import tempfile
 from typing import Any, Dict, List
@@ -181,6 +182,30 @@ def test_fail_if_bad_variable_attributes():
 
 
 # TEST: variable attributes validate units string (pre-req: validate units)
+@pytest.mark.parametrize(
+    ("units", "should_warn"),
+    (
+        ("1", False),
+        ("m", False),
+        ("m/s", False),
+        ("m^3", False),
+        ("kg * m^3", False),
+        ("kg m^3", False),
+        ("invalid units", True),
+    ),
+)
+def test_valid_variable_units(units: str, should_warn: bool):
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        VariableAttributes(units=units)  # type: ignore
+        if should_warn:
+            assert len(w) == 1
+            assert issubclass(w[-1].category, UserWarning)
+            assert str(w[-1].message).startswith(
+                f"'{units}' is not a valid unit or combination of units."
+            )
+        else:
+            assert len(w) == 0
 
 
 def test_valid_variable_attrs_adds_fillvalue():
