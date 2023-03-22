@@ -39,19 +39,19 @@ coords:
   time:
     name: NA
     data_converters:
-      - classname: tsdat.io.converters.CreateTimeGrid
+      - classname: tsdat.adi.converters.CreateTimeGrid
         interval: 5min
 
   time_30min:
     name: NA
     data_converters:
-      - classname: tsdat.io.converters.CreateTimeGrid
+      - classname: tsdat.adi.converters.CreateTimeGrid
         interval: 30min
 
   time_60min:
     name: NA
     data_converters:
-      - classname: tsdat.io.converters.CreateTimeGrid
+      - classname: tsdat.adi.converters.CreateTimeGrid
         interval: 1H
 
 
@@ -59,22 +59,22 @@ data_vars:
   temperature_5min:
     name: temp
     data_converters:
-      - classname: tsdat.io.converters.TransformInterpolate
+      - classname: tsdat.adi.converters.Interpolate
         coord: time
 
   temperature_30min:
     name: temp
     data_converters:
-      - classname: tsdat.io.converters.TransformAuto
+      - classname: tsdat.adi.converters.TransformAuto
 
   temperature_60min:
     name: temp
     data_converters:
-      - classname: tsdat.io.converters.TransformAverage
+      - classname: tsdat.adi.converters.BinAverage
 
   humidity:
     name: rh
     data_converters:
-      - classname: tsdat.io.converters.TransformNearest
+      - classname: tsdat.adi.converters.NearestNeighbor
         coord: time
         # range: 0s  # don't try to use data points outside of time bounds
