@@ -223,7 +223,7 @@ class AdiTransformer:
                       variable_name: str,
                       input_dataset: xr.Dataset,
                       output_dataset: xr.Dataset,
-                      transform_parameters: Dict
+                      transform_parameters: Dict[str, Any]
                       ):
         """-------------------------------------------------------------------------------------------------------------
         This function will use ADI libraries to transform one data variable to the shape defined for the output.

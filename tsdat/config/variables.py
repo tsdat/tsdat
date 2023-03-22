@@ -1,17 +1,18 @@
-from typing import Any, Dict, List, Optional
 import warnings
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 from pint import PintError, UnitRegistry
 from pydantic import (
     BaseModel,
     Extra,
-    root_validator,
     Field,
     StrictStr,
+    root_validator,
     validator,
 )
-from .attributes import AttributeModel
 
+from .attributes import AttributeModel
 
 ureg = UnitRegistry()
 ureg.define("unitless = count = 1")  # type: ignore
@@ -24,11 +25,12 @@ __all__ = [
 
 
 class VariableAttributes(AttributeModel):
-    """Attributes that will be recorded in the output dataset. These metadata are used to
-    record information about the data properties and related fields (e.g., units,
-    ancillary_variables, etc), user-facing metadata (e.g., long_name, comment), as well as
-    attributes related to quality checks and controls (e.g., valid_*, fail_*, and warn_*
-    properties)."""
+    """Attributes that will be recorded in the output dataset.
+
+    These metadata are to record information about the data properties and related
+    fields (e.g., units, ancillary_variables, etc), user-facing metadata (e.g.,
+    long_name, comment), as well as attributes related to quality checks and controls
+    (e.g., valid_*, fail_*, and warn_* properties)."""
 
     units: Optional[str] = Field(
         description="A string indicating the units the data are measured in. Tsdat uses"
@@ -41,18 +43,21 @@ class VariableAttributes(AttributeModel):
         " known. Doing so provides helpful context for data users."
     )
     long_name: Optional[StrictStr] = Field(
+        default=None,
         description="A brief label for the name of the measured property. The xarray"
         " python library automatically searches for this attribute to use as an axes"
-        " label in plots, so the value should be suitable for display."
+        " label in plots, so the value should be suitable for display.",
     )
     standard_name: Optional[StrictStr] = Field(
+        default=None,
         description="A string exactly matching a value in the CF Standard Name table"
         " which is used to provide a standardized way of identifying variables and"
         " measurements across heterogeneous datasets and domains. If a suitable match"
         " does not exist, then this attribute should be omitted. The full list of CF"
-        " Standard Names is at: https://cfconventions.org/Data/cf-standard-names."
+        " Standard Names is at: https://cfconventions.org/Data/cf-standard-names.",
     )
     comment: Optional[StrictStr] = Field(
+        default=None,
         description="A user-friendly description of what the variable represents, how"
         " it was measured or derived, or any other relevant information that increases"
         " the ability of users to understand and use this data. This field plays a"
@@ -61,9 +66,10 @@ class VariableAttributes(AttributeModel):
         " important for your dataset. Additionally, if the units for an attribute are"
         " unknown, then this field must include the phrase: 'Unknown units.' so that"
         " users know there is some uncertainty around this property. Variables that are"
-        " unitless (e.g., categorical data or ratios), should set the 'units' to '1'."
+        " unitless (e.g., categorical data or ratios), should set the 'units' to '1'.",
     )
     valid_range: Optional[List[float]] = Field(
+        default=None,
         min_items=2,
         max_items=2,
         description="A two-element list of [min, max] values outside of which the data"
@@ -72,6 +78,7 @@ class VariableAttributes(AttributeModel):
         " a 'Bad' assessment and replace those values with the variable's _FillValue.",
     )
     fail_range: Optional[List[float]] = Field(
+        default=None,
         min_items=2,
         max_items=2,
         description="A two-element list of [min, max] values outside of which the data"
@@ -80,6 +87,7 @@ class VariableAttributes(AttributeModel):
         " range as having a 'Bad' assessment.",
     )
     warn_range: Optional[List[float]] = Field(
+        default=None,
         min_items=2,
         max_items=2,
         description="A two-element list of [min, max] values outside of which the data"
@@ -88,25 +96,29 @@ class VariableAttributes(AttributeModel):
         " range as having an 'Indeterminate' assessment.",
     )
     valid_delta: Optional[float] = Field(
+        default=None,
         description="The largest difference between consecutive values in the data"
         " outside of which the data should be treated as missing. If applying QC tests,"
         " then users should configure the quality managers to flag values outside of"
         " this range as having a 'Bad' assessment and replace those values with the"
-        " variable's _FillValue."
+        " variable's _FillValue.",
     )
     fail_delta: Optional[float] = Field(
+        default=None,
         description="The largest difference between consecutive values in the data"
         " outside of which the data should be teated with heavy skepticism as missing."
         " If applying QC tests, then users should configure the quality managers to"
-        " flag values outside of this range as having a 'Bad' assessment."
+        " flag values outside of this range as having a 'Bad' assessment.",
     )
     warn_delta: Optional[float] = Field(
+        default=None,
         description="The largest difference between consecutive values in the data"
         " outside of which the data should be teated with some skepticism as missing."
         " If applying QC tests, then users should configure the quality managers to"
-        " flag values outside of this range as having an 'Indeterminate' assessment."
+        " flag values outside of this range as having an 'Indeterminate' assessment.",
     )
     fill_value: Optional[Any] = Field(
+        default=None,
         alias="_FillValue",
         description="A value used to initialize the variable's data and indicate that"
         " the data is missing. Defaults to -9999 for numerical data. If choosing a"
@@ -144,63 +156,7 @@ class VariableAttributes(AttributeModel):
         return values
 
 
-# class RetrieverParameters(BaseModel, extra=Extra.allow):
-#     required: bool = Field(
-#         True,
-#         description="If True (the default) then the pipeline will fail loudly if it is"
-#         " unable to retrieve the variable from an input source.",
-#     )
-#     name: Optional[StrictStr] = Field(
-#         title="Input Name",
-#         description="The name of the variable as it appears in the input dataset, or"
-#         " more accurately, this is the key tsdat will use to retrieve the variable"
-#         " from the dataset returned by the input DataReader.",
-#     )
-#     retrieval_rules: Optional[Any] = Field(
-#         description="Optional field used to specify how the variable should be"
-#         " retrieved from the input source(s). The format of this field is dependent on"
-#         " the type of retriever specified by the input classname. If not specified then"
-#         " the 'tsdat.io.retrievers.SimpleRetriever' class is used, and this field is"
-#         " not needed."
-#     )
-#     units: Optional[str] = Field(
-#         description="This gives tsdat context about the units the input dataset is"
-#         " measured in. If the 'units' property here differs from the 'units' property"
-#         " under the 'attrs' section, then tsdat will automatically perform a unit"
-#         " conversion on the input data."
-#     )
-# converters: Optional[List[InputConverter]] = Field(
-#     description="A list of converters that tsdat should use to transform the data"
-#     " from the input source to the output source. Currently only two converters are"
-#     " provided: the 'UnitsConverter', which converts input units to output units"
-#     " using the Python libraries act-atmos and pint, and the 'StringTimeConverter',"
-#     " which is used exclusively for converting string values into Python datetime"
-#     " objects that are timezone-aware. If using the 'StringTimeConverter' class,"
-#     " two parameters are required: 'timezone' - the timezone the data are recorded"
-#     " in (default UTC), and 'time_format' - a string that is passed to the"
-#     " strptime() function as the string format used to create a datetime object.",
-# )
-
-
-# class InputVariable(ParameterizedConfigClass, extra=Extra.allow):
-#     classname: StrictStr = "tsdat.io.retrievers.SimpleRetriever"
-#     parameters: RetrieverParameters = RetrieverParameters()  # type: ignore
-
-
 class Variable(BaseModel, extra=Extra.forbid):
-    # name: str = Field(
-    #     title="Output Variable Name",
-    #     regex=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$",
-    #     description="The name of the variable in the output file. Generally, we"
-    #     " recommend only using lowercase alphanumeric and '_' characters to name"
-    #     " variables, as uniformly-named variables are easier to sort through and read"
-    #     " for users. Spaces and non-ascii characters are explicitly disallowed. The"
-    #     " variable name should be concise, yet clear enough for users to know what the"
-    #     " property measures. A more descriptive name for a variable (i.e. suitable for"
-    #     " a plot title / axis label) should be provided via the 'long_name' attribute"
-    #     " in the attrs section, if desired. The 'comment' attribute is also recommended"
-    #     " to provide additional context about the variable, if needed.",
-    # )
     name: str = Field("", regex=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
     """Should be left empty. This property will be set automatically by the data_vars or
     coords pydantic model upon instantiation."""

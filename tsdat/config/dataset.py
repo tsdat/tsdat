@@ -1,5 +1,7 @@
 import logging
 import re
+from typing import Any, Dict, Union
+
 from pydantic import (
     Extra,
     Field,
@@ -7,10 +9,10 @@ from pydantic import (
     validator,
 )
 from pydantic.fields import ModelField
-from typing import Any, Dict, Union
+
 from .attributes import GlobalAttributes
 from .utils import YamlModel
-from .variables import Variable, Coordinate
+from .variables import Coordinate, Variable
 
 __all__ = ["DatasetConfig"]
 

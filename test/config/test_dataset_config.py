@@ -18,7 +18,7 @@ from tsdat.utils import model_to_dict
 
 
 def test_fail_if_non_ascii_attrs():
-    attrs: List[Dict[str, Any]] = [
+    attrs = [
         {"want some π?": "3.14159"},  # Non-ascii key
         {"measurement": "ºC"},  # Non-ascii for value
     ]
@@ -100,8 +100,8 @@ def test_warn_if_unexpected_global_attributes():
         "code_version": "0.0.1",  # Should raise a warning and be replaced
     }
     expected_warning_msgs = [
-        "The 'history' attribute should not be set explicitly. The current value of 'Raise a warning' will be ignored.",
-        "The 'code_version' attribute should not be set explicitly. The current value of '0.0.1' will be ignored.",
+        "The 'history' attribute should not be set explicitly.",
+        "The 'code_version' attribute should not be set explicitly.",
     ]
     with pytest.warns(UserWarning) as warning:
         model_dict = model_to_dict(GlobalAttributes(**attrs))
@@ -181,7 +181,6 @@ def test_fail_if_bad_variable_attributes():
         assert expected_msg in actual_msg
 
 
-# TEST: variable attributes validate units string (pre-req: validate units)
 @pytest.mark.parametrize(
     ("units", "should_warn"),
     (
@@ -312,7 +311,7 @@ def test_coordinate_dimensioned_by_itself():
 
 
 # TEST: variable dtype is one of allowed types
-# TEST: dataset validation of data variable dimensions matching coordinate variable names
+# TEST: dataset validation of data variable dimensions matching coordinate variable name
 # TEST: dataset validation of data variable, coordinate variable, name uniqueness
 # TEST: dataset validation of time as a required coordinate variable
 

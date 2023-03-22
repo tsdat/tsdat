@@ -1,10 +1,11 @@
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
 import xarray as xr
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from pydantic import BaseModel, Extra
 from numpy.typing import NDArray
-from tstring import Template
+from pydantic import BaseModel, Extra
+from tstring.template import Template
 
 __all__ = [
     "ParameterizedClass",

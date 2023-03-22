@@ -1,18 +1,19 @@
 import warnings
+from typing import Any, Dict, Optional
 
 from pydantic import (
     BaseModel,
     Extra,
-    validator,
-    root_validator,
     Field,
-    StrictStr,
     HttpUrl,
+    StrictStr,
+    root_validator,
+    validator,
 )
 from pydantic.fields import ModelField
-from typing import Any, Dict, Optional
-from .utils import get_code_version
+
 from ..utils import get_datastream
+from .utils import get_code_version
 
 
 class AttributeModel(BaseModel, extra=Extra.allow):
@@ -51,20 +52,25 @@ class GlobalAttributes(AttributeModel):
         " enough context about the data for new users to quickly understand how the"
         " data can be used.",
     )
-    code_url: Optional[HttpUrl] = Field(description="Where the code is hosted.")
+    code_url: Optional[HttpUrl] = Field(
+        default=None, description="Where the code is hosted."
+    )
     conventions: Optional[StrictStr] = Field(
-        description="The data conventions the dataset follows."
+        default=None, description="The data conventions the dataset follows."
     )
     doi: Optional[StrictStr] = Field(
-        description="The DOI that has been registered for this dataset, if applicable."
+        default=None,
+        description="The DOI that has been registered for this dataset, if applicable.",
     )
     institution: Optional[StrictStr] = Field(
+        default=None,
         description="The institution or organization that produces or manages this"
-        " data."
+        " data.",
     )
     references: Optional[StrictStr] = Field(
+        default=None,
         description="Optional attribute used to cite other data, algorithms, etc. as"
-        " needed."
+        " needed.",
     )
     location_id: str = Field(
         min_length=1,
@@ -80,6 +86,7 @@ class GlobalAttributes(AttributeModel):
         " alphanumeric characters and '_' are allowed.",
     )
     qualifier: Optional[str] = Field(
+        default=None,
         min_length=1,
         regex=r"^[a-zA-Z0-9_]+$",  # lowercase alphanumeric and '_' characters
         description="An optional string which distinguishes these data from other"
@@ -87,6 +94,7 @@ class GlobalAttributes(AttributeModel):
         " and '_' are allowed.",
     )
     temporal: Optional[str] = Field(
+        default=None,
         min_length=2,
         regex=r"^[0-9]+[a-zA-Z]+$",
         description="An optional string which describes the temporal resolution of the"
