@@ -409,8 +409,8 @@ def perform_data_retrieval(
 class GlobalARMTransformParams(BaseModel):
     # TODO: Make this optional
     alignment: Dict[Pattern, Dict[str, Literal["LEFT", "RIGHT", "CENTER"]]]  # type: ignore
-    dim_range: Dict[Pattern, Dict[str, int]] = Field(..., alias="range")  # type: ignore
-    width: Dict[Pattern, Dict[str, int]]  # type: ignore
+    dim_range: Dict[Pattern, Dict[str, str]] = Field(..., alias="range")  # type: ignore
+    width: Dict[Pattern, Dict[str, str]]  # type: ignore
 
     @validator("alignment", "dim_range", "width", pre=True)
     def default_pattern(cls, d: Dict[Any, Any]) -> Dict[Pattern[str], Dict[str, str]]:

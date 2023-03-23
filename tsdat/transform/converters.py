@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "CreateTimeGrid",
-    "TransformAuto",
+    "Automatic",
     "BinAverage",
     "Interpolate",
     "NearestNeighbor",
@@ -26,30 +26,31 @@ logger = logging.getLogger(__name__)
 def _create_bounds(
     coordinate: xr.DataArray,
     alignment: Literal["LEFT", "RIGHT", "CENTER"],
-    width: Any,
+    width: str,
 ) -> xr.DataArray:
     """Creates coordinate bounds with the specified alignment and bound width."""
     coord_vals = coordinate.data
+    # TODO: handle for units
 
     units = ""
-    if isinstance(width, str):
-        for i, s in enumerate(width):
-            if s.isalpha():
-                break
-        width, units = float(width[:i]), width[i:]
+    for i, s in enumerate(width):
+        if s.isalpha():
+            units = width[i:]
+            width = width[:i]
+    _width = float(width)
 
     if np.issubdtype(coordinate.dtype, np.datetime64):  # type: ignore
         coord_vals = np.array([np.datetime64(val) for val in coord_vals])
-        width = np.timedelta64(int(width), units or "s")
+        _width = np.timedelta64(int(_width), units or "s")
 
     if alignment == "LEFT":
         begin = coord_vals
-        end = coord_vals + width
+        end = coord_vals + _width
     elif alignment == "CENTER":
-        begin = coord_vals - width / 2
-        end = coord_vals + width / 2
+        begin = coord_vals - _width / 2
+        end = coord_vals + _width / 2
     elif alignment == "RIGHT":
-        begin = coord_vals - width
+        begin = coord_vals - _width
         end = coord_vals
 
     bounds_array = np.stack((begin, end), axis=-1)  # type: ignore
@@ -275,7 +276,7 @@ class _ADIBaseTransformer(DataConverter):
         # otherwise crashing.
         # TODO: Improve error logging
         try:
-            from tsdat.adi.transform import AdiTransformer
+            from tsdat.transform.adi import AdiTransformer
 
             transformer = AdiTransformer()
             transformer.transform(
@@ -309,7 +310,7 @@ class _ADIBaseTransformer(DataConverter):
         return None
 
 
-class TransformAuto(_ADIBaseTransformer):
+class Automatic(_ADIBaseTransformer):
     transformation_type: str = "TRANS_AUTO"
 
 

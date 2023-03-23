@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 import pandas as pd
-from tsdat.adi.transform import AdiTransformer
+from tsdat.transform.adi import AdiTransformer
 
 
 def test_transform():

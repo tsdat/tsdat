@@ -6,13 +6,13 @@ parameters:
       time_30min: RIGHT
       time_60min: LEFT
     range:
-      time: 900
-      time_30min: 0
-      time_60min: 0
+      time: 900s
+      time_30min: 0s
+      time_60min: 0s
     width:
-      time: 300   # This is a coordinate system default (per dimension)
-      time_30min: 1800
-      time_60min: 3600 
+      time: 300s   # This is a coordinate system default (per dimension)
+      time_30min: 1800s
+      time_60min: 3600s
       # time:   # Use this format to set input datastream default (per dimension)
       #   .*buoy_z06\.a1.*: 1800s
       #   .*: 240s
@@ -39,19 +39,19 @@ coords:
   time:
     name: NA
     data_converters:
-      - classname: tsdat.adi.converters.CreateTimeGrid
+      - classname: tsdat.transform.CreateTimeGrid
         interval: 5min
 
   time_30min:
     name: NA
     data_converters:
-      - classname: tsdat.adi.converters.CreateTimeGrid
+      - classname: tsdat.transform.CreateTimeGrid
         interval: 30min
 
   time_60min:
     name: NA
     data_converters:
-      - classname: tsdat.adi.converters.CreateTimeGrid
+      - classname: tsdat.transform.CreateTimeGrid
         interval: 1H
 
 
@@ -59,22 +59,22 @@ data_vars:
   temperature_5min:
     name: temp
     data_converters:
-      - classname: tsdat.adi.converters.Interpolate
+      - classname: tsdat.transform.Interpolate
         coord: time
 
   temperature_30min:
     name: temp
     data_converters:
-      - classname: tsdat.adi.converters.TransformAuto
+      - classname: tsdat.transform.Automatic
 
   temperature_60min:
     name: temp
     data_converters:
-      - classname: tsdat.adi.converters.BinAverage
+      - classname: tsdat.transform.BinAverage
 
   humidity:
     name: rh
     data_converters:
-      - classname: tsdat.adi.converters.NearestNeighbor
+      - classname: tsdat.transform.NearestNeighbor
         coord: time
         # range: 0s  # don't try to use data points outside of time bounds
