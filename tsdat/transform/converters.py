@@ -151,6 +151,7 @@ class _ADIBaseTransformer(DataConverter):
         coord_rename_map = {
             _input_name: _output_name
             for _input_name, _output_name in zip(input_coord_names, output_coord_names)
+            if _input_name != _output_name
         }
         output_coord_data = {n: retrieved_dataset.coords[n] for n in output_coord_names}
 

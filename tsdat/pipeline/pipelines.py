@@ -1,8 +1,11 @@
-import xarray as xr
 from typing import Any, List
-from tsdat.io.retrievers import StorageRetriever
 
+import xarray as xr
+from pydantic import BaseModel
+
+from tsdat.io.retrievers import StorageRetriever
 from tsdat.utils import decode_cf
+
 from .base import Pipeline
 
 __all__ = ["IngestPipeline", "TransformationPipeline"]
@@ -78,33 +81,45 @@ class TransformationPipeline(IngestPipeline):
 
     ---------------------------------------------------------------------------------"""
 
+    class Parameters(BaseModel):
+        datastreams: List[str]
+        """A list of datastreams that the pipeline should be configured to run for.
+        Datastreams should include the location and data level information."""
+
+    parameters: Parameters
     retriever: StorageRetriever
 
     def run(self, inputs: List[str], **kwargs: Any) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Runs the data pipeline on the provided inputs.
 
-        Note that input keys to TransformationPipelines are different than inputs to
-        IngestPipelines. Here each input key is expected to follow a standard format:
-
-        "datastream::start-date::end-date",
-
-        e.g., "sgp.myingest.b1::20220913.000000::20220914.000000"
-
-        This format allows the retriever to pull datastream data from the Storage API
-        for the desired dates for each desired input source.
-
         Args:
-            inputs (List[str]): A list of input keys that the pipeline's Retriever class
-            can use to load data into the pipeline.
+            inputs (List[str]): A 2-element list of start-date, end-date that the
+                pipeline should process.
 
         Returns:
             xr.Dataset: The processed dataset.
 
         -----------------------------------------------------------------------------"""
+        if len(inputs) != 2:
+            raise ValueError(
+                f"'inputs' argument for {self.__repr_name__()}.run(inputs) must be a"
+                f" two-element list of [start date, end date]. Got '{inputs}'"
+            )
+
+        # Build the input strings for the retriever, which uses a format like:
+        # datastream::start::end, e.g., 'sgp.aosacsm.b1::20230101::20230102'
+        start, end = inputs[0], inputs[1]
+        input_keys = [
+            f"{datastream}::{start}::{end}"
+            for datastream in self.parameters.datastreams
+        ]
 
         dataset = self.retriever.retrieve(
-            inputs, self.dataset_config, storage=self.storage
+            input_keys,
+            dataset_config=self.dataset_config,
+            storage=self.storage,
+            **kwargs,
         )
         dataset = self.prepare_retrieved_dataset(dataset)
         dataset = self.hook_customize_dataset(dataset)

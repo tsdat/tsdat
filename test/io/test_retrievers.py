@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -136,6 +137,8 @@ def test_storage_retriever(
                 {"units": "degC"},
             ),
             "humidity": ("time", [0, 30, 70]),
+            "qc_temperature": ("time", [0, 0, 0]),
+            "qc_humidity": ("time", [0, 0, 0]),
         },
         attrs={"datastream": "humboldt.buoy.b1"},
     )
@@ -324,3 +327,5 @@ def test_storage_retriever_transformations(vap_transform_dataset_config: Dataset
             ]
         ),
     )
+
+    os.remove(path)

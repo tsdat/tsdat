@@ -96,10 +96,7 @@ def test_transformation_pipeline():
     config = PipelineConfig.from_yaml(Path("test/io/yaml/vap-pipeline.yaml"))
     pipeline = config.instantiate_pipeline()
 
-    inputs = [
-        "humboldt.buoy_z06.a1::20220405.000000::20220406.000000",
-        "humboldt.buoy_z07.a1::20220405.000000::20220406.000000",
-    ]
+    inputs = ["20220405.000000", "20220406.000000"]
 
     dataset = pipeline.run(inputs)
 

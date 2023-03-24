@@ -301,6 +301,7 @@ def _reindex_dataset_coords(
             dataset = dataset.expand_dims(dim=coord_name, axis=axis)
         dim = actual_dims[0] if ndims else coord_name
         if dim != expected_dim:
+            # TODO: fix warning message that appears here
             dataset = dataset.swap_dims({dim: expected_dim})  # type: ignore
 
     return dataset
@@ -425,7 +426,11 @@ class GlobalARMTransformParams(BaseModel):
         return pattern_dict
 
     def select_parameters(self, input_key: str) -> Dict[str, Dict[str, Any]]:
-        selected_params: Dict[str, Dict[str, Any]] = {}
+        selected_params: Dict[str, Dict[str, Any]] = {
+            "alignment": {},
+            "range": {},
+            "width": {},
+        }
         for pattern, params in self.alignment.items():
             if pattern.match(input_key) is not None:
                 selected_params["alignment"] = params.copy()
