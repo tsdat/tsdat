@@ -523,7 +523,8 @@ class AdiTransformer:
         adi_atts: List[cds3.Att] = adi_var.get_atts()
         xr_attrs = {att.get_name(): dsproc.get_att_value(adi_var, att.get_name(), att.get_type()) for att in adi_atts}
         for name, value in xr_attrs.items():
-            xr_var.attrs[name] = value
+            if name not in xr_var.attrs:
+                xr_var.attrs[name] = value
 
         # Now set all of the qc attributes
         qc_var = output_dataset.get(f'qc_{variable_name}')
@@ -533,7 +534,8 @@ class AdiTransformer:
         }
         xr_attrs.update(self._back_convert_qc_atts(adi_qc_atts))
         for name, value in xr_attrs.items():
-            qc_var.attrs[name] = value
+            if name not in qc_var.attrs:
+                qc_var.attrs[name] = value
 
     def _add_atts_to_adi(self, xr_var: xr.DataArray, adi_obj: CDSObject):
 
