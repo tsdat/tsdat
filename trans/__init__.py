@@ -1,2 +1,0 @@
-from trans.core import *
-

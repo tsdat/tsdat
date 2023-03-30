@@ -33,3 +33,5 @@ from .qc.handlers import *
 from .utils import *
 
 from .testing import *
+
+from ._version import __version__, __version_tuple__

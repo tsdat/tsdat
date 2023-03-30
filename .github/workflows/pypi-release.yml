@@ -24,15 +24,6 @@ jobs:
         with:
           python-version: 3.8
 
-      - name: Set version with dunamai
-        uses: mtkennerly/dunamai-action@v1
-        with:
-          env-var: TSDAT_VERSION
-          command: dunamai from git
-          args: --no-metadata --style semver
-
-      - run: echo $TSDAT_VERSION
-
       - run: python -m pip install build --user
       - run: python -m build --sdist --wheel --outdir dist/ .
 

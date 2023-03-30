@@ -8,37 +8,34 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install conda
+# Install mamba
 RUN apt-get update && \
     apt-get install -y wget && \
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
-    bash Miniconda3-latest-Linux-x86_64.sh -b && \
-    rm Miniconda3-latest-Linux-x86_64.sh && \
-    echo "export PATH=/root/miniconda3/bin:\$PATH" >> ~/.bashrc && \
-    /root/miniconda3/bin/conda init bash
+    wget https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh && \
+    bash Mambaforge-Linux-x86_64.sh -b && \
+    rm Mambaforge-Linux-x86_64.sh && \
+    echo "export PATH=/root/mambaforge/bin:\$PATH" >> ~/.bashrc && \
+    /root/mambaforge/bin/mamba init bash
 
-# Set up PATH environment variable for conda
-ENV PATH=/root/miniconda3/bin:$PATH
+# Set up PATH environment variable for mamba
+ENV PATH=/root/mambaforge/bin:$PATH
 
-# Copy the conda environment file into the container
+# Copy the mamba environment file into the container
 RUN mkdir /app
-COPY conda_environment.yml requirements.txt requirements-dev.txt /app/
+COPY environment.yml requirements.txt requirements-dev.txt /app/
 
 # Set up working directory
 WORKDIR /app
 
-# Create conda environment
-RUN conda env create -f conda_environment.yml && \
-    echo "conda activate tsdat" >> ~/.bashrc
+# Create mamba environment
+RUN mamba env create -f environment.yml && \
+    echo "mamba activate tsdat" >> ~/.bashrc
 
-SHELL ["conda", "run", "-n", "tsdat", "/bin/bash", "-c"]
-# ENV CONDA_DEFAULT_ENV tsdat
+SHELL ["mamba", "run", "-n", "tsdat", "/bin/bash", "-c"]
 
-RUN pip install -r requirements-dev.txt
+# Install pip requirements
+# RUN pip install -r requirements-dev.txt
 
 WORKDIR /workspaces/tsdat
 
 CMD ["tail", "-f", "/dev/null"]
-
-# Command to mount is:
-# docker run -it -v /Users/levi260/sandbox/tsdat:/app my-tsdat-image
