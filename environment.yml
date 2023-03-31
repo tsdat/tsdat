@@ -1,0 +1,6 @@
+name: tsdat
+channels:
+  - arm-doe
+  - conda-forge
+dependencies:
+  - adi_py>=3.19.2

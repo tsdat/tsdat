@@ -34,7 +34,7 @@ RUN mamba env create -f environment.yml && \
 SHELL ["mamba", "run", "-n", "tsdat", "/bin/bash", "-c"]
 
 # Install pip requirements
-# RUN pip install -r requirements-dev.txt
+RUN pip install -r requirements-dev.txt
 
 WORKDIR /workspaces/tsdat
 
