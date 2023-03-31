@@ -105,8 +105,10 @@ class TransformParameterConverter:
         "goodfrac_bad_min": COORDINATE_SYSTEM,
     }
 
-    def convert_to_adi_format(self, transform_parameters: Dict) -> Dict[str, str]:
-        transforms = {}
+    def convert_to_adi_format(
+        self, transform_parameters: Dict[Any, Any]
+    ) -> Dict[str, str]:
+        transforms: Dict[Any, Any] = {}
         """ 
         Example of input dictionary structure:
         

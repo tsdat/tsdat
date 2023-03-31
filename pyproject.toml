@@ -18,11 +18,9 @@ requires = [
     "zarr",
     "rich",
     "types-PyYAML",
-    "tstring",
     "boto3",
     "boto3-stubs[essential]",
 ]
-
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -58,3 +56,9 @@ write_to = "tsdat/_version.py"
 
 [tool.setuptools.dynamic]
 version = {attr = "tsdat.__version__"}
+
+[tool.pytest.ini_options]
+# To run all non-adi-dependent tests: `pytest -m "not requres_adi"`
+markers = "requires_adi: mark test as requiring arm data integrator (adi) python/c libraries"
+addopts = "-x"
+testpaths = "test"

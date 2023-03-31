@@ -1,8 +1,11 @@
 from pathlib import Path
+
 import numpy as np
-import xarray as xr
 import pandas as pd
-from tsdat import assert_close, PipelineConfig
+import pytest
+import xarray as xr
+
+from tsdat import PipelineConfig, assert_close
 
 
 def test_ingest_pipeline():
@@ -65,6 +68,7 @@ def test_ingest_pipeline():
     )
 
 
+@pytest.mark.requires_adi
 def test_transformation_pipeline():
 
     expected = xr.Dataset(

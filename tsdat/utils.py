@@ -8,7 +8,7 @@ import typer
 import xarray as xr
 from numpy.typing import NDArray
 from pydantic import BaseModel, Extra
-from tstring.template import Template
+from tsdat.tstring import Template
 
 
 __all__ = [

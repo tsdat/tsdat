@@ -1,17 +1,20 @@
 import os
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+import pytest
 import xarray as xr
-from pathlib import Path
 from pytest import fixture
+
 from tsdat import (
     DatasetConfig,
-    RetrieverConfig,
     DefaultRetriever,
-    StorageRetriever,
     FileSystem,
-    recursive_instantiate,
+    RetrieverConfig,
+    StorageRetriever,
     assert_close,
+    recursive_instantiate,
 )
 
 # Coords used in sample input data
@@ -110,7 +113,7 @@ def test_simple_extract_multifile_dataset(
     )
     assert_close(dataset, expected)
 
-
+@pytest.mark.requires_adi
 def test_storage_retriever(
     storage_retriever: StorageRetriever, vap_dataset_config: DatasetConfig
 ):
@@ -183,7 +186,7 @@ def test_storage_retriever_2D(
 
     xr.testing.assert_allclose(retrieved_dataset, expected)  # type: ignore
 
-
+@pytest.mark.requires_adi
 def test_storage_retriever_transformations(vap_transform_dataset_config: DatasetConfig):
     storage_retriever: StorageRetriever = recursive_instantiate(
         RetrieverConfig.from_yaml(Path("test/io/yaml/vap-retriever-transform.yaml"))
