@@ -34,4 +34,7 @@ from .utils import *
 
 from .testing import *
 
-from ._version import __version__, __version_tuple__
+def get_version() -> str:
+    from ._version import __version__
+
+    return __version__

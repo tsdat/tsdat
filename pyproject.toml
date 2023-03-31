@@ -55,7 +55,7 @@ local_scheme = "no-local-version"
 write_to = "tsdat/_version.py"
 
 [tool.setuptools.dynamic]
-version = {attr = "tsdat.__version__"}
+version = {attr = "tsdat._version.__version__"}
 
 [tool.pytest.ini_options]
 # To run all non-adi-dependent tests: `pytest -m "not requres_adi"`
