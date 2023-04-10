@@ -83,6 +83,7 @@ class CheckMonotonic(QualityChecker):
     def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
 
         variable = dataset[variable_name]
+        failures = np.full(variable.shape, False, dtype=np.bool8)
 
         if variable.values.dtype.kind in {"U", "S"}:  # type: ignore
             logger.warning(
@@ -105,12 +106,30 @@ class CheckMonotonic(QualityChecker):
 
         if self.parameters.require_increasing:
             is_monotonic = increasing
+            if not increasing:
+                failures[np.where(diff <= zero)[0]] = True  # type: ignore
+
         elif self.parameters.require_decreasing:
             is_monotonic = decreasing
+            if not decreasing:
+                failures[np.where(diff >= zero)[0]] = True  # type: ignore
+
         else:
             is_monotonic = increasing | decreasing
+            if not is_monotonic:
+                bad = {
+                    0: np.where(diff <= zero)[0],  # type: ignore
+                    1: np.where(diff >= zero)[0],  # type: ignore
+                }
+                # Assuming fewer bad points is the error
+                if len(bad[0]) > len(bad[1]):
+                    failures = failures[bad[1]]
+                elif len(bad[0]) < len(bad[1]):
+                    failures = failures[bad[0]]
+                else:  # if equal points are bad fail everything
+                    failures += 1
 
-        return np.full(variable.shape, not is_monotonic, dtype=np.bool8)  # type: ignore
+        return failures
 
     def get_axis(self, variable: xr.DataArray) -> int:
         if not (dim := self.parameters.dim):
