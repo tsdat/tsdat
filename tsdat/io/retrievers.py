@@ -197,6 +197,9 @@ def _rename_variables(
                 raw_name,
                 output_name,
             )
+        # Don't rename coordinate if name hasn't changed
+        elif raw_name == output_name:
+            to_rename.pop(raw_name)
 
     for raw_name, output_name in vars_to_rename.items():
         if raw_name not in dataset:
