@@ -38,9 +38,8 @@ class CheckMissing(QualityChecker):
 
     ---------------------------------------------------------------------------------"""
 
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
-
-        results: NDArray[np.bool8] = dataset[variable_name].isnull().data
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
+        results: NDArray[np.bool_] = dataset[variable_name].isnull().data
 
         if "_FillValue" in dataset[variable_name].attrs:
             fill_value = dataset[variable_name].attrs["_FillValue"]
@@ -80,10 +79,9 @@ class CheckMonotonic(QualityChecker):
 
     parameters: Parameters = Parameters()
 
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
-
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
         variable = dataset[variable_name]
-        failures = np.full(variable.shape, False, dtype=np.bool8)
+        failures = np.full(variable.shape, False, dtype=np.bool_)
 
         if variable.values.dtype.kind in {"U", "S"}:  # type: ignore
             logger.warning(
@@ -92,7 +90,7 @@ class CheckMonotonic(QualityChecker):
                 variable_name,
                 variable.values.dtype,  # type: ignore
             )
-            return np.full(variable.shape, False, dtype=np.bool8)
+            return np.full(variable.shape, False, dtype=np.bool_)
 
         axis = self.get_axis(variable)
         diff: NDArray[Any] = np.diff(variable.data, axis=axis)  # type: ignore
@@ -190,10 +188,9 @@ class _CheckMin(_ThresholdChecker):
 
     ---------------------------------------------------------------------------------"""
 
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
-
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
         var_data = dataset[variable_name]
-        failures: NDArray[np.bool8] = np.zeros_like(var_data, dtype=np.bool8)  # type: ignore
+        failures: NDArray[np.bool_] = np.zeros_like(var_data, dtype=np.bool_)  # type: ignore
 
         min_value = self._get_threshold(dataset, variable_name, min_=True)
         if min_value is None:
@@ -227,10 +224,9 @@ class _CheckMax(_ThresholdChecker):
 
     ---------------------------------------------------------------------------------"""
 
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
-
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
         var_data = dataset[variable_name]
-        failures: NDArray[np.bool8] = np.zeros_like(var_data, dtype=np.bool8)  # type: ignore
+        failures: NDArray[np.bool_] = np.zeros_like(var_data, dtype=np.bool_)  # type: ignore
 
         max_value = self._get_threshold(dataset, variable_name, min_=False)
         if max_value is None:
@@ -248,7 +244,8 @@ class CheckValidMin(_CheckMin):
     """------------------------------------------------------------------------------------
     Checks for values less than 'valid_min'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "valid_min"
 
@@ -257,7 +254,8 @@ class CheckValidMax(_CheckMax):
     """------------------------------------------------------------------------------------
     Checks for values greater than 'valid_max'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "valid_max"
 
@@ -266,7 +264,8 @@ class CheckFailMin(_CheckMin):
     """------------------------------------------------------------------------------------
     Checks for values less than 'fail_min'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "fail_min"
 
@@ -275,7 +274,8 @@ class CheckFailMax(_CheckMax):
     """------------------------------------------------------------------------------------
     Checks for values greater than 'fail_max'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "fail_max"
 
@@ -284,7 +284,8 @@ class CheckWarnMin(_CheckMin):
     """------------------------------------------------------------------------------------
     Checks for values less than 'warn_min'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "warn_min"
 
@@ -293,7 +294,8 @@ class CheckWarnMax(_CheckMax):
     """------------------------------------------------------------------------------------
     Checks for values greater than 'warn_max'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "warn_max"
 
@@ -302,7 +304,8 @@ class CheckValidRangeMin(_CheckMin):
     """------------------------------------------------------------------------------------
     Checks for values less than 'valid_range'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "valid_range"
 
@@ -311,7 +314,8 @@ class CheckValidRangeMax(_CheckMax):
     """------------------------------------------------------------------------------------
     Checks for values greater than 'valid_range'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "valid_range"
 
@@ -320,7 +324,8 @@ class CheckFailRangeMin(_CheckMin):
     """------------------------------------------------------------------------------------
     Checks for values less than 'fail_range'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "fail_range"
 
@@ -329,7 +334,8 @@ class CheckFailRangeMax(_CheckMax):
     """------------------------------------------------------------------------------------
     Checks for values greater than 'fail_range'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "fail_range"
 
@@ -338,7 +344,8 @@ class CheckWarnRangeMin(_CheckMin):
     """------------------------------------------------------------------------------------
     Checks for values less than 'warn_range'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "warn_range"
 
@@ -347,7 +354,8 @@ class CheckWarnRangeMax(_CheckMax):
     """------------------------------------------------------------------------------------
     Checks for values greater than 'warn_range'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "warn_range"
 
@@ -371,10 +379,9 @@ class _CheckDelta(_ThresholdChecker):
 
     parameters: Parameters = Parameters()
 
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
-
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
         var_data = dataset[variable_name]
-        failures: NDArray[np.bool8] = np.zeros_like(var_data, dtype=np.bool8)  # type: ignore
+        failures: NDArray[np.bool_] = np.zeros_like(var_data, dtype=np.bool_)  # type: ignore
 
         threshold = self._get_threshold(dataset, variable_name, True)
         if threshold is None:
@@ -394,7 +401,8 @@ class CheckValidDelta(_CheckDelta):
     """------------------------------------------------------------------------------------
     Checks for deltas between consecutive values larger than 'valid_delta'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "valid_delta"
 
@@ -403,7 +411,8 @@ class CheckFailDelta(_CheckDelta):
     """------------------------------------------------------------------------------------
     Checks for deltas between consecutive values larger than 'fail_delta'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "fail_delta"
 
@@ -412,7 +421,8 @@ class CheckWarnDelta(_CheckDelta):
     """------------------------------------------------------------------------------------
     Checks for deltas between consecutive values larger than 'warn_delta'.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     attribute_name: str = "warn_delta"
 

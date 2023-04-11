@@ -32,7 +32,8 @@ class FailPipeline(QualityHandler):
     Raises:
         DataQualityError: DataQualityError
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     class Parameters(BaseModel, extra=Extra.allow):
         tolerance: float = 0
@@ -47,7 +48,7 @@ class FailPipeline(QualityHandler):
 
     parameters: Parameters = Parameters()
 
-    def run(self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool8]):
+    def run(self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]):
         if self._exceeds_tolerance(failures):  # default failure tolerance is 0%
             msg = (
                 f"Quality results for variable '{variable_name}' indicate a fatal error"
@@ -87,7 +88,7 @@ class FailPipeline(QualityHandler):
             raise DataQualityError(msg)
         return dataset
 
-    def _exceeds_tolerance(self, failures: NDArray[np.bool8]) -> bool:
+    def _exceeds_tolerance(self, failures: NDArray[np.bool_]) -> bool:
         if self.parameters.tolerance == 0:
             return bool(failures.any())
         failure_ratio: float = np.average(failures)  # type: ignore
@@ -99,7 +100,8 @@ class RecordQualityResults(QualityHandler):
     Records the results of the quality check in an ancillary qc variable. Creates the
     ancillary qc variable if one does not already exist.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     class Parameters(BaseModel, extra=Extra.forbid):
         bit: Optional[int] = None
@@ -138,7 +140,7 @@ class RecordQualityResults(QualityHandler):
     parameters: Parameters
 
     def run(
-        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool8]
+        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
     ) -> xr.Dataset:
         dataset.qcfilter.add_test(
             variable_name,
@@ -166,10 +168,11 @@ class RemoveFailedValues(QualityHandler):
     Replaces all failed values with the variable's _FillValue. If the variable does not
     have a _FillValue attribute then nan is used instead
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     def run(
-        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool8]
+        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
     ) -> xr.Dataset:
         if failures.any():
             fill_value = dataset[variable_name].attrs.get("_FillValue", None)
@@ -181,7 +184,8 @@ class SortDatasetByCoordinate(QualityHandler):
     """------------------------------------------------------------------------------------
     Sorts the dataset by the failed variable, if there are any failures.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     class Parameters(BaseModel, extra=Extra.forbid):
         ascending: bool = True
@@ -192,7 +196,7 @@ class SortDatasetByCoordinate(QualityHandler):
     parameters: Parameters = Parameters()
 
     def run(
-        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool8]
+        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
     ) -> xr.Dataset:
         if failures.any():
             dataset = dataset.sortby(variable_name, ascending=self.parameters.ascending)  # type: ignore
