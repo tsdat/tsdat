@@ -92,7 +92,7 @@ def test_monotonic_check(sample_dataset: xr.Dataset):
 
     # times must be decreasing
     checker = CheckMonotonic(parameters={"require_decreasing": True})  # type: ignore
-    expected = np.array([True, True, True, True])
+    expected = np.array([True, True, True, False])
     results = checker.run(sample_dataset, "time")
     assert np.array_equal(results, expected)  # type: ignore
 
