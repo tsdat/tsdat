@@ -3,6 +3,9 @@
 Acknowledgements
 ################
 
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.5224641.svg
+   :target: https://doi.org/10.5281/zenodo.5224641 
+
 .. |PNNL| replace:: :sup:`1`
 .. |NREL| replace:: :sup:`2`
 
