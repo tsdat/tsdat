@@ -87,7 +87,6 @@ class ADIAlignments:
 
 
 class TransformParameterConverter:
-
     # Maps which type of object ADI needs to apply the transform parameters to
     transform_param_type = {
         "transformation_type": COORDINATE_SYSTEM,
@@ -135,7 +134,6 @@ class TransformParameterConverter:
             #   When we do, we will need to revise this syntax.  For now, the keys are the dimensions and the
             #   values are the defaults
             for dim_name, value in transform_parameter.items():
-
                 if parameter_type == COORDINATE_SYSTEM:
                     file_name = COORDINATE_SYSTEM
                     self._write_transform_parameter_row(
@@ -168,7 +166,6 @@ class TransformParameterConverter:
         parameter_name: str,
         value: str,
     ):
-
         # ADI transforms requires that the qc_ variable name is used instead of the actual variable name, so we need
         # to append it here
         variable_name = base_var_name
@@ -363,7 +360,8 @@ class AdiTransformer:
         Returns
         -------
         Void - transforms are done in-place on output_dataset
-        -------------------------------------------------------------------------------------------------------------"""
+        -------------------------------------------------------------------------------------------------------------
+        """
 
         # First convert the input and output variables into ADI format
         retrieved_dataset: cds3.Group = self._create_adi_retrieved_dataset(
@@ -406,6 +404,7 @@ class AdiTransformer:
             .get_groups()[0]
             .get_var(qc_variable_name)
         )
+
         trans.transform_driver(
             adi_input_var, adi_input_qc_var, adi_output_var, adi_output_qc_var
         )
@@ -460,7 +459,8 @@ class AdiTransformer:
         -------
         retrieved_dataset : cds3.Group
 
-        -----------------------------------------------------------------------------------------------------------------"""
+        -----------------------------------------------------------------------------------------------------------------
+        """
         # Note:  We are not initializing datastream objects (_DSProc->datastreams) because I don't think we need it for
         # any of the libtrans operations
 
@@ -524,7 +524,8 @@ class AdiTransformer:
         Returns
         -------
 
-        -----------------------------------------------------------------------------------------------------------------"""
+        -----------------------------------------------------------------------------------------------------------------
+        """
         # First create the dataset group
         transformed_data = cds3.Group.define(None, "transformed_data")
 
@@ -602,10 +603,9 @@ class AdiTransformer:
                 qc_var.attrs[name] = value
 
     def _add_atts_to_adi(self, xr_var: xr.DataArray, adi_obj: CDSObject):
-
         encoding_atts = {
             att: xr_var.encoding[att]
-            for att in ["_FillValue", "source"]
+            for att in ["_FillValue", "source", "units"]
             if att in xr_var.encoding
         }
         xr_atts_dict = {**encoding_atts, **xr_var.attrs}
@@ -664,7 +664,8 @@ class AdiTransformer:
         -------
         Dict
             Dictionary of 3 condensed qc attributes used by ACT (and Tsdat)
-        -------------------------------------------------------------------------------------------------------------"""
+        -------------------------------------------------------------------------------------------------------------
+        """
         bit_metadata = {}
         bit_pattern = re.compile(r"^bit_(\d+)_(.+)$")
 
@@ -725,7 +726,8 @@ class AdiTransformer:
         -------
         Dict
             Dictionary of exploded attributes used by ADI
-        -------------------------------------------------------------------------------------------------------------"""
+        -------------------------------------------------------------------------------------------------------------
+        """
 
         flag_masks = xr_qc_atts.get("flag_masks", [])
         flag_meanings = xr_qc_atts.get("flag_meanings", [])
@@ -752,7 +754,8 @@ class AdiTransformer:
 
         TODO: Do we need to add any VarTags?  I don't think so, since they are only used by dsproc, not libtrans.
             Vartags are:  source_ds_name, source_var_name, output_targets, and coordinate_system
-        -----------------------------------------------------------------------------------------------------------------"""
+        -----------------------------------------------------------------------------------------------------------------
+        """
         # First create the variable
         cds_type = self._get_cds_type(xr_var.data)
         dim_names = xr_dims = list(xr_var.dims)
@@ -780,7 +783,8 @@ class AdiTransformer:
         """-----------------------------------------------------------------------------------------------------------------
         For time values, we actually have to create a copy.  We can't rely on the data pointer for time, because the times
         are converted into datetime64 objects for xarray.
-        -----------------------------------------------------------------------------------------------------------------"""
+        -----------------------------------------------------------------------------------------------------------------
+        """
         # Convert numpy datetime64 to seconds
         timevals = self._convert_time_data(xr_var)
 
