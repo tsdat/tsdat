@@ -113,7 +113,7 @@
             "properties": {
                 "name": {
                     "title": "Name",
-                    "description": "The exact name or list of names of the variable in the raw datasetreturned by the DataReader.",
+                    "description": "The exact name or list of names of the variable in the raw dataset returned by the DataReader.",
                     "anyOf": [
                         {
                             "type": "string"
