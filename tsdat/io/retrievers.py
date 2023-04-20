@@ -5,7 +5,18 @@ import re
 import pandas as pd
 import xarray as xr
 from pydantic import BaseModel, Extra, Field, validator
-from typing import Any, Dict, List, Literal, Optional, Pattern, Tuple, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Pattern,
+    Tuple,
+    Union,
+    cast,
+)
 
 from ..utils import assign_data
 from ..config.dataset import DatasetConfig
@@ -77,7 +88,8 @@ class DefaultRetriever(Retriever):
             mapping output data variable names to rules for how they should be
             retrieved.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     class Parameters(BaseModel, extra=Extra.forbid):
         merge_kwargs: Dict[str, Any] = {}
@@ -233,7 +245,8 @@ def _run_data_converters(
     Returns:
         xr.Dataset: The converted dataset.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
     retrieved_dataset = RetrievedDataset.from_xr_dataset(dataset)
     for coord_name, coord_config in input_config.coords.items():
         for converter in coord_config.data_converters:
@@ -480,6 +493,9 @@ class StorageRetriever(Retriever):
         input_keys: List[str],
         dataset_config: DatasetConfig,
         storage: Optional[Storage] = None,
+        input_data_hook: Optional[
+            Callable[[Dict[str, xr.Dataset]], Dict[str, xr.Dataset]]
+        ] = None,
         **kwargs: Any,
     ) -> xr.Dataset:
         """------------------------------------------------------------------------------------
@@ -503,12 +519,18 @@ class StorageRetriever(Retriever):
         Returns:
             xr.Dataset: The retrieved dataset
 
-        ------------------------------------------------------------------------------------"""
+        ------------------------------------------------------------------------------------
+        """
         assert storage is not None, "Missing required 'storage' parameter."
 
         _, start_times, end_times = self.__parse_inputs(input_keys)
 
         input_data = self.__fetch_inputs(input_keys, storage)
+
+        if input_data_hook is not None:
+            modded_input_data = input_data_hook(input_data)
+            if modded_input_data is not None:
+                input_data = modded_input_data
 
         # Perform coord/variable retrieval
         retrieved_data, retrieval_selections = perform_data_retrieval(

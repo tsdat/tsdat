@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, Dict, List
 
 import xarray as xr
 from pydantic import BaseModel
@@ -119,6 +119,7 @@ class TransformationPipeline(IngestPipeline):
             input_keys,
             dataset_config=self.dataset_config,
             storage=self.storage,
+            input_data_hook=self.hook_customize_input_datasets,
             **kwargs,
         )
         dataset = self.prepare_retrieved_dataset(dataset)
@@ -131,3 +132,22 @@ class TransformationPipeline(IngestPipeline):
         self.storage.save_data(dataset)
         self.hook_plot_dataset(dataset)
         return dataset
+
+    def hook_customize_input_datasets(
+        self, input_datasets: Dict[str, xr.Dataset], **kwargs: Any
+    ) -> Dict[str, xr.Dataset]:
+        """-----------------------------------------------------------------------------
+        Code hook to customize any input datasets prior to datastreams being combined
+        and data converters being run.
+
+        Args:
+            input_datasets (Dict[str, xr.Dataset]): The dictionary of input key (str) to
+                input dataset. Note that for transformation pipelines, input keys !=
+                input filename, rather each input key is a combination of the datastream
+                and date range used to pull the input data from the storage retriever.
+
+        Returns:
+            Dict[str, xr.Dataset]: The customized input datasets.
+
+        -----------------------------------------------------------------------------"""
+        return input_datasets
