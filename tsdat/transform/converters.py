@@ -147,7 +147,7 @@ class _ADIBaseTransformer(DataConverter):
         assert input_key is not None
 
         output_coord_names = dataset_config[variable_name].dims
-        input_coord_names = list(data.coords)  # type: ignore
+        input_coord_names = list(data.dims)  # type: ignore
         coord_rename_map = {
             _input_name: _output_name
             for _input_name, _output_name in zip(input_coord_names, output_coord_names)

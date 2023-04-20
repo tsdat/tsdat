@@ -539,7 +539,9 @@ class AdiTransformer:
         )  # dict of dims and their lengths (i.e., {'time': 1440} )
         for dim_name in dims:
             # Note that we assume that time dimension will always be named 'time'
-            is_unlimited = 1 if dim_name != "time" else 0
+            # is_unlimited = 1 if dim_name != "time" else 0
+            # --> fails for 2D variables if set to "!=", fails for 1D if set to ""=="
+            is_unlimited = 0
             dim_size = dims[dim_name]
             cs_group.define_dim(dim_name, dim_size, is_unlimited)
 
