@@ -43,11 +43,11 @@ Pipeline Configuration File
 The pipeline configuration file for transformation pipelines is almost identical to its ingest pipeline
 counterpart. There are only a few differences:
 
-* The **classname** should point to tsdat.TransformationPipeline, or a class derived from it.
+* The **classname** should point to **tsdat.TransformationPipeline**, or a class derived from it.
 * The **parameters** for the class should include a ``datastreams`` entry mapping to a list of input datastreams that are needed as input to the pipeline.
 * The **trigger** should be empty since transformation pipelines are currently run manually.
 
-An example transformation pipeline ``pipeline.yaml`` file is shown below:
+An example transformation pipeline ``pipeline.yaml`` file is shown below. Highlighted lines show notable differences from a typical pipeline configuration file for an IngestPipeline.
 
 .. code-block:: yaml
     :emphasize-lines: 1,2,3,4,5,7
@@ -80,13 +80,8 @@ The retriever configuration file for transformation pipelines is also similar to
 counterpart, but there are some notable differences, mostly pertaining to how data from various input
 sources should be combined. These are noted below:
 
-* The **classname** should point to tsdat.StorageRetriever, or a class derived from it.
-
-    - The tsdat.StorageRetriever class accepts additional **transformation_parameters**
-
-* If a **coord** (e.g., "time") does not have any shape-modifying **data_converters**, then its shape remains unchanged
-* If a **data_var** does not have any shape-modifying converters then its shape must already match the shape of any coordinates that dimension it, or the pipeline will crash.
-* The **NearestNeighbor** data converter was added to map data variables onto the correct coordinate grid.
+* The **classname** should point to **tsdat.StorageRetriever**, or a class derived from it. This class requires additional **transformation_parameters** to be specified.
+* The **tsdat.transform** module was added, including methods for creating time coordinate grids and various transformation methods: ``NearestNeighbor``, ``BinAverage``, ``Interpolate``, and ``Automatic``.
 
 An example ``retriever.yaml`` file is shown below. Highlighted lines show notable differences from a typical retriever configuration file for an IngestPipeline.
 
