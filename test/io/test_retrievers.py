@@ -1,16 +1,20 @@
+import os
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+import pytest
 import xarray as xr
-from pathlib import Path
 from pytest import fixture
+
 from tsdat import (
     DatasetConfig,
-    RetrieverConfig,
     DefaultRetriever,
-    StorageRetriever,
     FileSystem,
-    recursive_instantiate,
+    RetrieverConfig,
+    StorageRetriever,
     assert_close,
+    recursive_instantiate,
 )
 
 # Coords used in sample input data
@@ -47,6 +51,11 @@ def vap_dataset_config() -> DatasetConfig:
 @fixture
 def vap_dataset_config_2D() -> DatasetConfig:
     return DatasetConfig.from_yaml(Path("test/io/yaml/vap-dataset-2D.yaml"))
+
+
+@fixture
+def vap_transform_dataset_config() -> DatasetConfig:
+    return DatasetConfig.from_yaml(Path("test/io/yaml/vap-dataset-transform.yaml"))
 
 
 @fixture
@@ -104,7 +113,7 @@ def test_simple_extract_multifile_dataset(
     )
     assert_close(dataset, expected)
 
-
+@pytest.mark.requires_adi
 def test_storage_retriever(
     storage_retriever: StorageRetriever, vap_dataset_config: DatasetConfig
 ):
@@ -131,6 +140,8 @@ def test_storage_retriever(
                 {"units": "degC"},
             ),
             "humidity": ("time", [0, 30, 70]),
+            "qc_temperature": ("time", [0, 0, 0]),
+            "qc_humidity": ("time", [0, 0, 0]),
         },
         attrs={"datastream": "humboldt.buoy.b1"},
     )
@@ -168,8 +179,156 @@ def test_storage_retriever_2D(
             ),
             "humidity": ("time", [0, 10, 20]),
             "pressure": ("height", [15, 10, 5]),
+            "dummy": ("dim_0", []),
         },
         attrs={"datastream": "humboldt.buoy.b1"},
     )
 
     xr.testing.assert_allclose(retrieved_dataset, expected)  # type: ignore
+
+@pytest.mark.requires_adi
+def test_storage_retriever_transformations(vap_transform_dataset_config: DatasetConfig):
+    storage_retriever: StorageRetriever = recursive_instantiate(
+        RetrieverConfig.from_yaml(Path("test/io/yaml/vap-retriever-transform.yaml"))
+    )
+    storage = FileSystem(
+        parameters=FileSystem.Parameters(
+            storage_root=Path("test/io/data/retriever-store")
+        )
+    )
+
+    input_dataset = xr.Dataset(
+        coords={
+            "timestamp": pd.to_datetime(
+                [
+                    "2022-04-13 14:00:00",  # 0
+                    "2022-04-13 14:10:00",  # 1
+                    "2022-04-13 14:20:00",  # 2
+                    "2022-04-13 14:30:00",  # -9999
+                    "2022-04-13 14:40:00",  # 4
+                    "2022-04-13 14:50:00",  # 5
+                ]
+            )
+        },
+        data_vars={
+            "timestamp_bounds": (
+                ("timestamp", "bound"),
+                (
+                    [
+                        pd.to_datetime(["2022-04-13 13:55:00", "2022-04-13 14:05:00"]),
+                        pd.to_datetime(["2022-04-13 14:05:00", "2022-04-13 14:15:00"]),
+                        pd.to_datetime(["2022-04-13 14:15:00", "2022-04-13 14:25:00"]),
+                        pd.to_datetime(["2022-04-13 14:25:00", "2022-04-13 14:35:00"]),
+                        pd.to_datetime(["2022-04-13 14:35:00", "2022-04-13 14:45:00"]),
+                        pd.to_datetime(["2022-04-13 14:45:00", "2022-04-13 14:55:00"]),
+                    ]
+                ),
+                {"comment": "bounds for time variable"},
+            ),
+            "temp": (
+                "timestamp",
+                [0.0, 1.0, 2.0, -9999.0, 4.0, 5.0],
+                {"units": "degC", "_FillValue": -9999},
+            ),
+            "qc_temp": (
+                "timestamp",
+                [0, 0, 0, 1, 0, 0],
+                {
+                    "flag_values": "1",
+                    "flag_assessments": "Bad",
+                    "flag_meanings": "Value_equal_to_missing_value",
+                },
+            ),
+            "rh": (
+                "timestamp",
+                [59, 60, 61, 62, 63, 64],
+                {"comment": "test case with no units attr"},
+            ),
+        },
+        attrs={"datastream": "test.trans_inputs.a1"},
+    )
+    path = Path(
+        "test/io/data/retriever-store/data/test.trans_inputs.a1/test.trans_inputs.a1.20220413.140000.nc"
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    input_dataset.to_netcdf(path)  # type: ignore
+    inputs = [
+        "test.trans_inputs.a1::20220413.000000::20220414.000000",
+    ]
+
+    ds = storage_retriever.retrieve(
+        inputs, dataset_config=vap_transform_dataset_config, storage=storage
+    )
+
+    for var in [
+        "temperature_5min",
+        "temperature_30min",
+        "temperature_60min",
+        "humidity",
+    ]:
+        assert (
+            var in ds.data_vars
+        ), f"{var} is expected to be in dataset. Found: {list(ds)}"
+        assert (
+            f"qc_{var}" in ds.data_vars
+        ), f"qc_{var} is expected to be in dataset. Found: {list(ds)}"
+
+    t5min = ds["temperature_5min"]
+    assert "TRANS_INTERPOLATE" in t5min.attrs.get("cell_transform", "")
+    np.testing.assert_equal(
+        t5min.sel(  # type: ignore
+            time=slice("2022-04-13 13:50:00", "2022-04-13 15:00:00")
+        ).values,
+        np.array([-9999, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, -9999]),
+    )
+
+    t30min = ds["temperature_30min"]
+    assert "TRANS_BIN_AVERAGE" in t30min.attrs.get("cell_transform", "")
+    np.testing.assert_equal(
+        t30min.sel(  # type: ignore
+            time_30min=slice("2022-04-13 13:30:00", "2022-04-13 15:30:00")
+        ).values,
+        np.array([-9999, 0, 1.2, 4.5, -9999]),
+    )
+
+    t60min = ds["temperature_60min"]
+    assert "TRANS_BIN_AVERAGE" in t60min.attrs.get("cell_transform", "")
+    np.testing.assert_equal(
+        t60min.sel(  # type: ignore
+            time_60min=slice("2022-04-13 12:00:00", "2022-04-13 15:00:00")
+        ).values,
+        np.array([-9999, 0, 8 / 3, -9999]),
+    )
+
+    humidity = ds["humidity"]
+    assert "TRANS_SUBSAMPLE" in humidity.attrs.get("cell_transform", "")
+    np.testing.assert_equal(
+        humidity.sel(  # type: ignore
+            time=slice("2022-04-13 13:40:00", "2022-04-13 15:10:00")
+        ).values,
+        np.array(
+            [
+                -9999,
+                59,
+                59,
+                59,
+                59,
+                59,
+                60,
+                60,
+                61,
+                61,
+                62,
+                62,
+                63,
+                63,
+                64,
+                64,
+                64,
+                64,
+                -9999,
+            ]
+        ),
+    )
+
+    os.remove(path)

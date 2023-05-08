@@ -1,11 +1,10 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-from numpy.typing import NDArray
 from pytest import fixture
 
 from tsdat.qc.checkers import *
@@ -62,17 +61,17 @@ def test_missing_check(sample_dataset: xr.Dataset):
     checker = CheckMissing()
 
     # 'time' coordinate variable
-    expected = np.bool8([False, False, False, False])
+    expected = np.array([False, False, False, False])
     results = checker.run(sample_dataset, "time")
     assert np.array_equal(results, expected)  # type: ignore
 
     # 'missing_var' data variable
-    expected = np.bool8([True, True, False, False])
+    expected = np.array([True, True, False, False])
     results = checker.run(sample_dataset, "missing_var")
     assert np.array_equal(results, expected)  # type: ignore
 
     # 'missing_var' data variable
-    expected = np.bool8([False, True, True, False])
+    expected = np.array([False, True, True, False])
     results = checker.run(sample_dataset, "string_var")
     assert np.array_equal(results, expected)  # type: ignore
 
@@ -81,32 +80,32 @@ def test_monotonic_check(sample_dataset: xr.Dataset):
 
     # either increasing or decreasing allowed
     checker = CheckMonotonic()
-    expected = np.bool8([False, False, False, False])
+    expected = np.array([False, False, False, False])
     results = checker.run(sample_dataset, "time")
     assert np.array_equal(results, expected)  # type: ignore
 
     # times must be increasing
     checker = CheckMonotonic(parameters={"require_increasing": True})  # type: ignore
-    expected = np.bool8([False, False, False, False])
+    expected = np.array([False, False, False, False])
     results = checker.run(sample_dataset, "time")
     assert np.array_equal(results, expected)  # type: ignore
 
     # times must be decreasing
     checker = CheckMonotonic(parameters={"require_decreasing": True})  # type: ignore
-    expected = np.bool8([True, True, True, True])
+    expected = np.array([True, True, True, False])
     results = checker.run(sample_dataset, "time")
     assert np.array_equal(results, expected)  # type: ignore
 
     # data variable with non-time data type; sanity check
     checker = CheckMonotonic(parameters={"dim": "time"})  # type: ignore
-    expected = np.bool8([False, False, False, False])
+    expected = np.array([False, False, False, False])
     results = checker.run(sample_dataset, "monotonic_var")
     assert np.array_equal(results, expected)  # type: ignore
 
 
 def test_check_min_classes(sample_dataset: xr.Dataset):
     var_name = "monotonic_var"
-    expected = np.bool8([True, False, False, False])
+    expected = np.array([True, False, False, False])
 
     checker = CheckValidMin()
     results = checker.run(sample_dataset, var_name)
@@ -135,7 +134,7 @@ def test_check_min_classes(sample_dataset: xr.Dataset):
 
 def test_check_max_classes(sample_dataset: xr.Dataset):
     var_name = "monotonic_var"
-    expected = np.bool8([False, False, True, True])
+    expected = np.array([False, False, True, True])
 
     checker = CheckValidMax(allow_equal=False)
     results = checker.run(sample_dataset, var_name)
@@ -200,7 +199,7 @@ def test_monotonic_check_ignores_string_vars(caplog: Any):
 
 def test_check_delta_classes(sample_dataset: xr.Dataset):
     var_name = "monotonic_var"
-    expected = np.bool8([False, False, False, True])
+    expected = np.array([False, False, False, True])
 
     checker = CheckValidDelta(allow_equal=False)
     results = checker.run(sample_dataset, var_name)
@@ -218,23 +217,45 @@ def test_check_delta_classes(sample_dataset: xr.Dataset):
 def test_record_quality_results(sample_dataset: xr.Dataset):
     expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
     expected["qc_monotonic_var"] = xr.full_like(expected["monotonic_var"], fill_value=0)  # type: ignore
-    expected["qc_monotonic_var"].data[0] = 1
     expected["monotonic_var"].attrs["ancillary_variables"] = "qc_monotonic_var"
     expected["qc_monotonic_var"].attrs = {
         "long_name": "Quality check results for monotonic_var",
         "units": "1",
-        "flag_masks": [1],
-        "flag_meanings": ["foo bar"],
-        "flag_assessments": ["Bad"],
+        "flag_masks": [1, 2, 4],
+        "flag_meanings": ["foo", "bar", "baz"],
+        "flag_assessments": ["Bad", "Indeterminate", "Indeterminate"],
         "standard_name": "quality_flag",
     }
 
-    failures: NDArray[np.bool8] = np.bool8([True, False, False, False])  # type: ignore
+    expected["qc_monotonic_var"].data[0] = 1
+    expected["qc_monotonic_var"].data[1] = 2
+    expected["qc_monotonic_var"].data[2] = 3
+    expected["qc_monotonic_var"].data[3] = 4
+    test_1_failed = np.array([True, False, True, False])
+    test_2_failed = np.array([False, True, True, False])
+    test_3_failed = np.array([False, False, False, True])
 
-    parameters: Dict[str, Any] = {"bit": 1, "assessment": "Bad", "meaning": "foo bar"}
-    handler = RecordQualityResults(parameters=parameters)  # type: ignore
-    dataset = handler.run(sample_dataset, "monotonic_var", failures)
+    dataset = sample_dataset.copy()
 
+    handler = RecordQualityResults(
+        parameters={"assessment": "Bad", "meaning": "foo"}  # type: ignore
+    )
+    dataset = handler.run(dataset, "monotonic_var", test_1_failed)
+
+    handler = RecordQualityResults(
+        parameters={"assessment": "Indeterminate", "meaning": "bar"}  # type: ignore
+    )
+    dataset = handler.run(dataset, "monotonic_var", test_2_failed)
+
+    with pytest.warns(DeprecationWarning):
+        handler = RecordQualityResults(
+            parameters={
+                "bit": 9,  # causes deprecation warning and bit ignored
+                "assessment": "Indeterminate",
+                "meaning": "baz",
+            }  # type: ignore
+        )
+    dataset = handler.run(dataset, "monotonic_var", test_3_failed)
     assert_close(dataset, expected)
 
 
@@ -242,7 +263,7 @@ def test_replace_failed_values(sample_dataset: xr.Dataset):
     expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
     expected["monotonic_var"].data[0] = -9999
 
-    failures: NDArray[np.bool8] = np.bool8([True, False, False, False])  # type: ignore
+    failures = np.array([True, False, False, False])  # type: ignore
 
     handler = RemoveFailedValues()
     dataset = handler.run(sample_dataset, "monotonic_var", failures)
@@ -257,7 +278,7 @@ def test_sortdataset_by_coordinate(sample_dataset: xr.Dataset):
     input_dataset: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
     input_dataset: xr.Dataset = input_dataset.sortby("time", ascending=False)  # type: ignore
 
-    failures: NDArray[np.bool8] = np.bool8([True, True, True, True])  # type: ignore
+    failures = np.array([True, True, True, True])  # type: ignore
 
     handler = SortDatasetByCoordinate(parameters=dict(correction="Sorted time data!"))  # type: ignore
     dataset = handler.run(input_dataset, "time", failures)

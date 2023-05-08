@@ -48,7 +48,7 @@ and invoked on the specified variables.
 .. code-block:: python
 
     @abstractmethod
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
         """-----------------------------------------------------------------------------
         Checks the quality of a specific variable in the dataset and returns the results
         of the check as a boolean array where True values represent quality problems and
@@ -63,7 +63,7 @@ and invoked on the specified variables.
             variable_name (str): The name of the variable to check.
 
         Returns:
-            NDArray[np.bool8]: The results of the quality check, where True values
+            NDArray[np.bool_]: The results of the quality check, where True values
             indicate a quality problem.
 
         -----------------------------------------------------------------------------"""
@@ -100,7 +100,7 @@ by the pipeline and invoked on the specified variables.
 
     @abstractmethod
     def run(
-        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool8]
+        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
     ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Handles the quality of a variable in the dataset and returns the dataset after
@@ -110,7 +110,7 @@ by the pipeline and invoked on the specified variables.
             dataset (xr.Dataset): The dataset containing the variable to handle.
             variable_name (str): The name of the variable whose quality should be
                 handled.
-            failures (NDArray[np.bool8]): The results of the QualityChecker for the
+            failures (NDArray[np.bool_]): The results of the QualityChecker for the
                 provided variable, where True values indicate a quality problem.
 
         Returns:

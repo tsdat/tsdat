@@ -1,0 +1,146 @@
+classname: tsdat.StorageRetriever
+# parameters:
+#   # datastreams:
+
+#   transformation_parameters:
+#     retrieval_range:
+#     range:
+#       defaults:
+#         time: 60s
+#         height: 5
+#       # Variable overrides; doable
+#       # variable_overrides:
+#       #   temperature:
+#       #     time: 120s
+#       # datastream_overrides:
+#       #   .*buoy_z07.*:
+#       #     time: 120s
+#     # TODO: We will just do these checks in the code. Customizability later on IFF requested.
+#     # The checks we will apply are:
+#     #
+#     # 1. Some values are indeterminate
+#     # 2. For interpolate: using values not directly adjacent to target
+#     # 3. For extrapolate (???): extrapolation was used to get target from two values on same side of bin
+#     # remaining ARM transform qc checks
+#     #
+#     #
+#     #
+#     #
+#     #
+#     # qc:
+#     #   defaults:
+#     #     # Flag to treat input values that have a bad/indeterminate qc evaluation as missing
+#     #     mask_values_with_bad_qc: True
+#     #     mask_values_with_indeterminate_qc: False
+
+#     #     # The maximum allowable percentage of data points in any given transformation interval (all the input points that
+#     #     # make up a single output point) that can be 'bad' (i.e. have associated qc bit flagged as bad) before the output
+#     #     # data point should also be considered bad.
+#     #     qc_bad_max: 50%
+#     #     max_valid_percent_bad_qc:
+#     #     goodfrac_bad_min:  # ARM
+#     #     maximum_percent_allowable_bad_qc_values:
+
+#     #     # Considers bad input values
+#     #     flag_as_bad_if_percent...:
+#     #     flag_outputs_as_bad_if_percent_bad_input_values_exceeds: 50%
+#     #     flag_outputs_as_indeterminate_if_percent_bad_input_values_exceeds: 20%
+
+#     #     # union of indeterminate and bad
+#     #     qc_indeterminate_max: 50%
+
+#     #   variable_overrides:
+#     #     # temperature:
+#     #     #   qc_mask_bad_values: False
+
+coords:
+  time:
+    # .*:
+    #   name: time
+    #   data_converters:
+    #     - classname: tsdat.io.converters.CreateGridVariable
+    #       begin: ${RUN_BEGIN}
+    #       end: ${RUN_END}
+    #       # intervals: 24
+    #       interval_width: 5min
+    .*buoy_z06.*:
+      name: time
+  height:
+    .*buoy_z07.*:
+      name: height
+
+data_vars:
+  # Note:
+  temperature:
+    .*buoy_z07.*:
+      name: temp
+      data_converters:
+        # Note: NearestNeighbor on height shouldn't do anything; it already has the correct shape.
+        - classname: tsdat.NearestNeighbor
+          coord: height
+        - classname: tsdat.NearestNeighbor
+          coord: time
+        - classname: tsdat.UnitsConverter
+          input_units: degF
+
+  # retriever.get_input_datasets --> Dict[InputKey: xr.Dataset]
+  # retriever.retrieve_variables --> Dict[VarName: Tuple[RetrievalRule, List[xr.DataArray]] (RetrievedVariablesAndRules)
+  # --> post_retrieval_hook
+  # retriever.merge_variable_arrays  --> Dict[VarName: Tuple[RetrievalRule, xr.DataArray]] (MergedRetrievedVariablesAndRules)
+  # --> pre convert hook ?
+  # retrieved_data = retriever.convert_data --> Dict[VarName: xr.DataArray] (RetrievedVariables)
+  # --> post convert hook ?
+  # output_dataset = create_output_dataset(retrieved_data) --> xr.Dataset
+  # --> customize dataset hook
+  # apply qc
+  # --> post qc hook    <--------------- change finalize to hook_post_qc
+  # save
+  # --> plot dataset hook
+
+  # ${RUN_LOCATION} should be a substitution allowed in the regex patterns
+
+  # Of note: VAPs should always use the highest available priority input for each data variable
+  # because we are assuming that each pattern refers to a different datastream and data from different
+  # datastreams should not be combined into the same variable (at least not automatically)
+
+  # For ingests we assume that the patterns match different *files* and that matched files for the same
+  # pattern are obtained from the same instrument/source and may be merged safely.
+
+  # Per variable: retrieval rules: List[retrieval rule] which is the "- pattern: .*xyz.* \n..."" stuff
+
+  humidity:
+    # Note: buoy_z06 already has the correct shape for humidity (time)
+    .*buoy_z06.*:
+      name: humidity
+
+    # Should be an unused retrieval rule
+    .*buoy_z07.*:
+      name: rh
+      data_converters:
+        - classname: tsdat.NearestNeighbor
+
+    # # TODO: Make this a list instead of a dict: more flexible for different types of selections.
+    # - pattern: .*buoy_z07.*
+    #   name: rh
+    #   data_converters:
+    #     - classname: tsdat.NearestNeighbor
+
+  pressure:
+    # Note: buoy_z07 doesn't have "pres" data, should warn and move to buoy_z06
+    .*buoy_z07.*:
+      name: pres
+      data_converters:
+        - classname: tsdat.NearestNeighbor
+          coord: height
+
+    # Note: Applying NearestNeighbor on a non-time dimension
+    .*buoy_z06.*:
+      name: pres
+      data_converters:
+        - classname: tsdat.NearestNeighbor
+          coord: height
+
+  # Note: This variable doesn't exist in any input data sources.
+  dummy:
+    .*:
+      name: dummy

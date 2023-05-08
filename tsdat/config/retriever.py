@@ -19,8 +19,8 @@ class RetrievedVariableConfig(BaseModel, extra=Extra.allow):
     preprocessing steps (i.e. DataConverters) that should be applied."""
 
     name: Union[str, List[str]] = Field(
-        description="The exact name or list of names of the variable in the raw dataset" 
-        "returned by the DataReader."
+        description="The exact name or list of names of the variable in the raw dataset"
+        " returned by the DataReader."
     )
     data_converters: List[DataConverterConfig] = Field(
         [],
@@ -82,7 +82,6 @@ class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
     def coerce_to_patterned_retriever(cls, var_dict: Dict[str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]]) -> Dict[str, Dict[Pattern[str], RetrievedVariableConfig]]:  # type: ignore
         to_return: Dict[str, Dict[Pattern[str], RetrievedVariableConfig]] = {}  # type: ignore
         for name, var_retriever in var_dict.items():  # type: ignore
-
             if isinstance(var_retriever, RetrievedVariableConfig):
                 var_retriever = {re.compile(r".*"): var_retriever}
             to_return[name] = cast(

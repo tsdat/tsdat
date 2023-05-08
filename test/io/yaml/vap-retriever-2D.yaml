@@ -34,21 +34,15 @@ data_vars:
         - classname: tsdat.NearestNeighbor
 
   pressure:
-    # Note: buoy_z07 doesn't have "pres" data, should warn and move to buoy_z06
-    .*buoy_z07.*:
-      name: pres
-      data_converters:
-        - classname: tsdat.NearestNeighbor
-          coord: height
-
-    # Note: Applying NearestNeighbor on a non-time dimension
+     # Note: Applying NearestNeighbor on a non-time dimension
     .*buoy_z06.*:
       name: pres
       data_converters:
         - classname: tsdat.NearestNeighbor
           coord: height
 
-  # Note: This variable doesn't exist in any input data sources.
+  # This variable doesn't exist in any input data sources, but it will still be
+  # retrieved as an empty data array
   dummy:
     .*:
       name: dummy

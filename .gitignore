@@ -11,4 +11,5 @@ coverage.xml
 .coverage
 typings/
 .mypy_cache/
-storage/root/
+storage/root
+_version.py

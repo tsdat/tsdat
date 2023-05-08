@@ -10,18 +10,21 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest", "macos-latest"]
-        python-version: ["3.8", "3.9", "3.10"]
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: conda-incubator/setup-miniconda@v2
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
+          environment-file: conda_environment.yml
+          mamba-version: "*"
+          channels: arm-doe,conda-forge
+          activate-environment: tsdat
+      - run: conda activate tsdat
+        shell: bash -el {0}
       - run: python -m pip install -r requirements-dev.txt
+        shell: bash -el {0}
       - run: coverage run -m pytest
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        shell: bash -el {0}
       - run: coverage xml
+        shell: bash -el {0}
       - uses: codecov/codecov-action@v2

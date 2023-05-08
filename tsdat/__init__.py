@@ -33,3 +33,8 @@ from .qc.handlers import *
 from .utils import *
 
 from .testing import *
+
+def get_version() -> str:
+    from ._version import __version__
+
+    return __version__

@@ -25,43 +25,6 @@ from ..pipeline.base import Pipeline
 __all__ = ["PipelineConfig"]
 
 
-# class ConfigSettings(BaseSettings, extra=Extra.allow):
-#     validate_retriever_config: bool = Field(
-#         True,
-#     )
-#     validate_dataset_config: bool = Field(
-#         True,
-#         description="Validate the dataset configuration file after any overrides have"
-#         " been merged. Disabling validation is generally 10-30x faster, but comes with"
-#         " some risks and can easily lead to buggy behavior if you are not careful. For"
-#         " example. the dataset configuration model uses validators to set defaults for"
-#         " the 'datastream' attribute based on other global attributes that are set. The"
-#         " 'datastream' attribute is used elsewhere in the pipeline as a label for the"
-#         " dataset, and is used by some storage classes to generate the filepath where"
-#         " the data should be saved. If you disable dataset configuration validation,"
-#         " THIS WILL NOT WORK, so you will need to take care to set the 'datastream'"
-#         " attribute manually in your config file directly. Because of the complicated"
-#         " nature of dataset configuration files, it is almost always better to leave"
-#         " validation ON.",
-#     )
-#     validate_quality_config: bool = Field(
-#         True,
-#         description="Validate the quality configuration file after any overrides have"
-#         " been merged. Disabling validation is generally 10-30x faster, but comes with"
-#         " some risks and can easily lead to buggy behavior if you are not careful. For"
-#         " example, the quality configuration model uses validators to set defaults for"
-#         " regex patterns in the registry/readers section. If you disable validation of"
-#         " the quality configuration file, then you must ensure that your regex patterns"
-#         " are set explicitly, as you will not be able to rely on the dynamic defaults.",
-#     )
-#     validate_storage_config: bool = Field(
-#         True,
-#         description="Validate the storage configuration file after any overrides have"
-#         " been merged. Disabling validation is generally 10-30x faster, but comes with"
-#         " some risks and can easily lead to buggy behavior if you are not careful.",
-#     )
-
-
 class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
     """---------------------------------------------------------------------------------
     Contains configuration parameters for tsdat pipelines.
