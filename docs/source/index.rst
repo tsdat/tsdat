@@ -19,7 +19,6 @@ Table of Contents
    Configuring Tsdat <config/configuring_tsdat>
    autoapi/index.rst
    collaboration
-   citing
    acknowledgements
 
 Indices
