@@ -22,7 +22,7 @@ ENV PATH=/root/mambaforge/bin:$PATH
 
 # Copy the mamba environment file into the container
 RUN mkdir /app
-COPY environment.yml requirements.txt requirements-dev.txt /app/
+COPY environment.yml /app/
 
 # Set up working directory
 WORKDIR /app
@@ -33,9 +33,9 @@ RUN mamba env create -f environment.yml && \
 
 SHELL ["mamba", "run", "-n", "tsdat", "/bin/bash", "-c"]
 
-# Install pip requirements
-RUN pip install -r requirements-dev.txt
-
 WORKDIR /workspaces/tsdat
+
+# Install pip requirements
+RUN pip install -e ".[dev]"
 
 CMD ["tail", "-f", "/dev/null"]
