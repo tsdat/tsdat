@@ -129,7 +129,8 @@ class TarReader(ArchiveReader):
                 # This parameter is optional, and the default value is shown below:
                 exclude: ['.*\\_\\_MACOSX/.*', '.*\\.DS_Store']
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     class Parameters(BaseModel, extra=Extra.forbid):
         open_tar_kwargs: Dict[str, Any] = {}
@@ -156,7 +157,8 @@ class TarReader(ArchiveReader):
         Returns:
             Dict[str, xr.Dataset]: A mapping of {label: xr.Dataset}.
 
-        ------------------------------------------------------------------------------------"""
+        ------------------------------------------------------------------------------------
+        """
 
         output: Dict[str, xr.Dataset] = {}
 
@@ -232,7 +234,8 @@ class ZipReader(ArchiveReader):
                 # This parameter is optional, and the default value is shown below:
                 exclude: ['.*\\_\\_MACOSX/.*', '.*\\.DS_Store']
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     class Parameters(BaseModel, extra=Extra.forbid):
         open_zip_kwargs: Dict[str, Any] = {}
@@ -259,7 +262,8 @@ class ZipReader(ArchiveReader):
         Returns:
             Dict[str, xr.Dataset]: A mapping of {label: xr.Dataset}.
 
-        ------------------------------------------------------------------------------------"""
+        ------------------------------------------------------------------------------------
+        """
         output: Dict[str, xr.Dataset] = {}
 
         # If we are reading from a string / filepath then add option to specify more
@@ -279,6 +283,8 @@ class ZipReader(ArchiveReader):
                 continue
 
             for key in self.parameters.readers.keys():
+                if not re.match(key, filename):
+                    continue
                 reader: DataReader = self.parameters.readers.get(key, None)
                 if reader:
                     zip_bytes = BytesIO(zip.read(filename))
