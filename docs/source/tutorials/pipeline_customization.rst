@@ -272,7 +272,7 @@ For example:
       exclude: [foo, bar]
 
 In the above block of code, a ``CheckValidMin`` check is run all variables except
-variables named "foo" and "bar". This QC check requires the "valid_range" attribute
+variables named "foo" and "bar". This QC check requires the "valid_min" attribute
 on all variables running through it in the dataset.yaml file.
 
 The two built-in handlers specified here remove failues (``RemoveFailedValues``) that 
@@ -281,7 +281,7 @@ failed the QC check by replacing them with the attribute ``_FillValue``.
 The second handler used is ``RecordQualityResults``, which requires parameters in the
 quality.yaml block itself: `bit`, `assessment`, and `meaning`. This adds 
 "qc_<variable_name>" to the output data, where variable elements that fail a test 
-are assigned the value 2^bit - 1, otherwise zero.
+are assigned the value 2^{bit-1}. If all tests pass, 0 is assigned.
 
 A variable is set to run through a quality management block by adding the required 
 attributes. To run a variable "distance" through the QC block shown above, add 
@@ -294,7 +294,7 @@ the required "valid_range" and "_FillValue" attributes like the following:
     dtype: float
     attrs:
       units: "m"
-      valid_range: [-3, 3] # attribute for the "CheckValidMin" and "CheckValidMax" functions
+      valid_min: -3 # attribute for the "CheckValidMin" function
       _FillValue: -999      # the "bad data" value
 
 

@@ -849,6 +849,7 @@ The second set are the QC variables. Tsdat adds these variables if the
 ``RecordQualityResults`` handler is called in the quality configuration file.
 A few attributes, specified for this handler in the quality config file, are shared 
 across all QC variables: `flag_masks`, `flag_meanings`, and `flag_assessments`. 
+
 In this case, there are three `flag masks`: 1, 2, and 4. We can see in the data, flags 
 1 and 4 were tripped on this variable. Every point listed as 1 corresponds to the 
 first entry in `flag_meanings`: "Value is equal to _FillValue or NaN", a.k.a. it is 

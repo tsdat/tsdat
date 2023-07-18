@@ -30,4 +30,5 @@ walkthroughs of common tsdat workflows.
 Examples
 --------
 
-Tsdat hosts several examples from a lidar buoy on its `GitHub repository`_
+Tsdat hosts a number of examples on its `GitHub repository`_ in the "example-pipelines"
+repository.
