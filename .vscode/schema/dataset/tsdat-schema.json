@@ -157,7 +157,7 @@
         },
         "VariableAttributes": {
             "title": "VariableAttributes",
-            "description": "Attributes that will be recorded in the output dataset. These metadata are used to\nrecord information about the data properties and related fields (e.g., units,\nancillary_variables, etc), user-facing metadata (e.g., long_name, comment), as well as\nattributes related to quality checks and controls (e.g., valid_*, fail_*, and warn_*\nproperties).",
+            "description": "Attributes that will be recorded in the output dataset.\n\nThese metadata are to record information about the data properties and related\nfields (e.g., units, ancillary_variables, etc), user-facing metadata (e.g.,\nlong_name, comment), as well as attributes related to quality checks and controls\n(e.g., valid_*, fail_*, and warn_* properties).",
             "type": "object",
             "properties": {
                 "units": {

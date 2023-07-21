@@ -1,19 +1,23 @@
-# IDEA: Implement MultiDimensionalGrouper (better name needed. goes from collection of 1D
-# variables to one 2D variable)
+# IDEA: Implement MultiDimensionalGrouper to group collection of 1D variables into a 2D
+# variable. (will need a better name)
 # IDEA: Use the flyweight pattern to limit memory usage if identical converters would
 # be created.
+import logging
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import act  # type: ignore
-import logging
-import xarray as xr
-import pandas as pd
 import numpy as np
-from typing import Any, Dict, Optional
+import pandas as pd
+import xarray as xr
 from numpy.typing import NDArray
 from pydantic import validator
 
-from ..config.dataset import DatasetConfig
 from .base import DataConverter, RetrievedDataset
+
+if TYPE_CHECKING:
+    # Prevent any chance of runtime circular imports for typing-only imports
+    from ..config.dataset import DatasetConfig
+
 
 __all__ = [
     "UnitsConverter",
@@ -51,7 +55,7 @@ class UnitsConverter(DataConverter):
         self,
         data: xr.DataArray,
         variable_name: str,
-        dataset_config: DatasetConfig,
+        dataset_config: "DatasetConfig",
         retrieved_dataset: RetrievedDataset,
         **kwargs: Any,
     ) -> Optional[xr.DataArray]:
@@ -75,8 +79,9 @@ class UnitsConverter(DataConverter):
         ):
             if not output_units:
                 logger.warning(
-                    "Output units for variable %s could not be found. Please ensure these"
-                    " are set in the dataset configuration file for the specified variable.",
+                    "Output units for variable %s could not be found. Please ensure"
+                    " these are set in the dataset configuration file for the specified"
+                    " variable.",
                     variable_name,
                 )
             return None
@@ -156,11 +161,15 @@ class StringToDatetime(DataConverter):
         self,
         data: xr.DataArray,
         variable_name: str,
-        dataset_config: DatasetConfig,
+        dataset_config: "DatasetConfig",
         retrieved_dataset: RetrievedDataset,
         **kwargs: Any,
     ) -> Optional[xr.DataArray]:
-        dt = pd.to_datetime(data.data, format=self.format, **self.to_datetime_kwargs)  # type: ignore
+        dt: Any = pd.to_datetime(
+            data.data,
+            format=self.format,
+            **self.to_datetime_kwargs,
+        )
 
         if self.timezone and self.timezone != "UTC":
             dt = dt.tz_localize(self.timezone).tz_convert("UTC")  # type: ignore
@@ -200,7 +209,7 @@ class NearestNeighbor(DataConverter):
         self,
         data: xr.DataArray,
         variable_name: str,
-        dataset_config: DatasetConfig,
+        dataset_config: "DatasetConfig",
         retrieved_dataset: RetrievedDataset,
         **kwargs: Any,
     ) -> Optional[xr.DataArray]:
@@ -215,7 +224,7 @@ class NearestNeighbor(DataConverter):
             k: v.data if k != current_coord_name else target_coord.data
             for k, v in data.coords.items()
         }
-        tmp_data = xr.DataArray(coords=new_coords, dims=tuple(new_coords))
+        tmp_data = xr.DataArray(coords=new_coords, dims=tuple(new_coords))  # type: ignore
 
         # Resample the data using nearest neighbor
         new_data = data.reindex_like(other=tmp_data, method="nearest")

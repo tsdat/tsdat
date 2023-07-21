@@ -91,19 +91,6 @@ def test_stringtime_converter(
     )
     expected = expected.swap_dims({"time": "_time"})  # type: ignore
     expected = expected.drop_vars(["time"]).rename({"_time": "time"})
-    # expected = xr.Dataset(
-    #     coords={
-    #         "time": (
-    #             "time",
-    #             pd.date_range(  # type: ignore
-    #                 "2022-04-13 14:10:00",
-    #                 "2022-04-13 14:30:00",
-    #                 periods=3,
-    #             ),
-    #             {"units": "Seconds since 1970-01-01 00:00:00"},
-    #         )
-    #     },
-    # )
     ret_dataset = RetrievedDataset.from_xr_dataset(sample_dataset)
 
     # convert string to datetime with explicit settings

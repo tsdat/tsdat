@@ -9,7 +9,7 @@ that use data from several standardized input sources and combine them in ways t
 data.
 
 .. warning::
-    Tsdat support for transformation pipelines is currently in an alpha phase, meaning that new features
+    Tsdat support for transformation pipelines is currently in a beta phase, meaning that new features
     are being actively developed and APIs involved may be relatively unstable as new use cases are added
     and requirements are discovered. We greatly appreciate any feedback on this new capability.
 
@@ -23,23 +23,40 @@ Only the **pipeline.yaml** and **retriever.yaml** configuration files have any d
 counterparts for a tsdat ingest. These are shown below.
 
 
+Installation
+^^^^^^^^^^^^
+
+One additional library is needed in order to use the new transformation methods: `adi_py <https://anaconda.org/arm-doe/adi_py>`_.
+
+This can be installed via ``conda install -c arm-doe adi_py``.
+
+This library contains C code and cython bindings from the Atmospheric Radiation Measurement (ARM) Program's ARM Data Integrator (ADI)
+transformation library, which provides one critical feature over the transformation methods built-in to xarray: handling data quality
+as part of the transformation process. The ``adi_py`` library reads data quality flags from qc_* variables and will opt to not use
+points flagged as bad in transformations such as interpolation and averaging. Additionally, the library outputs a qc variable for each
+transformed variable describing the quality of the transformation based on the quality of any input qc flags found in the input data.
 
 
 Pipeline Configuration File
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The pipeline configuration file for transformation pipelines is almost identical to its ingest pipeline
-counterpart. There are only two differences:
+counterpart. There are only a few differences:
 
-* The **classname** should point to tsdat.TransformationPipeline, or a class derived from it.
+* The **classname** should point to **tsdat.TransformationPipeline**, or a class derived from it.
+* The **parameters** for the class should include a ``datastreams`` entry mapping to a list of input datastreams that are needed as input to the pipeline.
 * The **trigger** should be empty since transformation pipelines are currently run manually.
 
-An example transformation pipeline ``pipeline.yaml`` file is shown below:
+An example transformation pipeline ``pipeline.yaml`` file is shown below. Highlighted lines show notable differences from a typical pipeline configuration file for an IngestPipeline.
 
 .. code-block:: yaml
-    :emphasize-lines: 1,3
+    :emphasize-lines: 1,2,3,4,5,7
 
     classname: tsdat.TransformationPipeline
+    parameters: 
+        datastreams:
+            - humboldt.lidar.b0
+            - humboldt.met.b0
 
     triggers: {}
 
@@ -63,37 +80,88 @@ The retriever configuration file for transformation pipelines is also similar to
 counterpart, but there are some notable differences, mostly pertaining to how data from various input
 sources should be combined. These are noted below:
 
-* The **classname** should point to tsdat.StorageRetriever, or a class derived from it.
-* If a **coord** (e.g., "time") does not have any shape-modifying **data_converters**, then its shape remains unchanged
-* If a **data_var** does not have any shape-modifying converters then its shape must already match the shape of any coordinates that dimension it, or the pipeline will crash.
-* The **NearestNeighbor** data converter was added to map data variables onto the correct coordinate grid.
+* The **classname** should point to **tsdat.StorageRetriever**, or a class derived from it. This class requires additional **transformation_parameters** to be specified.
+* The **tsdat.transform** module was added, including methods for creating time coordinate grids and various transformation methods: ``NearestNeighbor``, ``BinAverage``, ``Interpolate``, and ``Automatic``.
 
-``retriever.yaml``:
+An example ``retriever.yaml`` file is shown below. Highlighted lines show notable differences from a typical retriever configuration file for an IngestPipeline.
 
 .. code-block:: yaml
-    :emphasize-lines: 1,7,16,17,23,24
+    :emphasize-lines: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19, 23,24,25,26,35,36,42,43
 
     classname: tsdat.StorageRetriever
+    parameters:
+        # Set coordinate system defaults for alignment, range, width
+        transformation_parameters:
+            # Alignment is one of LEFT, RIGHT, CENTER and indicates where the output point should
+            # lie in relation to the reported timestamp range.
+            alignment:
+                time: CENTER
+            # Range is how far to look for the previous/next points when transforming over an
+            # interval. E.g., for nearest neighbor, this is how far to look for the closest available
+            # point. If nothing is close enough, the output corresponding with that timestamp will be
+            # NaN/missing
+            range:
+                time: 900s
+            # Width is the size of the output dimension bins. E.g. width=300s with center alignment
+            # would mean that each timestamp in the output represents the period from 150s before and 150s
+            # after the reported timestamp.
+            width:
+                time: 300s
 
     coords:
         time:
-            .*buoy_z06\.a1.*:
-                name: time
-                data_converters: []
+            name: NA  # not retrieved from input; this will be autogenerated instead
+            data_converters:
+                - classname: tsdat.transform.CreateTimeGrid
+                  interval: 5min
 
     data_vars:
         temperature:
-            .*buoy_z07\.a1.*:
+            .*met\.b0.*:
                 name: temp
                 data_converters:
                     - classname: tsdat.io.converters.UnitsConverter
                       input_units: degF
-                    - classname: tsdat.io.converters.NearestNeighbor
+                    - classname: tsdat.transform.NearestNeighbor
                       coord: time
 
         humidity:
-            .*buoy_z07\.a1.*:
+            .*met\.b0.*:
                 name: rh
                 data_converters:
-                    - classname: tsdat.io.converters.NearestNeighbor
+                    - classname: tsdat.transform.NearestNeighbor
                       coord: time
+
+
+Pipeline Code Hooks
+^^^^^^^^^^^^^^^^^^^
+
+The **TransformationPipeline** class provides one additional hook that is currently not available in the **IngestPipeline** class:
+the **hook_customize_input_datasets** hook. This code hook allows you to customize input datasets/files before they are merged onto
+the same coordinate grid.
+
+.. code-block:: python
+
+    def hook_customize_input_datasets(
+        self, input_datasets: Dict[str, xr.Dataset], **kwargs: Any
+    ) -> Dict[str, xr.Dataset]:
+        """-----------------------------------------------------------------------------
+        Code hook to customize any input datasets prior to datastreams being combined
+        and data converters being run.
+
+        Args:
+            input_datasets (Dict[str, xr.Dataset]): The dictionary of input key (str) to
+                input dataset. Note that for transformation pipelines, input keys !=
+                input filename, rather each input key is a combination of the datastream
+                and date range used to pull the input data from the storage retriever.
+
+        Returns:
+            Dict[str, xr.Dataset]: The customized input datasets.
+
+        -----------------------------------------------------------------------------"""
+        return input_datasets
+
+
+.. # Add this section when we know more about common errors
+.. Common Errors and How to Fix them
+.. ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

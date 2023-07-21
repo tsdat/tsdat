@@ -4,7 +4,15 @@ import warnings
 from jsonpointer import set_pointer  # type: ignore
 from dunamai import Style, Version
 from pathlib import Path
-from pydantic import BaseModel, Extra, Field, StrictStr, validator, FilePath
+from pydantic import (
+    BaseModel,
+    Extra,
+    Field,
+    StrictStr,
+    ValidationError,
+    validator,
+    FilePath,
+)
 from pydantic.utils import import_string
 from pydantic.generics import GenericModel
 from typing import (
@@ -28,7 +36,12 @@ __all__ = [
     "read_yaml",
     "get_code_version",
     "YamlModel",
+    "ConfigError",
 ]
+
+
+class ConfigError(Exception):
+    pass
 
 
 class YamlModel(BaseModel):
@@ -50,7 +63,12 @@ class YamlModel(BaseModel):
         if overrides:
             for pointer, new_value in overrides.items():
                 set_pointer(config, pointer, new_value)
-        return cls(**config)
+        try:
+            return cls(**config)
+        except (ValidationError, Exception) as e:
+            raise ConfigError(
+                f"Error encountered while instantiating {filepath}"
+            ) from e
 
     @classmethod
     def generate_schema(cls, output_file: Path):

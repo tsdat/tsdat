@@ -34,7 +34,6 @@
 </a>
 </p>
 
-
 # About Tsdat
 
 Tsdat is an open-source python framework for declaratively creating pipelines to read,
@@ -57,7 +56,7 @@ code are included below:
 
 1. Fork this repository to your github account and open it on your desktop in an IDE of
 your choice.
-    
+
     > We recommend using VS Code, as we've included extra settings that make it easy to
     start developing in a standard environment with no overhead configuration time.
 
@@ -68,40 +67,38 @@ your choice.
 
 3. Run the following commands to create and activate your `conda` environment
 
-    ```
-    conda create --name tsdat python=3.8
+    ```shell
+    conda env create
     conda activate tsdat
-    pip install -r requirements-dev.txt
+    pip install -e ".[dev]"
     ```
-
 
 # Community
 
 Tsdat is an open-source repository and we highly-value community contributions and
-engagement via [issues](https://github.com/tsdat/tsdat/issues), 
+engagement via [issues](https://github.com/tsdat/tsdat/issues),
 [pull requests](https://github.com/tsdat/tsdat/pulls), and
 [discussions](https://github.com/tsdat/tsdat/discussions). Please let us know if you
 find bugs, want to request new features, or have specific questions about the framework!
 
-
 # Additional resources
 
 - Learn more about `tsdat`:
-    - GitHub: https://github.com/tsdat
-    - Documentation: https://tsdat.readthedocs.io
-    - Data standards: https://github.com/tsdat/data_standards
-    - Preferred template: https://github.com/tsdat/ingest-template
-    - All templates: https://github.com/tsdat/template-repositories
-    - Docker Images: https://hub.docker.com/u/tsdat
-- Learn more about `xarray`: 
-    - GitHub: https://github.com/pydata/xarray
-    - Documentation: https://xarray.pydata.org
-- Learn more about `act-atmos`: 
-    - GitHub: https://github.com/arm-doe/act
-    - Documentation: https://arm-doe.github.io/ACT/
+  - GitHub: <https://github.com/tsdat>
+  - Documentation: <https://tsdat.readthedocs.io>
+  - Data standards: <https://github.com/tsdat/data_standards>
+  - Preferred template: <https://github.com/tsdat/ingest-template>
+  - All templates: <https://github.com/tsdat/template-repositories>
+  - Docker Images: <https://hub.docker.com/u/tsdat>
+- Learn more about `xarray`:
+  - GitHub: <https://github.com/pydata/xarray>
+  - Documentation: <https://xarray.pydata.org>
+- Learn more about `act-atmos`:
+  - GitHub: <https://github.com/arm-doe/act>
+  - Documentation: <https://arm-doe.github.io/ACT/>
 - Other useful tools:
-    - VS Code: https://code.visualstudio.com/docs
-    - Docker: https://docs.docker.com/get-started/
-    - `pytest`: https://github.com/pytest-dev/pytest
-    - `black`: https://github.com/psf/black
-    - `matplotlib` guide: https://realpython.com/python-matplotlib-guide/
+  - VS Code: <https://code.visualstudio.com/docs>
+  - Docker: <https://docs.docker.com/get-started/>
+  - `pytest`: <https://github.com/pytest-dev/pytest>
+  - `black`: <https://github.com/psf/black>
+  - `matplotlib` guide: <https://realpython.com/python-matplotlib-guide/>

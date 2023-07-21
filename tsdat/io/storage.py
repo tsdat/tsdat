@@ -11,7 +11,7 @@ import boto3
 import botocore.exceptions
 import xarray as xr
 from pydantic import BaseSettings, Field, root_validator, validator
-from tstring import Template
+from tsdat.tstring import Template
 
 from ..utils import get_fields_from_datastream, get_filename, get_fields_from_dataset
 from .base import Storage

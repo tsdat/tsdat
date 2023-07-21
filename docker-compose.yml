@@ -1,0 +1,16 @@
+version: "2"
+ 
+services:
+  tsdat-devcontainer:
+    build: .
+    image: tsdat-devcontainer
+    container_name: tsdat-devcontainer
+    hostname: tsdat-devcontainer
+
+    volumes: # Note that volumes are mounted at runtime, not build time
+      - ./:/app
+
+    # stdin_open: true
+    # tty: true
+    
+    # stdin_open: true # docker run -i    tty: true        # docker run -t

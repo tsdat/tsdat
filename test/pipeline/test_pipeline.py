@@ -1,8 +1,11 @@
 from pathlib import Path
+
 import numpy as np
-import xarray as xr
 import pandas as pd
-from tsdat import assert_close, PipelineConfig
+import pytest
+import xarray as xr
+
+from tsdat import PipelineConfig, assert_close
 
 
 def test_ingest_pipeline():
@@ -65,6 +68,7 @@ def test_ingest_pipeline():
     )
 
 
+@pytest.mark.requires_adi
 def test_transformation_pipeline():
 
     expected = xr.Dataset(
@@ -96,10 +100,7 @@ def test_transformation_pipeline():
     config = PipelineConfig.from_yaml(Path("test/io/yaml/vap-pipeline.yaml"))
     pipeline = config.instantiate_pipeline()
 
-    inputs = [
-        "humboldt.buoy_z06.a1::20220405.000000::20220406.000000",
-        "humboldt.buoy_z07.a1::20220405.000000::20220406.000000",
-    ]
+    inputs = ["20220405.000000", "20220406.000000"]
 
     dataset = pipeline.run(inputs)
 

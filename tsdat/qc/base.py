@@ -16,7 +16,7 @@ class QualityChecker(ParameterizedClass, ABC):
     ---------------------------------------------------------------------------------"""
 
     @abstractmethod
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
         """-----------------------------------------------------------------------------
         Identifies and flags quality problems with the data.
 
@@ -33,7 +33,7 @@ class QualityChecker(ParameterizedClass, ABC):
             variable_name (str): The name of the variable to check.
 
         Returns:
-            NDArray[np.bool8]: The results of the quality check, where True values
+            NDArray[np.bool_]: The results of the quality check, where True values
             indicate a quality problem.
 
         -----------------------------------------------------------------------------"""
@@ -48,7 +48,7 @@ class QualityHandler(ParameterizedClass, ABC):
 
     @abstractmethod
     def run(
-        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool8]
+        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
     ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Takes some action on data that has had quality issues identified.
@@ -60,7 +60,7 @@ class QualityHandler(ParameterizedClass, ABC):
             dataset (xr.Dataset): The dataset containing the variable to handle.
             variable_name (str): The name of the variable whose quality should be
                 handled.
-            failures (NDArray[np.bool8]): The results of the QualityChecker for the
+            failures (NDArray[np.bool_]): The results of the QualityChecker for the
                 provided variable, where True values indicate a quality problem.
 
         Returns:

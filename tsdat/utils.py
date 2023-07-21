@@ -1,10 +1,15 @@
+from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
+import typer
 import xarray as xr
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from pydantic import BaseModel, Extra
 from numpy.typing import NDArray
-from tstring import Template
+from pydantic import BaseModel, Extra
+from tsdat.tstring import Template
+
 
 __all__ = [
     "ParameterizedClass",
@@ -17,6 +22,7 @@ __all__ = [
     "get_datastream",
     "DATASTREAM_TEMPLATE",
     "FILENAME_TEMPLATE",
+    "generate_schema",
 ]
 
 DATASTREAM_TEMPLATE = Template(
@@ -293,6 +299,55 @@ def get_fields_from_datastream(datastream: str) -> Dict[str, Optional[str]]:
         "temporal": name_qual_temp[2] if len(name_qual_temp) == 3 else None,
         "data_level": ds_parts[2],
     }
+
+
+class SchemaType(str, Enum):
+    retriever = "retriever"
+    dataset = "dataset"
+    quality = "quality"
+    storage = "storage"
+    pipeline = "pipeline"
+    all = "all"
+
+
+def generate_schema(
+    dir: Path = typer.Option(
+        Path(".vscode/schema/"),
+        file_okay=False,
+        dir_okay=True,
+    ),
+    schema_type: SchemaType = typer.Option(SchemaType.all),
+):
+    from tsdat import (
+        RetrieverConfig,
+        DatasetConfig,
+        QualityConfig,
+        StorageConfig,
+        PipelineConfig,
+        YamlModel,
+    )
+
+    dir.mkdir(exist_ok=True)
+    cls_mapping: Dict[str, Any] = {
+        "retriever": RetrieverConfig,
+        "dataset": DatasetConfig,
+        "quality": QualityConfig,
+        "storage": StorageConfig,
+        "pipeline": PipelineConfig,
+    }
+
+    keys: List[str] = []
+    if schema_type == "all":
+        keys = list(cls_mapping.keys())
+    else:
+        keys = [schema_type]
+
+    for key in keys:
+        path = dir / f"{key}-schema.json"
+        cls: YamlModel = cls_mapping[key]
+        cls.generate_schema(path)
+        print(f"Wrote {key} schema file to {path}")
+    print("Done!")
 
 
 # IDEA: Method to print a summary of the list of problems with the data

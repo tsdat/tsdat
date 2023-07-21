@@ -1,4 +1,8 @@
 classname: tsdat.pipeline.pipelines.TransformationPipeline
+parameters: 
+  datastreams:
+    - humboldt.buoy_z06.a1
+    - humboldt.buoy_z07.a1
 
 triggers: []
 

@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tsdat"
+dynamic = ["version"]
+authors = [
+  { name="tsdat", email="tsdat@pnnl.gov" },
+]
+description = "A data processing framework used to convert time series data into standardized format."
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["data", "pipeline"]
+license = {file = "LICENSE.md"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+    "Intended Audience :: Science/Research",
+]
+
+dependencies = [    
+  "xarray[io]",
+  "pandas[hdf5, parquet]",
+  "netCDF4==1.5.8",
+  "h5netcdf",
+  "pyarrow",
+  "cftime",
+  "xarray >=0.20",
+  "act-atmos >=1.1.3,!=1.3.1,!=1.3.3",
+  "pydantic >=1.9.0",
+  "pyyaml >=5.4",
+  "numpy >= 1.2",
+  "pandas >= 1.2",
+  "jsonpointer==2.2",
+  "dunamai==1.9.0",
+  "zarr",
+  "typer >=0.4",
+  "rich",
+  "types-PyYAML",
+  "boto3",
+  "boto3-stubs[essential]",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "coverage",
+  "build",
+  "black",
+  "ruff",
+  "isort",
+  "moto[s3,sts]==4.0.1"
+]
+docs = [
+  "sphinx",
+  "sphinx-rtd-theme==0.5.2",
+  "sphinx-autoapi==1.8.3",
+]
+
+[project.scripts]
+tsdat = "tsdat.main:app"
+
+[tool.setuptools.packages.find]
+include = ["tsdat"]
+
+[tool.setuptools.package-data]
+tsdat = ["py.typed"]
+
+[tool.setuptools_scm]
+local_scheme = "no-local-version"
+write_to = "tsdat/_version.py"
+
+[tool.setuptools.dynamic]
+version = {attr = "tsdat._version.__version__"}
+
+[tool.pytest.ini_options]
+# To run all non-adi-dependent tests: `pytest -m "not requres_adi"`
+markers = "requires_adi: mark test as requiring arm data integrator (adi) python/c libraries"
+addopts = "-x"
+testpaths = "test"

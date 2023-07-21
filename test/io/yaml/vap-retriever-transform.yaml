@@ -1,0 +1,80 @@
+classname: tsdat.io.retrievers.StorageRetriever
+parameters:
+  transformation_parameters:
+    alignment:
+      time: CENTER   # This is a coordinate system default (per dimension)
+      time_30min: RIGHT
+      time_60min: LEFT
+    range:
+      time: 900s
+      time_30min: 0s
+      time_60min: 0s
+    width:
+      time: 300s   # This is a coordinate system default (per dimension)
+      time_30min: 1800s
+      time_60min: 3600s
+      # time:   # Use this format to set input datastream default (per dimension)
+      #   .*buoy_z06\.a1.*: 1800s
+      #   .*: 240s
+
+
+# parameters:
+# Flag to filter out bad qc values by input source
+# filter_bad_qc:
+#   .*: false
+
+# How far to look on either direction of a data point for the nearest value
+# range:
+#   time:
+#     .*buoy_z06\.a1.*: 1800s
+#     .*: 240s
+
+coords:
+  # This means that all variables dimensioned by time will be mapped onto the time grid from buoy_z06.a1
+  # Also need example of creating based on regular interval
+  # time:
+  #   .*test\.trans_inputs\.a1.*:
+  #     name: timestamp
+    
+  time:
+    name: NA
+    data_converters:
+      - classname: tsdat.transform.CreateTimeGrid
+        interval: 5min
+
+  time_30min:
+    name: NA
+    data_converters:
+      - classname: tsdat.transform.CreateTimeGrid
+        interval: 30min
+
+  time_60min:
+    name: NA
+    data_converters:
+      - classname: tsdat.transform.CreateTimeGrid
+        interval: 1H
+
+
+data_vars: 
+  temperature_5min:
+    name: temp
+    data_converters:
+      - classname: tsdat.transform.Interpolate
+        coord: time
+
+  temperature_30min:
+    name: temp
+    data_converters:
+      - classname: tsdat.transform.Automatic
+
+  temperature_60min:
+    name: temp
+    data_converters:
+      - classname: tsdat.transform.BinAverage
+
+  humidity:
+    name: rh
+    data_converters:
+      - classname: tsdat.transform.NearestNeighbor
+        coord: time
+        # range: 0s  # don't try to use data points outside of time bounds

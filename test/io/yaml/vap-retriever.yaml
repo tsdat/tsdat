@@ -1,29 +1,23 @@
 classname: tsdat.io.retrievers.StorageRetriever
-# parameters:
-# Flag to filter out bad qc values by input source
-# filter_bad_qc:
-#   .*: false
-
-# How far to look on either direction of a data point for the nearest value
-# range:
-#   time:
-#     .*buoy_z06\.a1.*: 1800s
-#     .*: 240s
+parameters: 
+  transformation_parameters:
+    range:
+      time: 86400
+    width: {}  # only needed for averaging
+    alignment: {}  # only needed for averaging
 
 coords:
-  # With no coord transformation this means that all variables dimensioned by time will
-  # be mapped onto the time grid from buoy_z06.a1
+  # Map onto buoy_z06 time grid
   time:
     .*buoy_z06\.a1.*:
       name: time
 
-data_vars:
+data_vars: 
   temperature:
     .*buoy_z07\.a1.*:
       name: temp
       data_converters:
-        - classname: tsdat.io.converters.NearestNeighbor
-          coord: time
+        - classname: tsdat.transform.NearestNeighbor
         - classname: tsdat.io.converters.UnitsConverter
           input_units: degF
 
@@ -31,5 +25,4 @@ data_vars:
     .*buoy_z07\.a1.*:
       name: rh
       data_converters:
-        - classname: tsdat.io.converters.NearestNeighbor
-          coord: time
+        - classname: tsdat.transform.NearestNeighbor
