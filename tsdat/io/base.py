@@ -14,7 +14,7 @@ from typing import (
     Union,
 )
 from abc import ABC, abstractmethod
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, root_validator
 from ..utils import ParameterizedClass
 from ..config.dataset import DatasetConfig
 
@@ -218,6 +218,19 @@ class DataHandler(ParameterizedClass):
     parameters: Optional[Any] = None
     reader: DataReader
     writer: DataWriter
+
+    @root_validator(pre=False)
+    def patch_parameters(cls, values):
+        params = values.get('parameters', {})
+        writer_params = params.get('writer', {}) if params is not None else {}
+        reader_params = params.get('reader', {}) if params is not None else {}
+
+        for ky in writer_params:
+            setattr(values['writer'].parameters, ky, writer_params[ky])
+        for ky in reader_params:
+            setattr(values['reader'].parameters, ky, reader_params[ky])
+        
+        return values
 
 
 class FileHandler(DataHandler):
