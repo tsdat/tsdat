@@ -55,8 +55,8 @@ class CheckMissing(QualityChecker):
 class CheckMonotonic(QualityChecker):
     """---------------------------------------------------------------------------------
     Checks if any values are not ordered strictly monotonically (i.e. values must all be
-    increasing or all decreasing). The check marks all values as failed if any data values
-    are not ordered monotonically.
+    increasing or all decreasing). The check marks values as failed if they break from 
+    a monotonic order.
 
     ---------------------------------------------------------------------------------"""
 
@@ -103,15 +103,14 @@ class CheckMonotonic(QualityChecker):
         decreasing: bool = np.all(diff < zero)  # type: ignore
 
         if self.parameters.require_increasing:
-            is_monotonic = increasing
             if not increasing:
                 failures[np.where(diff <= zero)[0]] = True  # type: ignore
+            flag = 'increasing'
 
         elif self.parameters.require_decreasing:
-            is_monotonic = decreasing
             if not decreasing:
                 failures[np.where(diff >= zero)[0]] = True  # type: ignore
-
+            flag = 'decreasing'
         else:
             is_monotonic = increasing | decreasing
             if not is_monotonic:
@@ -122,16 +121,35 @@ class CheckMonotonic(QualityChecker):
                 # Assuming fewer bad points is the error
                 if len(bad[0]) > len(bad[1]):
                     failures = failures[bad[1]]
+                    flag = 'decreasing'
                 elif len(bad[0]) < len(bad[1]):
                     failures = failures[bad[0]]
+                    flag = 'increasing'
                 else:  # if equal points are bad fail everything
                     failures += 1
+
+        # Let "diff" find the break points, use for loop to find all bad values
+        if any(failures) and not all(failures):
+            t0 = dataset[variable_name].values[0]
+            for i, t in enumerate(dataset[variable_name].values[1:-1]):
+                if flag=='increasing':
+                    condition = (t>=t0)
+                elif flag=='decreasing':
+                    condition = (t<=t0)
+                else:
+                    break
+
+                if condition:
+                    failures[i+1] = False
+                    t0 = t
+                else:
+                    failures[i+1] = True   
 
         return failures
 
     def get_axis(self, variable: xr.DataArray) -> int:
         if not (dim := self.parameters.dim):
-            dim = variable.dims[0]
+            dim = variable.dims[0]  # type: ignore
         return variable.get_axis_num(dim)  # type: ignore
 
 
