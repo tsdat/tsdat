@@ -131,11 +131,11 @@ class CheckMonotonic(QualityChecker):
         # Let "diff" find the break points, use for loop to find all bad values
         if any(failures) and not all(failures):
             t0 = dataset[variable_name].values[0]
-            for i, t in enumerate(dataset[variable_name].values[1:-1]):
+            for i, t in enumerate(dataset[variable_name].values[1:]):
                 if flag=='increasing':
-                    condition = (t>=t0)
+                    condition = (t>t0)
                 elif flag=='decreasing':
-                    condition = (t<=t0)
+                    condition = (t<t0)
                 else:
                     break
 

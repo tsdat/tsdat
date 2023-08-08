@@ -77,6 +77,9 @@ def test_missing_check(sample_dataset: xr.Dataset):
 
 
 def test_monotonic_check(sample_dataset: xr.Dataset):
+    new_sample_dataset = xr.concat(
+        (sample_dataset, sample_dataset), 
+        dim='time')
 
     # either increasing or decreasing allowed
     checker = CheckMonotonic()
@@ -86,14 +89,16 @@ def test_monotonic_check(sample_dataset: xr.Dataset):
 
     # times must be increasing
     checker = CheckMonotonic(parameters={"require_increasing": True})  # type: ignore
-    expected = np.array([False, False, False, False])
-    results = checker.run(sample_dataset, "time")
+    expected = np.array([
+        False, False, False, False, True, True, True, True])
+    results = checker.run(new_sample_dataset, "time")
     assert np.array_equal(results, expected)  # type: ignore
 
     # times must be decreasing
     checker = CheckMonotonic(parameters={"require_decreasing": True})  # type: ignore
-    expected = np.array([True, True, True, False])
-    results = checker.run(sample_dataset, "time")
+    expected = np.array(
+        [True, True, True, True, True, True, True, True])
+    results = checker.run(new_sample_dataset, "time")
     assert np.array_equal(results, expected)  # type: ignore
 
     # data variable with non-time data type; sanity check
