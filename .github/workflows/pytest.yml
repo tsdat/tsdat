@@ -16,7 +16,7 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           environment-file: environment.yml
-          mamba-version: "*"
+          miniforge-variant: Mambaforge
           channels: arm-doe,conda-forge
           activate-environment: tsdat
       - run: conda activate tsdat
