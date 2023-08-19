@@ -175,8 +175,12 @@ class RemoveFailedValues(QualityHandler):
         self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
     ) -> xr.Dataset:
         if failures.any():
-            fill_value = dataset[variable_name].attrs.get("_FillValue", None)
-            dataset[variable_name] = dataset[variable_name].where(~failures, fill_value)  # type: ignore
+            if variable_name in dataset.dims:
+                mask = xr.DataArray(failures, coords={variable_name:dataset[variable_name]})
+                dataset = dataset.where(~mask, drop=True)
+            else:
+                fill_value = dataset[variable_name].attrs.get("_FillValue", None)
+                dataset[variable_name] = dataset[variable_name].where(~failures, fill_value)  # type: ignore
         return dataset
 
 
