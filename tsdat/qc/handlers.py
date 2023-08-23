@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import BaseModel, root_validator, field_validator
+from pydantic import BaseModel, model_validator, field_validator
 
 from ..utils import record_corrections_applied
 from .base import QualityHandler
@@ -120,7 +120,7 @@ class RecordQualityResults(QualityHandler):
         meaning: str
         """A string that describes the test applied."""
 
-        @root_validator(pre=True)
+        @model_validator(mode="before")
         def deprecate_bit_parameter(cls, values: Dict[str, Any]) -> Dict[str, Any]:
             if "bit" in values:
                 warnings.warn(

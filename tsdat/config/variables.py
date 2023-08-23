@@ -7,7 +7,7 @@ from pydantic import (
     BaseModel,
     Field,
     StrictStr,
-    root_validator,
+    model_validator,
     field_validator,
 )
 
@@ -140,7 +140,7 @@ class VariableAttributes(AttributeModel):
             )
         return unit_str
 
-    @root_validator
+    @model_validator(mode="before")
     @classmethod
     def validate_units_are_commented(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if not values["units"]:
@@ -210,7 +210,7 @@ class Variable(BaseModel, extra="forbid"):
 
 
 class Coordinate(Variable):
-    @root_validator(skip_on_failure=True)
+    @model_validator(mode="before")
     @classmethod
     def coord_dimensioned_by_self(cls, values: Any) -> Any:
         name, dims = values["name"], values["dims"]

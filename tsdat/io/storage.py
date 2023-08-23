@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import boto3
 import botocore.exceptions
 import xarray as xr
-from pydantic import BaseSettings, Field, root_validator, field_validator
+from pydantic import BaseSettings, Field, model_validator, field_validator
 from tsdat.tstring import Template
 
 from ..utils import get_fields_from_datastream, get_filename, get_fields_from_dataset
@@ -131,7 +131,7 @@ class FileSystem(Storage):
                 storage_root.mkdir(parents=True)
             return storage_root
 
-        @root_validator()
+        @model_validator(mode="before")
         def _resolve_static_substitutions(
             cls, values: Dict[str, Any]
         ) -> Dict[str, Any]:

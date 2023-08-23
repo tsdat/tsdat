@@ -5,7 +5,7 @@ from typing import Any, Dict, Union
 from pydantic import (
     Field,
     FieldValidationInfo,
-    root_validator,
+    model_validator,
     field_validator,
 )
 
@@ -89,7 +89,7 @@ class DatasetConfig(YamlModel, extra="forbid"):
             vars[name]["name"] = name
         return vars
 
-    @root_validator(skip_on_failure=True)
+    @model_validator(mode="before")
     @classmethod
     def validate_variable_name_uniqueness(cls, values: Any) -> Any:
         coord_names = set(values["coords"].keys())

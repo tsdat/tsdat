@@ -14,7 +14,7 @@ from typing import (
     Union,
 )
 from abc import ABC, abstractmethod
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, model_validator
 from ..utils import ParameterizedClass
 from ..config.dataset import DatasetConfig
 
@@ -220,7 +220,7 @@ class DataHandler(ParameterizedClass):
     reader: DataReader
     writer: DataWriter
 
-    @root_validator(pre=False)
+    @model_validator(mode="after")
     def patch_parameters(cls, values):
         params = values.get("parameters", {})
         writer_params = params.get("writer", {}) if params is not None else {}

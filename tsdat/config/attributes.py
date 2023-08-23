@@ -6,7 +6,7 @@ from pydantic import (
     Field,
     HttpUrl,
     StrictStr,
-    root_validator,
+    model_validator,
     field_validator,
     FieldValidationInfo,
 )
@@ -17,7 +17,7 @@ from .utils import get_code_version
 
 class AttributeModel(BaseModel, extra="allow"):
     # HACK: root is needed for now: https://github.com/samuelcolvin/pydantic/issues/515
-    @root_validator(skip_on_failure=True)
+    @model_validator(mode="before")
     @classmethod
     def validate_all_ascii(cls, values: Dict[Any, Any]) -> Dict[str, str]:
         for key, value in values.items():
@@ -156,7 +156,7 @@ class GlobalAttributes(AttributeModel):
             )
         return ""
 
-    @root_validator(skip_on_failure=True)
+    @model_validator(mode="before")
     @classmethod
     def add_datastream_field(cls, values: Dict[str, StrictStr]) -> Dict[str, StrictStr]:
         if not values["datastream"]:
