@@ -13,7 +13,6 @@ from pydantic import (
     FilePath,
 )
 from pydantic.utils import import_string
-from pydantic.generics import GenericModel
 from typing import (
     Any,
     Optional,
@@ -86,7 +85,7 @@ class YamlModel(BaseModel):
 Config = TypeVar("Config", bound=BaseModel)
 
 
-class Overrideable(YamlModel, GenericModel, Generic[Config], extra="forbid"):
+class Overrideable(YamlModel, Generic[Config], extra="forbid"):
     path: FilePath = Field(
         description="Path to the configuration file to borrow configurations from.\n"
         "Note that this path is relative to the project root, so you should include any"
