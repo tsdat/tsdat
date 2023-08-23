@@ -156,9 +156,7 @@ class GlobalAttributes(AttributeModel):
             )
         return ""
 
-    @model_validator(mode="before")
-    @classmethod
-    def add_datastream_field(cls, values: Dict[str, StrictStr]) -> Dict[str, StrictStr]:
-        if not values["datastream"]:
-            values["datastream"] = get_datastream(**values)
-        return values
+    @model_validator(mode="after")
+    def add_datastream_field(self):
+        self.datastream = get_datastream(**self.model_dump(by_alias=True))
+        return self
