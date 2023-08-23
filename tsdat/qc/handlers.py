@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import BaseModel, root_validator, validator
+from pydantic import BaseModel, root_validator, field_validator
 
 from ..utils import record_corrections_applied
 from .base import QualityHandler
@@ -129,7 +129,7 @@ class RecordQualityResults(QualityHandler):
                 )
             return values
 
-        @validator("assessment", pre=True)
+        @field_validator("assessment", mode="before")
         def to_lower(cls, assessment: Any) -> str:
             if isinstance(assessment, str):
                 return assessment.lower()

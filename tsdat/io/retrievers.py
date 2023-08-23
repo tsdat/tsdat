@@ -4,7 +4,7 @@ import logging
 import re
 import pandas as pd
 import xarray as xr
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import (
     Any,
     Callable,
@@ -429,7 +429,7 @@ class GlobalARMTransformParams(BaseModel):
     dim_range: Dict[Pattern, Dict[str, str]] = Field(..., alias="range")  # type: ignore
     width: Dict[Pattern, Dict[str, str]]  # type: ignore
 
-    @validator("alignment", "dim_range", "width", pre=True)
+    @field_validator("alignment", "dim_range", "width", mode="before")
     def default_pattern(cls, d: Dict[Any, Any]) -> Dict[Pattern[str], Dict[str, str]]:
         if not d:
             return {}

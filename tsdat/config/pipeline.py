@@ -1,6 +1,6 @@
 from pathlib import Path
 from jsonpointer import set_pointer  # type: ignore
-from pydantic import Field, validator
+from pydantic import Field, FieldValidationInfo, field_validator
 from typing import Any, Dict, List, Pattern, Union
 
 from ..config.retriever import RetrieverConfig
@@ -84,10 +84,10 @@ class PipelineConfig(ParameterizedConfigClass, YamlModel, extra="allow"):
         " data produced by this pipeline."
     )
 
-    @validator("retriever", "dataset", "quality", "storage", pre=True)
+    @field_validator("retriever", "dataset", "quality", "storage", mode="before")
     @classmethod
     def merge_overrideable_yaml(
-        cls, v: Dict[str, Any], values: Dict[str, Any], field: Any
+        cls, v: Dict[str, Any], values: Dict[str, Any], info: FieldValidationInfo
     ):
         object_field_mapping = {
             "retriever": RetrieverConfig,
@@ -95,7 +95,7 @@ class PipelineConfig(ParameterizedConfigClass, YamlModel, extra="allow"):
             "quality": QualityConfig,
             "storage": StorageConfig,
         }
-        config_cls = object_field_mapping[field.name]
+        config_cls = object_field_mapping[info.field_name]
 
         if matches_overrideable_schema(v):
             defaults = read_yaml(Path(v["path"]))

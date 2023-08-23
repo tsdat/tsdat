@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import boto3
 import botocore.exceptions
 import xarray as xr
-from pydantic import BaseSettings, Field, root_validator, validator
+from pydantic import BaseSettings, Field, root_validator, field_validator
 from tsdat.tstring import Template
 
 from ..utils import get_fields_from_datastream, get_filename, get_fields_from_dataset
@@ -51,7 +51,8 @@ class FileSystem(Storage):
         handler (FileHandler): The FileHandler class that should be used to handle data
             I/O within the storage API.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     # TODO: @clansing refactor to use a 'StorageFile' class for custom file naming
     # conventions. Until then, we will assume that we are using tsdat naming conventions
@@ -123,7 +124,7 @@ class FileSystem(Storage):
         Note that this will only be called if the DataReader returns a dictionary of
         xr.Datasets for a single input key."""
 
-        @validator("storage_root")
+        @field_validator("storage_root")
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
             if not storage_root.is_dir():
                 logger.info("Creating storage root at: %s", storage_root.as_posix())
@@ -355,7 +356,8 @@ class FileSystemS3(FileSystem):
         handler (FileHandler): The FileHandler class that should be used to handle data
             I/O within the storage API.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     class Parameters(FileSystem.Parameters):  # type: ignore
         """Additional parameters for S3 storage.
@@ -394,13 +396,13 @@ class FileSystemS3(FileSystem):
         """Keyword arguments to xr.merge. This will only be called if the
         DataReader returns a dictionary of xr.Datasets for a single saved file."""
 
-        @validator("storage_root")
+        @field_validator("storage_root")
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
-            return storage_root  # HACK: Don't run parent validator to create storage root file
+            return storage_root  # HACK: Don't run parent field_validator to create storage root file
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
 
-    @validator("parameters")
+    @field_validator("parameters")
     def _check_authentication(cls, parameters: Parameters):
         session = FileSystemS3._get_session(
             region=parameters.region, timehash=FileSystemS3._get_timehash()
@@ -414,7 +416,7 @@ class FileSystemS3(FileSystem):
             )
         return parameters
 
-    @validator("parameters")
+    @field_validator("parameters")
     def _ensure_bucket_exists(cls, parameters: Parameters):
         session = FileSystemS3._get_session(
             region=parameters.region, timehash=FileSystemS3._get_timehash()
@@ -454,7 +456,8 @@ class FileSystemS3(FileSystem):
         Returns:
             boto3.session.Session: An active boto3 Session object.
 
-        ------------------------------------------------------------------------------------"""
+        ------------------------------------------------------------------------------------
+        """
         del timehash
         return boto3.session.Session(region_name=region)
 

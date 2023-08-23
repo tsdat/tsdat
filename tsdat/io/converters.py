@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import validator
+from pydantic import field_validator
 
 from .base import DataConverter, RetrievedDataset
 
@@ -130,7 +130,8 @@ class StringToDatetime(DataConverter):
             pandas.to_datetime() function as keyword arguments. Note that 'format' is
             already included as a keyword argument. Defaults to {}.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     format: Optional[str] = None
     """The date format the string is using (e.g., '%Y-%m-%d %H:%M:%S' for date strings
@@ -146,7 +147,7 @@ class StringToDatetime(DataConverter):
     """Any parameters set here will be passed to `pd.to_datetime` as keyword
     arguments."""
 
-    @validator("format")
+    @field_validator("format")
     @classmethod
     def warn_if_no_format_set(cls, format: Optional[str]) -> Optional[str]:
         if not format:

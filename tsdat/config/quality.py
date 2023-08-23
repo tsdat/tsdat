@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List
 from .utils import ParameterizedConfigClass, YamlModel, find_duplicates
 
@@ -60,7 +60,7 @@ class QualityConfig(YamlModel, extra="forbid"):
         " list of variables that the manager should be applied to."
     )
 
-    @validator("managers")
+    @field_validator("managers")
     @classmethod
     def validate_manager_names_are_unique(
         cls, v: List[ManagerConfig]

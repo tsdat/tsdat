@@ -4,8 +4,9 @@ from typing import Any, Dict, Union
 
 from pydantic import (
     Field,
+    FieldValidationInfo,
     root_validator,
-    validator,
+    field_validator,
 )
 
 from .attributes import GlobalAttributes
@@ -59,27 +60,27 @@ class DatasetConfig(YamlModel, extra="forbid"):
         " and set dynamically via user code in a tsdat pipeline.",
     )
 
-    @validator("coords")
+    @field_validator("coords")
     @classmethod
     def time_in_coords(cls, coords: Dict[str, Coordinate]) -> Dict[str, Coordinate]:
         if "time" not in coords:
             raise ValueError("Required coordinate definition 'time' is missing.")
         return coords
 
-    @validator("coords", "data_vars")
+    @field_validator("coords", "data_vars")
     def variable_names_are_legal(
-        cls, vars: Dict[str, Variable], field: Any
+        cls, vars: Dict[str, Variable], info: FieldValidationInfo
     ) -> Dict[str, Variable]:
         for name in vars.keys():
             pattern = re.compile(r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
             if not pattern.match(name):
                 raise ValueError(
-                    f"'{name}' is not a valid '{field.name}' name. It must be a value"
+                    f"'{name}' is not a valid '{info.field_name}' name. It must be a value"
                     f" matched by {pattern}."
                 )
         return vars
 
-    @validator("coords", "data_vars", pre=True)
+    @field_validator("coords", "data_vars", mode="before")
     @classmethod
     def set_variable_name_property(
         cls, vars: Dict[str, Dict[str, Any]]

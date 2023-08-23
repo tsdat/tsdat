@@ -7,7 +7,8 @@ from pydantic import (
     HttpUrl,
     StrictStr,
     root_validator,
-    validator,
+    field_validator,
+    FieldValidationInfo,
 )
 
 from ..utils import get_datastream
@@ -143,12 +144,14 @@ class GlobalAttributes(AttributeModel):
         " default (v'major.minor.micro'; e.g., 1.2.3).",
     )
 
-    @validator("history", "code_version", pre=True)
+    @field_validator("history", "code_version", mode="before")
     @classmethod
-    def warn_if_dynamic_properties_are_set(cls, v: str, field: Any) -> str:
+    def warn_if_dynamic_properties_are_set(
+        cls, v: str, info: FieldValidationInfo
+    ) -> str:
         if v:
             warnings.warn(
-                f"The '{field.name}' attribute should not be set explicitly. The current"
+                f"The '{info.field_name}' attribute should not be set explicitly. The current"
                 f" value of '{v}' will be ignored."
             )
         return ""

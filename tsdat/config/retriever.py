@@ -1,6 +1,6 @@
 import re
 from typing import Dict, List, Optional, Pattern, Union, cast
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from .utils import ParameterizedConfigClass, YamlModel
 
 __all__ = ["RetrieverConfig"]
@@ -77,7 +77,7 @@ class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra="allow"):
         " be applied to each retrieved coordinate variable.",
     )
 
-    @validator("coords", "data_vars")
+    @field_validator("coords", "data_vars")
     @classmethod
     def coerce_to_patterned_retriever(cls, var_dict: Dict[str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]]) -> Dict[str, Dict[Pattern[str], RetrievedVariableConfig]]:  # type: ignore
         to_return: Dict[str, Dict[Pattern[str], RetrievedVariableConfig]] = {}  # type: ignore

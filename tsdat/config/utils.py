@@ -9,7 +9,7 @@ from pydantic import (
     Field,
     StrictStr,
     ValidationError,
-    validator,
+    field_validator,
     FilePath,
 )
 from pydantic.utils import import_string
@@ -138,7 +138,7 @@ class ParameterizedConfigClass(BaseModel, extra="forbid"):
         " individual classes for more information.",
     )
 
-    @validator("classname")
+    @field_validator("classname")
     @classmethod
     def classname_looks_like_a_module(cls, v: StrictStr) -> StrictStr:
         if "." not in v or not v.replace(".", "").replace("_", "").isalnum():

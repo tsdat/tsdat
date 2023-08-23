@@ -8,7 +8,7 @@ from pydantic import (
     Field,
     StrictStr,
     root_validator,
-    validator,
+    field_validator,
 )
 
 from .attributes import AttributeModel
@@ -125,7 +125,7 @@ class VariableAttributes(AttributeModel):
         " mistaken for a physical value or data point.",
     )
 
-    @validator("units")
+    @field_validator("units")
     def validate_unit(cls, unit_str: str) -> str:
         # Not recognized by pint, but we want it to be valid
         if unit_str == "%" or unit_str.startswith("Seconds since"):
@@ -186,14 +186,14 @@ class Variable(BaseModel, extra="forbid"):
         " impact. In particular, we recommend adding the 'units', 'long_name', and"
         " 'standard_name' attributes, if possible."
     )
-    # @validator("name")
+    # @field_validator("name")
     # @classmethod
     # def validate_name_is_ascii(cls, v: str) -> str:
     #     if not v.isascii():
     #         raise ValueError(f"'{v}' contains a non-ascii character.")
     #     return v
 
-    @validator("attrs")
+    @field_validator("attrs")
     @classmethod
     def set_default_fill_value(
         cls, attrs: VariableAttributes, values: Dict[str, Any]
