@@ -10,18 +10,26 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest", "macos-latest"]
+        python-version: ["3.10"]
 
     steps:
       - uses: actions/checkout@v2
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          environment-file: environment.yml
-          mamba-version: "*"
+          python-version: ${{ matrix.python-version }}
           channels: arm-doe,conda-forge
           activate-environment: tsdat
-      - run: conda activate tsdat
+      - run: |
+          conda activate tsdat
+          conda install -n base conda-libmamba-solver
+          conda config --set solver libmamba
+          conda env update --name tsdat --file environment.yml
         shell: bash -el {0}
       - run: python -m pip install -e ".[dev]"
+        shell: bash -el {0}
+      - run: conda info
+        shell: bash -el {0}
+      - run: conda list
         shell: bash -el {0}
       - run: coverage run -m pytest
         shell: bash -el {0}
