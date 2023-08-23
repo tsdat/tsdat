@@ -69,8 +69,8 @@ class VariableAttributes(AttributeModel):
     )
     valid_range: Optional[List[float]] = Field(
         default=None,
-        min_items=2,
-        max_items=2,
+        min_length=2,
+        max_length=2,
         description="A two-element list of [min, max] values outside of which the data"
         " should be treated as missing. If applying QC tests, then users should"
         " configure the quality managers to flag values outside of this range as having"
@@ -78,8 +78,8 @@ class VariableAttributes(AttributeModel):
     )
     fail_range: Optional[List[float]] = Field(
         default=None,
-        min_items=2,
-        max_items=2,
+        min_length=2,
+        max_length=2,
         description="A two-element list of [min, max] values outside of which the data"
         " should be teated with heavy skepticism as missing. If applying QC tests, then"
         " users should configure the quality managers to flag values outside of this"
@@ -87,8 +87,8 @@ class VariableAttributes(AttributeModel):
     )
     warn_range: Optional[List[float]] = Field(
         default=None,
-        min_items=2,
-        max_items=2,
+        min_length=2,
+        max_length=2,
         description="A two-element list of [min, max] values outside of which the data"
         " should be teated with some skepticism as missing. If applying QC tests, then"
         " users should configure the quality managers to flag values outside of this"
@@ -174,7 +174,6 @@ class Variable(BaseModel, extra="forbid"):
         " 'float', 'int', 'long'."
     )
     dims: List[StrictStr] = Field(
-        unique_items=True,
         description="A list of coordinate variable names that dimension this data"
         " variable. Most commonly this will be set to ['time'], but for datasets where"
         " there are multiple dimensions (e.g., ADCP data measuring current velocities"
