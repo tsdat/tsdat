@@ -68,6 +68,10 @@ class NetCDFWriter(FileWriter):
                 encoding_dict[variable_name]["_FillValue"] = None
 
             if self.parameters.compression_level:
+                # Handle str dtypes: https://github.com/pydata/xarray/issues/2040
+                if dataset[variable_name].dtype.kind == "U":
+                    encoding_dict[variable_name]["dtype"] = "S1"
+
                 encoding_dict[variable_name].update(
                     {
                         self.parameters.compression_engine: True,
@@ -121,6 +125,10 @@ class SplitNetCDFWriter(NetCDFWriter):
                 encoding_dict[variable_name]["_FillValue"] = None
 
             if self.parameters.compression_level:
+                # Handle str dtypes: https://github.com/pydata/xarray/issues/2040
+                if dataset[variable_name].dtype.kind == "U":
+                    encoding_dict[variable_name]["dtype"] = "S1"
+
                 encoding_dict[variable_name].update(
                     {
                         self.parameters.compression_engine: True,
