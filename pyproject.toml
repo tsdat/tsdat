@@ -38,7 +38,7 @@ dependencies = [
   "dunamai==1.9.0",
   "zarr",
   "typer >=0.4",
-  "rich",
+  # "rich",
   "types-PyYAML",
   "boto3",
   "boto3-stubs[essential]",
