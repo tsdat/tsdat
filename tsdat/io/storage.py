@@ -10,7 +10,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import boto3
 import botocore.exceptions
 import xarray as xr
-from pydantic import BaseSettings, Field, model_validator, field_validator
+from pydantic import Field, model_validator, field_validator
+from pydantic_settings import BaseSettings
 from tsdat.tstring import Template
 
 from ..utils import get_fields_from_datastream, get_filename, get_fields_from_dataset
@@ -631,6 +632,7 @@ class ZarrLocalStorage(FileSystem):
 
 # HACK: Update forward refs to get around error I couldn't replicate with simpler code
 # "pydantic.errors.ConfigError: field "parameters" not yet prepared so type is still a ForwardRef..."
-FileSystem.update_forward_refs(Parameters=FileSystem.Parameters)
-FileSystemS3.update_forward_refs(Parameters=FileSystemS3.Parameters)
-ZarrLocalStorage.update_forward_refs(Parameters=ZarrLocalStorage.Parameters)
+# FileSystem.update_forward_refs(Parameters=FileSystem.Parameters)
+# FileSystemS3.update_forward_refs(Parameters=FileSystemS3.Parameters)
+# ZarrLocalStorage.update_forward_refs(Parameters=ZarrLocalStorage.Parameters)
+# FileSystem.model_rebuild()
