@@ -7,7 +7,7 @@ import pandas as pd
 import typer
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel
 from tsdat.tstring import Template
 
 
@@ -34,7 +34,7 @@ FILENAME_TEMPLATE = Template(
 )
 
 
-class ParameterizedClass(BaseModel, extra=Extra.forbid):
+class ParameterizedClass(BaseModel, extra="forbid"):
     """------------------------------------------------------------------------------------
     Base class for any class that accepts 'parameters' as an argument.
 
@@ -42,7 +42,8 @@ class ParameterizedClass(BaseModel, extra=Extra.forbid):
     the 'parameters' properties to support custom required or optional arguments from
     configuration files.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     parameters: Any = {}
 

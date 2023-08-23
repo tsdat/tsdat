@@ -1,6 +1,6 @@
 from typing import Callable, Dict, List
 import numpy as np
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel
 import xarray as xr
 from numpy.typing import NDArray
 from abc import ABC, abstractmethod
@@ -70,7 +70,7 @@ class QualityHandler(ParameterizedClass, ABC):
         ...
 
 
-class QualityManager(BaseModel, extra=Extra.forbid):
+class QualityManager(BaseModel, extra="forbid"):
     """---------------------------------------------------------------------------------
     Groups a QualityChecker and one or more QualityHandlers together.
 
@@ -134,7 +134,7 @@ class QualityManager(BaseModel, extra=Extra.forbid):
         return [str(v) for v in dataset.data_vars if not str(v).startswith("qc_")]
 
 
-class QualityManagement(BaseModel, extra=Extra.forbid):
+class QualityManagement(BaseModel, extra="forbid"):
     """---------------------------------------------------------------------------------
     Main class for orchestrating the dispatch of QualityCheckers and QualityHandlers.
 

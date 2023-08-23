@@ -5,7 +5,7 @@ import pandas as pd
 import xarray as xr
 from typing import Any, Dict, Iterable, List, Optional, cast, Hashable
 from pathlib import Path
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel
 from .base import FileWriter
 from ..utils import get_filename
 
@@ -28,9 +28,10 @@ class NetCDFWriter(FileWriter):
     File compression is used by default to save disk space. To disable compression set the
     `compression_level` parameter to `0`.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         compression_level: int = 1
         """The level of compression to use (0-9). Set to 0 to not use compression."""
 
@@ -95,7 +96,8 @@ class SplitNetCDFWriter(NetCDFWriter):
     `Dataset.to_netcdf()` as keyword arguments. File compression is used by default to save
     disk space. To disable compression set the `compression_level` parameter to `0`.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     class Parameters(NetCDFWriter.Parameters):
         time_interval: int = 1
@@ -115,7 +117,6 @@ class SplitNetCDFWriter(NetCDFWriter):
         to_netcdf_kwargs["encoding"] = encoding_dict
 
         for variable_name in cast(Iterable[str], dataset.variables):
-
             # Prevent Xarray from setting 'nan' as the default _FillValue
             encoding_dict[variable_name] = dataset[variable_name].encoding  # type: ignore
             if (
@@ -166,7 +167,7 @@ class CSVWriter(FileWriter):
 
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         dim_order: Optional[List[str]] = None
         to_csv_kwargs: Dict[str, Any] = {}
 
@@ -244,7 +245,7 @@ class ParquetWriter(FileWriter):
 
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         dim_order: Optional[List[str]] = None
         to_parquet_kwargs: Dict[str, Any] = {}
 
@@ -270,7 +271,7 @@ class ZarrWriter(FileWriter):
 
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         to_zarr_kwargs: Dict[str, Any] = {}
 
     parameters: Parameters = Parameters()

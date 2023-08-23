@@ -4,7 +4,7 @@ import logging
 import re
 import pandas as pd
 import xarray as xr
-from pydantic import BaseModel, Extra, Field, validator
+from pydantic import BaseModel, Field, validator
 from typing import (
     Any,
     Callable,
@@ -91,7 +91,7 @@ class DefaultRetriever(Retriever):
     ------------------------------------------------------------------------------------
     """
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         merge_kwargs: Dict[str, Any] = {}
         """Keyword arguments passed to xr.merge(). This is only relevant if multiple
         input keys are provided simultaneously, or if any registered DataReader objects

@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra, root_validator, validator
+from pydantic import BaseModel, root_validator, validator
 
 from ..utils import record_corrections_applied
 from .base import QualityHandler
@@ -35,7 +35,7 @@ class FailPipeline(QualityHandler):
     ------------------------------------------------------------------------------------
     """
 
-    class Parameters(BaseModel, extra=Extra.allow):
+    class Parameters(BaseModel, extra="allow"):
         tolerance: float = 0
         """Tolerance for the number of allowable failures as the ratio of allowable
         failures to the total number of values checked. Defaults to 0, meaning that any
@@ -103,7 +103,7 @@ class RecordQualityResults(QualityHandler):
     ------------------------------------------------------------------------------------
     """
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         bit: Optional[int] = None
         """DEPRECATED
 
@@ -176,7 +176,9 @@ class RemoveFailedValues(QualityHandler):
     ) -> xr.Dataset:
         if failures.any():
             if variable_name in dataset.dims:
-                mask = xr.DataArray(failures, coords={variable_name:dataset[variable_name]})
+                mask = xr.DataArray(
+                    failures, coords={variable_name: dataset[variable_name]}
+                )
                 dataset = dataset.where(~mask, drop=True)
             else:
                 fill_value = dataset[variable_name].attrs.get("_FillValue", None)
@@ -191,7 +193,7 @@ class SortDatasetByCoordinate(QualityHandler):
     ------------------------------------------------------------------------------------
     """
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         ascending: bool = True
         """Whether to sort the dataset in ascending order. Defaults to True."""
 

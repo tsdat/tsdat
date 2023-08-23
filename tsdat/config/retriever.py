@@ -1,6 +1,6 @@
 import re
 from typing import Dict, List, Optional, Pattern, Union, cast
-from pydantic import BaseModel, Extra, Field, validator
+from pydantic import BaseModel, Field, validator
 from .utils import ParameterizedConfigClass, YamlModel
 
 __all__ = ["RetrieverConfig"]
@@ -10,11 +10,11 @@ class DataReaderConfig(ParameterizedConfigClass):
     ...
 
 
-class DataConverterConfig(ParameterizedConfigClass, extra=Extra.allow):
+class DataConverterConfig(ParameterizedConfigClass, extra="allow"):
     ...
 
 
-class RetrievedVariableConfig(BaseModel, extra=Extra.allow):
+class RetrievedVariableConfig(BaseModel, extra="allow"):
     """Specifies how the variable should be retrieved from the raw dataset and the
     preprocessing steps (i.e. DataConverters) that should be applied."""
 
@@ -35,7 +35,7 @@ class RetrievedVariableConfig(BaseModel, extra=Extra.allow):
     )
 
 
-class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
+class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra="allow"):
     """---------------------------------------------------------------------------------
     Contains configuration parameters for the tsdat retriever class.
 

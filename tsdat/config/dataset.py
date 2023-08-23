@@ -3,12 +3,10 @@ import re
 from typing import Any, Dict, Union
 
 from pydantic import (
-    Extra,
     Field,
     root_validator,
     validator,
 )
-from pydantic.fields import ModelField
 
 from .attributes import GlobalAttributes
 from .utils import YamlModel
@@ -20,7 +18,7 @@ __all__ = ["DatasetConfig"]
 logger = logging.getLogger(__name__)
 
 
-class DatasetConfig(YamlModel, extra=Extra.forbid):
+class DatasetConfig(YamlModel, extra="forbid"):
     """---------------------------------------------------------------------------------
     Defines the structure and metadata of the dataset produced by a tsdat pipeline.
 
@@ -70,7 +68,7 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
 
     @validator("coords", "data_vars")
     def variable_names_are_legal(
-        cls, vars: Dict[str, Variable], field: ModelField
+        cls, vars: Dict[str, Variable], field: Any
     ) -> Dict[str, Variable]:
         for name in vars.keys():
             pattern = re.compile(r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")

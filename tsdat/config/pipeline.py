@@ -1,11 +1,6 @@
 from pathlib import Path
 from jsonpointer import set_pointer  # type: ignore
-from pydantic import (
-    Extra,
-    Field,
-    validator,
-)
-from pydantic.fields import ModelField
+from pydantic import Field, validator
 from typing import Any, Dict, List, Pattern, Union
 
 from ..config.retriever import RetrieverConfig
@@ -25,7 +20,7 @@ from ..pipeline.base import Pipeline
 __all__ = ["PipelineConfig"]
 
 
-class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
+class PipelineConfig(ParameterizedConfigClass, YamlModel, extra="allow"):
     """---------------------------------------------------------------------------------
     Contains configuration parameters for tsdat pipelines.
 
@@ -92,7 +87,7 @@ class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
     @validator("retriever", "dataset", "quality", "storage", pre=True)
     @classmethod
     def merge_overrideable_yaml(
-        cls, v: Dict[str, Any], values: Dict[str, Any], field: ModelField
+        cls, v: Dict[str, Any], values: Dict[str, Any], field: Any
     ):
         object_field_mapping = {
             "retriever": RetrieverConfig,
@@ -124,5 +119,6 @@ class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
         Returns:
             Pipeline: An instance of a tsdat.pipeline.base.Pipeline subclass.
 
-        ------------------------------------------------------------------------------------"""
+        ------------------------------------------------------------------------------------
+        """
         return recursive_instantiate(self)

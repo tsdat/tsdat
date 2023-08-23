@@ -63,7 +63,7 @@ tsdat's csv reader from the user's standpoint:
 .. code-block:: python
 
   from typing import Any, Dict, Union
-  from pydantic import BaseModel, Extra
+  from pydantic import BaseModel
   import pandas as pd
   import xarray as xr
   from tsdat import DataReader
@@ -78,7 +78,7 @@ tsdat's csv reader from the user's standpoint:
       module.
       ---------------------------------------------------------------------------------"""
 
-      class Parameters(BaseModel, extra=Extra.forbid):
+      class Parameters(BaseModel, extra="forbid"):
           """If your CustomDataReader should take any additional arguments from the
           retriever configuration file, then those should be specified here."""
 
@@ -163,7 +163,7 @@ this input in the codeblock below.
 
   import xarray as xr
   from typing import Any, Optional
-  from pydantic import BaseModel, Extra
+  from pydantic import BaseModel
   from tsdat.io.base import DataConverter
   from tsdat.utils import assign_data
   from tsdat.config.dataset import DatasetConfig
@@ -175,7 +175,7 @@ this input in the codeblock below.
       Expects "kt/10" as input and "m/s" as output units
       ---------------------------------------------------------------------------------"""
 
-      class Parameters(BaseModel, extra=Extra.forbid):
+      class Parameters(BaseModel, extra="forbid"):
           """If your CustomConverter should take any additional arguments from the
           retriever configuration file, then those should be specified here.
           """
@@ -312,7 +312,7 @@ cubic polynomial using one of xarray's functions:
 .. code-block:: python
 
   import numpy as np
-  from pydantic import BaseModel, Extra
+  from pydantic import BaseModel
   import xarray as xr
   from numpy.typing import NDArray
   from tsdat import QualityChecker, QualityHandler
@@ -323,7 +323,7 @@ cubic polynomial using one of xarray's functions:
       Fills in missing data with a cubic polynomial spline
       ----------------------------------------------------------------------------"""
 
-      class Parameters(BaseModel, extra=Extra.forbid):
+      class Parameters(BaseModel, extra="forbid"):
           """If your QualityChecker should take any additional arguments from the
           quality configuration file, then those should be specified here.
           """

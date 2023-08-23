@@ -13,7 +13,7 @@ include a Parameters object as shown in the following example:
 
     import xarray as xr
     from tsdat import DataReader
-    from pydantic import BaseModel, Extra
+    from pydantic import BaseModel
 
 
     class CustomDataReader(DataReader):
@@ -21,7 +21,7 @@ include a Parameters object as shown in the following example:
         Data reader that can read from *xyz* formatted-data files.
         ---------------------------------------------------------------------------------"""
 
-        class Parameters(BaseModel, extra=Extra.forbid):
+        class Parameters(BaseModel, extra="forbid"):
             """If your CustomDataReader should take any additional arguments from the
             retriever config configuration file, then those should be specified here.
             """

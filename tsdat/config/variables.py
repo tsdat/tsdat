@@ -5,7 +5,6 @@ import numpy as np
 from pint import PintError, UnitRegistry
 from pydantic import (
     BaseModel,
-    Extra,
     Field,
     StrictStr,
     root_validator,
@@ -156,8 +155,8 @@ class VariableAttributes(AttributeModel):
         return values
 
 
-class Variable(BaseModel, extra=Extra.forbid):
-    name: str = Field("", regex=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
+class Variable(BaseModel, extra="forbid"):
+    name: str = Field("", pattern=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
     """Should be left empty. This property will be set automatically by the data_vars or
     coords pydantic model upon instantiation."""
 

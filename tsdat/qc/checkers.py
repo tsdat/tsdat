@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import xarray as xr
-from pydantic import BaseModel, Extra, validator
+from pydantic import BaseModel, validator
 from typing import Any, Dict, List, Optional, Union
 from numpy.typing import NDArray
 from .base import QualityChecker
@@ -55,12 +55,12 @@ class CheckMissing(QualityChecker):
 class CheckMonotonic(QualityChecker):
     """---------------------------------------------------------------------------------
     Checks if any values are not ordered strictly monotonically (i.e. values must all be
-    increasing or all decreasing). The check marks values as failed if they break from 
+    increasing or all decreasing). The check marks values as failed if they break from
     a monotonic order.
 
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         require_decreasing: bool = False
         require_increasing: bool = False
         dim: Optional[str] = None
@@ -105,12 +105,12 @@ class CheckMonotonic(QualityChecker):
         if self.parameters.require_increasing:
             if not increasing:
                 failures[np.where(diff <= zero)[0]] = True  # type: ignore
-            flag = 'increasing'
+            flag = "increasing"
 
         elif self.parameters.require_decreasing:
             if not decreasing:
                 failures[np.where(diff >= zero)[0]] = True  # type: ignore
-            flag = 'decreasing'
+            flag = "decreasing"
         else:
             is_monotonic = increasing | decreasing
             if not is_monotonic:
@@ -121,10 +121,10 @@ class CheckMonotonic(QualityChecker):
                 # Assuming fewer bad points is the error
                 if len(bad[0]) > len(bad[1]):
                     failures = failures[bad[1]]
-                    flag = 'decreasing'
+                    flag = "decreasing"
                 elif len(bad[0]) < len(bad[1]):
                     failures = failures[bad[0]]
-                    flag = 'increasing'
+                    flag = "increasing"
                 else:  # if equal points are bad fail everything
                     failures += 1
 
@@ -132,18 +132,18 @@ class CheckMonotonic(QualityChecker):
         if any(failures) and not all(failures):
             t0 = dataset[variable_name].values[0]
             for i, t in enumerate(dataset[variable_name].values[1:]):
-                if flag=='increasing':
-                    condition = (t>t0)
-                elif flag=='decreasing':
-                    condition = (t<t0)
+                if flag == "increasing":
+                    condition = t > t0
+                elif flag == "decreasing":
+                    condition = t < t0
                 else:
                     break
 
                 if condition:
-                    failures[i+1] = False
+                    failures[i + 1] = False
                     t0 = t
                 else:
-                    failures[i+1] = True   
+                    failures[i + 1] = True
 
         return failures
 
@@ -391,7 +391,7 @@ class _CheckDelta(_ThresholdChecker):
 
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         dim: str = "time"
         """The dimension on which to perform the diff."""
 

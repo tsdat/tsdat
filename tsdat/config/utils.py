@@ -6,7 +6,6 @@ from dunamai import Style, Version
 from pathlib import Path
 from pydantic import (
     BaseModel,
-    Extra,
     Field,
     StrictStr,
     ValidationError,
@@ -58,7 +57,8 @@ class YamlModel(BaseModel):
         Returns:
             YamlModel: A YamlModel subclass
 
-        ------------------------------------------------------------------------------------"""
+        ------------------------------------------------------------------------------------
+        """
         config = read_yaml(filepath)
         if overrides:
             for pointer, new_value in overrides.items():
@@ -78,14 +78,15 @@ class YamlModel(BaseModel):
         Args:
             output_file (Path): The path to store the JSON schema.
 
-        ------------------------------------------------------------------------------------"""
+        ------------------------------------------------------------------------------------
+        """
         output_file.write_text(cls.schema_json(indent=4))
 
 
 Config = TypeVar("Config", bound=BaseModel)
 
 
-class Overrideable(YamlModel, GenericModel, Generic[Config], extra=Extra.forbid):
+class Overrideable(YamlModel, GenericModel, Generic[Config], extra="forbid"):
     path: FilePath = Field(
         description="Path to the configuration file to borrow configurations from.\n"
         "Note that this path is relative to the project root, so you should include any"
@@ -121,7 +122,7 @@ def matches_overrideable_schema(model_dict: Dict[str, Any]):
     return "path" in model_dict
 
 
-class ParameterizedConfigClass(BaseModel, extra=Extra.forbid):
+class ParameterizedConfigClass(BaseModel, extra="forbid"):
     # Unfortunately, the classname has to be a string type unless PyObject becomes JSON
     # serializable: https://github.com/samuelcolvin/pydantic/discussions/3842
     classname: StrictStr = Field(
@@ -152,7 +153,8 @@ class ParameterizedConfigClass(BaseModel, extra=Extra.forbid):
         Returns:
             Any: An instance of the specified class.
 
-        ------------------------------------------------------------------------------------"""
+        ------------------------------------------------------------------------------------
+        """
         params = {field: getattr(self, field) for field in self.__fields_set__}
         _cls = import_string(params.pop("classname"))
         return _cls(**params)

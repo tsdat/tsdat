@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Extra, Field, validator
+from pydantic import BaseModel, Field, validator
 from typing import List
 from .utils import ParameterizedConfigClass, YamlModel, find_duplicates
 
@@ -13,8 +13,7 @@ class HandlerConfig(ParameterizedConfigClass):
     pass
 
 
-class ManagerConfig(BaseModel, extra=Extra.forbid):
-
+class ManagerConfig(BaseModel, extra="forbid"):
     name: str = Field(
         description="A human-readable label that is used to identify this quality"
         " manager."
@@ -38,7 +37,7 @@ class ManagerConfig(BaseModel, extra=Extra.forbid):
     exclude: List[str] = []
 
 
-class QualityConfig(YamlModel, extra=Extra.forbid):
+class QualityConfig(YamlModel, extra="forbid"):
     """---------------------------------------------------------------------------------
     Contains quality configuration parameters for tsdat pipelines.
 

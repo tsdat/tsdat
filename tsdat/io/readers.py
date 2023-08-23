@@ -4,7 +4,7 @@ import re
 import tarfile
 from io import BytesIO
 from zipfile import ZipFile
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel
 from typing import Any, Dict, List
 from .base import DataReader, ArchiveReader
 
@@ -39,7 +39,7 @@ class CSVReader(DataReader):
 
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         read_csv_kwargs: Dict[str, Any] = {}
         from_dataframe_kwargs: Dict[str, Any] = {}
 
@@ -59,7 +59,7 @@ class ParquetReader(DataReader):
 
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         read_parquet_kwargs: Dict[str, Any] = {}
         from_dataframe_kwargs: Dict[str, Any] = {}
 
@@ -77,7 +77,7 @@ class ZarrReader(DataReader):
 
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         open_zarr_kwargs: Dict[str, Any] = {}
 
     parameters: Parameters = Parameters()
@@ -132,7 +132,7 @@ class TarReader(ArchiveReader):
     ------------------------------------------------------------------------------------
     """
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         open_tar_kwargs: Dict[str, Any] = {}
         read_tar_kwargs: Dict[str, Any] = {}
         readers: Dict[str, Any] = {}
@@ -237,7 +237,7 @@ class ZipReader(ArchiveReader):
     ------------------------------------------------------------------------------------
     """
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel, extra="forbid"):
         open_zip_kwargs: Dict[str, Any] = {}
         read_zip_kwargs: Dict[str, Any] = {}
         readers: Dict[str, Any] = {}

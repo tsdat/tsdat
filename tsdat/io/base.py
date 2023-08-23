@@ -14,7 +14,7 @@ from typing import (
     Union,
 )
 from abc import ABC, abstractmethod
-from pydantic import BaseModel, Extra, root_validator
+from pydantic import BaseModel, root_validator
 from ..utils import ParameterizedClass
 from ..config.dataset import DatasetConfig
 
@@ -133,7 +133,8 @@ class ArchiveReader(DataReader):
     Subclasses of `ArchiveHandler` may define additional parameters to support various
     methods of unpacking archived data.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     exclude: str = ""
 
@@ -221,15 +222,15 @@ class DataHandler(ParameterizedClass):
 
     @root_validator(pre=False)
     def patch_parameters(cls, values):
-        params = values.get('parameters', {})
-        writer_params = params.get('writer', {}) if params is not None else {}
-        reader_params = params.get('reader', {}) if params is not None else {}
+        params = values.get("parameters", {})
+        writer_params = params.get("writer", {}) if params is not None else {}
+        reader_params = params.get("reader", {}) if params is not None else {}
 
         for ky in writer_params:
-            setattr(values['writer'].parameters, ky, writer_params[ky])
+            setattr(values["writer"].parameters, ky, writer_params[ky])
         for ky in reader_params:
-            setattr(values['reader'].parameters, ky, reader_params[ky])
-        
+            setattr(values["reader"].parameters, ky, reader_params[ky])
+
         return values
 
 
@@ -251,7 +252,7 @@ class FileHandler(DataHandler):
 
 
 # TODO: This needs a better name
-class RetrievedVariable(BaseModel, extra=Extra.forbid):
+class RetrievedVariable(BaseModel, extra="forbid"):
     """Tracks the name of the input variable and the converters to apply."""
 
     name: Union[str, List[str]]

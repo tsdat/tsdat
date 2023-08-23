@@ -3,21 +3,18 @@ from typing import Any, Dict, Optional
 
 from pydantic import (
     BaseModel,
-    Extra,
     Field,
     HttpUrl,
     StrictStr,
     root_validator,
     validator,
 )
-from pydantic.fields import ModelField
 
 from ..utils import get_datastream
 from .utils import get_code_version
 
 
-class AttributeModel(BaseModel, extra=Extra.allow):
-
+class AttributeModel(BaseModel, extra="allow"):
     # HACK: root is needed for now: https://github.com/samuelcolvin/pydantic/issues/515
     @root_validator(skip_on_failure=True)
     @classmethod
@@ -74,13 +71,13 @@ class GlobalAttributes(AttributeModel):
     )
     location_id: str = Field(
         min_length=1,
-        regex=r"^[a-zA-Z0-9_]+$",  # alphanumeric and '_' characters
+        pattern=r"^[a-zA-Z0-9_]+$",  # alphanumeric and '_' characters
         description="A label or acronym for the location where the data were obtained"
         " from. Only alphanumeric characters and '_' are allowed.",
     )
     dataset_name: str = Field(
         min_length=3,
-        regex=r"^[a-z0-9_]+$",  # lowercase alphanumeric and '_' characters
+        pattern=r"^[a-z0-9_]+$",  # lowercase alphanumeric and '_' characters
         description="A string used to identify the data being produced. Ideally"
         " resembles a shortened lowercase version of the title. Only lowercase"
         " alphanumeric characters and '_' are allowed.",
@@ -88,7 +85,7 @@ class GlobalAttributes(AttributeModel):
     qualifier: Optional[str] = Field(
         default=None,
         min_length=1,
-        regex=r"^[a-zA-Z0-9_]+$",  # lowercase alphanumeric and '_' characters
+        pattern=r"^[a-zA-Z0-9_]+$",  # lowercase alphanumeric and '_' characters
         description="An optional string which distinguishes these data from other"
         " datasets produced by the same instrument. Only alphanumeric characters"
         " and '_' are allowed.",
@@ -96,7 +93,7 @@ class GlobalAttributes(AttributeModel):
     temporal: Optional[str] = Field(
         default=None,
         min_length=2,
-        regex=r"^[0-9]+[a-zA-Z]+$",
+        pattern=r"^[0-9]+[a-zA-Z]+$",
         description="An optional string which describes the temporal resolution of the"
         " data (if it spaced in regular intervals). This string should be formated as a"
         " number followed by a unit of measurement, e.g., '10m' would indicate the data"
@@ -106,7 +103,7 @@ class GlobalAttributes(AttributeModel):
     data_level: str = Field(
         min_length=2,
         max_length=3,
-        regex=r"^[a-z0-9]+$",  # lowercase alphanumeric characters
+        pattern=r"^[a-z0-9]+$",  # lowercase alphanumeric characters
         description="A string used to indicate the level of processing of the output"
         " data. It should be formated as a letter followed by a number. Typical values"
         " for this include: a1 - data is ingested (no qc), b1 - data is ingested and"
@@ -148,7 +145,7 @@ class GlobalAttributes(AttributeModel):
 
     @validator("history", "code_version", pre=True)
     @classmethod
-    def warn_if_dynamic_properties_are_set(cls, v: str, field: ModelField) -> str:
+    def warn_if_dynamic_properties_are_set(cls, v: str, field: Any) -> str:
         if v:
             warnings.warn(
                 f"The '{field.name}' attribute should not be set explicitly. The current"
