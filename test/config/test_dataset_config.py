@@ -24,7 +24,7 @@ def test_fail_if_non_ascii_attrs():
     ]
     expected_error_msgs = [
         "'want some π?' contains a non-ascii character.",
-        "attr 'measurement' -> 'ºC' contains a non-ascii character.",
+        "attr 'measurement' -> 'ºc' contains a non-ascii character.",
     ]
     for attr, expected_error_msg in zip(attrs, expected_error_msgs):
         with pytest.raises(ValidationError) as error:
@@ -35,19 +35,21 @@ def test_fail_if_non_ascii_attrs():
 
 def test_fail_if_missing_required_global_attributes():
     attrs: Dict[str, Any] = {}
-    expected_error_msgs = [
-        "title\n  field required",
-        "description\n  field required",
-        "location_id\n  field required",
-        "dataset_name\n  field required",
-        "data_level\n  field required",
-    ]
-    with pytest.raises(ValidationError) as error:
+    expected_errors = {
+        "title": "missing",
+        "description": "missing",
+        "location_id": "missing",
+        "dataset_name": "missing",
+        "data_level": "missing",
+    }
+    with pytest.raises(ValidationError) as _errors:
         GlobalAttributes(**attrs)
 
-    actual_msg = get_pydantic_error_message(error)
-    for expected_msg in expected_error_msgs:
-        assert expected_msg in actual_msg
+    errors = _errors.value.errors()
+    assert len(errors) == len(expected_errors)
+    for error, (err_loc, err_type) in zip(errors, expected_errors.items()):
+        assert error["loc"][0] == err_loc
+        assert error["type"] == err_type
 
 
 def test_fail_if_invalid_global_attributes():
@@ -65,26 +67,28 @@ def test_fail_if_invalid_global_attributes():
         "temporal": "A1",  # Doesn't match regex (a-z)
         "data_level": "1234",  # Too long
     }
-    expected_error_msgs = [
-        "title\n  ensure this value has at least 1 characters",
-        "description\n  ensure this value has at least 1 characters",
-        "code_url\n  invalid or missing URL scheme",
-        "conventions\n  str type expected",
-        "doi\n  str type expected",
-        "institution\n  str type expected",
-        "references\n  str type expected",
-        "location_id\n  ensure this value has at least 1 character",
-        "dataset_name\n  ensure this value has at least 3 characters",
-        "qualifier\n  ensure this value has at least 1 character",
-        "temporal\n  string does not match regex",
-        "data_level\n  ensure this value has at most 3 characters",
-    ]
-    with pytest.raises(ValidationError) as error:
+    expected_errors = {
+        "title": "string_too_short",
+        "description": "string_too_short",
+        "code_url": "url_parsing",
+        "conventions": "string_type",
+        "doi": "string_type",
+        "institution": "string_type",
+        "references": "string_type",
+        "location_id": "string_too_short",
+        "dataset_name": "string_too_short",
+        "qualifier": "string_too_short",
+        "temporal": "string_pattern_mismatch",
+        "data_level": "string_too_long",
+    }
+    with pytest.raises(ValidationError) as _errors:
         GlobalAttributes(**attrs)
 
-    actual_msg = get_pydantic_error_message(error)
-    for expected_msg in expected_error_msgs:
-        assert expected_msg in actual_msg
+    errors = _errors.value.errors()
+    assert len(errors) == len(expected_errors)
+    for error, (err_loc, err_type) in zip(errors, expected_errors.items()):
+        assert error["loc"][0] == err_loc
+        assert error["type"] == err_type
 
 
 def test_warn_if_unexpected_global_attributes():
@@ -150,40 +154,45 @@ def test_global_attributes_allow_extra():
 def test_fail_if_bad_variable_attributes():
     attrs: Dict[Any, Any] = {
         # No units attribute --> "comment" must contain 'Unknown units.'
+        "units": "abcsd",  # not a known unit: pint warning
         "long_name": 1.0,  # Not strictly a string
         "standard_name": 1.0,  # Not strictly a string
         "comment": "Normally valid",  # But units not provided, so must indicate that
         "valid_range": "a",  # Not a list
-        "fail_range": ["a", "b"],  # List elements aren't float
+        "fail_range": ["a", 1.0],  # List elements aren't float
         "warn_range": [1.0, 2.0, 3.0],  # Too many elements
         "valid_delta": "a",  # Not a float
         "fail_delta": "a",  # Not a float
         "warn_delta": "a",  # Not a float
         # "_FillValue": "a",  # Not a float -- no longer needs to be a number
     }
-    expected_error_msgs = [
-        "The 'units' attr is required if known. If the units are not known,",  # ...
-        "long_name\n  str type expected",
-        "standard_name\n  str type expected",
-        "valid_range\n  value is not a valid list",
-        "fail_range -> 0\n  value is not a valid float",
-        "warn_range\n  ensure this value has at most 2 items",
-        "valid_delta\n  value is not a valid float",
-        "fail_delta\n  value is not a valid float",
-        "warn_delta\n  value is not a valid float",
-        # "_FillValue\n  value is not a valid float",
-    ]
-    with pytest.raises(ValidationError) as error:
+    expected_errors = {
+        # "the 'units' attr is required if known. if the units are not known,",  # ...
+        "long_name": "string_type",
+        "standard_name": "string_type",
+        "valid_range": "list_type",
+        "fail_range": "float_parsing",
+        "warn_range": "too_long",
+        "valid_delta": "float_parsing",
+        "fail_delta": "float_parsing",
+        "warn_delta": "float_parsing",
+        # "_FillValue\n  float_parsing",
+    }
+    with pytest.raises(ValidationError) as _errors:
         VariableAttributes(**attrs)
 
-    actual_msg = get_pydantic_error_message(error)
-    for expected_msg in expected_error_msgs:
-        assert expected_msg in actual_msg
+    errors = _errors.value.errors()
+    assert len(errors) == len(expected_errors)
+    for error, (err_loc, err_type) in zip(errors, expected_errors.items()):
+        assert error["loc"][0] == err_loc
+        assert error["type"] == err_type
 
 
 @pytest.mark.parametrize(
     ("units", "should_warn"),
     (
+        (1, False),
+        (2, True),
         ("1", False),
         ("m", False),
         ("m/s", False),
@@ -274,7 +283,7 @@ def test_fail_if_bad_variable_name():
         "no|pipe",
         "no+-*&^!@chars",
     ]
-    expected_error_msg = "name\n  string does not match regex"
+    expected_error_msg = "name\n  string should match pattern"
     good_defaults: Dict[str, Any] = {
         "dtype": "int",
         "dims": ["time"],

@@ -58,11 +58,12 @@ class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra="allow"):
 
     # HACK: Can't do Pattern[str]: https://github.com/samuelcolvin/pydantic/issues/2636
     readers: Optional[Dict[Pattern, DataReaderConfig]] = Field(  # type: ignore
+        default=None,
         description="A dictionary mapping regex patterns to DataReaders that should be"
         " used to read the input data. For each input given to the Retriever, the"
         " mapping will be used to determine which DataReader to use. The patterns will"
         " be searched in the order they are defined and the DataReader corresponding"
-        " with the first pattern that matches the input key will be used."
+        " with the first pattern that matches the input key will be used.",
     )
     coords: Dict[str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]] = Field(  # type: ignore
         {},

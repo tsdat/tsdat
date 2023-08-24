@@ -14,7 +14,7 @@ __all__ = [
 
 
 def get_pydantic_error_message(error: Any) -> str:
-    return error.getrepr().reprcrash.message
+    return str(error.getrepr().reprcrash.message).lower()
 
 
 def get_pydantic_warning_message(warning: Any) -> str:

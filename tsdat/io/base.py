@@ -220,7 +220,8 @@ class DataHandler(ParameterizedClass):
     reader: DataReader
     writer: DataWriter
 
-    @model_validator(mode="after")
+    @model_validator(mode="before")
+    @classmethod
     def patch_parameters(cls, values):
         params = values.get("parameters", {})
         writer_params = params.get("writer", {}) if params is not None else {}

@@ -36,19 +36,21 @@ def test_manager_config_validates_properties():
         "apply_to": [],
         "exclude": "time",
     }
-    expected_error_msgs = [
-        "name\n  field required",
-        "checker -> classname\n  field required",
-        "handlers\n  ensure this value has at least 1 items",
-        "apply_to\n  ensure this value has at least 1 items",
-        "exclude\n  value is not a valid list",
-    ]
-    with pytest.raises(ValidationError) as error:
+    expected_errors = {
+        "name": "missing",
+        "checker": "missing",
+        "handlers": "too_short",
+        "apply_to": "too_short",
+        "exclude": "list_type",
+    }
+    with pytest.raises(ValidationError) as _errors:
         ManagerConfig(**qc_dict)
 
-    actual_msg = get_pydantic_error_message(error)
-    for expected_msg in expected_error_msgs:
-        assert expected_msg in actual_msg
+    errors = _errors.value.errors()
+    assert len(errors) == len(expected_errors)
+    for error, (err_loc, err_type) in zip(errors, expected_errors.items()):
+        assert error["loc"][0] == err_loc
+        assert error["type"] == err_type
 
 
 def test_quality_config_produces_expected_dict():

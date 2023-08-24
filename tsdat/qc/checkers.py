@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import xarray as xr
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, FieldValidationInfo, field_validator
 from typing import Any, Dict, List, Optional, Union
 from numpy.typing import NDArray
 from .base import QualityChecker
@@ -68,9 +68,9 @@ class CheckMonotonic(QualityChecker):
         @field_validator("require_increasing")
         @classmethod
         def check_monotonic_not_increasing_and_decreasing(
-            cls, inc: bool, values: Dict[str, Any]
+            cls, inc: bool, values: FieldValidationInfo
         ) -> bool:
-            if inc and values["require_decreasing"]:
+            if inc and values.data["require_decreasing"]:
                 raise ValueError(
                     "CheckMonotonic -> Parameters: cannot set both 'require_increasing'"
                     " and 'require_decreasing'. Please set one or both to False."

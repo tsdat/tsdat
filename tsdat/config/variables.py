@@ -5,8 +5,10 @@ import numpy as np
 from pint import PintError, UnitRegistry
 from pydantic import (
     BaseModel,
+    FieldValidationInfo,
     Field,
     StrictStr,
+    ValidationInfo,
     model_validator,
     field_validator,
 )
@@ -125,26 +127,38 @@ class VariableAttributes(AttributeModel):
         " mistaken for a physical value or data point.",
     )
 
-    @field_validator("units")
-    def validate_unit(cls, unit_str: str) -> str:
+    @field_validator("units", mode="before")
+    def validate_unit(cls, units: Any) -> str:
         # Not recognized by pint, but we want it to be valid
-        if unit_str == "%" or unit_str.startswith("Seconds since"):
-            return unit_str
-        # Validate with pint unit registry
+        if units == 1:
+            return "1"
+
+        if not isinstance(units, str):
+            warnings.warn(
+                f"'{units}' is not a valid unit or combination of units. Expected"
+                f" string type, got '{type(units)}'. Casting to string and continuing."
+            )
+            units = str(units)
+
+        if units == "%" or units.startswith("Seconds since"):
+            return units
+
         try:
-            ureg(unit_str)
+            ureg(units)  # Validate with pint unit registry
         except PintError:
             warnings.warn(
-                f"'{unit_str}' is not a valid unit or combination of units. The string"
+                f"'{units}' is not a valid unit or combination of units. The string"
                 " will be kept as-is."
             )
-        return unit_str
+        return str(units)
 
     @model_validator(mode="before")
     @classmethod
-    def validate_units_are_commented(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if not values["units"]:
-            if not values["comment"] or "Unknown units." not in values["comment"]:
+    def validate_units_are_commented(cls, values: Any):
+        if not isinstance(values, dict):
+            return values
+        if "units" not in values:
+            if "Unknown units" not in values.get("comment", ""):
                 raise ValueError(
                     "The 'units' attr is required if known. If the units are not known,"
                     " then the 'comment' attr should include the phrase 'Unknown"
@@ -161,6 +175,7 @@ class Variable(BaseModel, extra="forbid"):
     coords pydantic model upon instantiation."""
 
     data: Optional[Any] = Field(
+        default=None,
         description="If the variable is not meant to be retrieved from an input dataset"
         " and the value is known in advance, then the 'data' property should specify"
         " its value exactly as it should appear in the output dataset. This is commonly"
@@ -193,14 +208,15 @@ class Variable(BaseModel, extra="forbid"):
     #         raise ValueError(f"'{v}' contains a non-ascii character.")
     #     return v
 
-    @field_validator("attrs")
+    @field_validator("attrs", mode="after")
     @classmethod
     def set_default_fill_value(
-        cls, attrs: VariableAttributes, values: Dict[str, Any]
+        cls, attrs: VariableAttributes, info: FieldValidationInfo
     ) -> VariableAttributes:
-        dtype: str = values["dtype"]
+        dtype: str = info.data.get("dtype", "")
         if (
-            "fill_value" in attrs.__fields_set__  # Preserve _FillValues set explicitly
+            "fill_value"
+            in attrs.model_fields_set  # Preserve _FillValues set explicitly
             or (dtype == "str")
             or ("datetime" in dtype)
         ):
@@ -210,13 +226,12 @@ class Variable(BaseModel, extra="forbid"):
 
 
 class Coordinate(Variable):
-    @model_validator(mode="before")
-    @classmethod
-    def coord_dimensioned_by_self(cls, values: Any) -> Any:
-        name, dims = values["name"], values["dims"]
+    @model_validator(mode="after")
+    def coord_dimensioned_by_self(self) -> Any:
+        name, dims = self.name, self.dims
         if [name] != dims:
             raise ValueError(f"coord '{name}' must have dims ['{name}']. Found: {dims}")
-        return values
+        return self
 
 
 # IDEA: Variables/Coordinates via __root__=Dict[str, Variable/Coordinate]

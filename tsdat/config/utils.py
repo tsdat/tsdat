@@ -185,6 +185,8 @@ def recursive_instantiate(model: Any) -> Any:
         Any: The recursively-instantiated object.
 
     ---------------------------------------------------------------------------------"""
+    from tsdat.config.retriever import RetrievedVariableConfig
+
     # Case: ParameterizedConfigClass. Want to instantiate any sub-models then return the
     # class with all sub-models recursively instantiated, then statically instantiate
     # the model. Note: the model is instantiated last so that sub-models are only
@@ -193,6 +195,7 @@ def recursive_instantiate(model: Any) -> Any:
         fields = model.__fields_set__ - {"classname"}  # No point checking classname
         for field in fields:
             setattr(model, field, recursive_instantiate(getattr(model, field)))
+        # RetreivedVariableConfig isn't being converted to RetrievedVariable
         model = model.instantiate()
 
     # Case: BaseModel. Want to instantiate any sub-models then return the model itself.
