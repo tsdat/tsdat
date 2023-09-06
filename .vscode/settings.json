@@ -18,6 +18,9 @@
     "editor.formatOnSave": true,
     "yaml.format.printWidth": 88,
     "yaml.format.proseWrap": "always",
+    "black-formatter.args": [
+        "--preview"
+    ],
     "python.formatting.provider": "black",
     "python.linting.enabled": true,
     "python.linting.lintOnSave": true,
@@ -61,5 +64,5 @@
         "**/__pycache__": true,
         "**/*.pyc": true,
         "**/.mypy_cache": true,
-    }
+    },
 }
