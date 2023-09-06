@@ -56,7 +56,7 @@ def test_ingest_pipeline():
 
     # Dataset saved to disk
     save_path = Path(
-        "storage/root/data/sgp/sgp.example.b1/sgp.example.b1.20220324.214300.nc"
+        "storage/root/data/sgp.example.b1/sgp.example.b1.20220324.214300.nc"
     )
     saved_dataset: xr.Dataset = xr.open_dataset(save_path)  # type: ignore
     assert_close(saved_dataset, expected)
