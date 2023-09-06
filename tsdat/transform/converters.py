@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Hashable, List, Literal, Optional, Tuple
 
@@ -73,7 +74,7 @@ class CreateTimeGrid(DataConverter):
         dataset_config: Optional["DatasetConfig"] = None,
         retrieved_dataset: Optional[RetrievedDataset] = None,
         retriever: Optional["StorageRetriever"] = None,
-        time_span: Optional[Tuple[str, str]] = None,
+        time_span: Optional[Tuple[datetime, datetime]] = None,
         input_key: Optional[str] = None,
         **kwargs: Any,
     ) -> Optional[xr.DataArray]:
@@ -82,8 +83,7 @@ class CreateTimeGrid(DataConverter):
 
         # TODO: if not time_span, then get the time range from the retrieved data
 
-        start = pd.to_datetime(time_span[0], format="%Y%m%d.%H%M%S")  # type: ignore
-        end = pd.to_datetime(time_span[1], format="%Y%m%d.%H%M%S")  # type: ignore
+        start, end = time_span[0], time_span[1]
         time_deltas = pd.timedelta_range(
             start="0 days",
             end=end - start,
@@ -118,7 +118,6 @@ class CreateTimeGrid(DataConverter):
 
 
 class _ADIBaseTransformer(DataConverter):
-
     transformation_type: str
     coord: str = "ALL"
 

@@ -31,14 +31,24 @@ def sample_dataset() -> xr.Dataset:
                 ],
             ),
         },
-        attrs={"datastream": "sgp.testing-storage.a0"},
+        attrs={
+            "location_id": "sgp",  # used in S3 path substitution
+            "datastream": "sgp.testing-storage.a0",
+        },
     )
     return dataset
 
 
 @fixture
 def file_storage():
-    storage = FileSystem(parameters=FileSystem.Parameters(storage_root=Path.cwd() / "test/storage_root"))  # type: ignore
+    # Using cwd() results in absolute path (leading "/")
+    storage = FileSystem(
+        parameters=FileSystem.Parameters(
+            storage_root=Path.cwd() / "test/storage_root",
+            data_storage_path="data/{datastream}",
+            ancillary_storage_path="ancillary/{location_id}",
+        )
+    )
     try:
         yield storage
     finally:
@@ -50,7 +60,8 @@ def file_storage_v2():
     storage = FileSystem(
         parameters=FileSystem.Parameters(
             storage_root="test/storage_root",
-            data_storage_path="{storage_root}/{year}/{month}/{day}/{datastream}",
+            data_storage_path="{location_id}/{year}/{month}/{day}/{datastream}",
+            ancillary_storage_path="ancillary/{year}/{month}",
         )  # type: ignore
     )
     try:
@@ -62,7 +73,12 @@ def file_storage_v2():
 @fixture
 def zarr_storage():
     storage = ZarrLocalStorage(
-        parameters=ZarrLocalStorage.Parameters(**{"storage_root": Path.cwd() / "test/storage_root"})  # type: ignore
+        parameters=ZarrLocalStorage.Parameters(
+            storage_root=Path.cwd() / "test/storage_root",
+            data_storage_path="data/{datastream}",
+            ancillary_storage_path="ancillary/{date_time}",
+            ancillary_filename_template="{datastream}.{title}.{extension}",
+        )  # type: ignore
     )
     try:
         yield storage
@@ -125,88 +141,59 @@ def test_storage_saves_and_fetches_data(
         start=datetime.fromisoformat("2022-04-05 00:00:00"),
         end=datetime.fromisoformat("2022-04-06 00:00:00"),
         datastream="sgp.testing-storage.a0",
+        metadata_kwargs=dict(location_id="sgp"),
     )
     assert_close(input_dataset, expected_dataset)  # storage should not modify inputs
     assert_close(dataset, expected_dataset)
 
 
-def test_filesystem_saves_ancillary_files(file_storage: FileSystem):
-    expected_filepath = (
-        file_storage.parameters.storage_root
-        / "ancillary"
-        / "sgp.testing-storage.a0"
-        / "ancillary_file.txt"
-    )
+@pytest.mark.parametrize(
+    "storage_fixture, dataset_fixture, expected",
+    [
+        (
+            "file_storage",
+            "sample_dataset",
+            "ancillary/sgp/sgp.testing-storage.a0.20220405.000000.ancillary.png",
+        ),
+        (
+            "file_storage_v2",
+            "sample_dataset",
+            "ancillary/2022/04/sgp.testing-storage.a0.20220405.000000.ancillary.png",
+        ),
+        (
+            "zarr_storage",
+            "sample_dataset",
+            "ancillary/20220405.000000/sgp.testing-storage.a0.ancillary.png",
+        ),
+        (
+            "s3_storage",
+            "sample_dataset",
+            "ancillary/sgp/sgp.testing-storage.a0/sgp.testing-storage.a0.20220405.000000.ancillary.png",
+        ),
+    ],
+)
+def test_storage_saves_ancillary_files(
+    storage_fixture: str,
+    dataset_fixture: str,
+    expected: str,
+    request: pytest.FixtureRequest,
+):
+    # pytest can't pass fixtures through pytest.mark.parametrize so we use this approach
+    storage: Storage = request.getfixturevalue(storage_fixture)
+    dataset: xr.Dataset = request.getfixturevalue(dataset_fixture)
 
-    # Upload directly
-    tmp_dir = tempfile.TemporaryDirectory()
-    ancillary_filepath = Path(tmp_dir.name) / "ancillary_file.txt"
-    ancillary_filepath.write_text("foobar")
-    file_storage.save_ancillary_file(
-        filepath=ancillary_filepath, datastream="sgp.testing-storage.a0"
-    )
-    assert expected_filepath.is_file()
-    os.remove(expected_filepath)
+    expected_filepath = storage.parameters.storage_root / expected
 
-    # Using context manager
-    with file_storage.uploadable_dir(datastream="sgp.testing-storage.a0") as tmp_dir:
-        ancillary_filepath = tmp_dir / "ancillary_file.txt"
-        ancillary_filepath.write_text("foobar")
-    assert expected_filepath.is_file()
-    os.remove(expected_filepath)
-
-
-def test_zarr_storage_saves_ancillary_files(zarr_storage: ZarrLocalStorage):
-    expected_filepath = (
-        zarr_storage.parameters.storage_root
-        / "ancillary"
-        / "sgp.testing-storage.a0"
-        / "ancillary_file.txt"
-    )
-
-    # Upload directly
-    tmp_dir = tempfile.TemporaryDirectory()
-    ancillary_filepath = Path(tmp_dir.name) / "ancillary_file.txt"
-    ancillary_filepath.write_text("foobar")
-    zarr_storage.save_ancillary_file(
-        filepath=ancillary_filepath, datastream="sgp.testing-storage.a0"
-    )
-    assert expected_filepath.is_file()
-    os.remove(expected_filepath)
-
-    # Using context manager
-    with zarr_storage.uploadable_dir(datastream="sgp.testing-storage.a0") as tmp_dir:
-        ancillary_filepath = tmp_dir / "ancillary_file.txt"
-        ancillary_filepath.write_text("foobar")
-    assert expected_filepath.is_file()
-    os.remove(expected_filepath)
-
-
-def test_filesystem_s3_saves_ancillary_files(s3_storage: FileSystemS3):
-    expected_filepath = (
-        s3_storage.parameters.storage_root
-        / "ancillary"
-        / "sgp.testing-storage.a0"
-        / "ancillary_file.txt"
-    )
-
-    # Upload directly
-    tmp_dir = tempfile.TemporaryDirectory()
-    ancillary_filepath = Path(tmp_dir.name) / "ancillary_file.txt"
-    ancillary_filepath.write_text("foobar")
-    s3_storage.save_ancillary_file(
-        filepath=ancillary_filepath, datastream="sgp.testing-storage.a0"
-    )
-    assert s3_storage._exists(expected_filepath)
-    obj = s3_storage._get_obj(expected_filepath)
-    assert obj is not None
-    obj.delete()
-
-    # Using context manager
-    with s3_storage.uploadable_dir(datastream="sgp.testing-storage.a0") as tmp_dir:
-        ancillary_filepath = tmp_dir / "ancillary_file.txt"
-        ancillary_filepath.write_text("foobar")
-    assert s3_storage._exists(expected_filepath)
-    obj = s3_storage._get_obj(expected_filepath)
-    assert obj is not None
-    obj.delete()
+    with storage.uploadable_dir() as tmp_dir:
+        fpath = storage.get_ancillary_filepath(
+            title="ancillary", extension="png", dataset=dataset, root_dir=tmp_dir
+        )
+        fpath.touch()
+    if storage_fixture == "s3_storage":
+        assert storage._exists(expected_filepath)
+        obj = storage._get_obj(expected_filepath)
+        assert obj is not None
+        obj.delete()
+    else:
+        assert expected_filepath.exists()
+        os.remove(expected_filepath)

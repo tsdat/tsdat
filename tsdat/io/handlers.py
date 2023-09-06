@@ -18,30 +18,30 @@ __all__ = [
 
 
 class NetCDFHandler(FileHandler):
-    extension: str = ".nc"
+    extension: str = "nc"
     reader: NetCDFReader = NetCDFReader()
     writer: NetCDFWriter = NetCDFWriter()
 
 
 class SplitNetCDFHandler(FileHandler):
-    extension: str = ".nc"
+    extension: str = "nc"
     reader: NetCDFReader = NetCDFReader()
     writer: SplitNetCDFWriter = SplitNetCDFWriter()
 
 
 class CSVHandler(FileHandler):
-    extension: str = ".csv"
+    extension: str = "csv"
     reader: CSVReader = CSVReader()
     writer: CSVWriter = CSVWriter()
 
 
 class ParquetHandler(FileHandler):
-    extension: str = ".parquet"
+    extension: str = "parquet"
     reader: ParquetReader = ParquetReader()
     writer: ParquetWriter = ParquetWriter()
 
 
 class ZarrHandler(FileHandler):
-    extension: str = ".zarr"
+    extension: str = "zarr"
     reader: ZarrReader = ZarrReader()
     writer: ZarrWriter = ZarrWriter()

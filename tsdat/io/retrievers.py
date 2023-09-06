@@ -2,6 +2,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
 import re
+import shlex
 import pandas as pd
 import xarray as xr
 from pydantic import BaseModel, Extra, Field, validator
@@ -465,6 +466,59 @@ class GlobalARMTransformParams(BaseModel):
         return selected_params
 
 
+class StorageInputKey:
+    """Returns an object representation of an input storage key.
+
+    Input storage keys should be formatted like:
+
+    ```python
+    "--datastream sgp.met.b0 --start 20230801 --end 20230901"
+    "--datastream sgp.met.b0 --start 20230801 --end 20230901 --location_id sgp --data_level b0"
+    ```
+    """
+
+    def __init__(self, input_key: str):
+        kwargs: dict[str, str] = {}
+
+        if len(input_key.split("::")) == 3:
+            logger.warning(
+                "Using old Storage input key format (datastream::start::end)."
+            )
+            datastream, _start, _end = input_key.split("::")
+            kwargs["datastream"] = datastream
+            kwargs["start"] = _start
+            kwargs["end"] = _end
+        else:
+            args = shlex.split(input_key)
+            if len(args) % 2 != 0:
+                raise ValueError(
+                    f"Incorrect storage retriever key: {input_key}. Expected even number of"
+                    " arguments."
+                )
+            for arg in args:
+                if arg.startswith("-"):
+                    key = arg.lstrip("-")
+                    kwargs[key] = ""
+                elif key in kwargs:
+                    kwargs[key] = arg
+                    key = ""
+
+        self.input_key = input_key
+        self.datastream = kwargs.pop("datastream")
+        self._start = kwargs.pop("start")
+        self._end = kwargs.pop("end")
+        self.start = datetime.strptime(self._start, "%Y%m%d.%H%M%S")
+        self.end = datetime.strptime(self._end, "%Y%m%d.%H%M%S")
+        self.kwargs = kwargs
+
+    def __repr__(self) -> str:
+        args = (
+            f"datastream='{self.datastream}', start='{self._start}', end='{self._end}'"
+        )
+        kwargs = ", ".join([f"{k}={v}" for k, v in self.kwargs.items()])
+        return f"StorageInputKey({args}, {kwargs})"
+
+
 class StorageRetriever(Retriever):
     """Retriever API for pulling input data from the storage area."""
 
@@ -474,19 +528,6 @@ class StorageRetriever(Retriever):
         )
 
     parameters: Optional[TransParameters] = None
-
-    def __parse_inputs(
-        self, input_keys: List[str]
-    ) -> Tuple[List[str], List[str], List[str]]:
-        datastreams: List[str] = []
-        start_dates: List[str] = []
-        end_dates: List[str] = []
-        for key in input_keys:
-            datastream, start_date, end_date = key.split("::")
-            datastreams.append(datastream)
-            start_dates.append(start_date)
-            end_dates.append(end_date)
-        return datastreams, start_dates, end_dates
 
     def retrieve(
         self,
@@ -504,15 +545,22 @@ class StorageRetriever(Retriever):
         Note that each input_key is expected to be formatted according to the following
         format:
 
-        "datastream::start-date::end-date",
+        ```python
+        "--key1 value1 --key2 value2",
+        ```
 
-        e.g., "sgp.myingest.b1::20220913.000000::20220914.000000"
+        e.g.,
+
+        ```python
+        "--datastream sgp.met.b0 --start 20230801 --end 20230901"
+        "--datastream sgp.met.b0 --start 20230801 --end 20230901 --location_id sgp --data_level b0"
+        ```
 
         This format allows the retriever to pull datastream data from the Storage API
         for the desired dates for each desired input source.
 
         Args:
-            input_keys (List[str]): A list of specially-formatted input keys.
+            input_keys (List[str]): A list of input keys formatted as described above.
             dataset_config (DatasetConfig): The output dataset configuration.
             storage (Storage): Instance of a Storage class used to fetch saved data.
 
@@ -523,9 +571,9 @@ class StorageRetriever(Retriever):
         """
         assert storage is not None, "Missing required 'storage' parameter."
 
-        _, start_times, end_times = self.__parse_inputs(input_keys)
+        storage_input_keys = [StorageInputKey(key) for key in input_keys]
 
-        input_data = self.__fetch_inputs(input_keys, storage)
+        input_data = self.__fetch_inputs(storage_input_keys, storage)
 
         if input_data_hook is not None:
             modded_input_data = input_data_hook(input_data)
@@ -562,7 +610,7 @@ class StorageRetriever(Retriever):
                     variable_name=name,
                     dataset_config=dataset_config,
                     retrieved_dataset=retrieved_data,
-                    time_span=(start_times[0], end_times[0]),  # Better name
+                    time_span=(storage_input_keys[0].start, storage_input_keys[0].end),
                     input_dataset=input_data.get(coord_def.source),
                     retriever=self,
                     input_key=coord_def.source,
@@ -602,7 +650,7 @@ class StorageRetriever(Retriever):
 
         return retrieved_dataset
 
-    def __get_retrieval_padding(self, input_key: str) -> timedelta:
+    def _get_retrieval_padding(self, input_key: str) -> timedelta:
         if self.parameters is None or self.parameters.trans_params is None:
             return timedelta()
         params = self.parameters.trans_params.select_parameters(input_key)
@@ -612,16 +660,18 @@ class StorageRetriever(Retriever):
         )
 
     def __fetch_inputs(
-        self, input_keys: List[str], storage: Storage
+        self, input_keys: List[StorageInputKey], storage: Storage
     ) -> Dict[InputKey, xr.Dataset]:
         input_data: Dict[InputKey, xr.Dataset] = {}
         for key in input_keys:
-            padding = self.__get_retrieval_padding(key)
-            datastream, start, end = unpack_datastream_date_str(key)
+            padding = self._get_retrieval_padding(key.input_key)
             retrieved_dataset = storage.fetch_data(
-                start=start - padding, end=end + padding, datastream=datastream
+                start=key.start - padding,
+                end=key.end + padding,
+                datastream=key.datastream,
+                metadata_kwargs=key.kwargs,
             )
-            input_data[key] = retrieved_dataset
+            input_data[key.input_key] = retrieved_dataset
         return input_data
 
 

@@ -113,15 +113,18 @@ def test_simple_extract_multifile_dataset(
     )
     assert_close(dataset, expected)
 
+
 @pytest.mark.requires_adi
 def test_storage_retriever(
     storage_retriever: StorageRetriever, vap_dataset_config: DatasetConfig
 ):
     storage = FileSystem(
         parameters=FileSystem.Parameters(
-            storage_root=Path("test/io/data/retriever-store")
+            storage_root=Path("test/io/data/retriever-store"),
+            data_storage_path="data/{datastream}",
         )
     )
+
     inputs = [
         "humboldt.buoy_z06.a1::20220405.000000::20220406.000000",
         "humboldt.buoy_z07.a1::20220405.000000::20220406.000000",
@@ -154,12 +157,13 @@ def test_storage_retriever_2D(
 ):
     storage = FileSystem(
         parameters=FileSystem.Parameters(
-            storage_root=Path("test/io/data/retriever-store")
+            storage_root=Path("test/io/data/retriever-store"),
+            data_storage_path="data/{datastream}",
         )
     )
     inputs = [
-        "humboldt.buoy_z06-2D.a1::20220405.000000::20220406.000000",
-        "humboldt.buoy_z07-2D.a1::20220405.000000::20220406.000000",
+        "--datastream humboldt.buoy_z06-2D.a1 --start 20220405.000000 --end 20220406.000000",
+        "--datastream humboldt.buoy_z07-2D.a1 --start 20220405.000000 --end 20220406.000000",
     ]
 
     retrieved_dataset = storage_retriever_2D.retrieve(
@@ -186,6 +190,7 @@ def test_storage_retriever_2D(
 
     xr.testing.assert_allclose(retrieved_dataset, expected)  # type: ignore
 
+
 @pytest.mark.requires_adi
 def test_storage_retriever_transformations(vap_transform_dataset_config: DatasetConfig):
     storage_retriever: StorageRetriever = recursive_instantiate(
@@ -193,13 +198,14 @@ def test_storage_retriever_transformations(vap_transform_dataset_config: Dataset
     )
     storage = FileSystem(
         parameters=FileSystem.Parameters(
-            storage_root=Path("test/io/data/retriever-store")
+            storage_root=Path("test/io/data/retriever-store"),
+            data_storage_path="data/{datastream}",
         )
     )
 
     input_dataset = xr.Dataset(
         coords={
-            "timestamp": pd.to_datetime(
+            "time": pd.to_datetime(
                 [
                     "2022-04-13 14:00:00",  # 0
                     "2022-04-13 14:10:00",  # 1
@@ -211,7 +217,7 @@ def test_storage_retriever_transformations(vap_transform_dataset_config: Dataset
             )
         },
         data_vars={
-            "timestamp_bounds": (
+            "time_bounds": (
                 ("timestamp", "bound"),
                 (
                     [
@@ -226,12 +232,12 @@ def test_storage_retriever_transformations(vap_transform_dataset_config: Dataset
                 {"comment": "bounds for time variable"},
             ),
             "temp": (
-                "timestamp",
+                "time",
                 [0.0, 1.0, 2.0, -9999.0, 4.0, 5.0],
                 {"units": "degC", "_FillValue": -9999},
             ),
             "qc_temp": (
-                "timestamp",
+                "time",
                 [0, 0, 0, 1, 0, 0],
                 {
                     "flag_values": "1",
@@ -240,7 +246,7 @@ def test_storage_retriever_transformations(vap_transform_dataset_config: Dataset
                 },
             ),
             "rh": (
-                "timestamp",
+                "time",
                 [59, 60, 61, 62, 63, 64],
                 {"comment": "test case with no units attr"},
             ),
@@ -253,7 +259,7 @@ def test_storage_retriever_transformations(vap_transform_dataset_config: Dataset
     path.parent.mkdir(parents=True, exist_ok=True)
     input_dataset.to_netcdf(path)  # type: ignore
     inputs = [
-        "test.trans_inputs.a1::20220413.000000::20220414.000000",
+        "--datastream test.trans_inputs.a1 --start 20220413.000000 --end 20220414.000000",
     ]
 
     ds = storage_retriever.retrieve(

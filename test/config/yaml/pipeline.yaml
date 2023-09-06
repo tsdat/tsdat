@@ -19,3 +19,6 @@ quality:
 
 storage:
   path: test/config/yaml/storage.yaml
+  overrides:
+    /parameters:
+      data_storage_path: data/{datastream}
