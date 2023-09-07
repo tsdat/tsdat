@@ -276,8 +276,7 @@ def get_filename(
         str: The filename constructed from provided parameters.
 
     ---------------------------------------------------------------------------------"""
-    if extension.startswith("."):
-        extension = extension[1:]
+    extension = extension.lstrip(".")
 
     start_date, start_time = get_start_date_and_time_str(dataset)
     return FILENAME_TEMPLATE.substitute(
@@ -293,24 +292,6 @@ def get_fields_from_dataset(dataset: xr.Dataset) -> dict[str, Any]:
     return {
         **dict(dataset.attrs),
         **datetime_substitutions(dataset.time.values[0]),
-    }
-
-
-def get_fields_from_datastream(datastream: str) -> Dict[str, Optional[str]]:
-    # assumes datastream = loc.name[-qual][-temp].lvl
-    ds_parts = datastream.split(".")
-    assert len(ds_parts) == 3
-
-    name_qual_temp = ds_parts[1].split("-")
-    assert len(name_qual_temp) <= 3
-
-    return {
-        "datastream": datastream,
-        "location_id": ds_parts[0],
-        "dataset_name": name_qual_temp[0],
-        "qualifier": name_qual_temp[1] if len(name_qual_temp) >= 2 else None,
-        "temporal": name_qual_temp[2] if len(name_qual_temp) == 3 else None,
-        "data_level": ds_parts[2],
     }
 
 
