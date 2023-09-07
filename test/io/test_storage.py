@@ -75,7 +75,7 @@ def zarr_storage():
     storage = ZarrLocalStorage(
         parameters=ZarrLocalStorage.Parameters(
             storage_root=Path.cwd() / "test/storage_root",
-            data_storage_path="data/{datastream}",
+            data_storage_path="data",
             ancillary_storage_path="ancillary/{date_time}",
             ancillary_filename_template="{datastream}.{title}.{extension}",
         )  # type: ignore
@@ -145,6 +145,56 @@ def test_storage_saves_and_fetches_data(
     )
     assert_close(input_dataset, expected_dataset)  # storage should not modify inputs
     assert_close(dataset, expected_dataset)
+
+
+@pytest.mark.parametrize(
+    "storage_fixture",
+    ["file_storage", "file_storage_v2", "zarr_storage", "s3_storage"],
+)
+def test_fetch_returns_empty(
+    storage_fixture: str,
+    request: pytest.FixtureRequest,
+):
+    # pytest can't pass fixtures through pytest.mark.parametrize so we use this approach
+    storage: Storage = request.getfixturevalue(storage_fixture)
+
+    expected_dataset = xr.Dataset()  # empty
+    dataset = storage.fetch_data(
+        start=datetime.fromisoformat("2022-04-10 00:00:00"),
+        end=datetime.fromisoformat("2022-04-11 00:00:00"),
+        datastream="sgp.testing-storage.a0",
+        metadata_kwargs=dict(location_id="sgp"),
+    )
+    assert_close(dataset, expected_dataset)
+
+
+@pytest.mark.parametrize(
+    "storage_fixture",
+    ["file_storage", "s3_storage", "zarr_storage"],
+)
+def test_filesystem_date_filter(
+    storage_fixture: str,
+    request: pytest.FixtureRequest,
+):
+    # pytest can't pass fixtures through pytest.mark.parametrize so we use this approach
+    storage: FileSystem = request.getfixturevalue(storage_fixture)
+
+    start = datetime(year=1000, month=1, day=1)
+    end = datetime(year=3000, month=1, day=1)
+
+    has_date = [
+        Path("data/datastream/sample.file.a0.20230801.000000.nc"),
+        Path("data/datastream/sample.file.a0.20230802.000000.nc"),
+    ]
+    no_date = [Path("data/datastream/sample.file.a0.nc")]
+
+    assert storage._filter_between_dates(has_date, start, end) == has_date
+
+    # Zarr storage doesn't look at dates, others do and filter based on filename
+    if storage_fixture == "zarr_storage":
+        assert storage._filter_between_dates(no_date, start, end) == no_date
+    else:
+        assert storage._filter_between_dates(no_date, start, end) == []
 
 
 @pytest.mark.parametrize(

@@ -13,6 +13,7 @@ from tsdat import (
     FileSystem,
     RetrieverConfig,
     StorageRetriever,
+    StorageRetrieverInput,
     assert_close,
     recursive_instantiate,
 )
@@ -61,6 +62,34 @@ def vap_transform_dataset_config() -> DatasetConfig:
 @fixture
 def dataset_config() -> DatasetConfig:
     return DatasetConfig.from_yaml(Path("test/config/yaml/dataset.yaml"))
+
+
+def test_storage_retriever_input_key():
+    # old format
+    key = "sgp.testing.c1::20230801::20230901.120000"
+    obj = StorageRetrieverInput(key)
+    assert obj.datastream == "sgp.testing.c1"
+    assert obj.start.strftime("%Y%m%d") == "20230801"
+    assert obj._end == "20230901.120000"
+
+    # new format
+    datastream = "--datastream sgp.testing.c1"
+    start, end = "--start 20230801", "--end 20230901"
+    location = "--location_id sgp"
+    key = f"{datastream} {start} {end} {location}"
+    obj = StorageRetrieverInput(key)
+    assert obj.datastream == "sgp.testing.c1"
+    assert obj.start.strftime("%Y%m%d") == "20230801"
+    assert obj._end == "20230901"
+    assert repr(obj) == (
+        "StorageRetrieverInput(datastream=sgp.testing.c1, start=20230801, end=20230901,"
+        " location_id=sgp)"
+    )
+
+    # new format, error
+    key = "--datastream sgp.testing.c1 20230801 20230901"  # missing ids
+    with pytest.raises(ValueError):
+        StorageRetrieverInput(key)
 
 
 def test_simple_extract_dataset(

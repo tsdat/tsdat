@@ -15,7 +15,6 @@ from typing import (
     Optional,
     Pattern,
     Tuple,
-    Union,
     cast,
 )
 
@@ -40,7 +39,7 @@ OutputVarName = str
 # variables that are actually retrieved. This leads to a different way of applying
 # data converters. Maybe they should both use the StorageRetriever approach.
 
-__all__ = ["DefaultRetriever", "StorageRetriever"]
+__all__ = ["DefaultRetriever", "StorageRetriever", "StorageRetrieverInput"]
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +68,62 @@ class InputKeyRetrievalRules:
                 if pattern.match(input_key):
                     self.data_vars[name] = variable_retriever
                 break
+
+
+class StorageRetrieverInput:
+    """Returns an object representation of an input storage key.
+
+    Input storage keys should be formatted like:
+
+    ```python
+    "--datastream sgp.met.b0 --start 20230801 --end 20230901"
+    "--datastream sgp.met.b0 --start 20230801 --end 20230901 --location_id sgp --data_level b0"
+    ```
+    """
+
+    def __init__(self, input_key: str):
+        kwargs: dict[str, str] = {}
+
+        if len(input_key.split("::")) == 3:
+            logger.warning(
+                "Using old Storage input key format (datastream::start::end)."
+            )
+            datastream, _start, _end = input_key.split("::")
+            kwargs["datastream"] = datastream
+            kwargs["start"] = _start
+            kwargs["end"] = _end
+        else:
+            args = shlex.split(input_key)
+            key = ""
+            for arg in args:
+                if arg.startswith("-"):
+                    key = arg.lstrip("-")
+                    kwargs[key] = ""
+                elif key in kwargs:
+                    kwargs[key] = arg
+                    key = ""
+                else:
+                    raise ValueError(
+                        "Bad storage retriever input key. Expected format like"
+                        f" '--key1 value1 --key2 value2 ...', got '{input_key}'."
+                    )
+
+        self.input_key = input_key
+        self.datastream = kwargs.pop("datastream")
+        self._start = kwargs.pop("start")
+        self._end = kwargs.pop("end")
+
+        start_format = "%Y%m%d.%H%M%S" if "." in self._start else "%Y%m%d"
+        end_format = "%Y%m%d.%H%M%S" if "." in self._end else "%Y%m%d"
+        self.start = datetime.strptime(self._start, start_format)
+        self.end = datetime.strptime(self._end, end_format)
+
+        self.kwargs = kwargs
+
+    def __repr__(self) -> str:
+        args = f"datastream={self.datastream}, start={self._start}, end={self._end}"
+        kwargs = ", ".join([f"{k}={v}" for k, v in self.kwargs.items()])
+        return f"StorageRetrieverInput({args}, {kwargs})"
 
 
 class DefaultRetriever(Retriever):
@@ -324,22 +379,6 @@ def _reindex_dataset_coords(
     return dataset
 
 
-def unpack_datastream_date_str(key: str) -> Tuple[str, datetime, datetime]:
-    """Unpacks a datastream-date string.
-    Input strings are expected to be formatted like "datastream::start_date::end_date".
-    The input string is unpacked into a tuple containing the datastream, the start date,
-    and the end date.
-    Args:
-        key (str): The datastream date string to unpack.
-    Returns:
-        Tuple[str, datetime, datetime]: The unpacked datastream and dates.
-    """
-    datastream, start_str, end_str, *_ = key.split("::")
-    start = datetime.strptime(start_str, "%Y%m%d.%H%M%S")
-    end = datetime.strptime(end_str, "%Y%m%d.%H%M%S")
-    return datastream, start, end
-
-
 def perform_data_retrieval(
     input_data: Dict[InputKey, xr.Dataset],
     coord_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
@@ -466,59 +505,6 @@ class GlobalARMTransformParams(BaseModel):
         return selected_params
 
 
-class StorageInputKey:
-    """Returns an object representation of an input storage key.
-
-    Input storage keys should be formatted like:
-
-    ```python
-    "--datastream sgp.met.b0 --start 20230801 --end 20230901"
-    "--datastream sgp.met.b0 --start 20230801 --end 20230901 --location_id sgp --data_level b0"
-    ```
-    """
-
-    def __init__(self, input_key: str):
-        kwargs: dict[str, str] = {}
-
-        if len(input_key.split("::")) == 3:
-            logger.warning(
-                "Using old Storage input key format (datastream::start::end)."
-            )
-            datastream, _start, _end = input_key.split("::")
-            kwargs["datastream"] = datastream
-            kwargs["start"] = _start
-            kwargs["end"] = _end
-        else:
-            args = shlex.split(input_key)
-            if len(args) % 2 != 0:
-                raise ValueError(
-                    f"Incorrect storage retriever key: {input_key}. Expected even number of"
-                    " arguments."
-                )
-            for arg in args:
-                if arg.startswith("-"):
-                    key = arg.lstrip("-")
-                    kwargs[key] = ""
-                elif key in kwargs:
-                    kwargs[key] = arg
-                    key = ""
-
-        self.input_key = input_key
-        self.datastream = kwargs.pop("datastream")
-        self._start = kwargs.pop("start")
-        self._end = kwargs.pop("end")
-        self.start = datetime.strptime(self._start, "%Y%m%d.%H%M%S")
-        self.end = datetime.strptime(self._end, "%Y%m%d.%H%M%S")
-        self.kwargs = kwargs
-
-    def __repr__(self) -> str:
-        args = (
-            f"datastream='{self.datastream}', start='{self._start}', end='{self._end}'"
-        )
-        kwargs = ", ".join([f"{k}={v}" for k, v in self.kwargs.items()])
-        return f"StorageInputKey({args}, {kwargs})"
-
-
 class StorageRetriever(Retriever):
     """Retriever API for pulling input data from the storage area."""
 
@@ -571,7 +557,7 @@ class StorageRetriever(Retriever):
         """
         assert storage is not None, "Missing required 'storage' parameter."
 
-        storage_input_keys = [StorageInputKey(key) for key in input_keys]
+        storage_input_keys = [StorageRetrieverInput(key) for key in input_keys]
 
         input_data = self.__fetch_inputs(storage_input_keys, storage)
 
@@ -660,7 +646,7 @@ class StorageRetriever(Retriever):
         )
 
     def __fetch_inputs(
-        self, input_keys: List[StorageInputKey], storage: Storage
+        self, input_keys: List[StorageRetrieverInput], storage: Storage
     ) -> Dict[InputKey, xr.Dataset]:
         input_data: Dict[InputKey, xr.Dataset] = {}
         for key in input_keys:
