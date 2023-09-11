@@ -1,14 +1,14 @@
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 import typer
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, Field
 from tsdat.tstring import Template
 
 
@@ -66,7 +66,7 @@ class ParameterizedClass(BaseModel, extra=Extra.forbid):
     ------------------------------------------------------------------------------------
     """
 
-    parameters: Any = {}
+    parameters: Any = Field(default_factory=dict)
 
 
 def _nested_union(dict1: Dict[Any, Any], dict2: Dict[Any, Any]) -> Dict[Any, Any]:

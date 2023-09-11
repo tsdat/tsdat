@@ -7,7 +7,7 @@ import pytest
 import xarray as xr
 from pytest import fixture
 
-from tsdat.qc.checkers import *
+from tsdat.qc.checkers import *  # type: ignore
 from tsdat.qc.handlers import *
 from tsdat.testing import assert_close
 
@@ -77,9 +77,7 @@ def test_missing_check(sample_dataset: xr.Dataset):
 
 
 def test_monotonic_check(sample_dataset: xr.Dataset):
-    new_sample_dataset = xr.concat(
-        (sample_dataset, sample_dataset), 
-        dim='time')
+    new_sample_dataset = xr.concat((sample_dataset, sample_dataset), dim="time")
 
     # either increasing or decreasing allowed
     checker = CheckMonotonic()
@@ -89,15 +87,13 @@ def test_monotonic_check(sample_dataset: xr.Dataset):
 
     # times must be increasing
     checker = CheckMonotonic(parameters={"require_increasing": True})  # type: ignore
-    expected = np.array([
-        False, False, False, False, True, True, True, True])
+    expected = np.array([False, False, False, False, True, True, True, True])
     results = checker.run(new_sample_dataset, "time")
     assert np.array_equal(results, expected)  # type: ignore
 
     # times must be decreasing
     checker = CheckMonotonic(parameters={"require_decreasing": True})  # type: ignore
-    expected = np.array(
-        [True, True, True, True, True, True, True, True])
+    expected = np.array([True, True, True, True, True, True, True, True])
     results = checker.run(new_sample_dataset, "time")
     assert np.array_equal(results, expected)  # type: ignore
 
@@ -276,7 +272,7 @@ def test_replace_failed_values(sample_dataset: xr.Dataset):
     assert_close(dataset, expected)
 
 
-def test_sortdataset_by_coordinate(sample_dataset: xr.Dataset):
+def test_sort_dataset_by_coordinate(sample_dataset: xr.Dataset):
     expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
 
     # Sort by time, backwards
@@ -293,7 +289,6 @@ def test_sortdataset_by_coordinate(sample_dataset: xr.Dataset):
 
 
 def test_fail_pipeline_provides_useful_message(caplog: Any):
-
     ds = xr.Dataset(
         coords={
             "time": pd.date_range("2022-03-24 21:43:00", "2022-03-24 21:45:00", periods=3),  # type: ignore

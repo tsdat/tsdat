@@ -15,7 +15,8 @@ from typing import (
 )
 
 import xarray as xr
-from pydantic import BaseModel, BaseSettings, Extra, Field, root_validator, validator
+from pydantic import BaseModel, BaseSettings, Extra, Field, validator
+from pydantic.fields import ModelField
 
 from ..config.dataset import DatasetConfig
 from ..tstring import Template
@@ -223,22 +224,19 @@ class DataHandler(ParameterizedClass):
 
     ---------------------------------------------------------------------------------"""
 
-    parameters: Optional[Any] = None
+    parameters: Dict[str, Any] = Field(default_factory=dict)
     reader: DataReader
     writer: DataWriter
 
-    @root_validator(pre=False)
-    def patch_parameters(cls, values):
-        params = values.get("parameters", {})
-        writer_params = params.get("writer", {}) if params is not None else {}
-        reader_params = params.get("reader", {}) if params is not None else {}
-
-        for ky in writer_params:
-            setattr(values["writer"].parameters, ky, writer_params[ky])
-        for ky in reader_params:
-            setattr(values["reader"].parameters, ky, reader_params[ky])
-
-        return values
+    @validator("reader", "writer", pre=True, check_fields=False, always=True)
+    def patch_parameters(cls, v: DataReader, values: Dict[str, Any], field: ModelField):
+        params = values.get("parameters", {}).pop(field.name, {})
+        for param_name, param_value in params.items():
+            if isinstance(v.parameters, dict):
+                v.parameters[param_name] = param_value
+            else:
+                setattr(v.parameters, param_name, param_value)
+        return v
 
 
 class FileHandler(DataHandler):
@@ -253,13 +251,12 @@ class FileHandler(DataHandler):
 
     ---------------------------------------------------------------------------------"""
 
-    extension: str
     reader: DataReader
     writer: FileWriter
+    extension: str
 
-    @validator("extension")
-    @classmethod
-    def no_leading_dot(cls, v: str) -> str:
+    @validator("extension", pre=True)
+    def no_leading_dot(cls, v: str, values: Dict[str, Any]) -> str:
         return v.lstrip(".")
 
 

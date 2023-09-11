@@ -5,7 +5,7 @@ import pandas as pd
 import xarray as xr
 from typing import Any, Dict, Iterable, List, Optional, cast, Hashable
 from pathlib import Path
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, Field
 from .base import FileWriter
 from ..utils import get_filename
 
@@ -41,7 +41,7 @@ class NetCDFWriter(FileWriter):
         to_netcdf_kwargs: Dict[str, Any] = {}
         """Keyword arguments passed directly to xr.Dataset.to_netcdf()."""
 
-    parameters: Parameters = Parameters()
+    parameters: Parameters = Field(default_factory=Parameters)
     file_extension: str = "nc"
 
     def write(
@@ -106,7 +106,7 @@ class SplitNetCDFWriter(NetCDFWriter):
         time_unit: str = "D"
         """Time interval unit."""
 
-    parameters: Parameters = Parameters()
+    parameters: Parameters = Field(default_factory=Parameters)
     file_extension: str = "nc"
 
     def write(
@@ -171,7 +171,7 @@ class CSVWriter(FileWriter):
         dim_order: Optional[List[str]] = None
         to_csv_kwargs: Dict[str, Any] = {}
 
-    parameters: Parameters = Parameters()
+    parameters: Parameters = Field(default_factory=Parameters)
     file_extension: str = "csv"
 
     def write(
@@ -249,7 +249,7 @@ class ParquetWriter(FileWriter):
         dim_order: Optional[List[str]] = None
         to_parquet_kwargs: Dict[str, Any] = {}
 
-    parameters: Parameters = Parameters()
+    parameters: Parameters = Field(default_factory=Parameters)
     file_extension: str = "parquet"
 
     def write(
@@ -274,7 +274,7 @@ class ZarrWriter(FileWriter):
     class Parameters(BaseModel, extra=Extra.forbid):
         to_zarr_kwargs: Dict[str, Any] = {}
 
-    parameters: Parameters = Parameters()
+    parameters: Parameters = Field(default_factory=Parameters)
     file_extension: str = "zarr"
 
     def write(
@@ -290,4 +290,8 @@ class ZarrWriter(FileWriter):
             ):
                 encoding_dict[variable_name]["_FillValue"] = None
 
-        dataset.to_zarr(filepath, encoding=encoding_dict, **self.parameters.to_zarr_kwargs)  # type: ignore
+        dataset.to_zarr(
+            filepath,
+            encoding=encoding_dict,
+            **self.parameters.to_zarr_kwargs,
+        )  # type: ignore

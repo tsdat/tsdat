@@ -8,10 +8,10 @@ import xarray as xr
 
 from ..io.base import DataConverter, RetrievedDataset
 
-if TYPE_CHECKING:
-    # Prevent any chance of runtime circular imports for typing-only imports
-    from ..config.dataset import DatasetConfig
-    from ..io.retrievers import StorageRetriever
+# Prevent any chance of runtime circular imports for typing-only imports
+if TYPE_CHECKING:  # pragma: no cover
+    from ..config.dataset import DatasetConfig  # pragma: no cover
+    from ..io.retrievers import StorageRetriever  # pragma: no cover
 
 __all__ = [
     "CreateTimeGrid",
