@@ -49,6 +49,14 @@ def sample_dataset() -> xr.Dataset:
                     "_FillValue": -9999,
                 },
             ),
+            "other_var": (
+                "time",
+                np.array([59, 60, 61, 58], dtype=np.float64),  # type: ignore
+            ),
+            "other_var_r": (
+                "time",
+                np.array([58, 61, 60, 59], dtype=np.float64),  # type: ignore
+            ),
             "string_var": (
                 "time",
                 np.array(["foo", "", "", "bar"]),  # type: ignore
@@ -66,8 +74,10 @@ def sample_dataset() -> xr.Dataset:
         (CheckMissing, {}, "string_var", [False, True, True, False]),
         (CheckMonotonic, {}, "time", [False, False, False, False]),
         (CheckMonotonic, {"parameters": {"require_increasing": True}}, "time", [False, False, False, False]),
-        (CheckMonotonic, {"parameters": {"require_decreasing": True}}, "time", [True, True, True, True]),
+        (CheckMonotonic, {"parameters": {"require_decreasing": True}}, "time", [False, True, True, True]),
         (CheckMonotonic, {"parameters": {"dim": "time"}}, "monotonic_var", [False, False, False, False]),
+        (CheckMonotonic, {"parameters": {"dim": "time"}}, "other_var", [False, False, False, True]),
+        (CheckMonotonic, {"parameters": {"dim": "time"}}, "other_var_r", [False, True, True, True]),
         (CheckValidMin, {}, "monotonic_var", [True, False, False, False]),
         (CheckFailMin, {}, "monotonic_var", [True, False, False, False]),
         (CheckWarnMin, {}, "monotonic_var", [True, False, False, False]),

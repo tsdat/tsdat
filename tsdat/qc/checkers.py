@@ -2,7 +2,7 @@ import logging
 import numpy as np
 import xarray as xr
 from pydantic import BaseModel, Extra, validator
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 from numpy.typing import NDArray
 from .base import QualityChecker
 
@@ -55,7 +55,7 @@ class CheckMissing(QualityChecker):
 class CheckMonotonic(QualityChecker):
     """---------------------------------------------------------------------------------
     Checks if any values are not ordered strictly monotonically (i.e. values must all be
-    increasing or all decreasing). The check marks values as failed if they break from 
+    increasing or all decreasing). The check marks values as failed if they break from
     a monotonic order.
 
     ---------------------------------------------------------------------------------"""
@@ -81,7 +81,7 @@ class CheckMonotonic(QualityChecker):
 
     def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
         variable = dataset[variable_name]
-        failures = np.full(variable.shape, False, dtype=np.bool_)
+        failures = np.full(variable.shape, False)
 
         if variable.values.dtype.kind in {"U", "S"}:  # type: ignore
             logger.warning(
@@ -90,60 +90,35 @@ class CheckMonotonic(QualityChecker):
                 variable_name,
                 variable.values.dtype,  # type: ignore
             )
-            return np.full(variable.shape, False, dtype=np.bool_)
+            return failures
 
         axis = self.get_axis(variable)
         diff: NDArray[Any] = np.diff(variable.data, axis=axis)  # type: ignore
 
-        zero: Any = 0
-        if np.issubdtype(variable.data.dtype, (np.datetime64, np.timedelta64)):  # type: ignore
-            zero = np.timedelta64(0)
+        direction: Literal["increasing", "decreasing", ""] = ""
 
-        increasing: bool = np.all(diff > zero)  # type: ignore
-        decreasing: bool = np.all(diff < zero)  # type: ignore
-
-        if self.parameters.require_increasing:
-            if not increasing:
-                failures[np.where(diff <= zero)[0]] = True  # type: ignore
-            flag = 'increasing'
-
-        elif self.parameters.require_decreasing:
-            if not decreasing:
-                failures[np.where(diff >= zero)[0]] = True  # type: ignore
-            flag = 'decreasing'
+        if self.parameters.require_decreasing:
+            direction = "decreasing"
+        elif self.parameters.require_increasing:
+            direction = "increasing"
         else:
-            is_monotonic = increasing | decreasing
-            if not is_monotonic:
-                bad = {
-                    0: np.where(diff <= zero)[0],  # type: ignore
-                    1: np.where(diff >= zero)[0],  # type: ignore
-                }
-                # Assuming fewer bad points is the error
-                if len(bad[0]) > len(bad[1]):
-                    failures = failures[bad[1]]
-                    flag = 'decreasing'
-                elif len(bad[0]) < len(bad[1]):
-                    failures = failures[bad[0]]
-                    flag = 'increasing'
-                else:  # if equal points are bad fail everything
-                    failures += 1
+            zero: Union[int, np.timedelta64] = 0
+            if np.issubdtype(variable.data.dtype, (np.datetime64, np.timedelta64)):  # type: ignore
+                zero = np.timedelta64(0)
+            n_increasing = len(np.where(diff >= zero)[0])  # type: ignore
+            n_decreasing = len(np.where(diff <= zero)[0])  # type: ignore
+            direction = "increasing" if n_increasing >= n_decreasing else "decreasing"
 
-        # Let "diff" find the break points, use for loop to find all bad values
-        if any(failures) and not all(failures):
-            t0 = dataset[variable_name].values[0]
-            for i, t in enumerate(dataset[variable_name].values[1:]):
-                if flag=='increasing':
-                    condition = (t>t0)
-                elif flag=='decreasing':
-                    condition = (t<t0)
-                else:
-                    break
-
-                if condition:
-                    failures[i+1] = False
-                    t0 = t
-                else:
-                    failures[i+1] = True   
+        # Find all the values where things break, not just those flagged by diff
+        # if any(failures) and not all(failures):
+        prev = variable.values[0]
+        for i, value in enumerate(variable.values[1:]):
+            success = value < prev if direction == "decreasing" else value > prev
+            if success:
+                # failures[i + 1] = False
+                prev = value  # only update prev on success
+            else:
+                failures[i + 1] = True
 
         return failures
 
