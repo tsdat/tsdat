@@ -1,18 +1,18 @@
 import logging
-from typing import Any
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-from pytest import fixture
 
+from tsdat.qc.base import QualityChecker, QualityHandler
 from tsdat.qc.checkers import *  # type: ignore
 from tsdat.qc.handlers import *
 from tsdat.testing import assert_close
 
 
-@fixture
+@pytest.fixture
 def sample_dataset() -> xr.Dataset:
     return xr.Dataset(
         coords={
@@ -57,109 +57,46 @@ def sample_dataset() -> xr.Dataset:
     )
 
 
-def test_missing_check(sample_dataset: xr.Dataset):
-    checker = CheckMissing()
-
-    # 'time' coordinate variable
-    expected = np.array([False, False, False, False])
-    results = checker.run(sample_dataset, "time")
-    assert np.array_equal(results, expected)  # type: ignore
-
-    # 'missing_var' data variable
-    expected = np.array([True, True, False, False])
-    results = checker.run(sample_dataset, "missing_var")
-    assert np.array_equal(results, expected)  # type: ignore
-
-    # 'missing_var' data variable
-    expected = np.array([False, True, True, False])
-    results = checker.run(sample_dataset, "string_var")
-    assert np.array_equal(results, expected)  # type: ignore
-
-
-def test_monotonic_check(sample_dataset: xr.Dataset):
-    new_sample_dataset = xr.concat((sample_dataset, sample_dataset), dim="time")
-
-    # either increasing or decreasing allowed
-    checker = CheckMonotonic()
-    expected = np.array([False, False, False, False])
-    results = checker.run(sample_dataset, "time")
-    assert np.array_equal(results, expected)  # type: ignore
-
-    # times must be increasing
-    checker = CheckMonotonic(parameters={"require_increasing": True})  # type: ignore
-    expected = np.array([False, False, False, False, True, True, True, True])
-    results = checker.run(new_sample_dataset, "time")
-    assert np.array_equal(results, expected)  # type: ignore
-
-    # times must be decreasing
-    checker = CheckMonotonic(parameters={"require_decreasing": True})  # type: ignore
-    expected = np.array([True, True, True, True, True, True, True, True])
-    results = checker.run(new_sample_dataset, "time")
-    assert np.array_equal(results, expected)  # type: ignore
-
-    # data variable with non-time data type; sanity check
-    checker = CheckMonotonic(parameters={"dim": "time"})  # type: ignore
-    expected = np.array([False, False, False, False])
-    results = checker.run(sample_dataset, "monotonic_var")
-    assert np.array_equal(results, expected)  # type: ignore
-
-
-def test_check_min_classes(sample_dataset: xr.Dataset):
-    var_name = "monotonic_var"
-    expected = np.array([True, False, False, False])
-
-    checker = CheckValidMin()
+# fmt: off
+@pytest.mark.parametrize(
+    "checker_class, params, var_name, expected",
+    [
+        (CheckMissing, {}, "time", [False, False, False, False]),
+        (CheckMissing, {}, "missing_var", [True, True, False, False]),
+        (CheckMissing, {}, "string_var", [False, True, True, False]),
+        (CheckMonotonic, {}, "time", [False, False, False, False]),
+        (CheckMonotonic, {"parameters": {"require_increasing": True}}, "time", [False, False, False, False]),
+        (CheckMonotonic, {"parameters": {"require_decreasing": True}}, "time", [True, True, True, True]),
+        (CheckMonotonic, {"parameters": {"dim": "time"}}, "monotonic_var", [False, False, False, False]),
+        (CheckValidMin, {}, "monotonic_var", [True, False, False, False]),
+        (CheckFailMin, {}, "monotonic_var", [True, False, False, False]),
+        (CheckWarnMin, {}, "monotonic_var", [True, False, False, False]),
+        (CheckValidRangeMin, {}, "monotonic_var", [True, False, False, False]),
+        (CheckFailRangeMin, {}, "monotonic_var", [True, False, False, False]),
+        (CheckWarnRangeMin, {}, "monotonic_var", [True, False, False, False]),
+        (CheckValidMax, {"allow_equal": False}, "monotonic_var", [False, False, True, True]),
+        (CheckFailMax, {"allow_equal": False}, "monotonic_var", [False, False, True, True]),
+        (CheckWarnMax, {"allow_equal": False}, "monotonic_var", [False, False, True, True]),
+        (CheckValidRangeMax, {"allow_equal": False}, "monotonic_var", [False, False, True, True]),
+        (CheckFailRangeMax, {"allow_equal": False}, "monotonic_var", [False, False, True, True]),
+        (CheckWarnRangeMax, {"allow_equal": False}, "monotonic_var", [False, False, True, True]),
+        (CheckValidDelta, {"allow_equal": False}, "monotonic_var", [False, False, False, True]),
+        (CheckFailDelta, {}, "monotonic_var", [False, False, False, True]),
+        (CheckWarnDelta, {}, "monotonic_var", [False, False, False, True]),
+    ],
+)
+def test_checkers(
+    checker_class: QualityChecker,
+    params: Dict[str, Any],
+    var_name: str,
+    expected: List[bool],
+    sample_dataset: xr.Dataset,
+):
+    checker = checker_class(**params)
     results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
-
-    checker = CheckFailMin()
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
-
-    checker = CheckWarnMin()
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
-
-    checker = CheckValidRangeMin()
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
-
-    checker = CheckFailRangeMin()
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
-
-    checker = CheckWarnRangeMin()
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
-
-
-def test_check_max_classes(sample_dataset: xr.Dataset):
-    var_name = "monotonic_var"
-    expected = np.array([False, False, True, True])
-
-    checker = CheckValidMax(allow_equal=False)
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
-
-    checker = CheckFailMax(allow_equal=False)
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
-
-    checker = CheckWarnMax(allow_equal=False)
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
-
-    checker = CheckValidRangeMax(allow_equal=False)
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
-
-    checker = CheckFailRangeMax(allow_equal=False)
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
-
-    checker = CheckWarnRangeMax(allow_equal=False)
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
+    expected = np.array(expected)
+    assert np.array_equal(results, expected)
+# fmt: on
 
 
 def test_valid_delta():
@@ -196,23 +133,6 @@ def test_monotonic_check_ignores_string_vars(caplog: Any):
         "Variable 'dir' has dtype '<U1', which is currently not supported for monotonicity checks."
         in caplog.text
     )
-
-
-def test_check_delta_classes(sample_dataset: xr.Dataset):
-    var_name = "monotonic_var"
-    expected = np.array([False, False, False, True])
-
-    checker = CheckValidDelta(allow_equal=False)
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
-
-    checker = CheckFailDelta()
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
-
-    checker = CheckWarnDelta()
-    results = checker.run(sample_dataset, var_name)
-    assert np.array_equal(results, expected)  # type: ignore
 
 
 def test_record_quality_results(sample_dataset: xr.Dataset):
