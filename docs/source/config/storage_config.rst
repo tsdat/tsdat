@@ -20,20 +20,63 @@ specifics of your pipeline.  Consult the :ref:`getting-started` section for more
 Storage Classes
 ^^^^^^^^^^^^^^^^^^
 
-Currently there are two provided storage classes:
+Currently there are three storage classes provided out of the box:
 
 #. ``FileSystem`` - saves to local filesystem
 #. ``FileSystemS3`` - saves to an AWS S3 bucket (requires an AWS account with admin privileges)
+#. ``ZarrLocalStorage`` - saves to local filesystem in a zarr format.
 
-Both classes save datasets to file, and the user can specify the output file format(s) via the ``handler`` parameter of
-the config file.
+These are all file-based storage classes. For the ``FileSystem`` and ``FileSystemS3`` classes, users can specify the
+output file format via the ``handler`` classname parameter of the storage config file, although the default 
+``NetCDFHandler`` is recommended for most applications. For ``ZarrLocalStorage`` the default is ``ZarrHandler`` and
+should not be changed.
+
+Each of these file-based storage classes allow configuration of where output files should be saved. This includes both
+ancillary files (such as plots, reference files that may be created during processing, etc) and the data files
+produced via processing:
+
+.. code-block:: yaml
+
+    classname: tsdat.FileSystem
+    parameters:
+        storage_root: storage/root
+
+        # The directory structure under storage_root where ancillary/data files are saved.
+        # Allows substitution of the following parameters using curly braces '{}':
+        # 
+        # * ``extension``: the file extension (e.g., 'png', 'nc').
+        # * ``datastream`` from the related xr.Dataset object's global attributes.
+        # * ``location_id`` from the related xr.Dataset object's global attributes.
+        # * ``data_level`` from the related xr.Dataset object's global attributes.
+        # * ``year, month, day, hour, minute, second`` of the first timestamp in the data.
+        # * ``date_time``: the first timestamp in the file formatted as "YYYYMMDD.hhmmss".
+        # * The names of any other global attributes of the related xr.Dataset object.
+        ancillary_storage_path: ancillary/{location_id}/{datastream}
+        data_storage_path: data/{location_id}/{datastream}
+
+        # Template string to use for ancillary/data filenames
+        # Allows substitution of the following parameters using curly braces '{}':
+        # 
+        # * ``title``: a provided label for the ancillary file or plot.
+        # * ``extension``: the file extension (e.g., 'png', 'nc').
+        # * ``datastream`` from the related xr.Dataset object's global attributes.
+        # * ``location_id`` from the related xr.Dataset object's global attributes.
+        # * ``data_level`` from the related xr.Dataset object's global attributes.
+        # * ``date_time``: the first timestamp in the file formatted as "YYYYMMDD.hhmmss".
+        # * The names of any other global attributes of the related xr.Dataset object.
+        # At a minimum the template must include ``{date_time}``.
+        ancillary_filename_template: "{datastream}.{date_time}.{title}.{extension}"
+        data_filename_template: "{datastream}.{date_time}.{extension}"
+
+    handler:
+        classname: tsdat.NetCDFHandler
 
 .. note::
    The FileSystemS3 class is meant to work with the AWS Pipeline Template which is currently being refactored and
    will be included in a subsequent release by mid-late 2023.
 
 .. note::
-   To implement custom storage, such as storing in a database, you can extend the ``tsdat.io.base.Storage`` class.
+   To implement custom storage, such as storing in a database, you must extend the ``tsdat.io.base.Storage`` class.
 
 Handler Classes
 ^^^^^^^^^^^^^^^^^^

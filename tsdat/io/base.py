@@ -454,7 +454,8 @@ class Storage(ParameterizedClass, ABC):
 
         Example:
 
-            ```python
+        .. code-block:: python
+
             # in ``hook_plot_dataset(self, dataset: xr.Dataset)``
             with self.storage.uploadable_dir() as tmp_dir:
                 fig, ax = plt.subplots()
@@ -469,7 +470,6 @@ class Storage(ParameterizedClass, ABC):
                 )
                 fig.savefig(plot_file)
                 plt.close(fig)
-            ```
 
         Args:
             title (str): The title of the ancillary file or plot. Should be lowercase
@@ -546,7 +546,8 @@ class Storage(ParameterizedClass, ABC):
 
         Example:
 
-            ```python
+        .. code-block:: python
+
             # in ``hook_plot_dataset(self, dataset: xr.Dataset)``
             with self.storage.uploadable_dir() as tmp_dir:
                 fig, ax = plt.subplots()
@@ -561,7 +562,6 @@ class Storage(ParameterizedClass, ABC):
                 )
                 fig.savefig(plot_file)
                 plt.close(fig)
-            ```
 
         Args:
             kwargs (Any): Unused. Included for backwards compatibility.

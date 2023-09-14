@@ -64,6 +64,7 @@ class FileSystem(Storage):
         * ``datastream`` from the dataset's global attributes
         * ``location_id`` from the dataset's global attributes
         * ``data_level`` from the dataset's global attributes
+        * ``date_time``: the first timestamp in the file formatted as "YYYYMMDD.hhmmss"
         * Any other global attribute that has a string or integer data type.
         
         At a minimum the template must include ``{date_time}``.
