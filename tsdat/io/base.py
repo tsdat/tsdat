@@ -11,6 +11,7 @@ from typing import (
     NamedTuple,
     Optional,
     Pattern,
+    Tuple,
     Union,
 )
 
@@ -386,6 +387,36 @@ class Storage(ParameterizedClass, ABC):
 
     handler: DataHandler
     """Defines methods for reading and writing datasets from the storage area."""
+    
+    def last_modified(self, datastream:str) -> Union[datetime, None]:
+        """Find the last modified time for any data in that datastream.
+
+        Args:
+            datstream (str): _description_
+
+        Returns:
+            _type_: _description_
+
+        Yields:
+            _type_: _description_
+        """
+        return None
+
+    def modified_since(self, datastream: str, last_modified: datetime) -> List[datetime]:
+        """Find the list of data dates that have been modified since the passed
+        last modified date.
+
+        Args:
+            datastream (str): _description_
+            last_modified (datetime): Should be equivalent to run date (the last time data were changed)
+
+        Returns:
+            List[datetime]: The data dates of files that were changed since the last modified date
+
+        Yields:
+            _type_: _description_
+        """
+        return []
 
     @abstractmethod
     def save_data(self, dataset: xr.Dataset, **kwargs: Any):

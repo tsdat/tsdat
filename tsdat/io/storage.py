@@ -316,6 +316,7 @@ class FileSystemS3(FileSystem):
         )
 
     @property
+    @lru_cache
     def _bucket(self):
         s3 = self._session.resource("s3", region_name=self.parameters.region)  # type: ignore
         return s3.Bucket(name=self.parameters.bucket)
@@ -346,6 +347,22 @@ class FileSystemS3(FileSystem):
     @staticmethod
     def _get_timehash(seconds: int = 3600) -> int:
         return round(time() / seconds)
+
+    def last_modified(self, datastream: str) -> datetime | None:
+        """Returns the datetime of the last modification to the datastream's storage area."""
+        last_modified = None
+        for obj in self._bucket.objects.filter(Prefix=datastream):
+            if obj.last_modified is not None:
+                last_modified = max(last_modified, obj.last_modified)
+        return last_modified
+
+    def modified_since(self, datastream: str, last_modified: datetime) -> List[datetime]:
+        """Returns a list of datetimes of all files modified since the specified datetime."""
+        return [
+            obj.last_modified
+            for obj in self._bucket.objects.filter(Prefix=datastream)
+            if obj.last_modified > last_modified
+        ]
 
     def save_ancillary_file(self, filepath: Path, target_path: Path | None = None):
         """Saves an ancillary filepath to the datastream's ancillary storage area.
