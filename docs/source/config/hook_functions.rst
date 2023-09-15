@@ -33,17 +33,19 @@ output. Below is shown a custom plotting example:
 
         date, time = get_start_date_and_time_str(dataset)
 
-        plt.style.use("default")  # clear any styles that were set before
-        plt.style.use("shared/styling.mplstyle")
-
-        with self.storage.uploadable_dir(datastream) as tmp_dir:
+        with self.storage.uploadable_dir() as tmp_dir:
 
             fig, ax = plt.subplots()
             dataset["example_var"].plot(ax=ax, x="time")  # type: ignore
             fig.suptitle(f"Example Variable at {location} on {date} {time}")
             format_time_xticks(ax)
-            plot_file = get_filename(dataset, title="example_plot", extension="png")
-            fig.savefig(tmp_dir / plot_file)
+            plot_filepath = self.storage.get_ancillary_filepath(
+                title="example_plot",
+                extension="png",
+                root_dir=tmp_dir,
+                dataset=dataset,
+            )
+            fig.savefig(plot_filepath)
             plt.close(fig)
 
 
