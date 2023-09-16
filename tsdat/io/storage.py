@@ -12,7 +12,7 @@ import xarray as xr
 from pydantic import Field, validator
 from tsdat.tstring import Template
 
-from ..utils import get_fields_from_dataset
+from ..utils import get_fields_from_dataset, get_file_datetime_str
 from .base import Storage
 from .handlers import FileHandler, NetCDFHandler, ZarrHandler
 
@@ -186,19 +186,12 @@ class FileSystem(Storage):
     def _filter_between_dates(
         self, filepaths: Iterable[Path], start: datetime, end: datetime
     ) -> List[Path]:
-        def __get_date_str(file: Path) -> str:
-            datetime_match = re.match(r".*(\d{8}\.\d{6}).*", file.name)
-            if datetime_match is not None:
-                return datetime_match.groups()[0]
-            logger.error(f"File {file} does not contain a recognized date string")
-            return ""
-
         start_date_str = start.strftime("%Y%m%d.%H%M%S")
         end_date_str = end.strftime("%Y%m%d.%H%M%S")
 
         valid_filepaths: List[Path] = []
         for filepath in filepaths:
-            file_date_str = __get_date_str(filepath)
+            file_date_str = get_file_datetime_str(filepath)
             if start_date_str <= file_date_str <= end_date_str:
                 valid_filepaths.append(filepath)
         return valid_filepaths
@@ -316,8 +309,8 @@ class FileSystemS3(FileSystem):
             region=self.parameters.region, timehash=FileSystemS3._get_timehash()
         )
 
+    # TODO: use cachetools.func.ttl_cache() so we don't create lots of bucket resources
     @property
-    @lru_cache
     def _bucket(self):
         s3 = self._session.resource("s3", region_name=self.parameters.region)  # type: ignore
         return s3.Bucket(name=self.parameters.bucket)
@@ -349,6 +342,7 @@ class FileSystemS3(FileSystem):
     def _get_timehash(seconds: int = 3600) -> int:
         return round(time() / seconds)
 
+    # TODO: add tests
     def last_modified(self, datastream: str) -> datetime | None:
         """Returns the datetime of the last modification to the datastream's storage area."""
         last_modified = None
@@ -357,10 +351,12 @@ class FileSystemS3(FileSystem):
                 last_modified = max(last_modified, obj.last_modified)
         return last_modified
 
-    def modified_since(self, datastream: str, last_modified: datetime) -> List[datetime]:
-        """Returns a list of datetimes of all files modified since the specified datetime."""
+    def modified_since(
+        self, datastream: str, last_modified: datetime
+    ) -> List[datetime]:
+        """Returns a list of data times of all files modified since the specified datetime."""
         return [
-            obj.last_modified
+            obj.key  # TODO: extract the date.time --> datetime from the filename
             for obj in self._bucket.objects.filter(Prefix=datastream)
             if obj.last_modified > last_modified
         ]

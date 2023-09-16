@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -11,6 +12,7 @@ from numpy.typing import NDArray
 from pydantic import BaseModel, Extra, Field
 from tsdat.tstring import Template
 
+import logging
 
 __all__ = [
     "ParameterizedClass",
@@ -25,6 +27,8 @@ __all__ = [
     "FILENAME_TEMPLATE",
     "generate_schema",
 ]
+
+logger = logging.getLogger(__name__)
 
 DATASTREAM_TEMPLATE = Template(
     "{location_id}.{dataset_name}[-{qualifier}][-{temporal}].{data_level}"
@@ -245,6 +249,14 @@ def get_start_date_and_time_str(dataset: xr.Dataset) -> Tuple[str, str]:
     ---------------------------------------------------------------------------------"""
     timestamp = get_start_time(dataset)
     return timestamp.strftime("%Y%m%d"), timestamp.strftime("%H%M%S")
+
+
+def get_file_datetime_str(file: Path | str) -> str:
+    datetime_match = re.match(r".*(\d{8}\.\d{6}).*", Path(file).name)
+    if datetime_match is not None:
+        return datetime_match.groups()[0]
+    logger.error(f"File {file} does not contain a recognized date string")
+    return ""
 
 
 def get_datastream(**global_attrs: str) -> str:
