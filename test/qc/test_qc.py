@@ -6,9 +6,33 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from tsdat.qc.base import QualityChecker, QualityHandler
-from tsdat.qc.checkers import *  # type: ignore
-from tsdat.qc.handlers import *
+from tsdat.qc.base import QualityChecker
+from tsdat.qc.checkers import (
+    CheckFailDelta,
+    CheckFailRangeMax,
+    CheckMissing,
+    CheckFailMax,
+    CheckFailMin,
+    CheckFailRangeMin,
+    CheckMonotonic,
+    CheckValidDelta,
+    CheckValidMax,
+    CheckValidMin,
+    CheckValidRangeMax,
+    CheckValidRangeMin,
+    CheckWarnDelta,
+    CheckWarnMax,
+    CheckWarnMin,
+    CheckWarnRangeMax,
+    CheckWarnRangeMin,
+)
+from tsdat.qc.handlers import (
+    RecordQualityResults,
+    SortDatasetByCoordinate,
+    RemoveFailedValues,
+    FailPipeline,
+    DataQualityError,
+)
 from tsdat.testing import assert_close
 
 
@@ -61,6 +85,19 @@ def sample_dataset() -> xr.Dataset:
                 "time",
                 np.array(["foo", "", "", "bar"]),  # type: ignore
             ),
+        },
+    )
+
+
+@pytest.fixture
+def sample_dataset_2D() -> xr.Dataset:
+    return xr.Dataset(
+        coords={
+            "time": pd.date_range("2022-03-24 21:43:00", "2022-03-24 21:45:00", periods=3),  # type: ignore
+            "dir": ["N", "E", "S", "W"],
+        },
+        data_vars={
+            "wind_speed": (["time", "dir"], np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]))  # type: ignore
         },
     )
 
@@ -124,25 +161,47 @@ def test_valid_delta():
     assert np.array_equal(results, expected)  # type: ignore
 
 
-def test_monotonic_check_ignores_string_vars(caplog: Any):
-    ds = xr.Dataset(
-        coords={
-            "time": pd.date_range("2022-03-24 21:43:00", "2022-03-24 21:45:00", periods=3),  # type: ignore
-            "dir": ["N", "E", "S", "W"],
-        },
-        data_vars={
-            "wind_speed": (["time", "dir"], np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]))  # type: ignore
-        },
-    )
+def test_monotonic_check_ignores_string_vars(
+    sample_dataset_2D: xr.Dataset, caplog: Any
+):
     expected = np.array([False, False, False, False])
 
     with caplog.at_level(logging.WARNING):
-        results = CheckMonotonic().run(ds, "dir")  # type: ignore
+        results = CheckMonotonic().run(sample_dataset_2D, "dir")  # type: ignore
     assert np.array_equal(results, expected)  # type: ignore
     assert (
         "Variable 'dir' has dtype '<U1', which is currently not supported for monotonicity checks."
         in caplog.text
     )
+
+
+def test_monotonic_with_2D_vars(sample_dataset_2D: xr.Dataset, caplog: Any):
+    with caplog.at_level(logging.WARNING):
+        failures = CheckMonotonic().run(sample_dataset_2D, "wind_speed")
+    assert not failures.any()
+    assert (
+        "Variable 'wind_speed' has shape '(3, 4)'. 2D variables must provide a 'dim' parameter"
+        in caplog.text
+    )
+
+    # Regular check
+    checker = CheckMonotonic(parameters=CheckMonotonic.Parameters(dim="time"))
+    failures = checker.run(sample_dataset_2D, "wind_speed")
+    assert not failures.any()
+
+    # # Manipulate the data
+    ds = sample_dataset_2D.copy(deep=True)
+    ds["wind_speed"].data += np.array([[4, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    checker = CheckMonotonic(parameters=CheckMonotonic.Parameters(dim="time"))
+    failures = checker.run(ds, "wind_speed")
+    expected = np.array(
+        [
+            [True, False, False, False],
+            [False, False, False, False],
+            [False, False, False, False],
+        ]
+    )
+    assert (failures == expected).all()
 
 
 def test_record_quality_results(sample_dataset: xr.Dataset):

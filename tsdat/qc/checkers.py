@@ -30,6 +30,11 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
+def is_datetime_like(data: NDArray[Any]) -> bool:
+    """Checks if the array has a datetime-like dtype (datetime, timedelta, date)"""
+    return np.issubdtype(data.dtype, (np.datetime64, np.timedelta64))
+
+
 class CheckMissing(QualityChecker):
     """---------------------------------------------------------------------------------
     Checks if any data are missing. A variable's data are considered missing if they are
@@ -83,6 +88,16 @@ class CheckMonotonic(QualityChecker):
         variable = dataset[variable_name]
         failures = np.full(variable.shape, False)
 
+        if self.parameters.dim is None and len(variable.shape) == 2:
+            logger.warning(
+                "Variable '%s' has shape '%s'. 2D variables must provide a 'dim'"
+                " parameter for the name of the dimension to check the variable for"
+                " monotonicity.",
+                variable_name,
+                variable.shape,
+            )
+            return failures
+
         if variable.values.dtype.kind in {"U", "S"}:  # type: ignore
             logger.warning(
                 "Variable '%s' has dtype '%s', which is currently not supported for"
@@ -93,8 +108,7 @@ class CheckMonotonic(QualityChecker):
             return failures
 
         axis = self.get_axis(variable)
-        diff: NDArray[Any] = np.diff(variable.data, axis=axis)  # type: ignore
-
+        zero = np.timedelta64(0) if is_datetime_like(variable.data) else 0
         direction: Literal["increasing", "decreasing", ""] = ""
 
         if self.parameters.require_decreasing:
@@ -102,23 +116,28 @@ class CheckMonotonic(QualityChecker):
         elif self.parameters.require_increasing:
             direction = "increasing"
         else:
-            zero: Union[int, np.timedelta64] = 0
-            if np.issubdtype(variable.data.dtype, (np.datetime64, np.timedelta64)):  # type: ignore
-                zero = np.timedelta64(0)
-            n_increasing = len(np.where(diff >= zero)[0])  # type: ignore
-            n_decreasing = len(np.where(diff <= zero)[0])  # type: ignore
-            direction = "increasing" if n_increasing >= n_decreasing else "decreasing"
+            diff = np.diff(variable.data, axis=axis)  # type: ignore
+            direction = (
+                "increasing"
+                if np.sum(diff > zero) >= np.sum(diff < zero)
+                else "decreasing"
+            )
 
         # Find all the values where things break, not just those flagged by diff
         # if any(failures) and not all(failures):
-        prev = variable.values[0]
-        for i, value in enumerate(variable.values[1:]):
-            success = value < prev if direction == "decreasing" else value > prev
-            if success:
-                # failures[i + 1] = False
-                prev = value  # only update prev on success
-            else:
-                failures[i + 1] = True
+        if len(variable.shape) == 1:
+            prev = variable.values[0]
+            for i, value in enumerate(variable.values[1:]):
+                success = value < prev if direction == "decreasing" else value > prev
+                if success:
+                    prev = value  # only update prev on success
+                else:
+                    failures[i + 1] = True
+        else:
+            # 2D diff isn't as clever with failing indexes; just report all individual
+            # points that fail
+            diff = np.gradient(variable.data)[axis]
+            failures = diff <= zero if direction == "increasing" else diff >= zero
 
         return failures
 
