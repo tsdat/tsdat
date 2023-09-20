@@ -21,7 +21,12 @@ from pydantic.fields import ModelField
 
 from ..config.dataset import DatasetConfig
 from ..tstring import Template
-from ..utils import ParameterizedClass, datetime_substitutions, get_fields_from_dataset
+from ..utils import (
+    ParameterizedClass,
+    datetime_substitutions,
+    get_fields_from_dataset,
+    get_fields_from_datastream,
+)
 
 __all__ = [
     "DataConverter",
@@ -387,34 +392,32 @@ class Storage(ParameterizedClass, ABC):
 
     handler: DataHandler
     """Defines methods for reading and writing datasets from the storage area."""
-    
-    def last_modified(self, datastream:str) -> Union[datetime, None]:
+
+    def last_modified(self, datastream: str) -> Union[datetime, None]:
         """Find the last modified time for any data in that datastream.
 
         Args:
-            datstream (str): _description_
+            datastream (str): The datastream.
 
         Returns:
-            _type_: _description_
-
-        Yields:
-            _type_: _description_
+            datetime: The datetime of the last modification.
         """
         return None
 
-    def modified_since(self, datastream: str, last_modified: datetime) -> List[datetime]:
+    def modified_since(
+        self, datastream: str, last_modified: datetime
+    ) -> List[datetime]:
         """Find the list of data dates that have been modified since the passed
         last modified date.
 
         Args:
             datastream (str): _description_
-            last_modified (datetime): Should be equivalent to run date (the last time data were changed)
+            last_modified (datetime): Should be equivalent to run date (the last time
+                data were changed)
 
         Returns:
-            List[datetime]: The data dates of files that were changed since the last modified date
-
-        Yields:
-            _type_: _description_
+            List[datetime]: The data dates of files that were changed since the last
+                modified date
         """
         return []
 
@@ -456,7 +459,9 @@ class Storage(ParameterizedClass, ABC):
             end (datetime): The end time bound.
             datastream (str): The name of the datastream to fetch.
             metadata_kwargs (dict[str, str], optional): Metadata substitutions to help
-                locate the data. This is often required for file-based storage classes.
+                resolve the data storage path. This is only required if the template
+                data storage path includes any properties other than datastream or
+                fields contained in the datastream. Defaults to None.
 
         Returns:
             xr.Dataset: The fetched dataset.
@@ -534,15 +539,17 @@ class Storage(ParameterizedClass, ABC):
         substitutions.update(kwargs)
         if datastream is not None:
             substitutions["datastream"] = datastream
+            substitutions.update(get_fields_from_datastream(datastream))
         if start is not None:
             substitutions.update(datetime_substitutions(start))
         substitutions.update(extension=extension, ext=extension)
+        substitutions["title"] = title
 
         # Resolve substitutions to get ancillary filepath
         dir_template = Template(self.parameters.ancillary_storage_path)
         file_template = Template(self.parameters.ancillary_filename_template)
         dirpath = dir_template.substitute(substitutions)
-        filename = file_template.substitute(substitutions, title=title)
+        filename = file_template.substitute(substitutions)
         ancillary_path = Path(dirpath) / filename
         if root_dir is not None:
             ancillary_path = root_dir / ancillary_path

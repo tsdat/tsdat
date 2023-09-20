@@ -2,7 +2,7 @@ import logging
 import re
 import shutil
 import tempfile
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from time import time
@@ -12,7 +12,11 @@ import xarray as xr
 from pydantic import Field, validator
 from tsdat.tstring import Template
 
-from ..utils import get_fields_from_dataset, get_file_datetime_str
+from ..utils import (
+    get_fields_from_dataset,
+    get_fields_from_datastream,
+    get_file_datetime_str,
+)
 from .base import Storage
 from .handlers import FileHandler, NetCDFHandler, ZarrHandler
 
@@ -135,20 +139,27 @@ class FileSystem(Storage):
             end (datetime): The maximum datetime to fetch.
             datastream (str): The datastream id to search for.
             metadata_kwargs (dict[str, str], optional): Metadata substitutions to help
-                resolve the data storage path. This is required if the template data
-                storage path includes any properties other than datastream. Defaults to
-                None.
+                resolve the data storage path. This is only required if the template
+                data storage path includes any properties other than datastream or
+                fields contained in the datastream. Defaults to None.
 
         Returns:
             xr.Dataset: A dataset containing all the data in the storage area that spans
             the specified datetimes.
 
         -----------------------------------------------------------------------------"""
+        if metadata_kwargs is None:
+            metadata_kwargs = {}
+        metadata_kwargs = {
+            "datastream": datastream,
+            **get_fields_from_datastream(datastream),
+            **metadata_kwargs,
+        }
         data_files = self._find_data(
             start,
             end,
             datastream,
-            metadata_kwargs=metadata_kwargs if metadata_kwargs is not None else {},
+            metadata_kwargs=metadata_kwargs,
         )
         datasets = self._open_data_files(*data_files)
         dataset = xr.merge(datasets, **self.parameters.merge_fetched_data_kwargs)  # type: ignore
@@ -170,12 +181,14 @@ class FileSystem(Storage):
         dir_template = Template(self.parameters.data_storage_path.as_posix())
         extension = self.handler.writer.file_extension
         semi_resolved = dir_template.substitute(
-            dict(
-                datastream=datastream,
-                extension=extension,
-                ext=extension,
+            {
+                **dict(
+                    datastream=datastream,
+                    extension=extension,
+                    ext=extension,
+                ),
                 **metadata_kwargs,
-            ),
+            },
             allow_missing=True,
         )
         dirpath, pattern = self._extract_time_substitutions(semi_resolved, start, end)
@@ -209,13 +222,15 @@ class FileSystem(Storage):
         extension = self.handler.writer.file_extension
         substitutions = get_fields_from_dataset(dataset)
         substitutions.update(extension=extension, ext=extension)
-
-        dir_template = Template(self.parameters.data_storage_path.as_posix())
+        data_dir = self._get_data_directory(substitutions)
         filename_template = Template(self.parameters.data_filename_template)
-        dirpath = dir_template.substitute(substitutions)
         filename = filename_template.substitute(substitutions)
+        return data_dir / filename
 
-        return self.parameters.storage_root / dirpath / filename
+    def _get_data_directory(self, substitutions: Dict[str, str]) -> Path:
+        dir_template = Template(self.parameters.data_storage_path.as_posix())
+        dirpath = dir_template.substitute(substitutions)
+        return self.parameters.storage_root / dirpath
 
     def _extract_time_substitutions(
         self, template_str: str, start: datetime, end: datetime
@@ -342,23 +357,34 @@ class FileSystemS3(FileSystem):
     def _get_timehash(seconds: int = 3600) -> int:
         return round(time() / seconds)
 
-    # TODO: add tests
     def last_modified(self, datastream: str) -> datetime | None:
         """Returns the datetime of the last modification to the datastream's storage area."""
+        substitutions = get_fields_from_datastream(datastream)
+        substitutions["datastream"] = datastream
+        prefix = self._get_data_directory(substitutions).as_posix()
+
         last_modified = None
-        for obj in self._bucket.objects.filter(Prefix=datastream):
+        for obj in self._bucket.objects.filter(Prefix=prefix):
             if obj.last_modified is not None:
-                last_modified = max(last_modified, obj.last_modified)
+                last_modified = (
+                    obj.last_modified.astimezone(timezone.utc)
+                    if last_modified is None
+                    else max(last_modified, obj.last_modified)
+                )
         return last_modified
 
     def modified_since(
         self, datastream: str, last_modified: datetime
     ) -> List[datetime]:
-        """Returns a list of data times of all files modified since the specified datetime."""
+        """Returns the data times of all files modified after the specified datetime."""
+        substitutions = get_fields_from_datastream(datastream)
+        substitutions["datastream"] = datastream
+        prefix = self._get_data_directory(substitutions).as_posix()
         return [
-            obj.key  # TODO: extract the date.time --> datetime from the filename
-            for obj in self._bucket.objects.filter(Prefix=datastream)
-            if obj.last_modified > last_modified
+            datetime.strptime(get_file_datetime_str(obj.key), "%Y%m%d.%H%M%S")
+            for obj in self._bucket.objects.filter(Prefix=prefix)
+            if obj.last_modified is not None
+            and obj.last_modified.astimezone(timezone.utc) > last_modified
         ]
 
     def save_ancillary_file(self, filepath: Path, target_path: Path | None = None):
@@ -407,12 +433,14 @@ class FileSystemS3(FileSystem):
         dir_template = Template(self.parameters.data_storage_path.as_posix())
         extension = self.handler.writer.file_extension
         semi_resolved = dir_template.substitute(
-            dict(
-                datastream=datastream,
-                extension=extension,
-                ext=extension,
+            {
+                **dict(
+                    datastream=datastream,
+                    extension=extension,
+                    ext=extension,
+                ),
                 **metadata_kwargs,
-            ),
+            },
             allow_missing=True,
         )
         dirpath, pattern = self._extract_time_substitutions(semi_resolved, start, end)

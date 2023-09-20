@@ -1,10 +1,12 @@
 import os
 import shutil
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import time
 from typing import Any
 
 import moto
+import numpy as np
 import pytest
 import pandas as pd
 import xarray as xr
@@ -165,6 +167,35 @@ def test_fetch_returns_empty(
         metadata_kwargs=dict(location_id="sgp"),
     )
     assert_close(dataset, expected_dataset)
+
+
+def test_last_modified(s3_storage: FileSystemS3, sample_dataset: xr.Dataset):
+    # Should be empty at first
+    datastream = sample_dataset.attrs["datastream"]
+    assert s3_storage.last_modified(datastream=datastream) is None
+
+    # Last mod time is date saved, today
+    s3_storage.save_data(sample_dataset)
+    last_mod = s3_storage.last_modified(datastream=datastream)
+    assert last_mod is not None
+    assert last_mod.date() == datetime.today().astimezone(timezone.utc).date()
+
+    # Modded files should be empty relative to last saved file
+    modded_files = s3_storage.modified_since(
+        datastream=datastream, last_modified=last_mod
+    )
+    assert modded_files == []
+
+    # Modded files should be the datetimes of the files saved since the last mod time
+    time.sleep(2)  # prevents race condition where files have the same last mod time
+    ds1 = sample_dataset.copy(deep=True)
+    ds1["time"] = ds1["time"] + np.timedelta64(2, "D")
+    s3_storage.save_data(ds1)
+    modded_files = s3_storage.modified_since(
+        datastream=datastream, last_modified=last_mod
+    )
+    expected_time = pd.to_datetime(ds1["time"].data[0]).to_pydatetime()
+    assert modded_files == [expected_time]
 
 
 @pytest.mark.parametrize(

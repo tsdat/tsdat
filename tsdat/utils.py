@@ -23,6 +23,7 @@ __all__ = [
     "get_start_date_and_time_str",
     "get_filename",
     "get_datastream",
+    "get_fields_from_datastream",
     "DATASTREAM_TEMPLATE",
     "FILENAME_TEMPLATE",
     "generate_schema",
@@ -261,6 +262,17 @@ def get_file_datetime_str(file: Path | str) -> str:
 
 def get_datastream(**global_attrs: str) -> str:
     return DATASTREAM_TEMPLATE.substitute(global_attrs)
+
+
+def get_fields_from_datastream(datastream: str) -> Dict[str, str]:
+    """Extracts fields from the datastream.
+
+    WARNING: this only works for the default datastream template.
+    """
+    fields = DATASTREAM_TEMPLATE.extract_substitutions(datastream)
+    if fields is None:
+        return {}
+    return {k: v for k, v in fields.items() if v is not None}
 
 
 def get_filename(
