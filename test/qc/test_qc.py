@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import numpy as np
 import pandas as pd
@@ -130,19 +130,26 @@ def sample_dataset_2D() -> xr.Dataset:
         (CheckValidDelta, {"allow_equal": False}, "monotonic_var", [False, False, False, True]),
         (CheckFailDelta, {}, "monotonic_var", [False, False, False, True]),
         (CheckWarnDelta, {}, "monotonic_var", [False, False, False, True]),
+        (CheckMonotonic, {}, "string_var", None),
+        (CheckValidMax, {}, "string_var", None),
+        (CheckValidMin, {}, "string_var", None),
+        (CheckValidDelta, {}, "string_var", None),
     ],
 )
 def test_checkers(
     checker_class: QualityChecker,
     params: Dict[str, Any],
     var_name: str,
-    expected: List[bool],
+    expected: Union[List[bool], None],
     sample_dataset: xr.Dataset,
 ):
     checker = checker_class(**params)
-    results = checker.run(sample_dataset, var_name)
-    expected = np.array(expected)
-    assert np.array_equal(results, expected)
+    failures = checker.run(sample_dataset, var_name)
+    if expected is None:
+        assert failures is None
+    else:
+        expected = np.array(expected)
+        assert np.array_equal(failures, expected)
 # fmt: on
 
 
@@ -164,11 +171,9 @@ def test_valid_delta():
 def test_monotonic_check_ignores_string_vars(
     sample_dataset_2D: xr.Dataset, caplog: Any
 ):
-    expected = np.array([False, False, False, False])
-
     with caplog.at_level(logging.WARNING):
-        results = CheckMonotonic().run(sample_dataset_2D, "dir")  # type: ignore
-    assert np.array_equal(results, expected)  # type: ignore
+        failures = CheckMonotonic().run(sample_dataset_2D, "dir")  # type: ignore
+    assert failures is None
     assert (
         "Variable 'dir' has dtype '<U1', which is currently not supported for monotonicity checks."
         in caplog.text
@@ -178,7 +183,7 @@ def test_monotonic_check_ignores_string_vars(
 def test_monotonic_with_2D_vars(sample_dataset_2D: xr.Dataset, caplog: Any):
     with caplog.at_level(logging.WARNING):
         failures = CheckMonotonic().run(sample_dataset_2D, "wind_speed")
-    assert not failures.any()
+    assert failures is None
     assert (
         "Variable 'wind_speed' has shape '(3, 4)'. 2D variables must provide a 'dim' parameter"
         in caplog.text

@@ -84,7 +84,9 @@ class CheckMonotonic(QualityChecker):
 
     parameters: Parameters = Parameters()
 
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
+    def run(
+        self, dataset: xr.Dataset, variable_name: str
+    ) -> Union[NDArray[np.bool_], None]:
         variable = dataset[variable_name]
         failures = np.full(variable.shape, False)
 
@@ -96,7 +98,7 @@ class CheckMonotonic(QualityChecker):
                 variable_name,
                 variable.shape,
             )
-            return failures
+            return None
 
         if variable.values.dtype.kind in {"U", "S"}:  # type: ignore
             logger.warning(
@@ -105,7 +107,7 @@ class CheckMonotonic(QualityChecker):
                 variable_name,
                 variable.values.dtype,  # type: ignore
             )
-            return failures
+            return None
 
         axis = self.get_axis(variable)
         zero = np.timedelta64(0) if is_datetime_like(variable.data) else 0
@@ -169,10 +171,8 @@ class _ThresholdChecker(QualityChecker):
 
     def _get_threshold(
         self, dataset: xr.Dataset, variable_name: str, min_: bool
-    ) -> Optional[float]:
-        threshold: Optional[Union[float, List[float]]] = dataset[
-            variable_name
-        ].attrs.get(self.attribute_name, None)
+    ) -> Union[float, None]:
+        threshold = dataset[variable_name].attrs.get(self.attribute_name, None)
         if threshold is not None:
             if isinstance(threshold, list):
                 index = 0 if min_ else -1
@@ -200,13 +200,15 @@ class _CheckMin(_ThresholdChecker):
 
     ---------------------------------------------------------------------------------"""
 
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
+    def run(
+        self, dataset: xr.Dataset, variable_name: str
+    ) -> Union[NDArray[np.bool_], None]:
         var_data = dataset[variable_name]
         failures: NDArray[np.bool_] = np.zeros_like(var_data, dtype=np.bool_)  # type: ignore
 
         min_value = self._get_threshold(dataset, variable_name, min_=True)
         if min_value is None:
-            return failures
+            return None
 
         if self.allow_equal:
             failures = np.less(var_data.data, min_value)
@@ -236,13 +238,15 @@ class _CheckMax(_ThresholdChecker):
 
     ---------------------------------------------------------------------------------"""
 
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
+    def run(
+        self, dataset: xr.Dataset, variable_name: str
+    ) -> Union[NDArray[np.bool_], None]:
         var_data = dataset[variable_name]
         failures: NDArray[np.bool_] = np.zeros_like(var_data, dtype=np.bool_)  # type: ignore
 
         max_value = self._get_threshold(dataset, variable_name, min_=False)
         if max_value is None:
-            return failures
+            return None
 
         if self.allow_equal:
             failures = np.greater(var_data.data, max_value)
@@ -391,13 +395,15 @@ class _CheckDelta(_ThresholdChecker):
 
     parameters: Parameters = Parameters()
 
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
+    def run(
+        self, dataset: xr.Dataset, variable_name: str
+    ) -> Union[NDArray[np.bool_], None]:
         var_data = dataset[variable_name]
         failures: NDArray[np.bool_] = np.zeros_like(var_data, dtype=np.bool_)  # type: ignore
 
         threshold = self._get_threshold(dataset, variable_name, True)
         if threshold is None:
-            return failures
+            return None
 
         data: NDArray[Any] = var_data.data
         axis = var_data.get_axis_num(self.parameters.dim)
