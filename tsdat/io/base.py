@@ -535,15 +535,16 @@ class Storage(ParameterizedClass, ABC):
         """
 
         # Override with provided substitutions and keywords, if provided
-        substitutions = get_fields_from_dataset(dataset)
-        substitutions.update(kwargs)
+        substitutions = {}
+        if dataset is not None:
+            substitutions.update(get_fields_from_dataset(dataset))
         if datastream is not None:
-            substitutions["datastream"] = datastream
-            substitutions.update(get_fields_from_datastream(datastream))
+            substitutions.update(
+                datastream=datastream, **get_fields_from_datastream(datastream)
+            )
         if start is not None:
             substitutions.update(datetime_substitutions(start))
-        substitutions.update(extension=extension, ext=extension)
-        substitutions["title"] = title
+        substitutions.update(extension=extension, ext=extension, title=title, **kwargs)
 
         # Resolve substitutions to get ancillary filepath
         dir_template = Template(self.parameters.ancillary_storage_path)

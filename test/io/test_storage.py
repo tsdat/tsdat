@@ -264,9 +264,32 @@ def test_storage_saves_ancillary_files(
 
     expected_filepath = storage.parameters.storage_root / expected
 
+    # Normal method: use datastream and start time
     with storage.uploadable_dir() as tmp_dir:
         fpath = storage.get_ancillary_filepath(
-            title="ancillary", extension="png", dataset=dataset, root_dir=tmp_dir
+            title="ancillary",
+            extension="png",
+            datastream=dataset.attrs["datastream"],
+            start=dataset["time"].data[0],
+            root_dir=tmp_dir,
+        )
+        fpath.touch()
+    if storage_fixture == "s3_storage":
+        assert storage._exists(expected_filepath)
+        obj = storage._get_obj(expected_filepath)
+        assert obj is not None
+        obj.delete()
+    else:
+        assert expected_filepath.exists()
+        os.remove(expected_filepath)
+
+    # New method: extract needed info from the dataset object
+    with storage.uploadable_dir() as tmp_dir:
+        fpath = storage.get_ancillary_filepath(
+            title="ancillary",
+            extension="png",
+            dataset=dataset,
+            root_dir=tmp_dir,
         )
         fpath.touch()
     if storage_fixture == "s3_storage":
