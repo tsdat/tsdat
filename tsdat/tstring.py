@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Callable, Mapping, Match
+from typing import Callable, Dict, Mapping, Match, Union
 
 __all__ = ("Template",)
 
@@ -90,11 +90,152 @@ def _substitute(
     return resolved
 
 
+def _generate_regex(template: str) -> str:
+    """Generates a regex pattern which can be used to extract the values substituted
+    into a template string.
+
+    Args:
+        template (str): The template string to generate a regex pattern for.
+
+    Returns:
+        str: The regex pattern with named groups according to the template.
+    """
+    regex_pattern = "^"
+
+    i = 0
+    while i < len(template):
+        char = template[i]
+        if char == "{":
+            var_start = i + 1
+            var_end = template.index("}", var_start)
+            var_name = template[var_start:var_end]
+            regex_pattern += f"(?P<{var_name}>[_a-zA-Z0-9]+)"
+            i = var_end + 1
+        elif char == "[":
+            regex_pattern += "(?:"
+            i += 1
+        elif char == "]":
+            regex_pattern += ")?"
+            i += 1
+        else:
+            regex_pattern += re.escape(char)
+            i += 1
+
+    regex_pattern += "$"
+    return regex_pattern
+
+
+# def _generate_regex(template: str) -> str:
+#     regex_pattern = "^"
+#     i = 0
+#     while i < len(template):
+#         char = template[i]
+#         if char == "{":
+#             var_start = i + 1
+#             var_end = template.index("}", var_start)
+#             var_name = template[var_start:var_end]
+#             regex_pattern += f"(?P<{var_name}>[^.*]+)?"
+#             i = var_end + 1
+#         elif char == "[":
+#             regex_pattern += "(?:"
+#             i += 1
+#         elif char == "]":
+#             regex_pattern += ")?"
+#             i += 1
+#         else:
+#             regex_pattern += re.escape(char)
+#             i += 1
+#     regex_pattern += "$"
+#     return regex_pattern
+
+
+# def _generate_regex(template: str) -> str:
+#     regex_pattern = "^"
+#     is_optional = False
+#     optional_part = ""
+
+#     i = 0
+#     while i < len(template):
+#         char = template[i]
+#         if char == "{":
+#             var_start = i + 1
+#             var_end = template.index("}", var_start)
+#             var_name = template[var_start:var_end]
+
+#             if is_optional:
+#                 # regex_pattern += f"(?:{re.escape(optional_part)}(?P<{var_name}>[^.]*))?"
+#                 regex_pattern += f"(?:{re.escape(optional_part)}(?P<{var_name}>.*?))?"
+#                 optional_part = ""
+#             else:
+#                 regex_pattern += f"(?P<{var_name}>[^.]*)"
+
+#             i = var_end + 1
+#         elif char == "[":
+#             is_optional = True
+#             optional_part = ""
+#             i += 1
+#         elif char == "]":
+#             is_optional = False
+#             regex_pattern += re.escape(optional_part) + ")?"
+#             optional_part = ""
+#             i += 1
+#         else:
+#             if is_optional:
+#                 optional_part += char
+#             else:
+#                 regex_pattern += re.escape(char)
+#             i += 1
+
+#     regex_pattern += "$"
+#     return regex_pattern
+
+
+# def _generate_regex(template: str) -> str:
+#     regex_pattern = "^"
+#     is_optional = False
+#     optional_part = ""
+
+#     i = 0
+#     while i < len(template):
+#         char = template[i]
+#         if char == "{":
+#             var_start = i + 1
+#             var_end = template.index("}", var_start)
+#             var_name = template[var_start:var_end]
+
+#             if is_optional:
+#                 regex_pattern += f"(?:{re.escape(optional_part)}(?P<{var_name}>.*?))?"
+#                 optional_part = ""
+#             else:
+#                 regex_pattern += f"(?P<{var_name}>.*?)"
+
+#             i = var_end + 1
+#         elif char == "[":
+#             is_optional = True
+#             optional_part = ""
+#             i += 1
+#         elif char == "]":
+#             is_optional = False
+#             if optional_part:
+#                 regex_pattern += f"(?:{re.escape(optional_part)})?"
+#             optional_part = ""
+#             i += 1
+#         else:
+#             if is_optional:
+#                 optional_part += char
+#             else:
+#                 regex_pattern += re.escape(char)
+#             i += 1
+
+#     regex_pattern += "$"
+#     return regex_pattern
+
+
 class Template:
     """Python f-string implementation with lazy and optional variable substitutions.
 
     The template string is expected to be formatted in the same way as python f-strings,
-    with variables that should be substituted wrapped in curly brances `{}`.
+    with variables that should be substituted wrapped in curly braces `{}`.
     Additionally, square brackets may be used around curly brackets and other text to
     mark that substitution as optional -- i.e. if the variable cannot be found then the
     text wrapped in the square brackets will be removed.
@@ -117,12 +258,17 @@ class Template:
     Args:
         template (str): The template string. Variables to substitute should be wrapped
             by curly braces `{}`.
+        regex (str | None, optional): A regex pattern used to extract the substitutions
+            used to create a formatted string with this template. Generated
+            automatically if not provided.
     """
 
-    def __init__(self, template: str) -> None:
+    def __init__(self, template: str, regex: str | None = None) -> None:
+        """"""
         if not self._is_balanced(template):
             raise ValueError(f"Unbalanced brackets in template string: '{template}'")
         self.template = template
+        self.regex = regex or _generate_regex(template)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.template!r})"
@@ -132,14 +278,14 @@ class Template:
 
     @classmethod
     def _is_balanced(cls, template: str):
-        queue: list[str] = []
+        stack: list[str] = []
         for char in template:
             if char in "{[":
-                queue.append("}" if char == "{" else "]")
+                stack.append("}" if char == "{" else "]")
             elif char in "}]":
-                if not queue or char != queue.pop():
+                if not stack or char != stack.pop():
                     return False
-        return len(queue) == 0
+        return len(stack) == 0
 
     def substitute(
         self,
@@ -170,3 +316,22 @@ class Template:
             str: The template string with the appropriate substitutions made.
         """
         return _substitute(self.template, mapping, allow_missing, **kwds)
+
+    def extract_substitutions(self, formatted_str: str) -> dict[str, str] | None:
+        """Extracts the substitutions used to create the provided formatted string.
+
+        Note that this is not guaranteed to return accurate results if the template
+        is constructed such that separators between variables are ambiguous.
+
+        Args:
+            formatted_str (str): The formatted string
+
+        Returns:
+            dict[str, str]: A dictionary mapping each matched template variable to its
+                value in the formatted string. Returns None if there are no matches.
+        """
+        match = re.match(self.regex, formatted_str)
+        if match:
+            return match.groupdict()
+        else:
+            return None

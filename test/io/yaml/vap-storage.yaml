@@ -1,3 +1,4 @@
 classname: tsdat.io.storage.FileSystem
 parameters:
   storage_root: test/io/data/retriever-store
+  data_storage_path: data/{datastream}

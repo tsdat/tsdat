@@ -32,6 +32,7 @@ def test_pipeline_config_merges_overrides():
         "quality": model_to_dict(quality),
         "storage": model_to_dict(storage),
     }
+    expected_dict["storage"]["parameters"]["data_storage_path"] = "data/{datastream}"
 
     # Load everything through the PipelineConfig
     pipeline_model = PipelineConfig.from_yaml(Path("test/config/yaml/pipeline.yaml"))

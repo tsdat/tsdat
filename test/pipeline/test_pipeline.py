@@ -6,10 +6,10 @@ import pytest
 import xarray as xr
 
 from tsdat import PipelineConfig, assert_close
+from tsdat.pipeline.pipelines import TransformationPipeline
 
 
 def test_ingest_pipeline():
-
     expected = xr.Dataset(
         coords={
             "time": (
@@ -70,7 +70,6 @@ def test_ingest_pipeline():
 
 @pytest.mark.requires_adi
 def test_transformation_pipeline():
-
     expected = xr.Dataset(
         coords={
             "time": (
@@ -98,7 +97,7 @@ def test_transformation_pipeline():
     )
 
     config = PipelineConfig.from_yaml(Path("test/io/yaml/vap-pipeline.yaml"))
-    pipeline = config.instantiate_pipeline()
+    pipeline: TransformationPipeline = config.instantiate_pipeline()
 
     inputs = ["20220405.000000", "20220406.000000"]
 

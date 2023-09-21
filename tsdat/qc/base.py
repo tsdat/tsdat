@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Union
 import numpy as np
 from pydantic import BaseModel, Extra
 import xarray as xr
@@ -16,7 +16,9 @@ class QualityChecker(ParameterizedClass, ABC):
     ---------------------------------------------------------------------------------"""
 
     @abstractmethod
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
+    def run(
+        self, dataset: xr.Dataset, variable_name: str
+    ) -> Union[NDArray[np.bool_], None]:
         """-----------------------------------------------------------------------------
         Identifies and flags quality problems with the data.
 
@@ -108,6 +110,8 @@ class QualityManager(BaseModel, extra=Extra.forbid):
         variables = self._get_variables_to_run(dataset)
         for variable_name in variables:
             issues = self.checker.run(dataset, variable_name)
+            if issues is None:
+                continue
             for handler in self.handlers:
                 dataset = handler.run(dataset, variable_name, issues)
         return dataset
