@@ -82,7 +82,7 @@ class StorageRetrieverInput:
     """
 
     def __init__(self, input_key: str):
-        kwargs: dict[str, str] = {}
+        kwargs: Dict[str, str] = {}
 
         if len(input_key.split("::")) == 3:
             logger.warning(

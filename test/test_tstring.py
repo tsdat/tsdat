@@ -123,7 +123,7 @@ def test_overrides(expected: str, mapping: Dict[str, str], keywords: Dict[str, s
         ),
     ),
 )
-def test_regex_extractions(expected: dict[str, str], template: str, formatted: str):
+def test_regex_extractions(expected: Dict[str, str], template: str, formatted: str):
     _template = Template(template)
     substitutions = _template.extract_substitutions(formatted)
     assert substitutions == expected

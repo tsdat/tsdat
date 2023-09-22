@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -40,8 +40,10 @@ FILENAME_TEMPLATE = Template(
 )
 
 
-def datetime_substitutions(time: datetime | np.datetime64 | None) -> dict[str, str]:
-    substitutions: dict[str, str] = {}
+def datetime_substitutions(
+    time: Union[datetime, np.datetime64, None]
+) -> Dict[str, str]:
+    substitutions: Dict[str, str] = {}
     if time is not None:
         t = pd.to_datetime(time)
         substitutions.update(
@@ -252,7 +254,7 @@ def get_start_date_and_time_str(dataset: xr.Dataset) -> Tuple[str, str]:
     return timestamp.strftime("%Y%m%d"), timestamp.strftime("%H%M%S")
 
 
-def get_file_datetime_str(file: Path | str) -> str:
+def get_file_datetime_str(file: Union[Path, str]) -> str:
     datetime_match = re.match(r".*(\d{8}\.\d{6}).*", Path(file).name)
     if datetime_match is not None:
         return datetime_match.groups()[0]
@@ -312,7 +314,7 @@ def get_filename(
     )
 
 
-def get_fields_from_dataset(dataset: xr.Dataset) -> dict[str, Any]:
+def get_fields_from_dataset(dataset: xr.Dataset) -> Dict[str, Any]:
     return {
         **dict(dataset.attrs),
         **datetime_substitutions(dataset.time.values[0]),

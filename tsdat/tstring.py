@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Callable, Dict, Mapping, Match, Union
+from typing import Callable, Mapping, Match
 
 __all__ = ("Template",)
 
@@ -18,7 +18,7 @@ def _substitute(
     """Substitutes variables in a template string.
 
     The template string is expected to be formatted in the same way as python f-strings,
-    with variables that should be substituted wrapped in curly brances `{}`.
+    with variables that should be substituted wrapped in curly braces `{}`.
     Additionally, square brackets may be used around curly brackets and other text to
     mark that substitution as optional -- i.e. if the variable cannot be found then the
     text wrapped in the square brackets will be removed.

@@ -445,7 +445,7 @@ class Storage(ParameterizedClass, ABC):
         start: datetime,
         end: datetime,
         datastream: str,
-        metadata_kwargs: dict[str, str] | None = None,
+        metadata_kwargs: Union[Dict[str, str], None] = None,
         **kwargs: Any,
     ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
@@ -473,10 +473,10 @@ class Storage(ParameterizedClass, ABC):
         self,
         title: str,
         extension: str = "png",
-        dataset: xr.Dataset | None = None,
-        datastream: str | None = None,
-        start: datetime | None = None,
-        root_dir: Path | None = None,
+        dataset: Union[xr.Dataset, None] = None,
+        datastream: Union[str, None] = None,
+        start: Union[datetime, None] = None,
+        root_dir: Union[Path, None] = None,
         mkdirs: bool = True,
         **kwargs: str,
     ) -> Path:
@@ -561,7 +561,9 @@ class Storage(ParameterizedClass, ABC):
         return ancillary_path
 
     @abstractmethod
-    def save_ancillary_file(self, filepath: Path, target_path: Path | None = None):
+    def save_ancillary_file(
+        self, filepath: Path, target_path: Union[Path, None] = None
+    ):
         """Saves an ancillary filepath to the datastream's ancillary storage area.
 
         NOTE: In most cases this function should not be used directly. Instead, prefer

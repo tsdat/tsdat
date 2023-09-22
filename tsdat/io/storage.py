@@ -90,7 +90,9 @@ class FileSystem(Storage):
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
     handler: FileHandler = Field(default_factory=NetCDFHandler)
 
-    def save_ancillary_file(self, filepath: Path, target_path: Path | None = None):
+    def save_ancillary_file(
+        self, filepath: Path, target_path: Union[Path, None] = None
+    ):
         """Saves an ancillary filepath to the datastream's ancillary storage area.
 
         NOTE: In most cases this function should not be used directly. Instead, prefer
@@ -128,7 +130,7 @@ class FileSystem(Storage):
         start: datetime,
         end: datetime,
         datastream: str,
-        metadata_kwargs: dict[str, str] | None = None,
+        metadata_kwargs: Union[Dict[str, str], None] = None,
         **kwargs: Any,
     ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
@@ -175,7 +177,7 @@ class FileSystem(Storage):
         start: datetime,
         end: datetime,
         datastream: str,
-        metadata_kwargs: dict[str, str],
+        metadata_kwargs: Dict[str, str],
         **kwargs: Any,
     ) -> List[Path]:
         dir_template = Template(self.parameters.data_storage_path.as_posix())
@@ -357,7 +359,7 @@ class FileSystemS3(FileSystem):
     def _get_timehash(seconds: int = 3600) -> int:
         return round(time() / seconds)
 
-    def last_modified(self, datastream: str) -> datetime | None:
+    def last_modified(self, datastream: str) -> Union[datetime, None]:
         """Returns the datetime of the last modification to the datastream's storage area."""
         substitutions = get_fields_from_datastream(datastream)
         substitutions["datastream"] = datastream
@@ -387,7 +389,9 @@ class FileSystemS3(FileSystem):
             and obj.last_modified.astimezone(timezone.utc) > last_modified
         ]
 
-    def save_ancillary_file(self, filepath: Path, target_path: Path | None = None):
+    def save_ancillary_file(
+        self, filepath: Path, target_path: Union[Path, None] = None
+    ):
         """Saves an ancillary filepath to the datastream's ancillary storage area.
 
         NOTE: In most cases this function should not be used directly. Instead, prefer
@@ -427,7 +431,7 @@ class FileSystemS3(FileSystem):
         start: datetime,
         end: datetime,
         datastream: str,
-        metadata_kwargs: dict[str, str],
+        metadata_kwargs: Dict[str, str],
         **kwargs: Any,
     ) -> List[Path]:
         dir_template = Template(self.parameters.data_storage_path.as_posix())
