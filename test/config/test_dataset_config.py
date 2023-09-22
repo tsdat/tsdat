@@ -60,7 +60,7 @@ def test_fail_if_invalid_global_attributes():
         "institution": 1.0,  # Not strictly a string
         "references": 1.0,  # Not strictly a string
         "location_id": "",  # Too short
-        "dataset_name": "ab",  # Too short
+        "dataset_name": "a",  # Too short
         "qualifier": "",  # Too short
         "temporal": "A1",  # Doesn't match regex (a-z)
         "data_level": "1234",  # Too long
@@ -74,7 +74,7 @@ def test_fail_if_invalid_global_attributes():
         "institution\n  str type expected",
         "references\n  str type expected",
         "location_id\n  ensure this value has at least 1 character",
-        "dataset_name\n  ensure this value has at least 3 characters",
+        "dataset_name\n  ensure this value has at least 2 characters",
         "qualifier\n  ensure this value has at least 1 character",
         "temporal\n  string does not match regex",
         "data_level\n  ensure this value has at most 3 characters",

@@ -17,7 +17,6 @@ from .utils import get_code_version
 
 
 class AttributeModel(BaseModel, extra=Extra.allow):
-
     # HACK: root is needed for now: https://github.com/samuelcolvin/pydantic/issues/515
     @root_validator(skip_on_failure=True)
     @classmethod
@@ -79,7 +78,7 @@ class GlobalAttributes(AttributeModel):
         " from. Only alphanumeric characters and '_' are allowed.",
     )
     dataset_name: str = Field(
-        min_length=3,
+        min_length=2,
         regex=r"^[a-z0-9_]+$",  # lowercase alphanumeric and '_' characters
         description="A string used to identify the data being produced. Ideally"
         " resembles a shortened lowercase version of the title. Only lowercase"
@@ -98,7 +97,7 @@ class GlobalAttributes(AttributeModel):
         min_length=2,
         regex=r"^[0-9]+[a-zA-Z]+$",
         description="An optional string which describes the temporal resolution of the"
-        " data (if it spaced in regular intervals). This string should be formated as a"
+        " data (if it spaced in regular intervals). This string should be formatted as a"
         " number followed by a unit of measurement, e.g., '10m' would indicate the data"
         " is sampled every ten minutes. Only lowercase alphanumeric characters are"
         " allowed.",
@@ -108,7 +107,7 @@ class GlobalAttributes(AttributeModel):
         max_length=3,
         regex=r"^[a-z0-9]+$",  # lowercase alphanumeric characters
         description="A string used to indicate the level of processing of the output"
-        " data. It should be formated as a letter followed by a number. Typical values"
+        " data. It should be formatted as a letter followed by a number. Typical values"
         " for this include: a1 - data is ingested (no qc), b1 - data is ingested and"
         " quality checks applied, c1 (or higher) - one or more a* or b* datastreams"
         " used to create a higher-level data product. Only lowercase alphanumeric"
