@@ -144,7 +144,7 @@ class RecordQualityResults(QualityHandler):
     ) -> xr.Dataset:
         dataset.qcfilter.add_test(
             variable_name,
-            index=failures,
+            index=failures if failures.any() else None,
             test_number=self.get_next_bit_number(dataset, variable_name),
             test_meaning=self.parameters.meaning,
             test_assessment=self.parameters.assessment,
@@ -176,7 +176,9 @@ class RemoveFailedValues(QualityHandler):
     ) -> xr.Dataset:
         if failures.any():
             if variable_name in dataset.dims:
-                mask = xr.DataArray(failures, coords={variable_name:dataset[variable_name]})
+                mask = xr.DataArray(
+                    failures, coords={variable_name: dataset[variable_name]}
+                )
                 dataset = dataset.where(~mask, drop=True)
             else:
                 fill_value = dataset[variable_name].attrs.get("_FillValue", None)
