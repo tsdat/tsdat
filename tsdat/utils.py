@@ -1,15 +1,18 @@
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+import re
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import typer
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, Field
 from tsdat.tstring import Template
 
+import logging
 
 __all__ = [
     "ParameterizedClass",
@@ -20,10 +23,13 @@ __all__ = [
     "get_start_date_and_time_str",
     "get_filename",
     "get_datastream",
+    "get_fields_from_datastream",
     "DATASTREAM_TEMPLATE",
     "FILENAME_TEMPLATE",
     "generate_schema",
 ]
+
+logger = logging.getLogger(__name__)
 
 DATASTREAM_TEMPLATE = Template(
     "{location_id}.{dataset_name}[-{qualifier}][-{temporal}].{data_level}"
@@ -34,6 +40,28 @@ FILENAME_TEMPLATE = Template(
 )
 
 
+def datetime_substitutions(
+    time: Union[datetime, np.datetime64, None]
+) -> Dict[str, str]:
+    substitutions: Dict[str, str] = {}
+    if time is not None:
+        t = pd.to_datetime(time)
+        substitutions.update(
+            year=t.strftime("%Y"),
+            month=t.strftime("%m"),
+            day=t.strftime("%d"),
+            hour=t.strftime("%H"),
+            minute=t.strftime("%M"),
+            second=t.strftime("%S"),
+            date_time=t.strftime("%Y%m%d.%H%M%S"),
+            date=t.strftime("%Y%m%d"),
+            time=t.strftime("%H%M%S"),
+            start_date=t.strftime("%Y%m%d"),  # included for backwards compatibility
+            start_time=t.strftime("%H%M%S"),  # included for backwards compatibility
+        )
+    return substitutions
+
+
 class ParameterizedClass(BaseModel, extra=Extra.forbid):
     """------------------------------------------------------------------------------------
     Base class for any class that accepts 'parameters' as an argument.
@@ -42,9 +70,10 @@ class ParameterizedClass(BaseModel, extra=Extra.forbid):
     the 'parameters' properties to support custom required or optional arguments from
     configuration files.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
-    parameters: Any = {}
+    parameters: Any = Field(default_factory=dict)
 
 
 def _nested_union(dict1: Dict[Any, Any], dict2: Dict[Any, Any]) -> Dict[Any, Any]:
@@ -225,8 +254,27 @@ def get_start_date_and_time_str(dataset: xr.Dataset) -> Tuple[str, str]:
     return timestamp.strftime("%Y%m%d"), timestamp.strftime("%H%M%S")
 
 
+def get_file_datetime_str(file: Union[Path, str]) -> str:
+    datetime_match = re.match(r".*(\d{8}\.\d{6}).*", Path(file).name)
+    if datetime_match is not None:
+        return datetime_match.groups()[0]
+    logger.error(f"File {file} does not contain a recognized date string")
+    return ""
+
+
 def get_datastream(**global_attrs: str) -> str:
     return DATASTREAM_TEMPLATE.substitute(global_attrs)
+
+
+def get_fields_from_datastream(datastream: str) -> Dict[str, str]:
+    """Extracts fields from the datastream.
+
+    WARNING: this only works for the default datastream template.
+    """
+    fields = DATASTREAM_TEMPLATE.extract_substitutions(datastream)
+    if fields is None:
+        return {}
+    return {k: v for k, v in fields.items() if v is not None}
 
 
 def get_filename(
@@ -254,8 +302,7 @@ def get_filename(
         str: The filename constructed from provided parameters.
 
     ---------------------------------------------------------------------------------"""
-    if extension.startswith("."):
-        extension = extension[1:]
+    extension = extension.lstrip(".")
 
     start_date, start_time = get_start_date_and_time_str(dataset)
     return FILENAME_TEMPLATE.substitute(
@@ -267,37 +314,10 @@ def get_filename(
     )
 
 
-def get_fields_from_dataset(
-    dataset: xr.Dataset,
-) -> Dict[str, Optional[Union[str, Callable[[], str]]]]:
-    def get_time_fmt(fmt: str) -> str:
-        return pd.to_datetime(dataset.time.values[0]).strftime(fmt)  # type: ignore
-
-    return dict(
-        datastream=dataset.attrs.get("datastream"),
-        location_id=dataset.attrs.get("location_id"),
-        data_level=dataset.attrs.get("data_level"),
-        year=lambda: get_time_fmt("%Y"),
-        month=lambda: get_time_fmt("%m"),
-        day=lambda: get_time_fmt("%d"),
-    )
-
-
-def get_fields_from_datastream(datastream: str) -> Dict[str, Optional[str]]:
-    # assumes datastream = loc.name[-qual][-temp].lvl
-    ds_parts = datastream.split(".")
-    assert len(ds_parts) == 3
-
-    name_qual_temp = ds_parts[1].split("-")
-    assert len(name_qual_temp) <= 3
-
+def get_fields_from_dataset(dataset: xr.Dataset) -> Dict[str, Any]:
     return {
-        "datastream": datastream,
-        "location_id": ds_parts[0],
-        "dataset_name": name_qual_temp[0],
-        "qualifier": name_qual_temp[1] if len(name_qual_temp) >= 2 else None,
-        "temporal": name_qual_temp[2] if len(name_qual_temp) == 3 else None,
-        "data_level": ds_parts[2],
+        **dict(dataset.attrs),
+        **datetime_substitutions(dataset.time.values[0]),
     }
 
 

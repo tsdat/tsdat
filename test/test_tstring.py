@@ -21,7 +21,7 @@ from tsdat.tstring import Template
         ("d.e-gf", "{a}.{b}[-g{c}][-{d}]", dict(a="d", b="e", c="f"), True),
     ),
 )
-def test_correctness(
+def test_substitutions(
     expected: str, template: str, mapping: Dict[str, str], allow_missing: bool
 ):
     assert Template(template).substitute(mapping, allow_missing) == expected
@@ -56,6 +56,91 @@ def test_failures(
 def test_overrides(expected: str, mapping: Dict[str, str], keywords: Dict[str, str]):
     template = Template("{a}.{b}[.{c}]")
     assert template.substitute(mapping, **keywords) == expected
+
+
+@pytest.mark.parametrize(
+    ("expected", "template", "formatted"),
+    (
+        (dict(a="b"), "{a}", "b"),
+        (dict(a="a", b="b", c="c"), "{a}.{b}.{c}", "a.b.c"),
+        (dict(a="a", b="b", c="c"), "{a}.{b}[.{c}]", "a.b.c"),
+        (dict(a="a", b="b", c="c"), "{a}[.{b}].{c}", "a.b.c"),
+        (dict(a="a", b="b", c="c"), "{a}.[{b}.]{c}", "a.b.c"),
+        (dict(a="a", b=None, c="c"), "{a}.[{b}.]{c}", "a.c"),
+        (dict(a="a", b="b", c="c"), "{a}[.de-{b}].{c}", "a.de-b.c"),
+        (dict(a="a", b="b", c="c"), "[{a}.]{b}.{c}", "a.b.c"),
+        (dict(a=None, b="b", c="c"), "[{a}.]{b}.{c}", "b.c"),
+        (dict(a="a", b=None, c="c"), "{a}[.{b}].{c}", "a.c"),
+        (
+            dict(var1="a", opt1="foo", var2="b"),
+            "{var1}[.{opt1}bar].{var2}",
+            "a.foobar.b",
+        ),
+        # test with actual datastream components
+        (
+            dict(
+                location_id="sgp",
+                dataset_name="lidar",
+                qualifier=None,
+                temporal=None,
+                data_level="a0",
+            ),
+            "{location_id}.{dataset_name}[-{qualifier}][-{temporal}].{data_level}",
+            "sgp.lidar.a0",
+        ),
+        (
+            dict(
+                location_id="sgp",
+                dataset_name="lidar",
+                qualifier="z01",
+                temporal="10m",
+                data_level="a0",
+            ),
+            "{location_id}.{dataset_name}[-{qualifier}][-{temporal}].{data_level}",
+            "sgp.lidar-z01-10m.a0",
+        ),
+        (
+            dict(
+                location_id="sgp",
+                dataset_name="lidar",
+                qualifier="z01",
+                temporal="10m",
+                data_level="a0",
+            ),
+            "{location_id}.{dataset_name}[::{qualifier}:][::{temporal}:].{data_level}",
+            "sgp.lidar::z01:::10m:.a0",  # weird format, just want an edge case
+        ),
+        (
+            dict(
+                location_id="sgp",
+                dataset_name="lidar",
+                z_id="z01",
+                temporal=None,
+                data_level="a0",
+            ),
+            "{location_id}.{dataset_name}.{z_id}[.{temporal}].{data_level}",
+            "sgp.lidar.z01.a0",
+        ),
+    ),
+)
+def test_regex_extractions(expected: Dict[str, str], template: str, formatted: str):
+    _template = Template(template)
+    substitutions = _template.extract_substitutions(formatted)
+    assert substitutions == expected
+
+
+def test_manual_regex_extraction():
+    # ARM datastream
+    formatted = "mosthermocldphaseM1.c1"
+    template = Template(
+        "{location_id}{dataset_name}{facility}.{data_level}",
+        r"^(?P<location_id>[a-z]{3})(?P<dataset_name>[a-zA-Z0-9]+)(?P<facility>[A-Z]{1}[0-9]+)\.(?P<data_level>[a-z0-9]{1}[0-9]{1})$",
+    )
+    expected = dict(
+        location_id="mos", dataset_name="thermocldphase", facility="M1", data_level="c1"
+    )
+
+    assert template.extract_substitutions(formatted) == expected
 
 
 def test_repr():

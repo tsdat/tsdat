@@ -5,7 +5,7 @@ import pandas as pd
 import xarray as xr
 from typing import Any, Dict, Iterable, List, Optional, cast, Hashable
 from pathlib import Path
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, Field
 from .base import FileWriter
 from ..utils import get_filename
 
@@ -28,7 +28,8 @@ class NetCDFWriter(FileWriter):
     File compression is used by default to save disk space. To disable compression set the
     `compression_level` parameter to `0`.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     class Parameters(BaseModel, extra=Extra.forbid):
         compression_level: int = 1
@@ -40,8 +41,8 @@ class NetCDFWriter(FileWriter):
         to_netcdf_kwargs: Dict[str, Any] = {}
         """Keyword arguments passed directly to xr.Dataset.to_netcdf()."""
 
-    parameters: Parameters = Parameters()
-    file_extension: str = ".nc"
+    parameters: Parameters = Field(default_factory=Parameters)
+    file_extension: str = "nc"
 
     def write(
         self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
@@ -68,6 +69,10 @@ class NetCDFWriter(FileWriter):
                 encoding_dict[variable_name]["_FillValue"] = None
 
             if self.parameters.compression_level:
+                # Handle str dtypes: https://github.com/pydata/xarray/issues/2040
+                if dataset[variable_name].dtype.kind == "U":
+                    encoding_dict[variable_name]["dtype"] = "S1"
+
                 encoding_dict[variable_name].update(
                     {
                         self.parameters.compression_engine: True,
@@ -91,7 +96,8 @@ class SplitNetCDFWriter(NetCDFWriter):
     `Dataset.to_netcdf()` as keyword arguments. File compression is used by default to save
     disk space. To disable compression set the `compression_level` parameter to `0`.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     class Parameters(NetCDFWriter.Parameters):
         time_interval: int = 1
@@ -100,8 +106,8 @@ class SplitNetCDFWriter(NetCDFWriter):
         time_unit: str = "D"
         """Time interval unit."""
 
-    parameters: Parameters = Parameters()
-    file_extension: str = ".nc"
+    parameters: Parameters = Field(default_factory=Parameters)
+    file_extension: str = "nc"
 
     def write(
         self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
@@ -111,7 +117,6 @@ class SplitNetCDFWriter(NetCDFWriter):
         to_netcdf_kwargs["encoding"] = encoding_dict
 
         for variable_name in cast(Iterable[str], dataset.variables):
-
             # Prevent Xarray from setting 'nan' as the default _FillValue
             encoding_dict[variable_name] = dataset[variable_name].encoding  # type: ignore
             if (
@@ -121,6 +126,10 @@ class SplitNetCDFWriter(NetCDFWriter):
                 encoding_dict[variable_name]["_FillValue"] = None
 
             if self.parameters.compression_level:
+                # Handle str dtypes: https://github.com/pydata/xarray/issues/2040
+                if dataset[variable_name].dtype.kind == "U":
+                    encoding_dict[variable_name]["dtype"] = "S1"
+
                 encoding_dict[variable_name].update(
                     {
                         self.parameters.compression_engine: True,
@@ -162,8 +171,8 @@ class CSVWriter(FileWriter):
         dim_order: Optional[List[str]] = None
         to_csv_kwargs: Dict[str, Any] = {}
 
-    parameters: Parameters = Parameters()
-    file_extension: str = ".csv"
+    parameters: Parameters = Field(default_factory=Parameters)
+    file_extension: str = "csv"
 
     def write(
         self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
@@ -240,8 +249,8 @@ class ParquetWriter(FileWriter):
         dim_order: Optional[List[str]] = None
         to_parquet_kwargs: Dict[str, Any] = {}
 
-    parameters: Parameters = Parameters()
-    file_extension: str = ".parquet"
+    parameters: Parameters = Field(default_factory=Parameters)
+    file_extension: str = "parquet"
 
     def write(
         self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
@@ -265,8 +274,8 @@ class ZarrWriter(FileWriter):
     class Parameters(BaseModel, extra=Extra.forbid):
         to_zarr_kwargs: Dict[str, Any] = {}
 
-    parameters: Parameters = Parameters()
-    file_extension: str = ".zarr"
+    parameters: Parameters = Field(default_factory=Parameters)
+    file_extension: str = "zarr"
 
     def write(
         self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
@@ -281,4 +290,8 @@ class ZarrWriter(FileWriter):
             ):
                 encoding_dict[variable_name]["_FillValue"] = None
 
-        dataset.to_zarr(filepath, encoding=encoding_dict, **self.parameters.to_zarr_kwargs)  # type: ignore
+        dataset.to_zarr(
+            filepath,
+            encoding=encoding_dict,
+            **self.parameters.to_zarr_kwargs,
+        )  # type: ignore

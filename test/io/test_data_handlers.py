@@ -270,7 +270,7 @@ def test_file_handlers(
     tmp_dir.cleanup()
 
 
-def test_csv_file_hander(sample_dataset: xr.Dataset):
+def test_csv_file_handler(sample_dataset: xr.Dataset):
     handler = CSVHandler()  # type: ignore
     output_key = "test_dataframe.csv"
     expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
@@ -284,3 +284,43 @@ def test_csv_file_hander(sample_dataset: xr.Dataset):
     assert_close(dataset, expected, check_fill_value=False)
 
     tmp_dir.cleanup()
+
+
+@pytest.mark.parametrize(
+    "handler_class, read_params, write_params",
+    [
+        (NetCDFHandler, {"engine": "netcdf"}, {"compression_level": 3}),
+        (ParquetHandler, {"read_parquet_kwargs": {"engine": "pyarrow"}}, {}),
+        (ZarrHandler, {"open_zarr_kwargs": {"decode_times": False}}, {}),
+        (CSVHandler, {"read_csv_kwargs": {"delimiter": "\t"}}, {}),
+    ],
+)
+def test_handler_passes_parameters_to_children(
+    handler_class: Type[FileHandler],
+    read_params: Dict[str, Any],
+    write_params: Dict[str, Any],
+):
+    handler = handler_class(
+        parameters=dict(
+            reader=read_params,
+            writer=write_params,
+        )
+    )
+
+    # Assert provided read/write params are subset of final parameters
+    assert read_params.items() <= dict(handler.reader.parameters).items()
+    assert write_params.items() <= dict(handler.writer.parameters).items()
+
+
+def test_handler_validators():
+    handler = NetCDFHandler(
+        extension=".nc",
+        parameters={
+            "reader": {"engine": "netcdf"},
+            "writer": {"compression_level": 4},
+        },
+    )
+
+    assert handler.extension == "nc"
+    assert handler.reader.parameters == {"engine": "netcdf"}
+    assert handler.writer.parameters.compression_level == 4
