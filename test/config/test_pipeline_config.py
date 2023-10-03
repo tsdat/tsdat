@@ -2,11 +2,12 @@ import re
 import tempfile
 from pathlib import Path
 from typing import Any, Dict
-from tsdat.config.pipeline import PipelineConfig
+
 from tsdat.config.dataset import DatasetConfig
+from tsdat.config.pipeline import PipelineConfig
+from tsdat.config.quality import QualityConfig
 from tsdat.config.retriever import RetrieverConfig
 from tsdat.config.storage import StorageConfig
-from tsdat.config.quality import QualityConfig
 from tsdat.utils import model_to_dict
 
 
@@ -24,7 +25,7 @@ def test_pipeline_config_merges_overrides():
     quality.managers[0].exclude = []
 
     expected_dict: Dict[str, Any] = {
-        "classname": "tsdat.pipeline.pipelines.IngestPipeline",
+        "classname": "test.pipeline.examples.Ingest",
         "parameters": {},
         "triggers": [re.compile(r".*\.csv")],
         "retriever": model_to_dict(retriever),
