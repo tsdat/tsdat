@@ -1,7 +1,8 @@
+from pathlib import Path
 from typing import Any, Dict, List
 
 import xarray as xr
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 
 from tsdat.io.retrievers import StorageRetriever
 from tsdat.utils import decode_cf
@@ -21,6 +22,17 @@ class IngestPipeline(Pipeline):
 
     ---------------------------------------------------------------------------------"""
 
+    _ds: xr.Dataset | None = PrivateAttr(default=None)
+    _tmp_dir: Path | None = PrivateAttr(default=None)
+
+    @property
+    def ds(self) -> xr.Dataset | None:
+        return self._ds
+
+    @property
+    def tmp_dir(self) -> Path | None:
+        return self._tmp_dir
+
     def run(self, inputs: List[str], **kwargs: Any) -> xr.Dataset:
         dataset = self.retriever.retrieve(inputs, self.dataset_config)
         dataset = self.prepare_retrieved_dataset(dataset)
@@ -31,7 +43,10 @@ class IngestPipeline(Pipeline):
         # on datetime64 variables in the pipeline (but remove with decode_cf())
         dataset = decode_cf(dataset)
         self.storage.save_data(dataset)
-        self.hook_plot_dataset(dataset)
+        with self.storage.uploadable_dir() as tmp_dir:
+            self._ds = dataset
+            self._tmp_dir = tmp_dir
+            self.hook_plot_dataset(dataset)
         return dataset
 
     def hook_customize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
@@ -71,6 +86,30 @@ class IngestPipeline(Pipeline):
 
         -----------------------------------------------------------------------------"""
         pass
+
+    def get_ancillary_filepath(
+        self, title: str, extension: str = "png", **kwargs: Any
+    ) -> Path:
+        """Returns the path to where an ancillary file should be saved so that it can be
+        synced to the storage area automatically.
+
+        Args:
+            title (str): The title to use for the plot filename. Should only contain
+                alphanumeric and '_' characters.
+            extension (str, optional): The file extension. Defaults to "png".
+
+        Returns:
+            Path: The ancillary filepath.
+        """
+        dataset = kwargs.pop("dataset", self.ds)
+        root_dir = kwargs.pop("root_dir", self.tmp_dir)
+        return self.storage.get_ancillary_filepath(
+            title=title,
+            extension=extension,
+            dataset=dataset,
+            root_dir=root_dir,
+            **kwargs,
+        )
 
 
 class TransformationPipeline(IngestPipeline):
