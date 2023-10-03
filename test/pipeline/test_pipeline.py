@@ -58,6 +58,7 @@ def test_ingest_pipeline():
     save_path = Path(
         "storage/root/data/sgp.example.b1/sgp.example.b1.20220324.214300.nc"
     )
+    assert save_path.exists()
     saved_dataset: xr.Dataset = xr.open_dataset(save_path)  # type: ignore
     assert_close(saved_dataset, expected)
     assert saved_dataset.attrs["code_version"]
@@ -66,6 +67,12 @@ def test_ingest_pipeline():
         saved_dataset["first"].encoding.get("_FillValue", None) == -9999
         or saved_dataset["first"].attrs.get("_FillValue", None) == -9999
     )
+
+    # Plot file saved to disk
+    plot_path = Path(
+        "storage/root/ancillary/sgp/sgp.example.b1/sgp.example.b1.20220324.214300.example.png"
+    )
+    assert plot_path.exists()
 
 
 @pytest.mark.requires_adi

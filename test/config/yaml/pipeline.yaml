@@ -1,4 +1,4 @@
-classname: tsdat.pipeline.pipelines.IngestPipeline
+classname: test.pipeline.examples.Ingest
 
 triggers:
   - '.*\.csv'
