@@ -33,20 +33,10 @@ output. Below is shown a custom plotting example:
 
         date, time = get_start_date_and_time_str(dataset)
 
-        with self.storage.uploadable_dir() as tmp_dir:
-
-            fig, ax = plt.subplots()
-            dataset["example_var"].plot(ax=ax, x="time")  # type: ignore
-            fig.suptitle(f"Example Variable at {location} on {date} {time}")
-            format_time_xticks(ax)
-            plot_filepath = self.storage.get_ancillary_filepath(
-                title="example_plot",
-                extension="png",
-                root_dir=tmp_dir,
-                dataset=dataset,
-            )
-            fig.savefig(plot_filepath)
-            plt.close(fig)
+        fig, ax = plt.subplots()
+        dataset["example_var"].plot(ax=ax, x="time")  # type: ignore
+        fig.savefig(self.get_ancillary_filepath(title="example_plot"))
+        plt.close(fig)
 
 
 .. autoclass:: tsdat.pipeline.pipelines.IngestPipeline

@@ -750,38 +750,24 @@ desired:
 
           date, time = get_start_date_and_time_str(dataset)
 
-          plt.style.use("default")  # clear any styles that were set before
-          plt.style.use("shared/styling.mplstyle")
-
-          with self.storage.uploadable_dir() as tmp_dir:
+          with plt.style.context("shared/styling.mplstyle")
 
             fig, ax = plt.subplots()
             dataset["temperature"].plot(ax=ax, x="time", c=cmocean.cm.deep_r(0.5))
             fig.suptitle(f"Temperature measured at {location} on {date} {time}")
 
-            plot_file = self.storage.get_ancillary_filepath(
-                title="temperature",
-                extension="png",
-                root_dir=tmp_dir,
-                dataset=dataset,
-            )
+            plot_file = self.get_ancillary_filepath(title="temperature")
             fig.savefig(plot_file)
             plt.close(fig)
 
             # Create plot display using act
-            variable = "wave_height"
             display = act.plotting.TimeSeriesDisplay(
                 dataset, figsize=(15, 10), subplot_shape=(2,)
             )
-            display.plot(variable, subplot_index=(0,), label="Wave Height")  # data in top plot
-            display.qc_flag_block_plot(variable, subplot_index=(1,)) # qc in bottom plot
+            display.plot("wave_height", subplot_index=(0,), label="Wave Height")  # data in top plot
+            display.qc_flag_block_plot("wave_height", subplot_index=(1,)) # qc in bottom plot
 
-            plot_file = self.storage.get_ancillary_filepath(
-                title=variable,
-                extension="png",
-                root_dir=tmp_dir,
-                dataset=dataset,
-            )
+            plot_file = self.get_ancillary_filepath(title="wave_height")
             display.fig.savefig(plot_file)
             plt.close(display.fig)
 
