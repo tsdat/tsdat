@@ -20,7 +20,7 @@ sys.path.insert(0, project_dir)
 # -- Project information -----------------------------------------------------
 
 project = "tsdat"
-copyright = "2022, Battelle Memorial Institute"
+copyright = "2023, Battelle Memorial Institute"
 author = "tsdat"
 
 # The full version, including alpha/beta/rc tags
