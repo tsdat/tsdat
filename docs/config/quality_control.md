@@ -1,29 +1,23 @@
 # Quality Management
 
-Two types of classes can be defined in your pipeline to ensure
-standardized data meets quality requirements:
+Two types of classes can be defined in your pipeline to ensure standardized data meets quality requirements:
 
-QualityChecker
+`QualityChecker`
 
-:   Each Quality Checker performs a specific quality control (QC) test
-    on one or more variables in your dataset. Quality checkers test a
-    single data variable at a time and return a logical mask, where
-    flagged values are marked as \'True\'.
+:   Each Quality Checker performs a specific quality control (QC) test on one or more variables in your dataset. Quality
+    checkers test a single data variable at a time and return a boolean mask, where flagged values are marked as `True`.
 
-QualityHandler
+`QualityHandler`
 
-:   Each Quality Handler can be specified to run if a particular QC test
-    fails. Quality handlers take the QC Checker\'s logical mask and use
-    it to apply any QC or custom method to the data variable of
-    question. For instance, it can be used to remove flagged data
-    altogether or correct flagged values, such as interpolating to fill
-    gaps in data.
+:   Each Quality Handler can be specified to run if a particular QC test fails. Quality handlers take the QC Checker's
+    boolean mask and use it to apply any QC or custom method to the data variable of question. For instance, it can be
+    used to remove flagged data altogether or correct flagged values, such as interpolating to fill gaps in data.
 
-Custom QC Checkers and QC Handlers are stored (typically) in
-`pipelines/<pipeline_module>/qc.py`. Once written, they must be
-specified in the `config/quality.yaml` file like shown:
+Custom Quality Checkers and Handlers should be stored in the folder where they will be used (i.e.,
+`pipelines/<pipeline_module>/qc.py` in most cases). In order to be used, they must be registered in the
+quality config file like so (for an example `lidar` pipeline module):
 
-```yaml
+```yaml title="pipelines/lidar/config/quality.yaml"
 managers:
   - name: Require Valid Coordinate Variables
     checker:
@@ -44,17 +38,14 @@ managers:
 
 ## Quality Checkers
 
-Quality Checkers are classes that are used to perform a QC test on a
-specific variable. Each Quality Checker should extend the
-`QualityChecker` base class, and implement the abstract `run` method as
-shown below. Each QualityChecker defined in the pipeline config file
-will be automatically initialized by the pipeline and invoked on the
+Quality Checkers are classes that are used to perform a QC test on a specific variable. Each `QualityChecker` should
+extend the `tsdat.QualityChecker` base class, and implement the `run` method as shown below. Each `QualityChecker`
+registered in the pipeline config file will be automatically initialized by the pipeline and invoked on the
 specified variables.
 
 ```python
-@abstractmethod
-def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
-    """-----------------------------------------------------------------------------
+def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_] | None:
+    """
     Checks the quality of a specific variable in the dataset and returns the results
     of the check as a boolean array where True values represent quality problems and
     False values represent data that passes the quality check.
@@ -68,40 +59,28 @@ def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
         variable_name (str): The name of the variable to check.
 
     Returns:
-        NDArray[np.bool_]: The results of the quality check, where True values
-        indicate a quality problem.
+        NDArray[np.bool_] | None: The results of the quality check, where True values
+        indicate a quality problem. May return None to indicate that no QualityHandlers
+        should be run on the results of this check.
 
-    -----------------------------------------------------------------------------"""
+    """
 ```
-
-Tsdat built-in quality checkers:
-
-::: {.autosummary nosignatures=""}
-\~tsdat.qc.checkers.QualityChecker \~tsdat.qc.checkers.CheckMissing
-\~tsdat.qc.checkers.CheckMonotonic \~tsdat.qc.checkers.CheckValidDelta
-\~tsdat.qc.checkers.CheckValidMin \~tsdat.qc.checkers.CheckValidMax
-\~tsdat.qc.checkers.CheckFailMin \~tsdat.qc.checkers.CheckFailMax
-\~tsdat.qc.checkers.CheckWarnMin \~tsdat.qc.checkers.CheckWarnMax
-:::
 
 ## Quality Handlers
 
-Quality Handlers are classes that are used to correct variable data when
-a specific quality test fails. An example is interpolating missing
-values to fill gaps. Each Quality Handler should extend the
-`QualityHandler` base class, and implement the abstract
-[run]{.title-ref} method that performs the correction, as shown below.
-Each QualityHandler defined in the pipeline config file will be
-automatically initialized by the pipeline and invoked on the specified
-variables.
+Quality Handlers are classes that are used to take some action following the result of a quality check. For example, if
+you use the built-in `tsdat.CheckMissing` `QualityChecker` class to check for missing values in one or more of your data
+variables, you could pair that with the `tsdat.RecordQualityResults` `QualityHandler` to add a new `qc` variable that
+provides metadata to indicate to users which data points are missing.
+
+All `QualityHandler` classes should extend the `tsdat.QualityHandler` base class, and implement the `run()` method as
+shown below:
 
 ```python
-@abstractmethod
 def run(
     self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
 ) -> xr.Dataset:
-    """-----------------------------------------------------------------------------
-    Handles the quality of a variable in the dataset and returns the dataset after
+    """Handles the quality of a variable in the dataset and returns the dataset after
     any corrections have been applied.
 
     Args:
@@ -113,24 +92,5 @@ def run(
 
     Returns:
         xr.Dataset: The dataset after the QualityHandler has been run.
-
-    -----------------------------------------------------------------------------"""
+    """
 ```
-
-Tsdat built-in quality handlers:
-
-::: {.autosummary nosignatures=""}
-\~tsdat.qc.handlers.QualityHandler
-\~tsdat.qc.handlers.RecordQualityResults
-\~tsdat.qc.handlers.RemoveFailedValues
-\~tsdat.qc.handlers.SortDatasetByCoordinate
-\~tsdat.qc.handlers.FailPipeline
-:::
-
-::: {.automodule members="" undoc-members="" show-inheritance="" noindex=""}
-tsdat.qc.checkers
-:::
-
-::: {.automodule members="" undoc-members="" show-inheritance="" noindex=""}
-tsdat.qc.handlers
-:::
