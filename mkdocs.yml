@@ -25,6 +25,7 @@ theme:
     - toc.follow
 
 markdown_extensions:
+  - admonition
   - def_list
   - pymdownx.tasklist:
       custom_checkbox: true
@@ -34,6 +35,8 @@ markdown_extensions:
       pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.details
   - pymdownx.superfences
 
 plugins: 
