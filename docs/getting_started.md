@@ -17,9 +17,10 @@ repository, so we recommend starting there.
 Once you have selected the template to use, select the "Use this template" button to create a new repository at your
 specified location with the template contents.
 
-> You must have a github account and be signed-in to see this button. You can still click to download the code as a zip
-file and follow the rest of the setup instructions, but you will be lacking certain features (e.g., automated testing
-via github actions)
+!!! note
+    You must have a github account and be signed-in to see this button. You can still click to download the code as a
+    zip file and follow the rest of the setup instructions, but you will be lacking certain features (e.g., automated
+    testing via github actions)
 
 ![Screenshot of pipeline-template repo on github](figures/use_template.png)
 
@@ -46,5 +47,5 @@ Once tsdat is installed and your template is configured, you can use it to proce
 python runner.py --help
 ```
 
-For detailed examples of how to set up and use tsdat, consult [configuring_tsdat](./config/configuring_tsdat.md) and
-[examples_and_tutorials](./tutorials/).
+For detailed examples of how to set up and use tsdat see [pipeline customization](./tutorials/pipeline_customization.md)
+and our other tutorials.
