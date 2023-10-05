@@ -1,4 +1,11 @@
 site_name: tsdat
+site_url: https://tsdat.readthedocs.io
+site_description: Tsdat documentation.
+site_author: Tsdat team
+
+repo_url: https://github.com/tsdat/tsdat/
+edit_uri: blob/main/docs/
+
 theme:
   name: material
   palette: 
@@ -17,6 +24,8 @@ theme:
     - content.code.copy
     - content.code.annotate
     - navigation.tracking
+    - navigation.tabs
+    - navigation.indexes
     - navigation.expand
     - navigation.top
     - search.highlight
@@ -40,6 +49,29 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tasklist:
       custom_checkbox: true
+  - toc:
+      permalink: true
+      permalink_title: Anchor link to this section for reference
 
 plugins: 
   - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            # members_order: source
+            docstring_section_style: list
+            show_signature_annotations: true
+            separate_signature: true
+            merge_init_into_class: true
+            docstring_options:
+              ignore_init_summary: true
+            show_source: true
+            show_submodules: true
+            filters:
+              - "!^_"
+              - "^__init__$"
+
+# watch:
+#   - tsdat
