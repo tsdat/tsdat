@@ -365,6 +365,6 @@ def test_dataset_definition_from_yaml():
 
 def test_dataset_config_can_generate_schema():
     with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_file = Path(tmpdir) / "dataset-schema.json"
+        tmp_file = Path(tmpdir) / "dataset" / "basic-schema.json"
         DatasetConfig.generate_schema(tmp_file)
         assert tmp_file.exists()

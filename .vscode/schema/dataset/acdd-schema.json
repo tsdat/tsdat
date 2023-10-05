@@ -1,6 +1,6 @@
 {
     "title": "DatasetConfig",
-    "description": "---------------------------------------------------------------------------------\nDefines the structure and metadata of the dataset produced by a tsdat pipeline.\n\nAlso provides methods to support yaml parsing and validation, including generation\nof json schema.\n\nArgs:\n    attrs (GlobalAttributes): Attributes that pertain to the dataset as a whole.\n    coords (Dict[str, Coordinate]): The dataset's coordinate variables.\n    data_vars (Dict[str, Variable]): The dataset's data variables.\n\n---------------------------------------------------------------------------------",
+    "description": "\nDefines the structure and metadata of the dataset produced by a tsdat pipeline.\n\nAlso provides methods to support yaml parsing and validation, including generation\nof json schema.\n\nArgs:\n    attrs (GlobalAttributes): Attributes that pertain to the dataset as a whole.\n    coords (Dict[str, Coordinate]): The dataset's coordinate variables.\n    data_vars (Dict[str, Variable]): The dataset's data variables.\n\n",
     "type": "object",
     "properties": {
         "attrs": {
@@ -136,9 +136,34 @@
                     "description": "The URL of the person (or other creator type specified by the creator_type attribute) principally responsible for creating this data.",
                     "type": "string"
                 },
+                "creator_type": {
+                    "title": "Creator Type",
+                    "description": "Specifies type of creator with one of the following: 'person', 'group', 'institution', or 'position'. If this attribute is not specified, the creator is assumed to be a person.",
+                    "type": "string"
+                },
+                "creator_institution": {
+                    "title": "Creator Institution",
+                    "description": "The institution of the creator; should uniquely identify the creator's institution. This attribute's value should be specified even if it matches the value of publisher_institution, or if creator_type is institution.",
+                    "type": "string"
+                },
+                "contributor_name": {
+                    "title": "Contributor Name",
+                    "description": "The name of any individuals, projects, or institutions that contributed to the creation of this data. May be presented as free text, or in a structured format compatible with conversion to ncML (e.g., insensitive to changes in whitespace, including end-of-line characters).",
+                    "type": "string"
+                },
+                "contributor_role": {
+                    "title": "Contributor Role",
+                    "description": "The role of any individuals, projects, or institutions that contributed to the creation of this data. May be presented as free text, or in a structured format compatible with conversion to ncML (e.g., insensitive to changes in whitespace, including end-of-line characters). Multiple roles should be presented in the same order and number as the names in contributor_names.",
+                    "type": "string"
+                },
                 "institution": {
                     "title": "Institution",
                     "description": "The name of the institution principally responsible for originating this data.",
+                    "type": "string"
+                },
+                "program": {
+                    "title": "Program",
+                    "description": "The overarching program(s) of which the dataset is a part. A program consists of a set (or portfolio) of related and possibly interdependent projects that meet an overarching objective. Examples: 'GHRSST', 'NOAA CDR', 'NASA EOS', 'JPSS', 'GOES-R'.",
                     "type": "string"
                 },
                 "project": {
@@ -159,6 +184,16 @@
                 "publisher_url": {
                     "title": "Publisher URL",
                     "description": "The URL of the person (or other entity specified by the publisher_type attribute) responsible for publishing the data file or product to users, with its current metadata and format.",
+                    "type": "string"
+                },
+                "publisher_type": {
+                    "title": "Publisher Type",
+                    "description": "Specifies type of publisher with one of the following: 'person', 'group', 'institution', or 'position'. If this attribute is not specified, the publisher is assumed to be a person.",
+                    "type": "string"
+                },
+                "publisher_institution": {
+                    "title": "Publisher Institution",
+                    "description": "The institution that presented the data file or equivalent product to users; should uniquely identify the institution. If publisher_type is institution, this should have the same value as publisher_name.",
                     "type": "string"
                 },
                 "geospatial_bounds": {
@@ -229,41 +264,6 @@
                 "time_coverage_resolution": {
                     "title": "Time Coverage Resolution",
                     "description": "Describes the targeted time period between each value in the data set. Use ISO 8601:2004 duration format, preferably the extended format as recommended in the Attribute Content Guidance section.",
-                    "type": "string"
-                },
-                "creator_type": {
-                    "title": "Creator Type",
-                    "description": "Specifies type of creator with one of the following: 'person', 'group', 'institution', or 'position'. If this attribute is not specified, the creator is assumed to be a person.",
-                    "type": "string"
-                },
-                "creator_institution": {
-                    "title": "Creator Institution",
-                    "description": "The institution of the creator; should uniquely identify the creator's institution. This attribute's value should be specified even if it matches the value of publisher_institution, or if creator_type is institution.",
-                    "type": "string"
-                },
-                "publisher_type": {
-                    "title": "Publisher Type",
-                    "description": "Specifies type of publisher with one of the following: 'person', 'group', 'institution', or 'position'. If this attribute is not specified, the publisher is assumed to be a person.",
-                    "type": "string"
-                },
-                "publisher_institution": {
-                    "title": "Publisher Institution",
-                    "description": "The institution that presented the data file or equivalent product to users; should uniquely identify the institution. If publisher_type is institution, this should have the same value as publisher_name.",
-                    "type": "string"
-                },
-                "program": {
-                    "title": "Program",
-                    "description": "The overarching program(s) of which the dataset is a part. A program consists of a set (or portfolio) of related and possibly interdependent projects that meet an overarching objective. Examples: 'GHRSST', 'NOAA CDR', 'NASA EOS', 'JPSS', 'GOES-R'.",
-                    "type": "string"
-                },
-                "contributor_name": {
-                    "title": "Contributor Name",
-                    "description": "The name of any individuals, projects, or institutions that contributed to the creation of this data. May be presented as free text, or in a structured format compatible with conversion to ncML (e.g., insensitive to changes in whitespace, including end-of-line characters).",
-                    "type": "string"
-                },
-                "contributor_role": {
-                    "title": "Contributor Role",
-                    "description": "The role of any individuals, projects, or institutions that contributed to the creation of this data. May be presented as free text, or in a structured format compatible with conversion to ncML (e.g., insensitive to changes in whitespace, including end-of-line characters). Multiple roles should be presented in the same order and number as the names in contributor_names.",
                     "type": "string"
                 },
                 "geospatial_lat_units": {

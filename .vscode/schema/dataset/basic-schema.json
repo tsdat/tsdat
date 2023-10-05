@@ -1,6 +1,6 @@
 {
     "title": "DatasetConfig",
-    "description": "---------------------------------------------------------------------------------\nDefines the structure and metadata of the dataset produced by a tsdat pipeline.\n\nAlso provides methods to support yaml parsing and validation, including generation\nof json schema.\n\nArgs:\n    attrs (GlobalAttributes): Attributes that pertain to the dataset as a whole.\n    coords (Dict[str, Coordinate]): The dataset's coordinate variables.\n    data_vars (Dict[str, Variable]): The dataset's data variables.\n\n---------------------------------------------------------------------------------",
+    "description": "Defines the structure and metadata of the dataset produced by a tsdat pipeline.\n\nAlso provides methods to support yaml parsing and validation, including generation\nof json schema.\n\nArgs:\n    attrs (GlobalAttributes): Attributes that pertain to the dataset as a whole.\n    coords (Dict[str, Coordinate]): The dataset's coordinate variables.\n    data_vars (Dict[str, Variable]): The dataset's data variables.\n\n",
     "type": "object",
     "properties": {
         "attrs": {

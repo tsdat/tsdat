@@ -1,6 +1,6 @@
 {
     "title": "DatasetConfig",
-    "description": "---------------------------------------------------------------------------------\nDefines the structure and metadata of the dataset produced by a tsdat pipeline.\n\nAlso provides methods to support yaml parsing and validation, including generation\nof json schema.\n\nArgs:\n    attrs (GlobalAttributes): Attributes that pertain to the dataset as a whole.\n    coords (Dict[str, Coordinate]): The dataset's coordinate variables.\n    data_vars (Dict[str, Variable]): The dataset's data variables.\n\n---------------------------------------------------------------------------------",
+    "description": "Defines the structure and metadata of the dataset produced by a tsdat pipeline.\n\nAlso provides methods to support yaml parsing and validation, including generation\nof json schema.\n\nArgs:\n    attrs (GlobalAttributes): Attributes that pertain to the dataset as a whole.\n    coords (Dict[str, Coordinate]): The dataset's coordinate variables.\n    data_vars (Dict[str, Variable]): The dataset's data variables.\n\n",
     "type": "object",
     "properties": {
         "attrs": {
@@ -75,30 +75,9 @@
                     "description": "URL for background information about this dataset.",
                     "type": "string"
                 },
-                "keywords": {
-                    "title": "Keywords",
-                    "description": "A comma-separated list of key words and/or phrases. Keywords may be common words or phrases, terms from a controlled vocabulary (GCMD is often used), or URIs for terms from a controlled vocabulary (see also 'keywords_vocabulary' attribute).",
-                    "type": "string"
-                },
-                "license": {
-                    "title": "License",
-                    "description": "Provide the URL to a standard or specific license, enter 'Freely Distributed' or 'None', or describe any restrictions to data access and distribution in free text.",
-                    "type": "string"
-                },
                 "naming_authority": {
                     "title": "Naming Authority",
                     "description": "The organization that provides the initial id (see above) for the dataset. The naming authority should be uniquely specified by this attribute. We recommend using reverse-DNS naming for the naming authority; URIs are also acceptable. Example: 'edu.ucar.unidata'.",
-                    "type": "string"
-                },
-                "references": {
-                    "title": "References",
-                    "description": "Published or web-based references that describe the data or methods used to produce it. Recommend URIs (such as a URL or DOI) for papers or other references.",
-                    "type": "string"
-                },
-                "standard_name_vocabulary": {
-                    "title": "Standard Name Vocabulary",
-                    "description": "The name and version of the controlled vocabulary from which variable standard names are taken. Example: 'CF Standard Name Table v27'.",
-                    "default": "CF Standard Name Table v79",
                     "type": "string"
                 },
                 "history": {
@@ -127,34 +106,20 @@
                     "description": "A place to acknowledge various types of support for the project that produced this data.",
                     "type": "string"
                 },
+                "license": {
+                    "title": "License",
+                    "description": "Provide the URL to a standard or specific license, enter 'Freely Distributed' or 'None', or describe any restrictions to data access and distribution in free text.",
+                    "type": "string"
+                },
+                "standard_name_vocabulary": {
+                    "title": "Standard Name Vocabulary",
+                    "description": "The name and version of the controlled vocabulary from which variable standard names are taken. Example: 'CF Standard Name Table v27'.",
+                    "default": "CF Standard Name Table v79",
+                    "type": "string"
+                },
                 "date_created": {
                     "title": "Date Created",
                     "description": "The date on which this version of the data was created. (Modification of values implies a new version, hence this would be assigned the date of the most recent values modification.) Metadata changes are not considered when assigning the date_created. The ISO 8601:2004 extended date format is recommended.",
-                    "type": "string"
-                },
-                "contributor_name": {
-                    "title": "Contributor Name(s)",
-                    "description": "The name of any individuals, projects, or institutions that contributed to the creation of this data. May be presented as free text, or in a structured format compatible with conversion to ncML (e.g., insensitive to changes in whitespace, including end-of-line characters).",
-                    "type": "string"
-                },
-                "contributor_email": {
-                    "title": "Contributor Email(s)",
-                    "description": "Email addresses of the individuals or institutions that contributed to the creation of this data. Multiple emails should be given in CSV format, and presented in the same order and number as the names in contributor_names.",
-                    "type": "string"
-                },
-                "contributor_role": {
-                    "title": "Contributor Role(s)",
-                    "description": "The role of any individuals, projects, or institutions that contributed to the creation of this data. May be presented as free text, or in a structured format compatible with conversion to ncML (e.g., insensitive to changes in whitespace, including end-of-line characters). Multiple roles should be presented in the same order and number as the names in contributor_names.",
-                    "type": "string"
-                },
-                "contributor_role_vocabulary": {
-                    "title": "Contributor Role Vocabulary",
-                    "description": "The URL of the controlled vocabulary used for the contributor_role attribute. The default is “https://vocab.nerc.ac.uk/collection/G04/current/”.",
-                    "type": "string"
-                },
-                "contributor_url": {
-                    "title": "Contributor URL(s)",
-                    "description": "The URL of the individuals or institutions that contributed to the creation of this data. Multiple URLs should be given in CSV format, and presented in the same order and number as the names in contributor_names.",
                     "type": "string"
                 },
                 "creator_name": {
@@ -204,6 +169,46 @@
                     "default": "other",
                     "type": "string"
                 },
+                "contributor_name": {
+                    "title": "Contributor Name(s)",
+                    "description": "The name of any individuals, projects, or institutions that contributed to the creation of this data. May be presented as free text, or in a structured format compatible with conversion to ncML (e.g., insensitive to changes in whitespace, including end-of-line characters).",
+                    "type": "string"
+                },
+                "contributor_email": {
+                    "title": "Contributor Email(s)",
+                    "description": "Email addresses of the individuals or institutions that contributed to the creation of this data. Multiple emails should be given in CSV format, and presented in the same order and number as the names in contributor_names.",
+                    "type": "string"
+                },
+                "contributor_role": {
+                    "title": "Contributor Role(s)",
+                    "description": "The role of any individuals, projects, or institutions that contributed to the creation of this data. May be presented as free text, or in a structured format compatible with conversion to ncML (e.g., insensitive to changes in whitespace, including end-of-line characters). Multiple roles should be presented in the same order and number as the names in contributor_names.",
+                    "type": "string"
+                },
+                "contributor_role_vocabulary": {
+                    "title": "Contributor Role Vocabulary",
+                    "description": "The URL of the controlled vocabulary used for the contributor_role attribute. The default is “https://vocab.nerc.ac.uk/collection/G04/current/”.",
+                    "type": "string"
+                },
+                "contributor_url": {
+                    "title": "Contributor URL(s)",
+                    "description": "The URL of the individuals or institutions that contributed to the creation of this data. Multiple URLs should be given in CSV format, and presented in the same order and number as the names in contributor_names.",
+                    "type": "string"
+                },
+                "institution": {
+                    "title": "Institution",
+                    "description": "The name of the institution principally responsible for originating this data.",
+                    "type": "string"
+                },
+                "program": {
+                    "title": "Program",
+                    "description": "The overarching program(s) of which the dataset is a part. A program consists of a set (or portfolio) of related and possibly interdependent projects that meet an overarching objective. Examples: 'GHRSST', 'NOAA CDR', 'NASA EOS', 'JPSS', 'GOES-R'.",
+                    "type": "string"
+                },
+                "project": {
+                    "title": "Project",
+                    "description": "The name of the project(s) principally responsible for originating this data. Multiple projects can be separated by commas, as described under Attribute Content Guidelines. Examples: 'PATMOS-X', 'Extended Continental Shelf Project'.",
+                    "type": "string"
+                },
                 "publisher_name": {
                     "title": "Publisher Name",
                     "description": "The name of the person (or other entity specified by the publisher_type attribute) responsible for publishing the data file or product to users, with its current metadata and format.",
@@ -238,21 +243,6 @@
                 "publisher_institution": {
                     "title": "Publisher Institution",
                     "description": "The institution that presented the data file or equivalent product to users; should uniquely identify the institution. If publisher_type is institution, this should have the same value as publisher_name.",
-                    "type": "string"
-                },
-                "institution": {
-                    "title": "Institution",
-                    "description": "The name of the institution principally responsible for originating this data.",
-                    "type": "string"
-                },
-                "program": {
-                    "title": "Program",
-                    "description": "The overarching program(s) of which the dataset is a part. A program consists of a set (or portfolio) of related and possibly interdependent projects that meet an overarching objective. Examples: 'GHRSST', 'NOAA CDR', 'NASA EOS', 'JPSS', 'GOES-R'.",
-                    "type": "string"
-                },
-                "project": {
-                    "title": "Project",
-                    "description": "The name of the project(s) principally responsible for originating this data. Multiple projects can be separated by commas, as described under Attribute Content Guidelines. Examples: 'PATMOS-X', 'Extended Continental Shelf Project'.",
                     "type": "string"
                 },
                 "geospatial_bounds": {
@@ -375,6 +365,11 @@
                     "description": "Version identifier of the data file or product as assigned by the data creator. For example, a new algorithm or methodology could result in a new product_version.",
                     "type": "string"
                 },
+                "keywords": {
+                    "title": "Keywords",
+                    "description": "A comma-separated list of key words and/or phrases. Keywords may be common words or phrases, terms from a controlled vocabulary (GCMD is often used), or URIs for terms from a controlled vocabulary (see also 'keywords_vocabulary' attribute).",
+                    "type": "string"
+                },
                 "keywords_vocabulary": {
                     "title": "Keywords Vocabulary",
                     "description": "If you are using a controlled vocabulary for the words/phrases in your 'keywords' attribute, this is the unique name or identifier of the vocabulary from which keywords are taken. If more than one keyword vocabulary is used, each may be presented with a prefix and a following comma, so that keywords may optionally be prefixed with the controlled vocabulary key. Example: 'GCMD:GCMD Keywords, CF:NetCDF COARDS Climate and Forecast Standard Names'.",
@@ -401,7 +396,7 @@
                     "description": "A descriptive, long name for the platform used in collecting the data. The value of platform_name will be used to label the platform in downstream applications, such as IOOS’ National Products (Environmental Sensor Map, EDS, etc).",
                     "type": "string"
                 },
-                "wmo_platform_code": {
+                "WMO_platform_code": {
                     "title": "WMO Platform Code",
                     "description": "The WMO identifier for the platform used to measure the data. This identifier can be any of the following types: 1. WMO ID for buoys (numeric, 5 digits), 2. WMO ID for gliders (numeric, 7 digits), 3. NWS ID (alphanumeric, 5 digits). When a dataset is assigned a wmo_platform_code it is thereby assigned a secondary Asset Identifier for the 'WMO' naming_authority. See https://ioos.github.io/ioos-metadata/ioos-metadata-profile-v1-2.html#rules-for-ioos-asset-identifier-generation for more details.",
                     "type": "string"
@@ -424,6 +419,11 @@
                 "metadata_link": {
                     "title": "Metadata Link",
                     "description": "A URL that gives the location of more complete metadata. A persistent URL is recommended for this attribute.",
+                    "type": "string"
+                },
+                "references": {
+                    "title": "References",
+                    "description": "Published or web-based references that describe the data or methods used to produce it. Recommend URIs (such as a URL or DOI) for papers or other references.",
                     "type": "string"
                 },
                 "location_id": {
