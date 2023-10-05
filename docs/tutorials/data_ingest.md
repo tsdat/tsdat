@@ -278,7 +278,7 @@ to a new folder called `data` within our pipeline (ncei_arctic_cruise_example) d
 
 How does `arctic_ocean.sample_data.csv` match with `.*arctic_ocean.*\.csv`? Good question! :
 
-* `.*` matches to the preceding filepath of the file (`./pipelines/ncei_arctic_cruise_example/data/`)
+* `.*` matches the directory path of the file (`./pipelines/ncei_arctic_cruise_example/data/`)
 * `arctic_ocean` matches itself
 * `.*` matches `.sample_data`
 * `\.` matches a literal `.`
@@ -310,7 +310,7 @@ The retriever is split into 4 blocks:
 
 For this pipeline, replace the text in the `retriever.yaml` file with the following:
 
-```yaml
+```yaml title="pipelines/ncei_arctic_cruise_example/config/retriever.yaml"
 classname: tsdat.io.retrievers.DefaultRetriever
 readers:                                    # Block header
   .*:                                       # Secondary regex pattern to match files
@@ -387,27 +387,24 @@ data_vars:
 
 I'll break down the variable structure with the following code-block:
 
-```yaml
+```yaml linenums="1"
 temperature:
-  .*:
-    name: Air Temperature
-    data_converters:
-      - classname: tsdat.io.converters.UnitsConverter
-        input_units: degF
+  name: Air Temperature
+  data_converters:
+    - classname: tsdat.io.converters.UnitsConverter
+      input_units: degF
 ```
 
 Matching the line numbers of the above code-block:
 
 * `line 1` Desired name of the variable in the output data - user editable
-* `line 2` Optional regex pattern (matching input key/file) to input name & converter(s) to run. Shown is `.*`, the
-    default, which will match anything.
-* `line 3` Name of the variable in the input data - should directly match raw input data
-* `line 4` Converter keyword - add if a converter is desired
-* `line 5` Classname of data converter to run, in this case unit conversion. See the
+* `line 2` Name of the variable in the input data - should directly match raw input data
+* `line 3` Converter keyword - add if a converter is desired
+* `line 4` Classname of data converter to run, in this case unit conversion. See the
     [customization tutorial](./pipeline_customization.md) for a how-to on applying custom data conversions.
-* `line 6` Data converter input for this variable, parameter and value pair
+* `line 5` Data converter input for this variable, parameter and value pair
 
-Moving on now to the fourth line in `pipeline.yaml`, `dataset`, refers to the dataset.yaml file. This file is where
+Moving on now to the fourth line in `pipeline.yaml`, `dataset`, refers to the `dataset.yaml` file. This file is where
 user-specified datatype and metadata are added to the raw dataset.
 
 This part of the process can take some time, as it involves knowing or learning a lot of the context around the dataset
@@ -424,10 +421,10 @@ Replace the text in the `dataset.yaml` file with the following code-block.
         units)
     * Variable names must match between `retriever.yaml` and `dataset.yaml`.
     * Variables not desired from `retriever.yaml` can be left out of `dataset.yaml`.
-    * Notice the quality control (QC) attributes, `_FillValue`, `fail_range`, and `warn_range`. These attributes are
+    * Notice the quality control (QC) attributes, `_FillValue`, `valid_min`, and `valid_max`. These attributes are
         used by tsdat in quality checks.
 
-```yaml
+```yaml title="pipelines/ncei_arctic_cruise_example/config/dataset.yaml"
 attrs:
   title: NCEI Arctic Cruise Example
   description: Historical marine data that are comprised of ship, buoy and platform observations.
@@ -592,7 +589,7 @@ previously, it contains a series of hook functions that can be used along the pi
 We shall set up `hook_plot_dataset`, which plots the processed data and save the figures in the `storage/ancillary`
 folder. To keep things simple, only the pressure data is plotted here, but feel free to edit this code as desired:
 
-```python
+```python title="pipelines/ncei_arctic_cruise_example/pipeline.py"
 import xarray as xr
 import cmocean
 import matplotlib.pyplot as plt
