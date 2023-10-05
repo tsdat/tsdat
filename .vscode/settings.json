@@ -50,8 +50,6 @@
     "yaml.schemas": {
         ".vscode/schema/retriever-schema.json": "*retriever*.yaml",
         ".vscode/schema/dataset/basic-schema.json": "*dataset*.yaml",
-        ".vscode/schema/dataset/acdd-schema.json": "*dataset*.yaml",
-        ".vscode/schema/dataset/ioos-schema.json": "*dataset*.yaml",
         ".vscode/schema/quality-schema.json": "*quality*.yaml",
         ".vscode/schema/storage-schema.json": "*storage*.yaml",
         ".vscode/schema/pipeline-schema.json": "*pipeline*.yaml",
