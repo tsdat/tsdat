@@ -42,6 +42,13 @@
         },
         "code-block-style": false
     },
+    "editor.rulers": [
+        88,
+        {
+            "column": 120,
+            "color": "#ffffff5e"
+        },
+    ],
     // 
     // Settings for helpful utilities
     // 
