@@ -25,7 +25,3 @@ for more detailed information about the format of standardized datasets.
 
     Configuration files are written in yaml format. We recommend using an IDE with yaml support (such as VSCode) for
     editing your config files.
-
-!!! note
-
-    For more information on classes in Python, see <https://docs.python.org/3/tutorial/classes.html>

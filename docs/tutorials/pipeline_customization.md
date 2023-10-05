@@ -1,57 +1,48 @@
 # Pipeline Customization
 
-This tutorial goes over how to add custom file readers, quality control,
-and data converter code to tsdat for the
-[pipeline-template]{.title-ref}. This tutorial builds off of the
-`first tutorial <data_ingest>`{.interpreted-text role="ref"} and
-utilizes the same example data.
+This tutorial goes over how to add custom file readers, quality control, and data converter code to tsdat for the
+[pipeline-template](https://github.com/tsdat/pipeline-template). This tutorial builds off of the
+[previous tutorial](./data_ingest.md) and utilizes the same example data.
 
-1. We\'ll dive straight into it by creating a new pipeline:
+We'll dive straight into it by creating a new pipeline:
 
 ```bash
 make cookies
 ```
 
-Or
+or
 
 ```bash
 cookiecutter templates/ingest -o ingest/
 ```
 
-And select yes (2) to the \"Select [use_custom]()\<option\>\" prompts.
+And select `2` (yes) to the `Select use_custom_<option>` prompts.
 
-![](custom/custom1.png){.align-center width="100.0%"}
+![cookiecutter prompts](custom/custom1.png)
 
-Notice this adds a readers.py, qc.py, and converters.py to the new
-pipeline directory, as well as a qc.yaml file to the config folder.
+Notice this adds a readers.py, qc.py, and converters.py to the new pipeline directory, as well as a qc.yaml file to the
+config folder.
 
-![](custom/custom2.png){.align-center width="100.0%"}
-
-|
+![cookiecutter files output](custom/custom2.png)
 
 ## Fill out the Configuration Files
 
-2. Go ahead and copy the retriever.yaml, dataset.yaml, and pipeline.py
-files from the NOAA NCEI example data tutorial if you using that data.
-If you are building a custom pipeline, go ahead and fill out these files
-now.
+Go ahead and copy the `retriever.yaml`, `dataset.yaml`, and `pipeline.py` files from the NOAA NCEI example data tutorial
+if you using that data. If you are building a custom pipeline, go ahead and fill out these files now.
 
 ## Adding a Custom File Reader
 
-Tsdat has two native file readers: `CSVReader` and `NetCDFReader`. While
-useful for a number of input files, it is not uncommon for raw data
-files to be saved in some custom format or structure. Tsdat has the
-flexibility to incorporate user-built code to read and pre-process raw
-data.
+Tsdat has two native file readers: `CSVReader` and `NetCDFReader`. While useful for a number of input files, it is not
+uncommon for raw data files to be saved in some custom format or structure. Tsdat has the flexibility to incorporate
+user-built code to read and pre-process raw data.
 
-It is recommended to test your code before inputting to tsdat\'s
-framework by first writing and testing a reader on your input data in
-your preferred IDE. This read function should return an xarray Dataset.
+It is recommended to test your code before inputting to tsdat's framework by first writing and testing a reader on your
+input data in your preferred IDE. This read function should return an xarray Dataset.
 
-3. Since we\'re using the same NOAA NCEI data as before, this tutorial
-with recreate tsdat\'s csv reader from the user\'s standpoint:
+Since we're using the same NOAA NCEI data as before, this tutorial with recreate tsdat's csv reader from the user's
+standpoint:
 
-```python
+```python title="pipelines/custom_pipeline_tutorial/readers.py"
 from typing import Any, Dict, Union
 from pydantic import BaseModel, Extra
 import pandas as pd
@@ -60,13 +51,11 @@ from tsdat import DataReader
 
 
 class NCEIReader(DataReader):
-    """---------------------------------------------------------------------------------
-    Custom DataReader that can be used to read data from a specific format.
+    """Custom DataReader that can be used to read data from a specific format.
 
-    Built-in implementations of data readers can be found in the
-    [tsdat.io.readers](https://tsdat.readthedocs.io/en/latest/autoapi/tsdat/io/readers)
+    Built-in implementations of data readers can be found in the tsdat.io.readers
     module.
-    ---------------------------------------------------------------------------------"""
+    """
 
     class Parameters(BaseModel, extra=Extra.forbid):
         """If your CustomDataReader should take any additional arguments from the
@@ -87,28 +76,22 @@ class NCEIReader(DataReader):
         return xr.Dataset.from_dataframe(df, **self.parameters.from_dataframe_kwargs)
 ```
 
-As you can see in the above code, our reader is contained by the class
-[NCEIReader]{.title-ref}. The [Parameters]{.title-ref} class initiates
-the parameters expected from the retriever.yaml file, which are then fed
-to the \"read\" function, which contains the reader\'s source code.
+As you can see in the above code, our reader is contained by the class `NCEIReader`. The `Parameters` class initiates
+the parameters expected from the `retriever.yaml` file, which are then fed to the "read" function, which contains the
+reader's source code.
 
-Note, after running the reader, the pipeline runs the dataset through
-the retriever. If variable names are changed in the reader source code,
-this change should be reflected in the vairables\' input names in
-retriever.yaml.
+![NCEI reader python file](custom/custom3.png)
 
-![](custom/custom3.png){.align-center width="100.0%"}
+Note, after running the reader, the pipeline runs the dataset through the retriever. If variable names are changed in
+the reader source code, this change should be reflected in the variable's input names in `retriever.yaml`.
 
-|
+We now need to tell tsdat now to use our csv file reader. Open the `retriever.yaml` file and replace the `readers` block
+with:
 
-4. We now need to tell tsdat now to use our csv file reader. Open the
-retriever.yaml file and replace the reader block with (remember to
-replace \<pipeline_name\> with your own pipeline\'s name):
-
-```yaml
+```yaml title="pipelines/custom_pipeline_tutorial/config/retriever.yaml"
 readers:
   .*:
-    classname: pipelines.<pipeline_name>.readers.NCEIReader
+    classname: pipelines.custom_pipeline_tutorial.readers.NCEIReader
     parameters:
       read_csv_kwargs:
         sep: ", *"
@@ -116,34 +99,27 @@ readers:
         index_col: False
 ```
 
-Notice we are not using the \"from_dataframe_kwargs\", but if we were,
-\"from_dataframe_kwargs\" would be listed at the same indent level as
-\"read_csv_kwargs\".
+Notice we are not using the `from_dataframe_kwargs` this time, but if we were, `from_dataframe_kwargs` would be listed
+at the same indent level as `read_csv_kwargs`.
 
-![](custom/custom4.png){.align-center width="100.0%"}
-
-|
+![retriever config screenshot](custom/custom4.png)
 
 ## Adding Custom Data Converter Functions
 
-Tsdat has two native data converters, a `UnitsConverter` and a
-`StringToDatetime` converter. These provide the useful functions of
-converting units and utilizing the datetime package\'s ability to read
-time formats, given the correct time string.
+Tsdat has several native data converters, including the `UnitsConverter` and `StringToDatetime` converters. These
+provide the useful functions of converting units and utilizing the datetime package's ability to read time formats,
+given the correct time string.
 
-The custom data converter is an option to add pre-processing to specific
-variables in the input dataset, while a custom file reader gives more
-flexibility to cover all at once. Converters operate on a
-variable-by-variable basis, so keep this in mind when adding one.
+The custom data converter is an option to add pre-processing to specific variables in the input dataset, while a custom
+file reader gives more flexibility to cover all at once. Converters operate on a variable-by-variable basis, so keep
+this in mind when adding one.
 
-5. As stated in the NCEI NOAA documentation, the units for windspeed
-are recorded as either 1/10th of a knot or m/s, depending on the
-configuration. Because the rest of the file is saved in imperial units,
-I\'m assuming the data is actually saved as 1/10th knots. This isn\'t a
-standard unit, so we shall add a data converter to tackle this input in
+As stated in the NCEI NOAA documentation, the units for wind speed are recorded as either 1/10th of a knot or m/s,
+depending on the configuration. Because the rest of the file is saved in imperial units, I'm assuming the data is
+actually saved as 1/10th knots. This isn't a standard unit, so we shall add a data converter to tackle this input in
 the codeblock below.
 
-```python
+```python title="pipelines/custom_pipeline_tutorial/converters.py"
 import xarray as xr
 from typing import Any, Optional
 from pydantic import BaseModel, Extra
@@ -153,10 +129,10 @@ from tsdat.config.dataset import DatasetConfig
 
 
 class Kt10Converter(DataConverter):
-    """---------------------------------------------------------------------------------
-    Converts NCEI windspeed data format from 0.1 knots to m/s
+    """Converts NCEI windspeed data format from 0.1 knots to m/s
+
     Expects "kt/10" as input and "m/s" as output units
-    ---------------------------------------------------------------------------------"""
+    """
 
     class Parameters(BaseModel, extra=Extra.forbid):
         """If your CustomConverter should take any additional arguments from the
@@ -193,83 +169,70 @@ class Kt10Converter(DataConverter):
         return dataset
 ```
 
-![](custom/custom5.png){.align-center width="100.0%"}
+![custom converters](custom/custom5.png)
 
-|
+Now we configure the "wind_speed" variable to use this converter in the `retriever.yaml` file:
 
-6. Now we configure the \"wind_speed\" variable to use this converter
-in the retriever.yaml file:
-
-```yaml
+```yaml title="pipelines/custom_pipeline_tutorial/config/retriever.yaml"
 wind_speed:
   .*:
     name: Wind Speed
     data_converters:
-      - classname: pipelines.<pipeline_name>.converters.Kt10Converter
+      - classname: pipelines.custom_pipeline_tutorial.converters.Kt10Converter
         parameters:
           units: kt/10
 ```
 
-![](custom/custom6.png){.align-center width="100.0%"}
+![wind speed retriever config](custom/custom6.png)
 
-|
-
-## Adding Custom Quality Control Funtions
+## Adding Custom Quality Control Functions
 
 First, a quick overview of how tsdat handles quality control (QC):
 
-Tsdat has a number of native quality control functions that users could
-find useful. (See
-`quality control API <quality_control>`{.interpreted-text role="ref"}
-for all of them). These built-in functions can then be input into the
-pipeline config or shared folder quality.yaml, and many are already
-incorporated in the \<pipeline_template\>.
+Tsdat has a number of native quality control functions that users could find useful. (See
+[quality control](../config/quality_control.md) for more info). These built-in functions can then be input into the
+pipeline config or shared folder quality.yaml, and many are already incorporated in the pipeline template.
 
-It is important to note that QC functions are applied one variable at a
-time.
+It is important to note that QC functions are applied one variable at a time.
 
 For example:
 
-```yaml
+```yaml title="pipelines/custom_pipeline_tutorial/config/quality.yaml"
 quality_management:
 
-  -name: Remove datapoints below minimum valid threshold
+  - name: Remove data points below minimum valid threshold
     checker:
-      classname: tsdat.qc.checkers.CheckValidMin
+      classname: tsdat.CheckValidMin
     handlers:
-      - classname: tsdat.qc.handlers.RemoveFailedValues
-      - classname: tsdat.qc.handlers.RecordQualityResults
+      - classname: tsdat.RemoveFailedValues
+      - classname: tsdat.RecordQualityResults
         parameters:
-          bit: 2
           assessment: Bad
-          meaning: "Value is less than expected range"
-    apply_to:
-      - DATA_VARS
-    exclude: [foo, bar]
+          meaning: Value is less than expected range
+    apply_to: [DATA_VARS]
+    exclude:
+      - foo
+      - bar
 ```
 
-In the above block of code, a `CheckValidMin` check is run all variables
-except variables named \"foo\" and \"bar\". This QC check requires the
-\"valid_min\" attribute on all variables running through it in the
-dataset.yaml file.
+In the above block of code, a `CheckValidMin` check is run all variables except variables named "foo" and "bar". This
+QC check only runs on variables that have the "valid_min" attribute defined in their metadata in the `dataset.yaml`
+config file.
 
-The two built-in handlers specified here remove failues
-(`RemoveFailedValues`) that failed the QC check by replacing them with
+The first handler specified here (`RemoveFailedValues`) removes values that failed the QC check by replacing them with
 the attribute `_FillValue`.
 
-The second handler used is `RecordQualityResults`, which requires
-parameters in the quality.yaml block itself: [bit]{.title-ref},
-[assessment]{.title-ref}, and [meaning]{.title-ref}. This adds
-\"[qc]()\<variable_name\>\" to the output data, where variable elements
-that fail a test are assigned the value 2\^{bit-1}. If all tests pass, 0
-is assigned.
+The second handler used is `RecordQualityResults`, which requires parameters in the `quality.yaml` block itself:
+*assessment* and *meaning*. This adds `qc_variable_name` variables to the output data for each data variable that the
+handler is applied to. The values of these qc variables are 0 if all tests pass, and a non-zero value if any of the
+checks applied to that specific variable fail. Here we just have the 1 QC manager (`name=Remove data points ...`), so a
+value of 0 represents the data passed and a value of 1 means the test failed.
 
-A variable is set to run through a quality management block by adding
-the required attributes. To run a variable \"distance\" through the QC
-block shown above, add the required \"valid_range\" and \"\_FillValue\"
-attributes like the following:
+A variable is set to run through a quality management block by adding the required attributes. To run a variable
+"distance" through the QC block shown above, add the required "valid_range" and "_FillValue" attributes like the
+following:
 
-```yaml
+```yaml title="pipelines/custom_pipeline_tutorial/config/dataset.yaml"
 distance:
   dims: [time]
   dtype: float
@@ -281,18 +244,15 @@ distance:
 
 Now back to the tutorial steps:
 
-Custom QC code in tsdat allows a user to create both
-[checkers]{.title-ref} and [handlers]{.title-ref}. Like readers, you can
-add as many of each as one would like. [Checkers]{.title-ref} should
-return a boolean numpy array (True/False), where [True]{.title-ref}
-refers to flagged data, for each variable in the raw dataset.
-[Handlers]{.title-ref} take this boolean array and apply some function
-to the data variable it was created from.
+Custom QC code in tsdat allows a user to create both *checkers* and *handlers*. Like readers, you can add as many of
+each as one would like. *Checkers* should return a boolean numpy array (`True`/`False`) for each variable in the raw
+dataset where `True` refers to flagged data. *Handlers* take this boolean array and apply some function to the data
+variable it was created from.
 
-7. For this tutorial, we\'ll add a QC handler that interpolates missing
-data with a cubic polynomial using one of xarray\'s functions:
+For this tutorial, we'll add a QC handler that interpolates missing data with a cubic polynomial using one of xarray's
+functions:
 
-```python
+```python title="pipelines/custom_pipeline_tutorial/qc.py"
 import numpy as np
 from pydantic import BaseModel, Extra
 import xarray as xr
@@ -301,25 +261,14 @@ from tsdat import QualityChecker, QualityHandler
 
 
 class PolyInterpHandler(QualityHandler):
-    """----------------------------------------------------------------------------
-    Fills in missing data with a cubic polynomial spline
-    ----------------------------------------------------------------------------"""
-
-    class Parameters(BaseModel, extra=Extra.forbid):
-        """If your QualityChecker should take any additional arguments from the
-        quality configuration file, then those should be specified here.
-        """
-
-    parameters: Parameters = Parameters()
-    """Extra parameters can be set via the quality configuration file. If you opt
-    to not use any configuration parameters then please remove the code above."""
+    """Fills in missing data with a cubic polynomial spline"""
 
     def run(
         self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
     ) -> xr.Dataset:
 
         if failures.any():
-            # Make sure failed datapoints have been removed
+            # Make sure failed data points are NaN'd out
             dataset[variable_name] = dataset[variable_name].where(~failures)
 
             # Interpolate with cubic polynomial
@@ -330,42 +279,34 @@ class PolyInterpHandler(QualityHandler):
         return dataset
 ```
 
-You\'ll see that the \"run\" function here is given three inputs:
+You'll see that the "run" function here is given three inputs:
 
-> 1. dataset - currently processed dataset
-> 2. variable_name - current variable undergoing QC
-> 3. failures - the true/false array, where true refers to values that
->     failed the QC check
+1. `dataset` - currently processed dataset
+2. `variable_name` - current variable undergoing QC
+3. `failures` - the true/false array, where true refers to values that failed the QC check
 
-In this case, the [checker]{.title-ref} is `CheckMissing`, which flags
-datapoints already missing from the dataset. If the
-[checker]{.title-ref} returned a \"failures\" array had datapoints
-flagged that weren\'t missing, I would want to make sure to remove those
-datapoints before passing to
-[xarray.dataset\[variable_name\].interpolate_na]{.title-ref}.
+In this case, the checker is `CheckMissing`, which flags data points already missing from the dataset. If the checker
+returned a "failures" array had data points flagged that weren't missing, I would want to make sure to remove those
+data points before passing to `dataset[variable_name].interpolate_na()`.
 
-![](custom/custom7.png){.align-center width="100.0%"}
+![interpolation qc handler](custom/custom7.png)
 
-|
+We then update the `quality.yaml` file and replace the custom input with our most recent code. We'll continue to use
+`CheckMissing` and `RecordQualityResults` here.
 
-8. We then update the quality.yaml file and replace the custom input
-with our most recent code. We\'ll continue to use `CheckMissing` and
-`RecordQualityResults` here.
+!!! note
 
-Note, you will need to remove the [Remove missing
-datapoints]{.title-ref} QC block (the first block with
-`RemoveFailedValues`) for interpolation to function. If running multiple
-QC tests, you will want to make sure they aren\'t overwriting each
-other.
+    You will need to remove the *Remove missing data points* QC block (the first block with `RemoveFailedValues`) for
+    interpolation to work right. If running multiple QC tests, you will want to make sure they aren't overwriting each
+    other.
 
-```yaml
-managers:
+```yaml title="pipelines/custom_pipeline_tutorial/config/quality.yaml"
 
   - name: Cubic spline interpolation
     checker:
       classname: tsdat.qc.checkers.CheckMissing
     handlers:
-      - classname: pipelines.<pipeline_name>.qc.PolyInterpHandler
+      - classname: pipelines.custom_pipeline_tutorial.qc.PolyInterpHandler
       - classname: tsdat.qc.handlers.RecordQualityResults
         parameters:
           bit: 10
@@ -375,79 +316,65 @@ managers:
       - DATA_VARS
 ```
 
-![](custom/custom8.png){.align-center width="100.0%"}
-
-|
+![added cubic spline interpolation to quality config](custom/custom8.png)
 
 ## Run the Pipeline
 
-9. There are a couple more things. First we need to update the pipeline
-regex pattern in the pipeline.yaml file to run files in this particular
-pipeline, and we\'ll do this by changing the triggers block:
+There are a couple more things. First we need to update the pipeline regex pattern in the `pipeline.yaml` file to run
+files in this particular pipeline, and we'll do this by changing the triggers block:
 
-```yaml
+```yaml title="pipelines/custom_pipeline_tutorial/config/pipeline.yaml"
 triggers:
 - .*custom.*\.csv
 ```
 
-![](custom/custom9.png){.align-center width="100.0%"}
+![pipeline config file](custom/custom9.png)
 
-|
+Next, we want to copy the data to this pipeline and rename it to match the regex pattern. The data here is stored in the
+`test/data/input/` folder, but can be anywhere, and I have named this data `custom.sample_data.csv`.
 
-10. Next, we want to copy the data to this pipeline and rename it to
-match the regex pattern. The data here is stored in the test/data/input/
-folder, but can be anywhere, and I have named this data
-[custom.sample_data.csv]{.title-ref}.
+![input data view](custom/custom10.png)
 
-![](custom/custom10.png){.align-center width="100.0%"}
-
-|
-
-11. Finally we can run this pipeline. Open a terminal (`ctrl`\`) and run
+Finally we can run this pipeline. Open a terminal (++ctrl+backslash++) and run
 
 ```bash
-python runner.py pipelines/<pipeline_name>/test/data/input/custom.sample_data.csv
+python runner.py pipelines/custom_pipeline_tutorial/test/data/input/custom.sample_data.csv
 ```
 
-![](custom/custom11.png){.align-center width="100.0%"}
-
-|
+![output from running ingest script](custom/custom11.png)
 
 ## Notes on Errors
 
-Errors commonly ensue from data file located in incorrect directories,
-incorrect classname paths, and syntax errors. If you get an error, most
-of the time there is an error, missing or incorrect input in the .yaml
-files.
+Errors commonly ensue from data file located in incorrect directories, incorrect classname paths, and syntax errors.
+If you get an error, most of the time there is an error, missing or incorrect input in the .yaml files.
 
-Common Errors:
+### Common Errors
 
-> 1\. KeyError \[\'time\'\] \-- Time is typically the first variable
-> tsdat looks for, so if it can\'t load your dataset or if the time
-> coordinate is not input correctly, this error will pop up. The failure
-> load a dataset typically results from incorrect file extensions, regex
-> patterns, or file path location.
->
-> 2\. Can\'t find module \"pipeline\" \-- There are many modules and
-> classes named \"pipeline\" in tsdat. This error typically refers to a
-> classname specified in the config file, i.e.
-> `pipelines.<pipeline_name>.qc.<custom_qc>` or
-> `pipelines.<pipeline_name>.readers.<custom_reader>`. Make sure this
-> classname path is correct.
->
-> 3\. `Check_<function>` fails \-- Ensure all the variables listed under
-> a quality managment group can be run through the function. For
-> example, if I try to run the test `CheckMonotonic` on all \"COORDS\",
-> and one of my coordinate variables is a string array (e.g
-> \'direction\': \[\'x\',\'y\',\'z\'\], this function will fail. Fix
-> this by replacing \"COORDS\" with only numeric coordinates (e.g.
-> \'time\').
->
-> 4\. If a QC handler doesn\'t appear to be running on a variable, 1.)
-> make sure it\'s not being overridden by another in the same pipeline,
-> 2.) make sure your custom QC tests are running on a single variable at
-> a time and not affecting the entire dataset.
->
-> 5\. Pipeline is \"skipped\". Make sure your regex pattern in
-> pipeline.yaml matches your filename. There are regex file match
-> checkers online for a sanity check.
+`KeyError ['time']`
+
+:   Time is typically the first variable tsdat looks for, so if it can't load your dataset or if the time coordinate is
+    not input correctly, this error will pop up. The failure load a dataset typically results from incorrect file
+    extensions, regex patterns, or file path location.
+
+`Can't find module "pipeline"`
+
+:   There are many modules and classes named "pipeline" in tsdat. This error typically refers to a classname specified
+    in the config file, i.e. `pipelines.custom_pipeline_tutorial.qc.<custom_qc>` or
+    `pipelines.custom_pipeline_tutorial.readers.<custom_reader>`. Make sure this classname path is correct.
+
+`Check_<function> fails`
+
+:   Ensure all the variables listed under a quality management group can be run through the function. For example, if I
+    try to run the test `CheckMonotonic` on all "COORDS", and one of my coordinate variables is a string array (e.g.,
+    'direction': ['x','y','z'], this function will fail). Fix this by replacing "COORDS" with only numeric coordinates
+    (e.g. 'time') or add the failing coordinate to the exclude section.
+
+`If a QC handler doesn't appear to be running on a variable`
+
+:   *make sure it's not being overridden by another in the same pipeline
+    * make sure your custom QC tests are running on a single variable at a time and not affecting the entire dataset.
+
+`Pipeline is "skipped"`
+
+:   Make sure your regex pattern in `pipeline.yaml` matches your filename. There are regex file match checkers online
+    for a sanity check.

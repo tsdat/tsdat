@@ -26,7 +26,9 @@ theme:
 
 markdown_extensions:
   - admonition
+  - attr_list
   - def_list
+  - md_in_html
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.highlight:

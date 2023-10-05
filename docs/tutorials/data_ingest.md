@@ -22,47 +22,40 @@ from their global marine data section.
 
 ![webpage screenshot](global_marine_data/global_marine_data_webpage.png)
 
-The documentation describes each variable in the sample dataset and will
-be extremely useful for updating our configuration file with the
-metadata for this dataset. The metadata we care most about are the units
-and user-friendly text descriptions of each variable, but we also need
-to be on the lookout for any inconsistencies or potential data problems
-that could complicate how we process this dataset. Take, for example,
-the following descriptions of the various temperature measurements that
-this dataset contains and note that the units are not necessarily the
-same between files in this dataset:
+The documentation describes each variable in the sample dataset and will be extremely useful for updating our
+configuration file with the metadata for this dataset. The metadata we care most about are the units and user-friendly
+text descriptions of each variable, but we also need to be on the lookout for any inconsistencies or potential data
+problems that could complicate how we process this dataset. Take, for example, the following descriptions of the various
+temperature measurements that this dataset contains and note that the units are not necessarily the same between files
+ this dataset:
 
 ![dataset documentation screenshot](global_marine_data/global_marine_data_documentation.png)
 
-If we were collecting this data from multiple users, we would need to be
-aware of possible unit differences between files from different users
-and we would likely want to standardize the units so that they were all
-in Celsius or all in Fahrenheit (Our preference is to use the metric
-system wherever possible). If we examine this data, it appears that the
-units are not metric -- how unfortunate. Luckily, this is something that
-can easily be fixed by using tsdat.
+If we were collecting this data from multiple users, we would need to be aware of possible unit differences between
+files from different users and we would likely want to standardize the units so that they were all
+in Celsius or all in Fahrenheit (Our preference is to use the metric system wherever possible). If we examine this data,
+it appears that the units are not metric -- how unfortunate. Luckily, this is something that can easily be fixed using
+tsdat.
 
-![Selection from the sample dataset. It appears that units are recorded
-in the imperial system instead of the metric system -- Sea Level
-Pressure is recorded in Hg instead of hPa (Hectopascal) and Air
-Temperature is recorded in degF (Fahrenheit) instead of degC
-(Celsius).](global_marine_data/global_marine_data_csv_snippet.png)
+![Selection from the sample dataset](global_marine_data/global_marine_data_csv_snippet.png)
+
+<!-- It appears that units are recorded in the imperial system instead of the metric system -- Sea Level Pressure is
+recorded in Hg instead of hPa (Hectopascal) and Air Temperature is recorded in degF (Fahrenheit) instead of degC
+(Celsius). -->
 
 ## Creating a repository from a template
 
-Now that we have the data and metadata that we will need, let's move on
-to step #2 and set up a GitHub repository for our work. What we are
-looking to do is read in the NCEI "raw" data, apply variable names and
-metadata, apply quality control, and convert it into the netCDF format
--- an 'ingest pipeline', in other words. To do this, navigate to
-<https://github.com/tsdat/pipeline-template> and click "Use this
-template" (you must log into github to see this button).
+Now that we have the data and metadata that we will need, let's move on to step #2 and set up a GitHub repository for
+our work. What we are looking to do is read in the NCEI "raw" data, apply variable names and metadata, apply quality
+control, and convert it into the netCDF format – an 'ingest pipeline', in other words. To do this, navigate to
+[github.com/tsdat/pipeline-template](https://github.com/tsdat/pipeline-template) and click "Use this template". Note you
+must be logged into github to see this button.
 
 ![pipeline template github screenshot](global_marine_data/intro1.png)
 
-This will open <https://github.com/tsdat/pipeline-template/generate>
-(you can also just open this link directly) which will prompt you to
-name your repository, as well as to make it public or private.
+This will open [github.com/tsdat/pipeline-template/generate](https://github.com/tsdat/pipeline-template/generate) (you
+can also just open this link directly) which will prompt you to name your repository, as well as to make it public or
+private.
 
 ![Example shown is titled "ncei-global-marine-data-ingest".](global_marine_data/intro2.png)
 
@@ -92,10 +85,8 @@ create an isolated virtual area that we can install packages to.
     [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) (WSL) in addition to conda to
     manage your environment. See the [Setting Up Wsl](./setup_wsl.md) tutorial for more information.
 
-Once you have anaconda (and optionally WSL) installed, you can run the
-following command in the terminal from the project root (e.g., where
-`conda-environment.yaml` is at) to create and activate the development
-environment:
+Once you have anaconda (and optionally WSL) installed, you can run the following command in the terminal from the
+project root (e.g., where `conda-environment.yaml` is at) to create and activate the development environment:
 
 ```bash
 conda env create --file=conda-environment.yaml
@@ -146,9 +137,12 @@ Navigate to the `runner.py` file and run
 python runner.py pipelines/example_pipeline/test/data/input/buoy.z06.00.20201201.000000.waves.csv
 ```
 
-This will run the example pipeline provided in the `pipelines/` folder
-in the template. All pipelines that we create are stored in the
-`pipelines/` folder and are run using `python runner.py <path_to_data>`.
+This will run the example pipeline provided in the `pipelines/` folder in the template. All pipelines that we create are
+stored in the `pipelines/` folder and are run using
+
+```bash
+python runner.py <path_to_data>
+```
 
 Additional options for the runner can be queried by running:
 
@@ -156,12 +150,11 @@ Additional options for the runner can be queried by running:
 python runner.py --help
 ```
 
-![](global_marine_data/intro4.png)
+![runner.py screenshot](global_marine_data/intro4.png)
 
-After the code runs, notice that a new `storage/` folder is created with
-the following contents:
+After the code runs, notice that a new `storage/` folder is created with the following contents:
 
-![](global_marine_data/intro5.png)
+![storage contents](global_marine_data/intro5.png)
 
 These files contain the outputs of the example pipeline. Note that there are two subdirectories here:
 
@@ -183,37 +176,30 @@ For more information on the standards used to develop tsdat, please consult
 
 Now let's start working on ingesting the NCEI data.
 
-In the Explorer window pane you'll see a list of all folders and files
-in this ingest -> right click on the top level `README.md` and select
-`open preview`. The steps in this readme we are more or less following
-in this tutorial.
+In the Explorer window pane you'll see a list of all folders and files in this ingest -> right click on the top level
+`README.md` and select `open preview`. The steps in this readme we are more or less following in this tutorial.
 
-![](global_marine_data/intro6.png)
+![readme screenshot](global_marine_data/intro6.png)
 
-Before starting, we'll run a quick test of the pipeline to make sure
-everything is set up properly. Navigate to `testing` and run all tests
-using the `Play` icon by hovering over the `ingest` dropdown. Tsdat
-will automatically configure these tests, and they all should pass at
-this point in time, as indicated by green checkmarks. (You can find more
-details about testing from [Python testing in Visual Studio
-Code](https://code.visualstudio.com/docs/python/testing).)
+Before starting, we'll run a quick test of the pipeline to make sure everything is set up properly. Navigate to
+`testing` and run all tests using the `Play` icon by hovering over the `ingest` dropdown. Tsdat will automatically
+configure these tests, and they all should pass at this point in time, as indicated by green checkmarks. (You can find
+more details about testing in the [VS Code documentation](https://code.visualstudio.com/docs/python/testing).)
 
-![](global_marine_data/intro7.png)
+![VS Code test interface](global_marine_data/intro7.png)
 
-Navigate back to the `Explorer` pane and hit ++ctrl+grave++ to open the
-terminal. Create a new ingest by running a python template creator
-called `cookiecutter` in the terminal using:
+Navigate back to the `Explorer` pane and hit ++ctrl+grave++ to open the terminal. Create a new ingest by running a
+python template creator called `cookiecutter` in the terminal using:
 
 ```bash
 make cookies
 ```
 
-There will follow a series of prompts that'll be used to auto-fill the
-new ingest. Fill these in for the particular dataset of interest. For
-this ingest we will not be using custom QC functions, readers/writers,
-or converters, so select no for those as well.
+There will follow a series of prompts that'll be used to auto-fill the new ingest. Fill these in for the particular
+dataset of interest. For this ingest we will not be using custom QC functions, readers/writers, or converters, so select
+no for those as well.
 
-```
+```txt
 ingest_name [Name of the Ingest]: ncei_arctic_cruise_example
 ingest_location [Location]: arctic_ocean
 ingest_description [Brief description of the ingest]: Historical marine data that are comprised of ship, buoy and platform observations.                           
@@ -225,71 +211,59 @@ classname [NceiArcticCruiseExample]: NceiArcticCruiseExample
 location_id [arctic_ocean]: arctic_ocean
 ```
 
-![](global_marine_data/intro8-b.png)
+![cookiecutter prompts](global_marine_data/intro8-b.png)
 
-Once you fill that list out and hit the final enter, Tsdat will create a
-new ingest folder named with the `module` name
+Once you fill that list out and hit the final enter, Tsdat will create anew ingest folder named with the `module` name
 (ncei_arctic_cruise_example):
 
-![](global_marine_data/intro9.png)
+![cookiecutter output](global_marine_data/intro9.png)
 
-5. Right-click the README.md in our new `ncei_arctic_cruise_example`
-ingest and `open-preview`. Scroll down to `Customizing your
-pipeline` (we have already accomplished the previous steps, but these
-are good to check).
+Right-click the README.md in our new `ncei_arctic_cruise_example` ingest and `open-preview`. Scroll down to
+`Customizing your pipeline` (we have already accomplished the previous steps, but these are good to check).
 
-![](global_marine_data/intro10.png)
+![step 1: find todos](global_marine_data/intro10.png)
 
-6. We are now looking at step #1: Use the `TODO tree` extension or use the search tool to find occurrences of
+We are now looking at step #1: Use the `TODO tree` extension or use the search tool to find occurrences of
 `# DEVELOPER`. (The `TODO tree` is the oak tree icon in the left-hand window panel).
 
-You may need to reload VS Code for these to show up in the ingest.
-Hitting `++ctrl+shift+p++` on the keyboard to open the search bar, and
-type in and run the command `Reload Window`.
+You may need to reload VS Code for these to show up in the ingest. Hit `++ctrl+shift+p++` on the keyboard to open the
+search bar, and type in and run the command `Reload Window`.
 
-![](global_marine_data/intro11.png)
+![reload window](global_marine_data/intro11.png)
 
-After doing the window reloads, all the newly created `TODOs` will
-show up in the new ingest folder. The rest of the tutorial consists of
-running through this list of `TODOs`.
+After doing the window reloads, all the newly created `TODOs` will show up in the new ingest folder. The rest of the
+tutorial consists of running through this list of `TODOs`.
 
-![](global_marine_data/intro12.png)
+![developer todos](global_marine_data/intro12.png)
 
 ## Customizing the New Ingest
 
-7. Navigate to your Explorer pane and open `pipelines/*/config/pipeline.yaml`.
+Navigate to your Explorer pane and open `pipelines/*/config/pipeline.yaml`.
 
-This file lists the configuration files for the pipeline in the order
-that the pipeline is initiating them.
+This file lists the configuration files for the pipeline in the order that the pipeline is initiating them.
 
-The first line, `classname`, refers to the the pipeline class path.
-This points to the class in your `pipeline/pipeline.py` file, which
-contains the hook functions. The only hook we're using in this tutorial
-is that to create plots, which we'll update after setting up the input
-data and configuration files. It isn't necessary to edit this path
-name.
+The first line, `classname`, refers to the the pipeline class path. This points to the class in your
+`pipeline/pipeline.py` file, which contains the hook functions. The only hook we're using in this tutorial is that to
+create plots, which we'll update after setting up the input data and configuration files. It isn't necessary to edit
+this path name.
 
 ```yaml
 classname: pipelines.ncei_arctic_cruise_example.pipeline.NceiArcticCruiseExample
 ```
 
-![](global_marine_data/intro13.png)
+![classname](global_marine_data/intro13.png)
 
-8. The second line, `triggers`, is the expected file pattern, or a
-`regex` pattern, of the input data, shown below. A regex pattern is a
-set of symbols and ascii characters that matches to a file name or path.
-A full set of these symbols can be found
-[here](https://www.shortcutfoo.com/app/dojos/regex/cheatsheet).
+The second line, `triggers`, is the expected file pattern, or a `regex` pattern, of the input data, shown below. A regex
+pattern is a set of symbols and ascii characters that matches to a file name or path. A full set of these symbols can be
+found [here](https://www.shortcutfoo.com/app/dojos/regex/cheatsheet).
 
 ```yaml
 triggers:
 - .*arctic_ocean.*\.csv
 ```
 
-The file pattern that will trigger a pipeline to run is automatically
-set to `.*<location_name>.*\.csv`. it can be adjusted as the user or raw
-data requires. This pipeline's auto trigger can be broken down into 5
-parts:
+The file pattern that will trigger a pipeline to run is automatically set to `.*<location_name>.*\.csv`. it can be
+adjusted as the user or raw data requires. This pipeline's auto trigger can be broken down into 5 parts:
 
 * `.*`: match any and all characters possible
 * `arctic_ocean` match "arctic_ocean" exactly
@@ -297,12 +271,10 @@ parts:
 * `\.`: match a literal "."
 * `csv`: match "csv" exactly
 
-![](global_marine_data/intro13.5.png)
+![triggers](global_marine_data/intro13.5.png)
 
-9. To match the raw data to the trigger, we will rename the sample
-data file to `arctic_ocean.sample_data.csv` and move it to a new folder
-called `data` within our pipeline (ncei_arctic_cruise_example)
-directory.
+To match the raw data to the trigger, we will rename the sample data file to `arctic_ocean.sample_data.csv` and move it
+to a new folder called `data` within our pipeline (ncei_arctic_cruise_example) directory.
 
 How does `arctic_ocean.sample_data.csv` match with `.*arctic_ocean.*\.csv`? Good question! :
 
@@ -312,18 +284,16 @@ How does `arctic_ocean.sample_data.csv` match with `.*arctic_ocean.*\.csv`? Good
 * `\.` matches a literal `.`
 * `csv` matches itself
 
-![](global_marine_data/intro14.png)
+![data](global_marine_data/intro14.png)
 
-10. The third line, `retriever`, is the first of two required
-user-customized configuration files, which we'll need to modify to
-capture the variables and metadata we want to retain in this ingest.
+The third line, `retriever`, is the first of two required user-customized configuration files, which we'll need to
+modify to capture the variables and metadata we want to retain in this ingest.
 
 Start by opening retriever.yaml in the `pipelines/*/config` folder.
 
-![](global_marine_data/intro15.png)
+![retriever](global_marine_data/intro15.png)
 
-In the retriever file, we can specify several tasks to be run that apply
-to the input file and raw data:
+In the retriever file, we can specify several tasks to be run that apply to the input file and raw data:
 
 * Specify the file reader
 * Rename data variables
@@ -437,19 +407,16 @@ Matching the line numbers of the above code-block:
     [customization tutorial](./pipeline_customization.md) for a how-to on applying custom data conversions.
 * `line 6` Data converter input for this variable, parameter and value pair
 
-10. Moving on now to the fourth line in `pipeline.yaml`, `dataset`,
-refers to the dataset.yaml file. This file is where user-specified
-datatype and metadata are added to the raw dataset.
+Moving on now to the fourth line in `pipeline.yaml`, `dataset`, refers to the dataset.yaml file. This file is where
+user-specified datatype and metadata are added to the raw dataset.
 
-This part of the process can take some time, as it involves knowing or
-learning a lot of the context around the dataset and then writing it up
-succinctly and clearly so that your data users can quickly get a good
-understanding of what this dataset is and how to start using it.
+This part of the process can take some time, as it involves knowing or learning a lot of the context around the dataset
+and then writing it up succinctly and clearly so that your data users can quickly get a good understanding of what this
+dataset is and how to start using it.
 
-![](global_marine_data/intro16.png)
+![dataset config](global_marine_data/intro16.png)
 
-Replace the text in the `dataset.yaml` file with the following
-code-block.
+Replace the text in the `dataset.yaml` file with the following code-block.
 
 !!! note
 
@@ -585,54 +552,45 @@ data_vars:
       comment: ""
 ```
 
-11. Finally we get to the last two lines in `pipeline.yaml` are
-`quality` and `storage`. In this tutorial, these files are located
-in the `shared` folder in the top-level directory. If custom QC is
-selected, these will also be located in the `config` folder.
+Finally we get to the last two lines in `pipeline.yaml` are `quality` and `storage`. In this tutorial, these files are
+located in the `shared` folder in the top-level directory. If custom QC is selected, these will also be located in the
+`config` folder.
 
-The `quality.yaml` file defines the QC functions that we will run on this
-code, and the `storage.yaml` file defines the path to the output file
-writer.
+The `quality.yaml` file defines the QC functions that we will run on this code, and the `storage.yaml` file defines the
+path to the output file writer.
 
-![](global_marine_data/intro17.png)
+![shared quality and storage config in the pipeline](global_marine_data/intro17.png)
 
-The `quality.yaml` file contains a number of built-in tsdat quality
-control functions, which we will use as is for this ingest.
+The `quality.yaml` file contains a number of built-in tsdat quality control functions, which we will use as is for this
+ingest.
 
-Quality control in tsdat is broken up into two types of functions:
-'checkers' and 'handlers'. Checkers are functions that perform a
-quality control test (e.g. check missing, check range (max/min), etc).
-Handlers are functions that do something with this data.
+Quality control in tsdat is broken up into two types of functions: 'checkers' and 'handlers'. Checkers are functions
+that perform a quality control test (e.g. check missing, check range (max/min), etc). Handlers are functions that do
+something with this data.
 
 See the API documentation for more built-in QC tests, and the [customization tutorial](./pipeline_customization.md) for
 more details on how QC works in tsdat and how to create your own.
 
-![](global_marine_data/intro18.png)
+![shared quality config](global_marine_data/intro18.png)
 
-File output is handled by storage.yaml, and built-in output writers are
-to NETCDF4 file format or CSV.
+File output is handled by storage.yaml, and built-in output writers are to NETCDF4 file format or CSV.
 
-![](global_marine_data/intro19.png)
+![shared storage config](global_marine_data/intro19.png)
 
-I won't do this here, but CSV output can be added by replacing the
-`handler` block in storage.yaml with
+I won't do this here, but CSV output can be added by replacing the `handler` block in `storage.yaml` with:
 
 ```yaml
 handler:
   classname: tsdat.io.handlers.CSVHandler
 ```
 
-12. Finally `pipeline.py` is the last get-pipeline-to-working mode
-"TODO" we should finish setting up here. As mentioned previously, it
-contains a series of hook functions that can be used along the pipeline
-for further data organization.
+Finally `pipeline.py` is the last get-pipeline-to-working mode "TODO" we should finish setting up here. As mentioned
+previously, it contains a series of hook functions that can be used along the pipeline for further data organization.
 
-![](global_marine_data/intro20.png)
+![pipeline python file](global_marine_data/intro20.png)
 
-We shall set up `hook_plot_dataset`, which plots the processed data
-and save the figures in the storage/ancillary folder. To keep things
-simple, only the pressure data is plotted here, but feel free to edit
-this code as desired:
+We shall set up `hook_plot_dataset`, which plots the processed data and save the figures in the `storage/ancillary`
+folder. To keep things simple, only the pressure data is plotted here, but feel free to edit this code as desired:
 
 ```python
 import xarray as xr
@@ -643,12 +601,11 @@ from tsdat import IngestPipeline, get_start_date_and_time_str
 
 
 class NceiArcticCruiseExample(IngestPipeline):
-    """---------------------------------------------------------------------------------
-      NCEI ARCTIC CRUISE EXAMPLE INGESTION PIPELINE
+    """NCEI ARCTIC CRUISE EXAMPLE INGESTION PIPELINE
 
       Historical marine data that are comprised of ship, buoy, and platform 
       observations.
-    ---------------------------------------------------------------------------------"""
+    """
 
     def hook_customize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
         # (Optional) Use this hook to modify the dataset before qc is applied
@@ -688,8 +645,7 @@ class NceiArcticCruiseExample(IngestPipeline):
 
 ## Running the Pipeline
 
-We can now re-run the pipeline using the `runner.py` file as before
-with:
+We can now re-run the pipeline using the `runner.py` file as before with:
 
 ```bash
 python runner.py pipelines/ncei_arctic_cruise_example/data/arctic_ocean.sample_data.csv
@@ -697,20 +653,19 @@ python runner.py pipelines/ncei_arctic_cruise_example/data/arctic_ocean.sample_d
 
 Which will run with the same output as before:
 
-> ![](global_marine_data/intro21.png)
+![pipeline output](global_marine_data/intro21.png)
 
-Once the pipeline runs, if you look in the `storage` folder, you'll
-see the plot as well as the netCDF file output (or csv if you changed
-the output writer earlier):
+Once the pipeline runs, if you look in the `storage` folder, you'll see the plot as well as the netCDF file output (or
+csv if you changed the output writer earlier):
 
-> ![](global_marine_data/intro22.png)
+![output plots](global_marine_data/intro22.png)
 
 ## Viewing the Data
 
 NetCDF files can be opened using the provided `file_viewer.ipynb` jupyter notebook. This file can be opened in VSCode or
 through [Jupyter's website](https://jupyter.org/try).
 
-![](global_marine_data/intro24.png)
+![example notebook](global_marine_data/intro24.png)
 
 Change the first code block to point to our netcdf data:
 
@@ -730,27 +685,24 @@ ds
 
 Use the drop-down arrows on the left and the text file and database icons on the right to explore the data.
 
-![](global_marine_data/intro25.png)
+![example notebook xarray](global_marine_data/intro25.png)
 
-There are two sets of variables here. The first are the original
-variables saved with their data (adjusted by data converters and/or QC
-function if applicable) and associated metadata.
+There are two sets of variables here. The first are the original variables saved with their data (adjusted by data
+converters and/or QC function if applicable) and associated metadata.
 
-The second set are the QC variables. Tsdat adds these variables if the
-`RecordQualityResults` handler is called in the quality configuration
-file. A few attributes, specified for this handler in the quality config
-file, are shared across all QC variables: `flag_masks`, `flag_meanings`, and `flag_assessments`.
+The second set are the QC variables. Tsdat adds these variables if the `RecordQualityResults` handler is called in the
+quality configuration file. A few attributes, specified for this handler in the quality config file, are shared across
+all QC variables: `flag_masks`, `flag_meanings`, and `flag_assessments`.
 
 In this case, there are three `flag masks`: 1, 2, and 4. We can see in the data, flags 1 and 4 were tripped on this
 variable. Every point listed as 1 corresponds to the first entry in `flag_meanings`:
 `Value is equal to _FillValue or NaN`, a.k.a. it is a missing data point. Likewise for flag 4: a few data points are
 above the valid maximum specified.
 
-Note: if multiple QC flags are tripped, these flags will be added
-together. For instance, if a QC variable has a value of 5, this means
-that the QC tests corresponding to flag 1 and flag 4 were both tripped.
+Note: if multiple QC flags are tripped, these flags will be added together. For instance, if a QC variable has a value
+of 5, this means that the QC tests corresponding to flag 1 and flag 4 were both tripped.
 
-![](global_marine_data/intro26.png)
+![example notebook qc](global_marine_data/intro26.png)
 
 The final two code blocks are shorthand for plotting variables in the dataset.
 
@@ -759,27 +711,23 @@ ds.temperature.plot()
 ds.qc_temperature.plot()
 ```
 
-![](global_marine_data/intro27.png)
+![shared folder](global_marine_data/intro27.png)
 
 ## Pipeline Tests
 
-Testing is best completed as a last step, after everything is set up and
-the pipeline outputs as expected. If running a large number of data
-files, a good idea is to input one of those data files here, along with
-its expected output, and have a separate data folder to collect input
-files.
+Testing is best completed as a last step, after everything is set up and the pipeline outputs as expected. If running a
+large number of data files, a good idea is to input one of those data files here, along with its expected output, and
+have a separate data folder to collect input files.
 
 Move the input and output files to the `test/data/input/` and `test/data/expected/` folders, respectively, and update
 the file paths.
 
-![](global_marine_data/intro23.png)
+![test data folder](global_marine_data/intro23.png)
 
 ## Next Steps
 
-Tsdat is highly configurable because of the range and variability of
-input data and output requirements. The following tutorial, the
-[customization tutorial](./pipeline_customization.md), goes over the steps needed to create custom file readers,
-data converters, and custom quality control. In the developers
-experience, many types of input data (aka file extensions) require a
-custom file reader, which also offers the freedom for easy
-pre-processing and organization of raw data.
+Tsdat is highly configurable because of the range and variability of input data and output requirements. The following
+tutorial, the [pipeline customization tutorial](./pipeline_customization.md), goes over the steps needed to create
+custom file readers, data converters, and custom quality control. In the developer's experience, many types of input
+data (aka file extensions) require a custom file reader, which also offers the freedom for easy pre-processing and
+organization of raw data.
