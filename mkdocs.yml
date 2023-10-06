@@ -6,6 +6,14 @@ site_author: Tsdat team
 repo_url: https://github.com/tsdat/tsdat/
 edit_uri: blob/main/docs/
 
+nav:
+  - About: index.md
+  - Getting Started: getting_started.md
+  - Tutorials: tutorials/
+  - Configuring Tsdat: config/
+  - API Reference: API/
+  - Contributing: collaboration.md
+
 theme:
   name: material
   palette: 
@@ -55,6 +63,9 @@ markdown_extensions:
 
 plugins: 
   - search
+  - literate-nav:
+      implicit_index: false
+      tab_length: 4
   - mkdocstrings:
       default_handler: python
       handlers:
