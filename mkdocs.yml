@@ -10,7 +10,16 @@ nav:
   - About: index.md
   - Getting Started: getting_started.md
   - Tutorials: tutorials/
-  - Developer Guide: config/
+  - Developer Guide:
+      - Customizing Tsdat: config/configuring_tsdat.md
+      - Dataset Config: config/dataset_config.md
+      - Retriever Config: config/retriever_config.md
+      - Quality Config: config/quality_control.md
+      - Storage Config: config/storage_config.md
+      - Pipeline Config: config/pipeline_config.md
+      - Pipeline Code Hooks: config/hook_functions.md
+      - Transformation Pipelines: config/transform_config.md
+      - Pydantic and Parameters: config/pydantic.md
   - API Reference: API/
   - Contributing: collaboration.md
 
