@@ -10,7 +10,7 @@ nav:
   - About: index.md
   - Getting Started: getting_started.md
   - Tutorials: tutorials/
-  - Configuring Tsdat: config/
+  - Developer Guide: config/
   - API Reference: API/
   - Contributing: collaboration.md
 
@@ -63,6 +63,9 @@ markdown_extensions:
 
 plugins: 
   - search
+  - gen-files:
+      scripts:
+        - docs/gen_doc_stubs.py
   - literate-nav:
       implicit_index: false
       tab_length: 4
@@ -71,18 +74,26 @@ plugins:
       handlers:
         python:
           options:
-            # members_order: source
-            docstring_section_style: list
-            show_signature_annotations: true
+            # https://mkdocstrings.github.io/python/usage/#configuration
+            docstring_section_style: table
+            heading_level: 2
             separate_signature: true
+            show_signature_annotations: true
             merge_init_into_class: true
-            docstring_options:
-              ignore_init_summary: true
             show_source: true
             show_submodules: true
+            summary: true
+            show_if_no_docstring: true
+            show_root_heading: false
+            show_root_toc_entry: false
+            show_root_full_path: true
+            show_category_heading: true
             filters:
+              # Exclude certain lines from being included in the API docs
               - "!^_"
-              - "^__init__$"
+              - "!^logger"
+              - "!^ureg"
+              # - "^__init__$"
 
 # watch:
 #   - tsdat
