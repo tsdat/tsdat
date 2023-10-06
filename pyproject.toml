@@ -57,6 +57,7 @@ docs = [
   "mkdocs-material",
   "mkdocstrings[python]",
   "mkdocs-literate-nav",
+  "mkdocs-gen-files",
 ]
 
 [project.scripts]
