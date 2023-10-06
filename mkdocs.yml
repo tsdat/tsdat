@@ -2,9 +2,13 @@ site_name: tsdat
 site_url: https://tsdat.readthedocs.io
 site_description: Tsdat documentation.
 site_author: Tsdat team
-
 repo_url: https://github.com/tsdat/tsdat/
 edit_uri: blob/main/docs/
+
+extra: 
+  analytics:
+    provider: google
+    property: G-02LXGHFVQG
 
 nav:
   - About: index.md
