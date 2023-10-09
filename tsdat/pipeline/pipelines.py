@@ -22,15 +22,15 @@ class IngestPipeline(Pipeline):
 
     ---------------------------------------------------------------------------------"""
 
-    _ds: xr.Dataset | None = PrivateAttr(default=None)
-    _tmp_dir: Path | None = PrivateAttr(default=None)
+    _ds: xr.Dataset = PrivateAttr(default=None)
+    _tmp_dir: Path = PrivateAttr(default=None)
 
     @property
-    def ds(self) -> xr.Dataset | None:
+    def ds(self) -> xr.Dataset:
         return self._ds
 
     @property
-    def tmp_dir(self) -> Path | None:
+    def tmp_dir(self) -> Path:
         return self._tmp_dir
 
     def run(self, inputs: List[str], **kwargs: Any) -> xr.Dataset:

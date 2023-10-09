@@ -56,12 +56,20 @@ class GlobalAttributes(AttributeModel):
         ),
     )
     code_url: Optional[HttpUrl] = Field(
-        default=None, description="Where the code is hosted."
+        default=None, 
+        description="Where the code is hosted."
     )
     conventions: Optional[StrictStr] = Field(
-        default=None, description="The data conventions the dataset follows."
+        default="CF-1.6", 
+        description="The data conventions the dataset follows."
+    )
+    featureType: str = Field(
+        title="Feature Type",
+        default="timeSeries",
+        description="CF attribute for identifying the featureType.",
     )
     doi: Optional[StrictStr] = Field(
+        title="DOI",
         default=None,
         description="The DOI that has been registered for this dataset, if applicable.",
     )
