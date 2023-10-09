@@ -29,6 +29,7 @@ nav:
 
 theme:
   name: material
+  logo: figures/tsdat_logo.png
   palette: 
     # Palette toggle for light mode
     - scheme: default
