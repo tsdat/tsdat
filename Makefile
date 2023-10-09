@@ -6,4 +6,4 @@ coverage:
 
 .PHONY: docs
 docs:
-	@ (cd docs/ && make docs)
+	@ mkdocs serve

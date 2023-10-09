@@ -490,22 +490,23 @@ class Storage(ParameterizedClass, ABC):
 
         Example:
 
-        .. code-block:: python
+        ```python
 
-            # in ``hook_plot_dataset(self, dataset: xr.Dataset)``
-            with self.storage.uploadable_dir() as tmp_dir:
-                fig, ax = plt.subplots()
+        # in ``hook_plot_dataset(self, dataset: xr.Dataset)``
+        with self.storage.uploadable_dir() as tmp_dir:
+            fig, ax = plt.subplots()
 
-                # plotting code ...
+            # plotting code ...
 
-                plot_file = self.storage.get_ancillary_filepath(
-                    title="wind_speed",
-                    extension="png",
-                    root_dir=tmp_dir,
-                    dataset=dataset,
-                )
-                fig.savefig(plot_file)
-                plt.close(fig)
+            plot_file = self.storage.get_ancillary_filepath(
+                title="wind_speed",
+                extension="png",
+                root_dir=tmp_dir,
+                dataset=dataset,
+            )
+            fig.savefig(plot_file)
+            plt.close(fig)
+        ```
 
         Args:
             title (str): The title of the ancillary file or plot. Should be lowercase
@@ -587,22 +588,22 @@ class Storage(ParameterizedClass, ABC):
 
         Example:
 
-        .. code-block:: python
+        ```python
+        # in ``hook_plot_dataset(self, dataset: xr.Dataset)``
+        with self.storage.uploadable_dir() as tmp_dir:
+            fig, ax = plt.subplots()
 
-            # in ``hook_plot_dataset(self, dataset: xr.Dataset)``
-            with self.storage.uploadable_dir() as tmp_dir:
-                fig, ax = plt.subplots()
+            # plotting code ...
 
-                # plotting code ...
-
-                plot_file = self.storage.get_ancillary_filepath(
-                    title="wind_speed",
-                    extension="png",
-                    root_dir=tmp_dir,
-                    dataset=dataset,
-                )
-                fig.savefig(plot_file)
-                plt.close(fig)
+            plot_file = self.storage.get_ancillary_filepath(
+                title="wind_speed",
+                extension="png",
+                root_dir=tmp_dir,
+                dataset=dataset,
+            )
+            fig.savefig(plot_file)
+            plt.close(fig)
+        ```
 
         Args:
             kwargs (Any): Unused. Included for backwards compatibility.

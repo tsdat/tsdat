@@ -31,6 +31,24 @@
     "python.testing.pytestArgs": [
         "-vv"
     ],
+    "[markdown]": {
+        "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+        "editor.tabSize": 4,
+        "editor.detectIndentation": false,
+    },
+    "markdownlint.config": {
+        "code-fence-style": {
+            "style": "backtick"
+        },
+        "code-block-style": false
+    },
+    "editor.rulers": [
+        88,
+        {
+            "column": 120,
+            "color": "#ffffff5e"
+        },
+    ],
     // 
     // Settings for helpful utilities
     // 

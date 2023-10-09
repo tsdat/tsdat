@@ -1,5 +1,5 @@
 <p align="center">
-   <img src="./docs/source/figures/tsdat_logo.svg" width="700" style="max-width: 700px;">
+   <img src="./docs/figures/tsdat_logo.svg" width="700" style="max-width: 700px;">
 </p>
 
 <p align="center">

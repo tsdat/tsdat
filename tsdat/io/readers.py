@@ -1,12 +1,14 @@
-import pandas as pd
-import xarray as xr
 import re
 import tarfile
 from io import BytesIO
-from zipfile import ZipFile
-from pydantic import BaseModel, Extra
 from typing import Any, Dict, List
-from .base import DataReader, ArchiveReader
+from zipfile import ZipFile
+
+import pandas as pd
+import xarray as xr
+from pydantic import BaseModel, Extra
+
+from .base import ArchiveReader, DataReader
 
 __all__ = [
     "NetCDFReader",
@@ -87,49 +89,48 @@ class ZarrReader(DataReader):
 
 
 class TarReader(ArchiveReader):
-    """------------------------------------------------------------------------------------
-    DataReader for reading from a tarred archive. Writing to this format is not supported.
+    """DataReader for reading from a tarred archive. Writing to this format is not
+    supported.
 
     This class requires a that `readers be specified in the parameters section of the
     storage configuration file. The structure of the `readers section should mirror the
     structure of its parent `readers section. To illustrate, consider the following
     configuration block:
 
-    .. code-block:: yaml
+    ```yaml
+    readers:
+      .*:
+        tar:
+          file_pattern: .*\.tar
+          classname: tsdat.io.readers.TarReader
+          parameters:
+            # Parameters to specify how the TarReader should read/unpack the archive.
+            # Parameters here are passed to the Python open() method as kwargs. The
+            # default value is shown below.
+            open_tar_kwargs:
+              mode: "rb"
 
-        readers:
-          .*:
-            tar:
-              file_pattern: '.*\\.tar'
-              classname: "tsdat.io.readers.TarReader"
-              parameters:
-                # Parameters to specify how the TarReader should read/unpack the archive.
-                # Parameters here are passed to the Python open() method as kwargs. The
-                # default value is shown below.
-                open_tar_kwargs:
-                  mode: "rb"
-
-                # Parameters here are passed to tarfile.open() as kwargs. Useful for
-                # specifying the system encoding or compression algorithm to use for
-                # unpacking the archive. These are optional.
-                read_tar_kwargs:
-                  mode: "r:gz"
+            # Parameters here are passed to tarfile.open() as kwargs. Useful for
+            # specifying the system encoding or compression algorithm to use for
+            # unpacking the archive. These are optional.
+            read_tar_kwargs:
+              mode: "r:gz"
 
 
-                # The readers section tells the TarReader which DataReaders should be
-                # used to handle the unpacked files.
-                readers:
-                  r".*\\.csv":
-                    classname: tsdat.io.readers.CSVReader
-                    parameters:  # Parameters specific to tsdat.io.readers.CSVReader
-                      read_csv_kwargs:
-                        sep: '\\t'
+            # The readers section tells the TarReader which DataReaders should be
+            # used to handle the unpacked files.
+            readers:
+              .*\.csv:
+                classname: tsdat.io.readers.CSVReader
+                parameters:  # Parameters specific to tsdat.io.readers.CSVReader
+                  read_csv_kwargs:
+                    sep: '\\t'
 
-                # Pattern(s) used to exclude certain files in the archive from being handled.
-                # This parameter is optional, and the default value is shown below:
-                exclude: ['.*\\_\\_MACOSX/.*', '.*\\.DS_Store']
+            # Pattern(s) used to exclude certain files in the archive from being handled.
+            # This parameter is optional, and the default value is shown below:
+            exclude: ['.*\_\_MACOSX/.*', '.*\.DS_Store']
+    ```
 
-    ------------------------------------------------------------------------------------
     """
 
     class Parameters(BaseModel, extra=Extra.forbid):
@@ -192,49 +193,47 @@ class TarReader(ArchiveReader):
 
 
 class ZipReader(ArchiveReader):
-    """------------------------------------------------------------------------------------
-    DataReader for reading from a zipped archive. Writing to this format is not supported.
+    """DataReader for reading from a zipped archive. Writing to this format is not
+    supported.
 
     This class requires a that `readers be specified in the parameters section of the
     storage configuration file. The structure of the `readers section should mirror the
     structure of its parent `readers section. To illustrate, consider the following
     configuration block:
 
-    .. code-block:: yaml
+    ```yaml
+    readers:
+      .*:
+        zip:
+          file_pattern: .*\.zip
+          classname: tsdat.io.readers.ZipReader
+          parameters:
+            # Parameters to specify how the ZipReader should read/unpack the archive.
+            # Parameters here are passed to the Python open() method as kwargs. The
+            # default value is shown below.
+            open_zip_kwargs:
+              mode: "rb"
 
-        readers:
-          .*:
-            zip:
-              file_pattern: '.*\\.zip'
-              classname: "tsdat.io.readers.ZipReader"
-              parameters:
-                # Parameters to specify how the ZipReader should read/unpack the archive.
-                # Parameters here are passed to the Python open() method as kwargs. The
-                # default value is shown below.
-                open_zip_kwargs:
-                  mode: "rb"
+            # Parameters here are passed to zipfile.ZipFile.open() as kwargs. Useful
+            # for specifying the system encoding or compression algorithm to use for
+            # unpacking the archive. These are optional.
+            read_zip_kwargs:
+              mode: "r"
 
-                # Parameters here are passed to zipfile.ZipFile.open() as kwargs. Useful
-                # for specifying the system encoding or compression algorithm to use for
-                # unpacking the archive. These are optional.
-                read_zip_kwargs:
-                  mode: "r"
+            # The readers section tells the ZipReaders which DataReaders should be
+            # used to read the unpacked files.
+            readers:
+              .*\.csv:
+                classname: tsdat.io.readers.CSVReader
+                parameters:  # Parameters specific to tsdat.io.readers.CsvReader
+                    read_csv_kwargs:
+                    sep: '\\t'
 
+            # Pattern(s) used to exclude certain files in the archive from being handled.
+            # This parameter is optional, and the default value is shown below:
+            exclude: ['.*\_\_MACOSX/.*', '.*\.DS_Store']
+    ```
 
-                # The readers section tells the ZipReaders which DataReaders should be
-                # used to read the unpacked files.
-                readers:
-                  r".*\\.csv":
-                    classname: tsdat.io.readers.CSVReader
-                    parameters:  # Parameters specific to tsdat.io.readers.CsvReader
-                        read_csv_kwargs:
-                        sep: '\\t'
-
-                # Pattern(s) used to exclude certain files in the archive from being handled.
-                # This parameter is optional, and the default value is shown below:
-                exclude: ['.*\\_\\_MACOSX/.*', '.*\\.DS_Store']
-
-    ------------------------------------------------------------------------------------
     """
 
     class Parameters(BaseModel, extra=Extra.forbid):

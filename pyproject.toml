@@ -54,9 +54,10 @@ dev = [
   "moto[s3,sts]==4.0.1"
 ]
 docs = [
-  "sphinx",
-  "sphinx-rtd-theme==0.5.2",
-  "sphinx-autoapi==1.8.3",
+  "mkdocs-material",
+  "mkdocstrings[python]",
+  "mkdocs-literate-nav",
+  "mkdocs-gen-files",
 ]
 
 [project.scripts]
