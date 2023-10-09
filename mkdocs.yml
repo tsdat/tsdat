@@ -45,14 +45,15 @@ theme:
   features:
     - content.code.copy
     - content.code.annotate
-    - navigation.tracking
-    - navigation.tabs
-    - navigation.indexes
     - navigation.expand
+    - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.top
+    - navigation.tracking
     - search.highlight
     - search.suggest
     - search.share
+    - toc.integrate
     - toc.follow
 
 markdown_extensions:
@@ -72,7 +73,7 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
   - toc:
-      permalink: true
+      permalink: "#"
       permalink_title: Anchor link to this section for reference
 
 plugins: 
