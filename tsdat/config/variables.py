@@ -64,24 +64,25 @@ class VariableAttributes(AttributeModel):
     )
     cf_role: str = Field(
         title="CF Role",
+        default=None,
         decription="Allowed values are defined in Chapter 9.5 CF guidelines and consist of: timeseries_id, profile_id, "
         "and trajectory_id, depending on the featureType represented in the dataset, as specified by the featureType "
         "global attribute.",
     )
-    accuracy: str = Field(
+    accuracy: float = Field(
         default=None,
         decription="The sensor accuracy is the closeness of the measurements to the variable's true value. It should be"
         " given in the same units as the measured variable. If the instrument has been calibrated multiple times with "
         "different results, the most recent accuracy should be provided here "
         "(see instrument_variable:calibration_date).",
     )
-    precision: str = Field(
+    precision: float = Field(
         default=None,
         decription="The sensor precision is the closeness of the measurements to each other. It should be given in the "
         "same units as the measured variable. If the instrument has been calibrated multiple times with different "
         "results, the most recent precision should be provided here (see instrument_variable:calibration_date).",
     )
-    resolution: str = Field(
+    resolution: float = Field(
         default=None,
         decription="The sensor resolution is the smallest change it can represent in the quantity that it is measuring."
         " It should be given in the same units as the measured variable.",

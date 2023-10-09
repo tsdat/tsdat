@@ -59,7 +59,7 @@ class GlobalAttributes(AttributeModel):
         default=None, 
         description="Where the code is hosted."
     )
-    conventions: Optional[StrictStr] = Field(
+    Conventions: Optional[StrictStr] = Field(
         default="CF-1.6", 
         description="The data conventions the dataset follows."
     )
