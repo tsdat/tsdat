@@ -1,9 +1,11 @@
+from abc import ABC, abstractmethod
 from typing import Callable, Dict, List, Union
+
 import numpy as np
-from pydantic import BaseModel, Extra
 import xarray as xr
 from numpy.typing import NDArray
-from abc import ABC, abstractmethod
+from pydantic import BaseModel, Extra
+
 from ..utils import ParameterizedClass
 
 __all__ = ["QualityChecker", "QualityHandler", "QualityManager", "QualityManagement"]
@@ -104,7 +106,7 @@ class QualityManager(BaseModel, extra=Extra.forbid):
 
         Returns:
             xr.Dataset: The dataset after the quality check and controls have been
-            applied.
+                applied.
 
         -----------------------------------------------------------------------------"""
         variables = self._get_variables_to_run(dataset)
