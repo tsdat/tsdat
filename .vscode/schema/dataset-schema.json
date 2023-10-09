@@ -210,16 +210,6 @@
                     "description": "The date the instrument was last calibrated. Value should be specified using ISO-8601 compatible strings.",
                     "type": "string"
                 },
-                "component": {
-                    "title": "Component",
-                    "description": "The value of a component applies to the like-named field in the IOOS SOS Asset Identifier URN; it is used to identify individual, distinct components, or sub-assets (for example, two different sensor types), on a single platform. The 'component' is mapped to the Asset Identifier as follows: Asset Identifier = urn:ioos:asset_type:authority:label[:component][:discriminant][#functional_parameters]",
-                    "type": "string"
-                },
-                "discriminant": {
-                    "title": "Discriminant",
-                    "description": "The value of a discriminant applies to the like-named field in the IOOS SOS Asset Identifier URN; it ensures that in case of multiple deployments of identical sensors on the same platform (for example, measuring the same observedProperty), each sensor has a unique ID in the Identifier. The 'discriminant' is mapped to the Asset Identifier as follows: Asset Identifier = urn:ioos:asset_type:authority:label[:component][:discriminant][#functional_parameters]",
-                    "type": "string"
-                },
                 "comment": {
                     "title": "Comment",
                     "description": "A user-friendly description of what the variable represents, how it was measured or derived, or any other relevant information that increases the ability of users to understand and use this data. This field plays a considerable role in creating self-documenting data, so we highly recommend including this field, especially for any variables which are particularly important for your dataset. Additionally, if the units for an attribute are unknown, then this field must include the phrase: 'Unknown units.' so that users know there is some uncertainty around this property. Variables that are unitless (e.g., categorical data or ratios), should set the 'units' to '1'.",
