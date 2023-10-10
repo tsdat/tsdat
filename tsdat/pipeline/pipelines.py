@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import xarray as xr
 from pydantic import BaseModel, PrivateAttr
@@ -22,15 +22,15 @@ class IngestPipeline(Pipeline):
 
     ---------------------------------------------------------------------------------"""
 
-    _ds: xr.Dataset = PrivateAttr(default=None)
-    _tmp_dir: Path = PrivateAttr(default=None)
+    _ds: Optional[xr.Dataset] = PrivateAttr(default=None)
+    _tmp_dir: Optional[Path] = PrivateAttr(default=None)
 
     @property
-    def ds(self) -> xr.Dataset:
+    def ds(self) -> Optional[xr.Dataset]:
         return self._ds
 
     @property
-    def tmp_dir(self) -> Path:
+    def tmp_dir(self) -> Optional[Path]:
         return self._tmp_dir
 
     def run(self, inputs: List[str], **kwargs: Any) -> xr.Dataset:

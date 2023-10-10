@@ -63,7 +63,7 @@ class GlobalAttributes(AttributeModel):
         default="CF-1.6", 
         description="The data conventions the dataset follows."
     )
-    featureType: str = Field(
+    featureType: Optional[StrictStr] = Field(
         title="Feature Type",
         default="timeSeries",
         description="CF attribute for identifying the featureType.",
