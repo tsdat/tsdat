@@ -99,6 +99,8 @@ def test_transformation_pipeline():
             "datastream": "humboldt.buoy.c1",
             "title": "title",
             "description": "description",
+            "Conventions": "CF-1.6",
+            "featureType": "timeSeries",
             "location_id": "humboldt",
             "dataset_name": "buoy",
             "data_level": "c1",
