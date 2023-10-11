@@ -65,31 +65,31 @@ class VariableAttributes(AttributeModel):
     cf_role: Optional[str] = Field(
         title="CF Role",
         default=None,
-        decription="Allowed values are defined in Chapter 9.5 CF guidelines and consist of: timeseries_id, profile_id, "
+        description="Allowed values are defined in Chapter 9.5 CF guidelines and consist of: timeseries_id, profile_id, "
         "and trajectory_id, depending on the featureType represented in the dataset, as specified by the featureType "
         "global attribute.",
     )
     accuracy: Optional[float] = Field(
         default=None,
-        decription="The sensor accuracy is the closeness of the measurements to the variable's true value. It should be"
+        description="The sensor accuracy is the closeness of the measurements to the variable's true value. It should be"
         " given in the same units as the measured variable. If the instrument has been calibrated multiple times with "
         "different results, the most recent accuracy should be provided here "
         "(see instrument_variable:calibration_date).",
     )
     precision: Optional[float] = Field(
         default=None,
-        decription="The sensor precision is the closeness of the measurements to each other. It should be given in the "
+        description="The sensor precision is the closeness of the measurements to each other. It should be given in the "
         "same units as the measured variable. If the instrument has been calibrated multiple times with different "
         "results, the most recent precision should be provided here (see instrument_variable:calibration_date).",
     )
     resolution: Optional[float] = Field(
         default=None,
-        decription="The sensor resolution is the smallest change it can represent in the quantity that it is measuring."
+        description="The sensor resolution is the smallest change it can represent in the quantity that it is measuring."
         " It should be given in the same units as the measured variable.",
     )
     instrument: Optional[str] = Field(
         default=None,
-        decription="Variable attribute to be specified on each geophysical variable to identify the instrument that "
+        description="Variable attribute to be specified on each geophysical variable to identify the instrument that "
         "collected the data. The value of the attribute should be set to another variable which contains the details of"
         " the instrument. There can be multiple instruments involved depending on if all the instances of the "
         "featureType in the collection come from the same instrument or not. If multiple instruments are involved, a "
@@ -99,11 +99,11 @@ class VariableAttributes(AttributeModel):
     make_model: Optional[str] = Field(
         title="Make and Model",
         default=None,
-        decription="The make and model of the instrument.",
+        description="The make and model of the instrument.",
     )
     calibration_date: Optional[str] = Field(
         default=None,
-        decription="The date the instrument was last calibrated. Value should be specified using ISO-8601 compatible "
+        description="The date the instrument was last calibrated. Value should be specified using ISO-8601 compatible "
         "strings.",
     )
     comment: Optional[StrictStr] = Field(

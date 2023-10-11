@@ -61,7 +61,7 @@ class GlobalAttributes(AttributeModel):
     )
     Conventions: Optional[StrictStr] = Field(
         default="CF-1.6", 
-        description="The data conventions the dataset follows."
+        description="A comma-separated list of the conventions that are followed by the dataset."
     )
     featureType: Optional[StrictStr] = Field(
         title="Feature Type",

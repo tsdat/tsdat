@@ -98,7 +98,7 @@
                 "dataset_name": {
                     "title": "Dataset Name",
                     "description": "A string used to identify the data being produced. Ideally resembles a shortened lowercase version of the title. Only lowercase alphanumeric characters and '_' are allowed.",
-                    "minLength": 3,
+                    "minLength": 2,
                     "pattern": "^[a-z0-9_]+$",
                     "type": "string"
                 },
@@ -111,14 +111,14 @@
                 },
                 "temporal": {
                     "title": "Temporal",
-                    "description": "An optional string which describes the temporal resolution of the data (if it spaced in regular intervals). This string should be formated as a number followed by a unit of measurement, e.g., '10m' would indicate the data is sampled every ten minutes. Only lowercase alphanumeric characters are allowed.",
+                    "description": "An optional string which describes the temporal resolution of the data (if spaced in regular intervals). This string should be formatted as a number followed by a unit of measurement, e.g., '10m' would indicate the data is sampled every ten minutes. Only lowercase alphanumeric characters are allowed.",
                     "minLength": 2,
                     "pattern": "^[0-9]+[a-zA-Z]+$",
                     "type": "string"
                 },
                 "data_level": {
                     "title": "Data Level",
-                    "description": "A string used to indicate the level of processing of the output data. It should be formated as a letter followed by a number. Typical values for this include: a1 - data is ingested (no qc), b1 - data is ingested and quality checks applied, c1 (or higher) - one or more a* or b* datastreams used to create a higher-level data product. Only lowercase alphanumeric characters are allowed.",
+                    "description": "A string used to indicate the level of processing of the output data. It should be formatted as a letter followed by a number. Typical values for this include: a1 - data is ingested (no qc), b1 - data is ingested and quality checks applied, c1 (or higher) - one or more a* or b* datastreams used to create a higher-level data product. Only lowercase alphanumeric characters are allowed.",
                     "maxLength": 3,
                     "minLength": 2,
                     "pattern": "^[a-z0-9]+$",
@@ -183,17 +183,17 @@
                 "accuracy": {
                     "title": "Accuracy",
                     "description": "The sensor accuracy is the closeness of the measurements to the variable's true value. It should be given in the same units as the measured variable. If the instrument has been calibrated multiple times with different results, the most recent accuracy should be provided here (see instrument_variable:calibration_date).",
-                    "type": "string"
+                    "type": "number"
                 },
                 "precision": {
                     "title": "Precision",
                     "description": "The sensor precision is the closeness of the measurements to each other. It should be given in the same units as the measured variable. If the instrument has been calibrated multiple times with different results, the most recent precision should be provided here (see instrument_variable:calibration_date).",
-                    "type": "string"
+                    "type": "number"
                 },
                 "resolution": {
                     "title": "Resolution",
                     "description": "The sensor resolution is the smallest change it can represent in the quantity that it is measuring. It should be given in the same units as the measured variable.",
-                    "type": "string"
+                    "type": "number"
                 },
                 "instrument": {
                     "title": "Instrument",
