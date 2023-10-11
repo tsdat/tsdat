@@ -1,18 +1,31 @@
 import tempfile
-from tsdat.main import app
+
 from typer.testing import CliRunner
+
+from tsdat.main import app
 
 runner = CliRunner()
 
 
 def test_schema_generation():
-    tmp_dir = tempfile.TemporaryDirectory()
-    result = runner.invoke(app, ["generate-schema", "--dir", tmp_dir.name])
-    assert result.exit_code == 0
+    # ioos
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        result = runner.invoke(app, ["generate-schema", "--dir", tmp_dir])
+        assert result.exit_code == 0
+        assert f"Using tsdat dataset standards" in result.stdout
 
-    schemas = ["retriever", "dataset", "quality", "storage", "pipeline"]
+    # acdd
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        result = runner.invoke(
+            app, ["generate-schema", "--dir", tmp_dir, "--standards", "acdd"]
+        )
+        assert result.exit_code == 0
+        assert f"Using acdd dataset standards" in result.stdout
 
-    for schema in schemas:
-        assert f"Wrote {schema} schema file to {tmp_dir.name}" in result.stdout
-
-    tmp_dir.cleanup()
+    # ioos
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        result = runner.invoke(
+            app, ["generate-schema", "--dir", tmp_dir, "--standards", "ioos"]
+        )
+        assert result.exit_code == 0
+        assert f"Using ioos dataset standards" in result.stdout

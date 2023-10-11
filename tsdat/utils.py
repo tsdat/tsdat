@@ -1,8 +1,9 @@
+import logging
+import re
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
 import pandas as pd
@@ -10,9 +11,8 @@ import typer
 import xarray as xr
 from numpy.typing import NDArray
 from pydantic import BaseModel, Extra, Field
-from tsdat.tstring import Template
 
-import logging
+from tsdat.tstring import Template
 
 __all__ = [
     "ParameterizedClass",
@@ -321,13 +321,10 @@ def get_fields_from_dataset(dataset: xr.Dataset) -> Dict[str, Any]:
     }
 
 
-class SchemaType(str, Enum):
-    retriever = "retriever"
-    dataset = "dataset"
-    quality = "quality"
-    storage = "storage"
-    pipeline = "pipeline"
-    all = "all"
+class StandardsType(str, Enum):
+    tsdat = "tsdat"
+    acdd = "acdd"
+    ioos = "ioos"
 
 
 def generate_schema(
@@ -336,37 +333,44 @@ def generate_schema(
         file_okay=False,
         dir_okay=True,
     ),
-    schema_type: SchemaType = typer.Option(SchemaType.all),
+    standards: StandardsType = typer.Option(StandardsType.tsdat),
 ):
     from tsdat import (
-        RetrieverConfig,
+        ACDDDatasetConfig,
         DatasetConfig,
-        QualityConfig,
-        StorageConfig,
+        IOOSDatasetConfig,
         PipelineConfig,
+        QualityConfig,
+        RetrieverConfig,
+        StorageConfig,
         YamlModel,
     )
 
     dir.mkdir(exist_ok=True)
-    cls_mapping: Dict[str, Any] = {
+
+    dataset_config_cls: Union[
+        Type[ACDDDatasetConfig], Type[IOOSDatasetConfig], Type[DatasetConfig]
+    ]
+    if standards == StandardsType.acdd:
+        dataset_config_cls = ACDDDatasetConfig
+    elif standards == StandardsType.ioos:
+        dataset_config_cls = IOOSDatasetConfig
+    else:
+        dataset_config_cls = DatasetConfig
+    print(f"Using {standards} dataset standards")
+
+    cls_mapping: Dict[str, Type[YamlModel]] = {
         "retriever": RetrieverConfig,
-        "dataset": DatasetConfig,
+        "dataset": dataset_config_cls,
         "quality": QualityConfig,
         "storage": StorageConfig,
         "pipeline": PipelineConfig,
     }
 
-    keys: List[str] = []
-    if schema_type == "all":
-        keys = list(cls_mapping.keys())
-    else:
-        keys = [schema_type]
-
-    for key in keys:
-        path = dir / f"{key}-schema.json"
-        cls: YamlModel = cls_mapping[key]
-        cls.generate_schema(path)
-        print(f"Wrote {key} schema file to {path}")
+    for cfg_type, cfg_cls in cls_mapping.items():
+        path = dir / f"{cfg_type}-schema.json"
+        cfg_cls.generate_schema(path)
+        print(f"Wrote {cfg_type} schema files to {path}")
     print("Done!")
 
 
