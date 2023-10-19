@@ -55,7 +55,7 @@ def test_fail_if_invalid_global_attributes():
         "title": "",  # Too short
         "description": "",  # Too short
         "code_url": "invalid url",
-        "conventions": 1.0,  # Not strictly a string
+        "Conventions": 1.0,  # Not strictly a string
         "doi": 1.0,  # Not strictly a string
         "institution": 1.0,  # Not strictly a string
         "references": 1.0,  # Not strictly a string
@@ -69,7 +69,7 @@ def test_fail_if_invalid_global_attributes():
         "title\n  ensure this value has at least 1 characters",
         "description\n  ensure this value has at least 1 characters",
         "code_url\n  invalid or missing URL scheme",
-        "conventions\n  str type expected",
+        "Conventions\n  str type expected",
         "doi\n  str type expected",
         "institution\n  str type expected",
         "references\n  str type expected",
@@ -321,6 +321,8 @@ def test_dataset_definition_from_yaml():
         "attrs": {
             "title": "title",
             "description": "description",
+            "Conventions": "CF-1.6",
+            "featureType": "timeSeries",
             "location_id": "abc",
             "dataset_name": "example",
             "data_level": "b1",

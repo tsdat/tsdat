@@ -10,11 +10,11 @@ from pydantic import (
 )
 from pydantic.fields import ModelField
 
-from .attributes import GlobalAttributes
+from .attributes import ACDDGlobalAttrs, GlobalAttributes, IOOSGlobalAttrs
 from .utils import YamlModel
 from .variables import Coordinate, Variable
 
-__all__ = ["DatasetConfig"]
+__all__ = ["DatasetConfig", "ACDDDatasetConfig", "IOOSDatasetConfig"]
 
 
 logger = logging.getLogger(__name__)
@@ -40,25 +40,31 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
     # opted to implement these as dictionaries for now.
 
     attrs: GlobalAttributes = Field(
-        description="Attributes that pertain to the dataset as a whole (as opposed to"
-        " attributes that are specific to individual variables."
+        description=(
+            "Attributes that pertain to the dataset as a whole (as opposed to"
+            " attributes that are specific to individual variables."
+        )
     )
     coords: Dict[str, Coordinate] = Field(
-        description="This section defines the coordinate variables that the rest of the"
-        " data are dimensioned by. Coordinate variable data can either be retrieved"
-        " from an input data source or defined statically via the 'data' property. Note"
-        " that tsdat requires the dataset at least be dimensioned by a 'time' variable."
-        " Most datasets will only need the 'time' coordinate variable, but"
-        " multidimensional datasets (e.g., ADCP or Lidar data (time, height)) are"
-        " well-supported. Note that the 'dims' attribute is still required for"
-        " coordinate variables, and that this value should be [<name>], where <name> is"
-        " the name of the coord (e.g., 'time').",
+        description=(
+            "This section defines the coordinate variables that the rest of the data"
+            " are dimensioned by. Coordinate variable data can either be retrieved from"
+            " an input data source or defined statically via the 'data' property. Note"
+            " that tsdat requires the dataset at least be dimensioned by a 'time'"
+            " variable. Most datasets will only need the 'time' coordinate variable,"
+            " but multidimensional datasets (e.g., ADCP or Lidar data (time, height))"
+            " are well-supported. Note that the 'dims' attribute is still required for"
+            " coordinate variables, and that this value should be [<name>], where"
+            " <name> is the name of the coord (e.g., 'time')."
+        ),
     )
     data_vars: Dict[str, Variable] = Field(
-        description="This section defines the data variables that the output dataset"
-        " will contain. Variable data can either be retrieved from an input data"
-        " source, defined statically via the 'data' property, or initalized to missing"
-        " and set dynamically via user code in a tsdat pipeline.",
+        description=(
+            "This section defines the data variables that the output dataset will"
+            " contain. Variable data can either be retrieved from an input data source,"
+            " defined statically via the 'data' property, or initalized to missing and"
+            " set dynamically via user code in a tsdat pipeline."
+        ),
     )
 
     @validator("coords")
@@ -117,3 +123,22 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
 
     def __contains__(self, __o: object) -> bool:
         return (__o in self.coords) or (__o in self.data_vars)
+
+
+class ACDDDatasetConfig(DatasetConfig):
+    attrs: ACDDGlobalAttrs = Field(
+        ...,
+        description=(
+            "Attributes that pertain to the dataset as a whole (as opposed to"
+            " attributes that are specific to individual variables."
+        ),
+    )
+
+
+class IOOSDatasetConfig(DatasetConfig):
+    attrs: IOOSGlobalAttrs = Field(
+        description=(
+            "Attributes that pertain to the dataset as a whole (as opposed to"
+            " attributes that are specific to individual variables."
+        ),
+    )

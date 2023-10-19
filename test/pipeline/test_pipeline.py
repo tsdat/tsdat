@@ -33,6 +33,8 @@ def test_ingest_pipeline():
         attrs={
             "title": "title",
             "description": "description",
+            "Conventions": "CF-1.6",
+            "featureType": "timeSeries",
             "location_id": "sgp",  # override from the pipeline
             "dataset_name": "example",
             "data_level": "b1",
@@ -97,6 +99,8 @@ def test_transformation_pipeline():
             "datastream": "humboldt.buoy.c1",
             "title": "title",
             "description": "description",
+            "Conventions": "CF-1.6",
+            "featureType": "timeSeries",
             "location_id": "humboldt",
             "dataset_name": "buoy",
             "data_level": "c1",
