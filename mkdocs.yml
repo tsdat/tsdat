@@ -26,6 +26,7 @@ nav:
       - Pydantic and Parameters: config/pydantic.md
   - API Reference: API/
   - Contributing: collaboration.md
+  - ncconvert: ncconvert.md
 
 theme:
   name: material
