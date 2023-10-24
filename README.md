@@ -87,7 +87,7 @@ find bugs, want to request new features, or have specific questions about the fr
   - GitHub: <https://github.com/tsdat>
   - Documentation: <https://tsdat.readthedocs.io>
   - Data standards: <https://github.com/tsdat/data_standards>
-  - Preferred template: <https://github.com/tsdat/ingest-template>
+  - Preferred template: <https://github.com/tsdat/pipeline-template>
   - All templates: <https://github.com/tsdat/template-repositories>
   - Docker Images: <https://hub.docker.com/u/tsdat>
 - Learn more about `xarray`:
