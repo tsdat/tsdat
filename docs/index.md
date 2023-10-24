@@ -1,6 +1,15 @@
 # About
 
+[![](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml/badge.svg)](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml)
+[![](https://readthedocs.org/projects/tsdat/badge/?version=latest)](https://tsdat.readthedocs.io/en/latest/?badge=latest)
+[![](https://badge.fury.io/py/tsdat.svg)](https://badge.fury.io/py/tsdat)
+[![](https://pepy.tech/badge/tsdat)](https://pepy.tech/project/tsdat)
 [![doi badge](https://zenodo.org/badge/DOI/10.5281/zenodo.5224641.svg)](https://doi.org/10.5281/zenodo.5224641)
+[![](https://img.shields.io/docker/pulls/tsdat/tsdat-lambda.svg?color=%2327B1FF&logoColor=%234D606E)](https://hub.docker.com/r/tsdat/tsdat-lambda)
+
+[![](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![](https://codecov.io/gh/tsdat/tsdat/branch/main/graph/badge.svg)](https://codecov.io/gh/tsdat/tsdat)
+[![](https://api.codeclimate.com/v1/badges/e82e8c5103f4eb3a5686/maintainability)](https://codeclimate.com/github/tsdat/tsdat/maintainability)
 
 **Tsdat** is an open-source Python framework that makes creating pipelines to process and standardize time-series data
 more easy, clear, and quick to stand up so that you can spend less time data-wrangling and more time on data analysis.
