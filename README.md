@@ -2,16 +2,37 @@
    <img src="./docs/figures/tsdat_logo.svg" width="700" style="max-width: 700px;">
 </p>
 
-[![](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml/badge.svg)](https://github.com/tsdat/tsdat/actions/workflows/pytest.yml)
-[![](https://readthedocs.org/projects/tsdat/badge/?version=latest)](https://tsdat.readthedocs.io/en/latest/?badge=latest)
-[![](https://badge.fury.io/py/tsdat.svg)](https://badge.fury.io/py/tsdat)
-[![](https://pepy.tech/badge/tsdat)](https://pepy.tech/project/tsdat)
-[![](https://zenodo.org/badge/306085871.svg)](https://zenodo.org/badge/latestdoi/306085871)
-[![](https://img.shields.io/docker/pulls/tsdat/tsdat-lambda.svg?color=%2327B1FF&logoColor=%234D606E)](https://hub.docker.com/r/tsdat/tsdat-lambda)
-
-[![](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![](https://codecov.io/gh/tsdat/tsdat/branch/main/graph/badge.svg)](https://codecov.io/gh/tsdat/tsdat)
-[![](https://api.codeclimate.com/v1/badges/e82e8c5103f4eb3a5686/maintainability)](https://codeclimate.com/github/tsdat/tsdat/maintainability)
+<p align="center">
+<a href=../../actions/workflows/pytest.yml>
+    <img src="https://github.com/tsdat/tsdat/actions/workflows/pytest.yml/badge.svg">
+</a>
+<a href=https://tsdat.readthedocs.io/en/latest/?badge=latest>
+    <img src="https://readthedocs.org/projects/tsdat/badge/?version=latest">
+</a>
+<a href=https://badge.fury.io/py/tsdat>
+    <img src="https://badge.fury.io/py/tsdat.svg">
+</a>
+<a href=https://pepy.tech/project/tsdat>
+    <img src="https://pepy.tech/badge/tsdat">
+</a>
+<a href="https://zenodo.org/badge/latestdoi/306085871">
+    <img src="https://zenodo.org/badge/306085871.svg">
+</a>
+<!-- <a href="https://hub.docker.com/r/tsdat/tsdat-lambda">
+    <img src="https://img.shields.io/docker/pulls/tsdat/tsdat-lambda.svg?color=%2327B1FF&logoColor=%234D606E">
+</a> -->
+</p>
+<p align="center">
+<a href=https://github.com/psf/black>
+    <img src="https://img.shields.io/badge/code%20style-black-000000.svg">
+</a>
+<a href="https://codecov.io/gh/tsdat/tsdat">
+    <img src="https://codecov.io/gh/tsdat/tsdat/branch/main/graph/badge.svg">
+</a>
+<a href="https://codeclimate.com/github/tsdat/tsdat/maintainability">
+    <img src="https://api.codeclimate.com/v1/badges/e82e8c5103f4eb3a5686/maintainability">
+</a>
+</p>
 
 # About Tsdat
 
