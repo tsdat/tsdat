@@ -87,7 +87,7 @@ class NetCDFWriter(FileWriter):
             else:
                 to_netcdf_kwargs["unlimited_dims"] = ["time"]
 
-            dataset.to_netcdf(filepath, **to_netcdf_kwargs)  # type: ignore
+        dataset.to_netcdf(filepath, **to_netcdf_kwargs)  # type: ignore
 
 
 class SplitNetCDFWriter(NetCDFWriter):
