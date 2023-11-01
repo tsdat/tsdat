@@ -171,6 +171,7 @@ def test_netcdf_writer_2D(sample_2D_dataset: xr.Dataset):
     writer = NetCDFWriter()
     tmp_dir = tempfile.TemporaryDirectory()
     tmp_file = Path(tmp_dir.name) / "test_writer_2D.nc"
+    sample_2D_dataset.encoding["unlimited_dims"] = {"height"}
     writer.write(sample_2D_dataset, tmp_file)
     dataset: xr.Dataset = xr.open_dataset(tmp_file)
 
