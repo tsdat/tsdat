@@ -81,13 +81,9 @@ class NetCDFWriter(FileWriter):
                 )
 
         if "time" in dataset.dims:
-            if (
-                "unlimited_dims" not in dataset.encoding
-                or "time" not in dataset.encoding["unlimited_dims"]
-            ):
-                to_netcdf_kwargs["unlimited_dims"] = ["time"] + list(
-                    dataset.encoding.get("unlimited_dims", [])
-                )
+            to_netcdf_kwargs["unlimited_dims"] = set(
+                ["time"] + list(dataset.encoding.get("unlimited_dims", []))
+            )
 
         dataset.to_netcdf(filepath, **to_netcdf_kwargs)  # type: ignore
 
