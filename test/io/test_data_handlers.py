@@ -166,6 +166,20 @@ def test_netcdf_writer(sample_dataset: xr.Dataset):
     tmp_dir.cleanup()
 
 
+def test_netcdf_writer_2D(sample_2D_dataset: xr.Dataset):
+    expected = sample_2D_dataset.copy(deep=True)
+    writer = NetCDFWriter()
+    tmp_dir = tempfile.TemporaryDirectory()
+    tmp_file = Path(tmp_dir.name) / "test_writer_2D.nc"
+    sample_2D_dataset.encoding["unlimited_dims"] = {"height"}
+    writer.write(sample_2D_dataset, tmp_file)
+    dataset: xr.Dataset = xr.open_dataset(tmp_file)
+
+    assert "time" in dataset.encoding["unlimited_dims"]
+    assert_close(dataset, expected, check_fill_value=False)
+    tmp_dir.cleanup()
+
+
 def test_split_netcdf_writer(sample_dataset_w_time: xr.Dataset):
     params = {"time_interval": 1, "time_unit": "m"}
     writer = SplitNetCDFWriter(parameters=recursive_instantiate(params))
