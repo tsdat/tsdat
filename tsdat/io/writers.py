@@ -68,7 +68,18 @@ class NetCDFWriter(FileWriter):
             ):
                 encoding_dict[variable_name]["_FillValue"] = None
 
-            if self.parameters.compression_level and dataset[variable_name].dtype.kind != "U":
+            # Remove unexpected netCDF4 encoding parameters
+            # https://github.com/pydata/xarray/discussions/5709
+            params = ["szip", "zstd", "bzip2", "blosc", "contiguous", "chunksizes"]
+            [
+                encoding_dict[variable_name].pop(p)
+                for p in params
+                if p in encoding_dict[variable_name]
+            ]
+
+            if self.parameters.compression_level and (
+                dataset[variable_name].dtype.kind not in ["U", "O"]
+            ):
                 encoding_dict[variable_name].update(
                     {
                         self.parameters.compression_engine: True,
