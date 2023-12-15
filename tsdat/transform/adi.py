@@ -1,6 +1,7 @@
 import math
 import re
 from typing import Any, Dict, List
+import logging
 import warnings
 
 import xarray as xr
@@ -8,15 +9,14 @@ from xarray.core.coordinates import DataArrayCoordinates
 import numpy as np
 
 
-def import_missing(name, e):
-    def init(self, *args, **kwargs):
-        warnings.warn(
-            "Warning: ADI libraries are not installed. Some time series transformation"
-            " functions may not work."
-        )
-        raise e
+logger = logging.getLogger(__name__)
 
-    return type(name, (), {"__init__": init})
+def import_missing(error):
+    warnings.warn(
+        "\n\nADI libraries are not installed. Some time series transformation"
+        " functions may not work."
+    )
+    logger.exception(error)
 
 
 try:
@@ -29,7 +29,7 @@ try:
     CDSVar = cds3.Var
 
 except ImportError as e:
-    import_missing("libraries", e)
+    import_missing(e)
 
     cds3 = None
     dsproc = None
