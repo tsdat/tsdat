@@ -24,6 +24,13 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
+def error_traceback(name, e):
+    def init(self, *args, **kwargs):
+        raise e
+
+    return type(name, (), {"__init__": init})
+
+
 def _create_bounds(
     coordinate: xr.DataArray,
     alignment: Literal["LEFT", "RIGHT", "CENTER"],
@@ -288,9 +295,9 @@ class _ADIBaseTransformer(DataConverter):
         except Exception as e:
             logger.exception(
                 "Encountered an error running transformer. Please ensure necessary"
-                " dependencies are installed."
+                " dependencies are installed. "
             )
-            raise e
+            error_traceback("ADI Transformer", e)
 
         # Map renamed coordinates/variables to their original names
         trans_input_ds = trans_input_ds.rename(
