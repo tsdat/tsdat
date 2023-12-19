@@ -169,7 +169,10 @@ class TransformationPipeline(IngestPipeline):
         # on datetime64 variables in the pipeline (but remove with decode_cf())
         dataset = decode_cf(dataset)
         self.storage.save_data(dataset)
-        self.hook_plot_dataset(dataset)
+        with self.storage.uploadable_dir() as tmp_dir:
+            self._ds = dataset
+            self._tmp_dir = tmp_dir
+            self.hook_plot_dataset(dataset)
         return dataset
 
     def hook_customize_input_datasets(
