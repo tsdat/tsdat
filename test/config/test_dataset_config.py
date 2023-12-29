@@ -1,18 +1,18 @@
-import warnings
-import pytest
+import logging
 import tempfile
-from typing import Any, Dict, List
-from pydantic import ValidationError
 from pathlib import Path
+from typing import Any, Dict, List
 
+import pytest
+from pydantic import ValidationError
+
+from tsdat.config.attributes import AttributeModel, GlobalAttributes
 from tsdat.config.dataset import DatasetConfig
-from tsdat.config.attributes import GlobalAttributes, AttributeModel
 from tsdat.config.variables import (
-    VariableAttributes,
     Coordinate,
     Variable,
+    VariableAttributes,
 )
-
 from tsdat.testing import get_pydantic_error_message, get_pydantic_warning_message
 from tsdat.utils import model_to_dict
 
@@ -87,7 +87,7 @@ def test_fail_if_invalid_global_attributes():
         assert expected_msg in actual_msg
 
 
-def test_warn_if_unexpected_global_attributes():
+def test_warn_if_unexpected_global_attributes(caplog: pytest.LogCaptureFixture):
     attrs: Dict[str, Any] = {
         "title": "Valid Title",
         "description": "Valid description",
@@ -99,16 +99,21 @@ def test_warn_if_unexpected_global_attributes():
         "history": "Raise a warning",  # Should raise a warning and be replaced with ""
         "code_version": "0.0.1",  # Should raise a warning and be replaced
     }
-    expected_warning_msgs = [
-        "The 'history' attribute should not be set explicitly.",
-        "The 'code_version' attribute should not be set explicitly.",
-    ]
-    with pytest.warns(UserWarning) as warning:
-        model_dict = model_to_dict(GlobalAttributes(**attrs))
 
-    actual_msg = get_pydantic_warning_message(warning)
-    for expected_msg in expected_warning_msgs:
-        assert expected_msg in actual_msg
+    caplog.set_level(logging.WARNING)
+    model_dict = model_to_dict(GlobalAttributes(**attrs))
+
+    assert len(caplog.records) == 2
+    assert caplog.records[0].levelname == "WARNING"
+    assert (
+        "The 'history' attribute should not be set explicitly."
+        in caplog.records[0].message
+    )
+    assert caplog.records[1].levelname == "WARNING"
+    assert (
+        "The 'code_version' attribute should not be set explicitly."
+        in caplog.records[1].message
+    )
 
     assert model_dict["history"] == ""
     assert model_dict["code_version"] != "0.0.1"
@@ -193,18 +198,21 @@ def test_fail_if_bad_variable_attributes():
         ("invalid units", True),
     ),
 )
-def test_valid_variable_units(units: str, should_warn: bool):
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        VariableAttributes(units=units)  # type: ignore
-        if should_warn:
-            assert len(w) == 1
-            assert issubclass(w[-1].category, UserWarning)
-            assert str(w[-1].message).startswith(
-                f"'{units}' is not a valid unit or combination of units."
-            )
-        else:
-            assert len(w) == 0
+def test_valid_variable_units(
+    units: str, should_warn: bool, caplog: pytest.LogCaptureFixture
+):
+    caplog.set_level(logging.WARNING)
+
+    VariableAttributes(units=units)  # type: ignore
+
+    if should_warn:
+        assert len(caplog.records) == 1
+        assert caplog.records[0].levelname == "WARNING"
+        assert caplog.records[0].message.startswith(
+            f"'{units}' is not a valid unit or combination of units."
+        )
+    else:
+        assert len(caplog.records) == 0
 
 
 def test_valid_variable_attrs_adds_fillvalue():
