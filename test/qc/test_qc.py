@@ -9,11 +9,11 @@ import xarray as xr
 from tsdat.qc.base import QualityChecker
 from tsdat.qc.checkers import (
     CheckFailDelta,
-    CheckFailRangeMax,
-    CheckMissing,
     CheckFailMax,
     CheckFailMin,
+    CheckFailRangeMax,
     CheckFailRangeMin,
+    CheckMissing,
     CheckMonotonic,
     CheckValidDelta,
     CheckValidMax,
@@ -27,11 +27,11 @@ from tsdat.qc.checkers import (
     CheckWarnRangeMin,
 )
 from tsdat.qc.handlers import (
-    RecordQualityResults,
-    SortDatasetByCoordinate,
-    RemoveFailedValues,
-    FailPipeline,
     DataQualityError,
+    FailPipeline,
+    RecordQualityResults,
+    RemoveFailedValues,
+    SortDatasetByCoordinate,
 )
 from tsdat.testing import assert_close
 
@@ -40,12 +40,10 @@ from tsdat.testing import assert_close
 def sample_dataset() -> xr.Dataset:
     return xr.Dataset(
         coords={
-            "time": (
-                pd.date_range(  # type: ignore
-                    "2022-04-13 14:10:00",
-                    "2022-04-13 14:40:00",
-                    periods=4,
-                )
+            "time": pd.date_range(  # type: ignore
+                "2022-04-13 14:10:00",
+                "2022-04-13 14:40:00",
+                periods=4,
             )
         },
         data_vars={
@@ -175,7 +173,8 @@ def test_monotonic_check_ignores_string_vars(
         failures = CheckMonotonic().run(sample_dataset_2D, "dir")  # type: ignore
     assert failures is None
     assert (
-        "Variable 'dir' has dtype '<U1', which is currently not supported for monotonicity checks."
+        "Variable 'dir' has dtype '<U1', which is currently not supported for"
+        " monotonicity checks."
         in caplog.text
     )
 
@@ -185,7 +184,8 @@ def test_monotonic_with_2D_vars(sample_dataset_2D: xr.Dataset, caplog: Any):
         failures = CheckMonotonic().run(sample_dataset_2D, "wind_speed")
     assert failures is None
     assert (
-        "Variable 'wind_speed' has shape '(3, 4)'. 2D variables must provide a 'dim' parameter"
+        "Variable 'wind_speed' has shape '(3, 4)'. 2D variables must provide a 'dim'"
+        " parameter"
         in caplog.text
     )
 
@@ -209,7 +209,9 @@ def test_monotonic_with_2D_vars(sample_dataset_2D: xr.Dataset, caplog: Any):
     assert (failures == expected).all()
 
 
-def test_record_quality_results(sample_dataset: xr.Dataset):
+def test_record_quality_results(
+    sample_dataset: xr.Dataset, caplog: pytest.LogCaptureFixture
+):
     expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
     expected["qc_monotonic_var"] = xr.full_like(expected["monotonic_var"], fill_value=0)  # type: ignore
     expected["monotonic_var"].attrs["ancillary_variables"] = "qc_monotonic_var"
@@ -242,14 +244,18 @@ def test_record_quality_results(sample_dataset: xr.Dataset):
     )
     dataset = handler.run(dataset, "monotonic_var", test_2_failed)
 
-    with pytest.warns(DeprecationWarning):
-        handler = RecordQualityResults(
-            parameters={
-                "bit": 9,  # causes deprecation warning and bit ignored
-                "assessment": "Indeterminate",
-                "meaning": "baz",
-            }  # type: ignore
-        )
+    caplog.set_level(logging.WARNING)
+    handler = RecordQualityResults(
+        parameters={
+            "bit": 9,  # causes deprecation warning and bit ignored
+            "assessment": "Indeterminate",
+            "meaning": "baz",
+        }  # type: ignore
+    )
+    assert len(caplog.records) == 1
+    assert caplog.records[0].levelname == "WARNING"
+    assert "The 'bit' argument is deprecated" in caplog.records[0].message
+
     dataset = handler.run(dataset, "monotonic_var", test_3_failed)
     assert_close(dataset, expected)
 

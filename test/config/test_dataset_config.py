@@ -87,7 +87,7 @@ def test_fail_if_invalid_global_attributes():
         assert expected_msg in actual_msg
 
 
-def test_warn_if_unexpected_global_attributes():
+def test_warn_if_unexpected_global_attributes(caplog: pytest.LogCaptureFixture):
     attrs: Dict[str, Any] = {
         "title": "Valid Title",
         "description": "Valid description",
@@ -99,16 +99,21 @@ def test_warn_if_unexpected_global_attributes():
         "history": "Raise a warning",  # Should raise a warning and be replaced with ""
         "code_version": "0.0.1",  # Should raise a warning and be replaced
     }
-    expected_warning_msgs = [
-        "The 'history' attribute should not be set explicitly.",
-        "The 'code_version' attribute should not be set explicitly.",
-    ]
-    with pytest.warns(UserWarning) as warning:
-        model_dict = model_to_dict(GlobalAttributes(**attrs))
 
-    actual_msg = get_pydantic_warning_message(warning)
-    for expected_msg in expected_warning_msgs:
-        assert expected_msg in actual_msg
+    caplog.set_level(logging.WARNING)
+    model_dict = model_to_dict(GlobalAttributes(**attrs))
+
+    assert len(caplog.records) == 2
+    assert caplog.records[0].levelname == "WARNING"
+    assert (
+        "The 'history' attribute should not be set explicitly."
+        in caplog.records[0].message
+    )
+    assert caplog.records[1].levelname == "WARNING"
+    assert (
+        "The 'code_version' attribute should not be set explicitly."
+        in caplog.records[1].message
+    )
 
     assert model_dict["history"] == ""
     assert model_dict["code_version"] != "0.0.1"
