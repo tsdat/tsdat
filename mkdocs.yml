@@ -5,10 +5,24 @@ site_author: Tsdat team
 repo_url: https://github.com/tsdat/tsdat/
 edit_uri: blob/main/docs/
 
-extra: 
+extra:
   analytics:
     provider: google
     property: G-02LXGHFVQG
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/emoticon-happy-outline
+          name: This page was helpful
+          data: 1
+          note: >-
+            Thanks for your feedback!
+        - icon: material/emoticon-sad-outline
+          name: This page could be improved
+          data: 0
+          note: >- 
+            Thanks for your feedback! Help us improve this page by
+            using our <a href="..." target="_blank" rel="noopener">feedback form</a>.
 
 nav:
   - About: index.md
@@ -24,6 +38,7 @@ nav:
       - Pipeline Code Hooks: config/hook_functions.md
       - Transformation Pipelines: config/transform_config.md
       - Pydantic and Parameters: config/pydantic.md
+      - Deploying to AWS: config/aws_template.md
   - API Reference: API/
   - Contributing: collaboration.md
 
@@ -45,6 +60,7 @@ theme:
   features:
     - content.code.copy
     - content.code.annotate
+    - content.tabs.link
     - navigation.expand
     - navigation.tabs
     - navigation.tabs.sticky
@@ -61,6 +77,8 @@ markdown_extensions:
   - attr_list
   - def_list
   - md_in_html
+  - pymdownx.caret
+  - pymdownx.critic
   - pymdownx.details  # makes notes collapsible
   - pymdownx.highlight:
       anchor_linenums: true
@@ -69,7 +87,16 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.keys
   - pymdownx.snippets
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
   - pymdownx.tasklist:
       custom_checkbox: true
   - toc:
