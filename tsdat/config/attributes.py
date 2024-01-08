@@ -1,4 +1,4 @@
-import warnings
+import logging
 from typing import Any, Dict, Optional
 
 from pydantic import (
@@ -14,6 +14,8 @@ from pydantic.fields import ModelField
 
 from ..utils import get_datastream
 from .utils import get_code_version
+
+logger = logging.getLogger(__name__)
 
 
 class AttributeModel(BaseModel, extra=Extra.allow):
@@ -182,7 +184,7 @@ class GlobalAttributes(AttributeModel):
     @classmethod
     def warn_if_dynamic_properties_are_set(cls, v: str, field: ModelField) -> str:
         if v:
-            warnings.warn(
+            logger.warning(
                 f"The '{field.name}' attribute should not be set explicitly. The"
                 f" current value of '{v}' will be ignored."
             )

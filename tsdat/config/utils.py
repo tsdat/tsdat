@@ -1,33 +1,33 @@
+import logging
 import os
-import yaml
-import warnings
-from jsonpointer import set_pointer  # type: ignore
-from dunamai import Style, Version
 from pathlib import Path
-from pydantic import (
-    BaseModel,
-    Extra,
-    Field,
-    StrictStr,
-    ValidationError,
-    validator,
-    FilePath,
-)
-from pydantic.utils import import_string
-from pydantic.generics import GenericModel
 from typing import (
     Any,
-    Optional,
-    cast,
     Dict,
     Generic,
     List,
+    Optional,
     Protocol,
     Sequence,
     Set,
     TypeVar,
+    cast,
 )
 
+import yaml
+from dunamai import Style, Version
+from jsonpointer import set_pointer  # type: ignore
+from pydantic import (
+    BaseModel,
+    Extra,
+    Field,
+    FilePath,
+    StrictStr,
+    ValidationError,
+    validator,
+)
+from pydantic.generics import GenericModel
+from pydantic.utils import import_string
 
 __all__ = [
     "ParameterizedConfigClass",
@@ -38,6 +38,8 @@ __all__ = [
     "YamlModel",
     "ConfigError",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigError(Exception):
@@ -58,7 +60,8 @@ class YamlModel(BaseModel):
         Returns:
             YamlModel: A YamlModel subclass
 
-        ------------------------------------------------------------------------------------"""
+        ------------------------------------------------------------------------------------
+        """
         config = read_yaml(filepath)
         if overrides:
             for pointer, new_value in overrides.items():
@@ -78,7 +81,8 @@ class YamlModel(BaseModel):
         Args:
             output_file (Path): The path to store the JSON schema.
 
-        ------------------------------------------------------------------------------------"""
+        ------------------------------------------------------------------------------------
+        """
         output_file.write_text(cls.schema_json(indent=4))
 
 
@@ -87,23 +91,27 @@ Config = TypeVar("Config", bound=BaseModel)
 
 class Overrideable(YamlModel, GenericModel, Generic[Config], extra=Extra.forbid):
     path: FilePath = Field(
-        description="Path to the configuration file to borrow configurations from.\n"
-        "Note that this path is relative to the project root, so you should include any"
-        " paths in between the project root and your config file.\n"
-        "E.g., `pipelines/lidar/config/dataset.yaml`"
+        description=(
+            "Path to the configuration file to borrow configurations from.\nNote that"
+            " this path is relative to the project root, so you should include any"
+            " paths in between the project root and your config file.\nE.g.,"
+            " `pipelines/lidar/config/dataset.yaml`"
+        )
     )
 
     overrides: Dict[str, Any] = Field(
         default_factory=dict,
-        description="Overrides to apply to the config file referenced by `path`.\n"
-        "Overrides are defined in `key`: `value` pairs, where the `key` is a pointer to"
-        " the object in the config file to override and the `value` is what should"
-        " replace it.\n"
-        "The format of the keys is a cross between path-like structures and a python"
-        " dictionary. For example, to change the 'location_id' property on the python"
-        " object `obj = {'attrs': {'location_id': 'abc'}, 'data_vars': {...}}` to 'sgp'"
-        " you would write `/attrs/location_id: 'sgp'`.\n"
-        "Overrides are implemented using https://python-json-pointer.readthedocs.io/en/latest/tutorial.html",
+        description=(
+            "Overrides to apply to the config file referenced by `path`.\nOverrides are"
+            " defined in `key`: `value` pairs, where the `key` is a pointer to the"
+            " object in the config file to override and the `value` is what should"
+            " replace it.\nThe format of the keys is a cross between path-like"
+            " structures and a python dictionary. For example, to change the"
+            " 'location_id' property on the python object `obj = {'attrs':"
+            " {'location_id': 'abc'}, 'data_vars': {...}}` to 'sgp' you would write"
+            " `/attrs/location_id: 'sgp'`.\nOverrides are implemented using"
+            " https://python-json-pointer.readthedocs.io/en/latest/tutorial.html"
+        ),
     )
 
     # def get_defaults_dict(self) -> Dict[Any, Any]:
@@ -125,17 +133,21 @@ class ParameterizedConfigClass(BaseModel, extra=Extra.forbid):
     # Unfortunately, the classname has to be a string type unless PyObject becomes JSON
     # serializable: https://github.com/samuelcolvin/pydantic/discussions/3842
     classname: StrictStr = Field(
-        description="The import path to the Python class that should be used, e.g., if"
-        " your import statement looks like `from foo.bar import Baz`, then your"
-        " classname would be `foo.bar.Baz`.",
+        description=(
+            "The import path to the Python class that should be used, e.g., if"
+            " your import statement looks like `from foo.bar import Baz`, then your"
+            " classname would be `foo.bar.Baz`."
+        ),
     )
     parameters: Dict[str, Any] = Field(
         {},
-        description="Optional dictionary that will be passed to the Python class"
-        " specified by 'classname' when it is instantiated. If the object is a tsdat"
-        " class, then the parameters will typically be made accessible under the"
-        " `params` property on an instance of the class. See the documentation for"
-        " individual classes for more information.",
+        description=(
+            "Optional dictionary that will be passed to the Python class specified by"
+            " 'classname' when it is instantiated. If the object is a tsdat class, then"
+            " the parameters will typically be made accessible under the `params`"
+            " property on an instance of the class. See the documentation for"
+            " individual classes for more information."
+        ),
     )
 
     @validator("classname")
@@ -152,7 +164,8 @@ class ParameterizedConfigClass(BaseModel, extra=Extra.forbid):
         Returns:
             Any: An instance of the specified class.
 
-        ------------------------------------------------------------------------------------"""
+        ------------------------------------------------------------------------------------
+        """
         params = {field: getattr(self, field) for field in self.__fields_set__}
         _cls = import_string(params.pop("classname"))
         return _cls(**params)
@@ -253,10 +266,9 @@ def get_code_version() -> str:
         try:
             version = Version.from_git().serialize(dirty=True, style=Style.SemVer)
         except RuntimeError:
-            warnings.warn(
+            logger.warning(
                 "Could not get code_version from either the 'CODE_VERSION' environment"
                 " variable nor from git history. The 'code_version' global attribute"
                 " will be set to 'N/A'.",
-                RuntimeWarning,
             )
     return version

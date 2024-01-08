@@ -155,7 +155,7 @@ def test_zip_reader(sample_dataset: xr.Dataset):
 
 def test_netcdf_writer(sample_dataset: xr.Dataset):
     expected = sample_dataset.copy(deep=True)  # type: ignore
-    writer = NetCDFWriter()
+    writer = NetCDFWriter(file_extension=".nc")
     tmp_dir = tempfile.TemporaryDirectory()
 
     tmp_file = Path(tmp_dir.name) / "test_writer.nc"

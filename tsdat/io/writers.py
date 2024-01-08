@@ -1,14 +1,15 @@
 import copy
-import warnings
+import logging
+from pathlib import Path
+from typing import Any, Dict, Hashable, Iterable, List, Optional, cast
+
 import numpy as np
 import pandas as pd
 import xarray as xr
-from typing import Any, Dict, Iterable, List, Optional, cast, Hashable
-from pathlib import Path
 from pydantic import BaseModel, Extra, Field
-from .base import FileWriter
-from ..utils import get_filename
 
+from ..utils import get_filename
+from .base import FileWriter
 
 __all__ = [
     "NetCDFWriter",
@@ -17,6 +18,8 @@ __all__ = [
     "ParquetWriter",
     "ZarrWriter",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 class NetCDFWriter(FileWriter):
@@ -205,7 +208,7 @@ class CSVWriter(FileWriter):
             elif len(shp) == 2:
                 d2.append(var)
             else:
-                warnings.warn(
+                logger.warning(
                     "CSV writer cannot save variables with more than 2 dimensions."
                 )
 
