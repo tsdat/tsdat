@@ -2,13 +2,14 @@ site_name: tsdat
 site_url: https://tsdat.readthedocs.io
 site_description: Tsdat documentation.
 site_author: Tsdat team
+repo_name: tsdat/tsdat
 repo_url: https://github.com/tsdat/tsdat/
 edit_uri: blob/main/docs/
 
 extra:
   analytics:
     provider: google
-    property: G-02LXGHFVQG
+    property: !ENV GOOGLE_ANALYTICS_KEY
     feedback:
       title: Was this page helpful?
       ratings:
@@ -21,8 +22,7 @@ extra:
           name: This page could be improved
           data: 0
           note: >- 
-            Thanks for your feedback! Help us improve this page by
-            using our <a href="..." target="_blank" rel="noopener">feedback form</a>.
+            Thanks for your feedback!
 
 nav:
   - About: index.md
@@ -61,6 +61,7 @@ theme:
     - content.code.copy
     - content.code.annotate
     - content.tabs.link
+    - content.tooltips
     - navigation.expand
     - navigation.tabs
     - navigation.tabs.sticky
@@ -73,6 +74,7 @@ theme:
     - toc.follow
 
 markdown_extensions:
+  - abbr
   - admonition
   - attr_list
   - def_list
@@ -80,6 +82,9 @@ markdown_extensions:
   - pymdownx.caret
   - pymdownx.critic
   - pymdownx.details  # makes notes collapsible
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
