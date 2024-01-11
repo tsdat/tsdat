@@ -155,7 +155,7 @@ def test_zip_reader(sample_dataset: xr.Dataset):
 
 def test_netcdf_writer(sample_dataset: xr.Dataset):
     expected = sample_dataset.copy(deep=True)  # type: ignore
-    writer = NetCDFWriter()
+    writer = NetCDFWriter(file_extension=".nc")
     tmp_dir = tempfile.TemporaryDirectory()
 
     tmp_file = Path(tmp_dir.name) / "test_writer.nc"
@@ -163,6 +163,20 @@ def test_netcdf_writer(sample_dataset: xr.Dataset):
     dataset: xr.Dataset = xr.open_dataset(tmp_file)  # type: ignore
     assert_close(dataset, expected, check_fill_value=False)
 
+    tmp_dir.cleanup()
+
+
+def test_netcdf_writer_2D(sample_2D_dataset: xr.Dataset):
+    expected = sample_2D_dataset.copy(deep=True)
+    writer = NetCDFWriter()
+    tmp_dir = tempfile.TemporaryDirectory()
+    tmp_file = Path(tmp_dir.name) / "test_writer_2D.nc"
+    sample_2D_dataset.encoding["unlimited_dims"] = {"height"}
+    writer.write(sample_2D_dataset, tmp_file)
+    dataset: xr.Dataset = xr.open_dataset(tmp_file)
+
+    assert "time" in dataset.encoding["unlimited_dims"]
+    assert_close(dataset, expected, check_fill_value=False)
     tmp_dir.cleanup()
 
 

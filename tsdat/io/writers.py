@@ -1,14 +1,15 @@
 import copy
-import warnings
+import logging
+from pathlib import Path
+from typing import Any, Dict, Hashable, Iterable, List, Optional, cast
+
 import numpy as np
 import pandas as pd
 import xarray as xr
-from typing import Any, Dict, Iterable, List, Optional, cast, Hashable
-from pathlib import Path
 from pydantic import BaseModel, Extra, Field
-from .base import FileWriter
-from ..utils import get_filename
 
+from ..utils import get_filename
+from .base import FileWriter
 
 __all__ = [
     "NetCDFWriter",
@@ -17,6 +18,8 @@ __all__ = [
     "ParquetWriter",
     "ZarrWriter",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 class NetCDFWriter(FileWriter):
@@ -68,17 +71,33 @@ class NetCDFWriter(FileWriter):
             ):
                 encoding_dict[variable_name]["_FillValue"] = None
 
-            if self.parameters.compression_level:
-                # Handle str dtypes: https://github.com/pydata/xarray/issues/2040
-                if dataset[variable_name].dtype.kind == "U":
-                    encoding_dict[variable_name]["dtype"] = "S1"
+            # Remove unexpected netCDF4 encoding parameters
+            # https://github.com/pydata/xarray/discussions/5709
+            params = ["szip", "zstd", "bzip2", "blosc", "contiguous", "chunksizes"]
+            [
+                encoding_dict[variable_name].pop(p)
+                for p in params
+                if p in encoding_dict[variable_name]
+            ]
 
+            if self.parameters.compression_level and (
+                dataset[variable_name].dtype.kind not in ["U", "O"]
+            ):
                 encoding_dict[variable_name].update(
                     {
                         self.parameters.compression_engine: True,
                         "complevel": self.parameters.compression_level,
                     }
                 )
+
+        # Handle str dtypes: https://github.com/pydata/xarray/issues/2040
+        if dataset[variable_name].dtype.kind == "U":
+            encoding_dict[variable_name]["dtype"] = "str"
+
+        if "time" in dataset.dims:
+            to_netcdf_kwargs["unlimited_dims"] = set(
+                ["time"] + list(dataset.encoding.get("unlimited_dims", []))
+            )
 
         dataset.to_netcdf(filepath, **to_netcdf_kwargs)  # type: ignore
 
@@ -189,7 +208,7 @@ class CSVWriter(FileWriter):
             elif len(shp) == 2:
                 d2.append(var)
             else:
-                warnings.warn(
+                logger.warning(
                     "CSV writer cannot save variables with more than 2 dimensions."
                 )
 

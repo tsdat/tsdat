@@ -402,7 +402,6 @@ class Storage(ParameterizedClass, ABC):
         Returns:
             datetime: The datetime of the last modification.
         """
-        return None
 
     def modified_since(
         self, datastream: str, last_modified: datetime

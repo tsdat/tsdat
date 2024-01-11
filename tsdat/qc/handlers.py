@@ -1,4 +1,4 @@
-import warnings
+import logging
 from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
@@ -16,6 +16,9 @@ __all__ = [
     "RemoveFailedValues",
     "SortDatasetByCoordinate",
 ]
+
+
+logger = logging.getLogger(__name__)
 
 
 class DataQualityError(ValueError):
@@ -123,10 +126,7 @@ class RecordQualityResults(QualityHandler):
         @root_validator(pre=True)
         def deprecate_bit_parameter(cls, values: Dict[str, Any]) -> Dict[str, Any]:
             if "bit" in values:
-                warnings.warn(
-                    "The 'bit' argument is deprecated, please remove it.",
-                    category=DeprecationWarning,
-                )
+                logger.warning("The 'bit' argument is deprecated, please remove it.")
             return values
 
         @validator("assessment", pre=True)
