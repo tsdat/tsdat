@@ -39,6 +39,7 @@ def test_ingest_pipeline():
             "dataset_name": "example",
             "data_level": "b1",
             "datastream": "sgp.example.b1",
+            "inputs": "test/io/data/input.csv",
         },
     )
     expected["pi"].attrs["units"] = "1"
@@ -104,6 +105,10 @@ def test_transformation_pipeline():
             "location_id": "humboldt",
             "dataset_name": "buoy",
             "data_level": "c1",
+            "inputs": [
+                "humboldt.buoy_z06.a1::20220405.000000::20220406.000000",
+                "humboldt.buoy_z07.a1::20220405.000000::20220406.000000",
+            ],
         },
     )
 
