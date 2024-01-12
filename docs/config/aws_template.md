@@ -1,15 +1,15 @@
 # Deploying to AWS
 
-!!! danger
+!!! danger "AWS Admin Privileges Required"
 
     This deployment can only be run by AWS administrators, so we assume the user has a basic understanding of code
     development, Docker containers, and the AWS cloud.
 
 ## Overview
 
-The end result of this guide is a functioning pipeline in AWS that allows you to process data on-the-fly as it enters
-S3 buckets (Ingest applications), or on a regular cron schedule (VAP applications), and store the processed results in
-an output S3 bucket in a structured format.
+The goal of this guide is to help you create a functioning pipeline in AWS that allows you to process data on-the-fly as
+it enters S3 buckets (Ingest applications), or on a regular cron schedule (VAP applications), and store the processed
+results in an output S3 bucket in a structured format.
 
 === "Deployment result"
 
