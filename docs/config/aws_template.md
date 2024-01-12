@@ -149,98 +149,97 @@ directory structure like so:
 Open the `aws-template/pipelines_config.yml` file and fill out the configuration options, using your own values as
 needed.
 
-=== "Configure AWS/GitHub Settings"
+#### Configure AWS/GitHub Settings
 
-    The top part of the `aws-template/pipelines_config.yml` contains settings related to the AWS-GitHub integration,
-    where data should be pulled from & placed, and which AWS account should be used. This section only needs to be
-    filled out once.
+The top part of the `aws-template/pipelines_config.yml` contains settings related to the AWS-GitHub integration, where
+data should be pulled from & placed, and which AWS account should be used. This section only needs to be filled out
+once.
 
-    ```yaml title="aws-template/pipelines_config.yml"
+```yaml title="aws-template/pipelines_config.yml"
 
-    github_org: tsdat  # (1)!
-    pipelines_repo_name: pipeline-template
-    aws_repo_name: aws-template
+github_org: tsdat  # (1)!
+pipelines_repo_name: pipeline-template
+aws_repo_name: aws-template
 
-    account_id: "XXXXXXXXXXX"  # (2)!
-    region: us-west-2
-    input_bucket_name: tsdat-input
-    output_bucket_name: tsdat-output
-    create_buckets: True
+account_id: "XXXXXXXXXXX"  # (2)!
+region: us-west-2
+input_bucket_name: tsdat-input
+output_bucket_name: tsdat-output
+create_buckets: True
 
-    github_codestar_arn: arn:aws:codestar-connections:us-west-2:... # (3)!
-    ```
+github_codestar_arn: arn:aws:codestar-connections:us-west-2:... # (3)!
+```
 
-    1. The name of the organization or user that cloned the `aws-template` and `pipeline-template` repos.
+1. The name of the organization or user that cloned the `aws-template` and `pipeline-template` repos.
 
-    2. Your AWS account ID. You can get this from the AWS console: In the navigation bar at the upper right, choose your
-        user name and then copy the Account ID. It should be a 12-digit number.
+2. Your AWS account ID. You can get this from the AWS console: In the navigation bar at the upper right, choose your
+    username and then copy the Account ID. It should be a 12-digit number.
 
-    3. This is the ARN of the CodeStar connection to GitHub. Check out the [AWS guide for setting up a CodeStar connection](https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html#connections-create-github-console),
-        then copy the ARN of your CodeStar connection here.
+3. This is the ARN of the CodeStar connection to GitHub. Check out the [AWS guide for setting up a CodeStar connection](https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html#connections-create-github-console),
+    then copy the ARN of your CodeStar connection here.
 
-        !!! tip
+    !!! tip
 
-            Generally it is a best practice to limit access read/write access to your github account, so we recommend
-            just allowing CodeStar access to the `pipeline-template` and `aws-template` repositories in your
-            account/org. You can always change this later in [GitHub](https://github.com/settings/installations) if you
-            want.
+        Generally it is a best practice to limit access read/write access to your github account, so we recommend just
+        allowing CodeStar access to the `pipeline-template` and `aws-template` repositories in your account/org. You can
+        always change this later in [GitHub](https://github.com/settings/installations) if you want.
 
-=== "Configure Deployed Pipelines"
+#### Configure Deployed Pipelines
 
-    The second half of the `aws-template/pipelines_config.yml` file contains configurations for each deployed pipeline,
-    including the type of pipeline (i.e., `Ingest` or `VAP`), the trigger (i.e., `S3` or `Cron`). You'll want to keep
-    this section updated as you develop new pipelines so they can be run & deployed promptly. 
+The second half of the `aws-template/pipelines_config.yml` file contains configurations for each deployed pipeline,
+including the type of pipeline (i.e., `Ingest` or `VAP`), the trigger (i.e., `S3` or `Cron`). You'll want to keep this
+section updated as you develop new pipelines so they can be run & deployed promptly.
 
-    ```yaml title="aws-template/pipelines_config.yml"
-    pipelines:
-      - name: lidar  # (1)!
-        type: Ingest  # (2)!
-        trigger: S3  # (3)!
-        configs:
-          humboldt:
-            input_bucket_path: lidar/humboldt/  # (4)!
-            config_file_path: pipelines/lidar/config/pipeline_humboldt.yaml # (5)!
-          morro: # (6)!
-            input_bucket_path: lidar/morro/
-            config_file_path: pipelines/lidar/config/pipeline_morro.yaml
+```yaml title="aws-template/pipelines_config.yml"
+pipelines:
+  - name: lidar  # (1)!
+    type: Ingest  # (2)!
+    trigger: S3  # (3)!
+    configs:
+      humboldt:
+        input_bucket_path: lidar/humboldt/  # (4)!
+        config_file_path: pipelines/lidar/config/pipeline_humboldt.yaml # (5)!
+      morro: # (6)!
+        input_bucket_path: lidar/morro/
+        config_file_path: pipelines/lidar/config/pipeline_morro.yaml
 
-      - name: lidar_vap
-        type: VAP
-        trigger: Cron
-        schedule: Hourly  # (7)!
-        configs:
-          humboldt:
-            config_file_path: pipelines/lidar_vap/config/pipeline.yaml
-    ```
+  - name: lidar_vap
+    type: VAP
+    trigger: Cron
+    schedule: Hourly  # (7)!
+    configs:
+      humboldt:
+        config_file_path: pipelines/lidar_vap/config/pipeline.yaml
+```
 
-    1. A useful name to give the pipeline. This will be used as a label in various places in AWS.
+1. A useful name to give the pipeline. This will be used as a label in various places in AWS.
 
-    2. The type of pipeline, either **`Ingest`** or **`VAP`**.
+2. The type of pipeline, either **`Ingest`** or **`VAP`**.
 
-    3. The type of trigger, either **`S3`** to trigger when a file enters the input bucket path, or **`Cron`** to run on
-        a regular schedule.
+3. The type of trigger, either **`S3`** to trigger when a file enters the input bucket path, or **`Cron`** to run on a
+    regular schedule.
 
-    4. The subpath within the input bucket that should be watched. When new files enter this bucket, the pipeline will
-        run with those files as input.
+4. The subpath within the input bucket that should be watched. When new files enter this bucket, the pipeline will run
+    with those files as input.
 
-    5. The path to the pipeline configuration file in the `pipeline-template` repo.
+5. The path to the pipeline configuration file in the `pipeline-template` repo.
 
-    6. You can have multiple configuration files for each pipeline.
-            
-        Here we define one for Morro Bay, CA in addition to the ingest for the Humboldt, CA site.
+6. You can have multiple configuration files for each pipeline.
 
-        !!! note
+    Here we define one for Morro Bay, CA in addition to the ingest for the Humboldt, CA site.
 
-            You can keep adding new sites, or versions of this pipeline to the **`configs`** section. Just make sure
-            that the key (e.g., "morro", "humboldt") is unique for each pipeline config you add.
+    !!! note
 
-    7. If the **`Cron`** trigger is selected, then you must also specify the schedule. The schedule should be one of the
-        following values:
-        
-        * **Hourly**
-        * **Daily**
-        * **Weekly**
-        * **Monthly**
+        You can keep adding new sites, or versions of this pipeline to the **`configs`** section. Just make sure that
+        the key (e.g., "morro", "humboldt") is unique for each pipeline config you add.
+
+7. If the **`Cron`** trigger is selected, then you must also specify the schedule. The schedule should be one of the
+    following values:
+
+    * **Hourly**
+    * **Daily**
+    * **Weekly**
+    * **Monthly**
 
 ### Configure your AWS profile
 
