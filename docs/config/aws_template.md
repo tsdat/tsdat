@@ -287,11 +287,11 @@ The steps to deploy an existing pipeline at a new site, or to deploy an entirely
 
 1. Commit and push your `pipeline-template` changes (to whichever branch you set up for deployment).
 
-2. Add/update the `aws-template/pipelines_config.yml` file for the new pipeline.
+2. Update the `aws-template/pipelines_config.yml` file for the new pipeline.
 
     The second half of the `aws-template/pipelines_config.yml` file contains configurations for each deployed pipeline,
-    including the type of pipeline (i.e., `Ingest` or `VAP`), the trigger (i.e., `S3` or `Cron`). Update this file to
-    add a new `- name:` or `configs` entry for your new pipeline.
+    including the type of pipeline (i.e., `Ingest` or `VAP`), the trigger (i.e., `S3` or `Cron`), and a collection of
+    configuration files for different sites that the pipeline is deployed at (`configs` section).
 
     ```yaml title="aws-template/pipelines_config.yml"
     pipelines:
@@ -315,7 +315,9 @@ The steps to deploy an existing pipeline at a new site, or to deploy an entirely
           config_file_path: pipelines/lidar_vap/config/pipeline.yaml
     ```
 
-    1. A useful name to give the pipeline. This will be used as a label in various places in AWS.
+    1. A useful name to give the pipeline in AWS. We recommend naming this like the folder names underneath the
+        `pipelines/` folder in the `pipeline-template` repo. E.g., if your config file is
+        `pipelines/imu/config/pipeline_humboldt.yaml`, then `imu` would be the recommended name for it.
 
     2. The type of pipeline, either **`Ingest`** or **`VAP`**.
 
@@ -327,7 +329,7 @@ The steps to deploy an existing pipeline at a new site, or to deploy an entirely
 
     5. The path to the pipeline configuration file in the `pipeline-template` repo.
 
-    6. You can have multiple configuration files for each pipeline.
+    6. Each `pipeline.yaml` config file needs to be registered so it can be deployed.
 
         Here we define one for Morro Bay, CA in addition to the ingest for the Humboldt, CA site.
 
@@ -347,9 +349,6 @@ The steps to deploy an existing pipeline at a new site, or to deploy an entirely
 3. Go to the CodePipeline UI in AWS and find the CodePipeline for this project, then click 'release change'.
 
 </div>
-
-1. See [the earlier section on the `pipelines_config.yml` file](./aws_template.md#configure-deployed-pipelines) for more
-info on how to update this file.
 
 ### Updating an existing pipeline
 
