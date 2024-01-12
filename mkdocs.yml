@@ -60,7 +60,6 @@ theme:
   features:
     - content.code.copy
     - content.code.annotate
-    - content.tabs.link
     - content.tooltips
     - navigation.expand
     - navigation.tabs
