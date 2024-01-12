@@ -144,16 +144,11 @@ directory structure like so:
 
 ## Deploying your AWS Stack
 
-### Edit the pipelines config file
-
-Open the `aws-template/pipelines_config.yml` file and fill out the configuration options, using your own values as
-needed.
-
-#### Configure AWS/GitHub Settings
+### Configure AWS/GitHub settings
 
 The top part of the `aws-template/pipelines_config.yml` contains settings related to the AWS-GitHub integration, where
-data should be pulled from & placed, and which AWS account should be used. This section only needs to be filled out
-once.
+data should be pulled from & placed, and which AWS account should be used. Open this file and fill out the configuration
+options, using your own values as needed. This section only needs to be filled out once.
 
 ```yaml title="aws-template/pipelines_config.yml"
 
@@ -175,76 +170,20 @@ github_codestar_arn: arn:aws:codestar-connections:us-west-2:... # (3)!
 2. Your AWS account ID. You can get this from the AWS console: In the navigation bar at the upper right, choose your
     username and then copy the Account ID. It should be a 12-digit number.
 
-3. This is the ARN of the CodeStar connection to GitHub. Check out the [AWS guide for setting up a CodeStar connection](https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html#connections-create-github-console),
+3. This is the ARN of the CodeStar connection to GitHub. Check out the
+    [AWS guide for setting up a CodeStar connection](https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html#connections-create-github-console),
     then copy the ARN of your CodeStar connection here.
 
     !!! tip
 
-        Generally it is a best practice to limit access read/write access to your github account, so we recommend just
-        allowing CodeStar access to the `pipeline-template` and `aws-template` repositories in your account/org. You can
-        always change this later in [GitHub](https://github.com/settings/installations) if you want.
-
-#### Configure Deployed Pipelines
-
-The second half of the `aws-template/pipelines_config.yml` file contains configurations for each deployed pipeline,
-including the type of pipeline (i.e., `Ingest` or `VAP`), the trigger (i.e., `S3` or `Cron`). You'll want to keep this
-section updated as you develop new pipelines so they can be run & deployed promptly.
-
-```yaml title="aws-template/pipelines_config.yml"
-pipelines:
-  - name: lidar  # (1)!
-    type: Ingest  # (2)!
-    trigger: S3  # (3)!
-    configs:
-      humboldt:
-        input_bucket_path: lidar/humboldt/  # (4)!
-        config_file_path: pipelines/lidar/config/pipeline_humboldt.yaml # (5)!
-      morro: # (6)!
-        input_bucket_path: lidar/morro/
-        config_file_path: pipelines/lidar/config/pipeline_morro.yaml
-
-  - name: lidar_vap
-    type: VAP
-    trigger: Cron
-    schedule: Hourly  # (7)!
-    configs:
-      humboldt:
-        config_file_path: pipelines/lidar_vap/config/pipeline.yaml
-```
-
-1. A useful name to give the pipeline. This will be used as a label in various places in AWS.
-
-2. The type of pipeline, either **`Ingest`** or **`VAP`**.
-
-3. The type of trigger, either **`S3`** to trigger when a file enters the input bucket path, or **`Cron`** to run on a
-    regular schedule.
-
-4. The subpath within the input bucket that should be watched. When new files enter this bucket, the pipeline will run
-    with those files as input.
-
-5. The path to the pipeline configuration file in the `pipeline-template` repo.
-
-6. You can have multiple configuration files for each pipeline.
-
-    Here we define one for Morro Bay, CA in addition to the ingest for the Humboldt, CA site.
-
-    !!! note
-
-        You can keep adding new sites, or versions of this pipeline to the **`configs`** section. Just make sure that
-        the key (e.g., "morro", "humboldt") is unique for each pipeline config you add.
-
-7. If the **`Cron`** trigger is selected, then you must also specify the schedule. The schedule should be one of the
-    following values:
-
-    * **Hourly**
-    * **Daily**
-    * **Weekly**
-    * **Monthly**
+        Generally it is a best practice to limit read/write access to your github account, so we recommend giving
+        CodeStar access to just your `pipeline-template` and `aws-template` repositories. You can always change this
+        later in [GitHub](https://github.com/settings/installations) if you want.
 
 ### Configure your AWS profile
 
 From a terminal inside your VSCode window attached to the docker container run the following line. You may leave this
-mostly blank.
+blank aside from the region. You only need to do this once.
 
 ```shell
 aws configure --profile tsdat
@@ -260,8 +199,6 @@ Your `~/.aws/config` file should now look like this:
 [profile tsdat]
 region = us-west-2
 ```
-
-You only need to do this step once.
 
 ### Edit your aws credentials
 
@@ -295,11 +232,11 @@ aws_session_token=XXXXXX
 
 !!! warning
 
-    This should only be run ONCE for your AWS Account/Region. It won't break anything if you run it more than once, but
-    it's just not recommended.
-
     Check your [CloudFormation stacks](https://us-west-2.console.aws.amazon.com/cloudformation/home?region=us-west-2)
     first to see if you need to deploy the bootstrap. If you see a stack named `CDKToolkit` then you can SKIP this step.
+
+    This should only be run ONCE for your AWS Account/Region. It won't break anything if you run it more than once, but
+    it's just not recommended.
 
 ```shell
 cd aws-template
@@ -350,7 +287,62 @@ The steps to deploy an existing pipeline at a new site, or to deploy an entirely
 
 1. Commit and push your `pipeline-template` changes (to whichever branch you set up for deployment).
 
-2. Add/update the `aws-template/pipelines_config.yml` file for the new pipeline. (1)
+2. Add/update the `aws-template/pipelines_config.yml` file for the new pipeline.
+
+    The second half of the `aws-template/pipelines_config.yml` file contains configurations for each deployed pipeline,
+    including the type of pipeline (i.e., `Ingest` or `VAP`), the trigger (i.e., `S3` or `Cron`). Update this file to
+    add a new `- name:` or `configs` entry for your new pipeline.
+
+    ```yaml title="aws-template/pipelines_config.yml"
+    pipelines:
+    - name: lidar  # (1)!
+      type: Ingest  # (2)!
+      trigger: S3  # (3)!
+      configs:
+        humboldt:
+          input_bucket_path: lidar/humboldt/  # (4)!
+          config_file_path: pipelines/lidar/config/pipeline_humboldt.yaml # (5)!
+        morro: # (6)!
+          input_bucket_path: lidar/morro/
+          config_file_path: pipelines/lidar/config/pipeline_morro.yaml
+
+    - name: lidar_vap
+      type: VAP
+      trigger: Cron
+      schedule: Hourly  # (7)!
+      configs:
+        humboldt:
+          config_file_path: pipelines/lidar_vap/config/pipeline.yaml
+    ```
+
+    1. A useful name to give the pipeline. This will be used as a label in various places in AWS.
+
+    2. The type of pipeline, either **`Ingest`** or **`VAP`**.
+
+    3. The type of trigger, either **`S3`** to trigger when a file enters the input bucket path, or **`Cron`** to run on
+        a regular schedule.
+
+    4. The subpath within the input bucket that should be watched. When new files enter this bucket, the pipeline will
+        run with those files as input.
+
+    5. The path to the pipeline configuration file in the `pipeline-template` repo.
+
+    6. You can have multiple configuration files for each pipeline.
+
+        Here we define one for Morro Bay, CA in addition to the ingest for the Humboldt, CA site.
+
+        !!! note
+
+            You can keep adding new sites, or versions of this pipeline to the **`configs`** section. Just make sure
+            that the key (e.g., "morro", "humboldt") is unique for each pipeline config you add.
+
+    7. If the **`Cron`** trigger is selected, then you must also specify the schedule. The schedule should be one of the
+        following values:
+
+        * **Hourly**
+        * **Daily**
+        * **Weekly**
+        * **Monthly**
 
 3. Go to the CodePipeline UI in AWS and find the CodePipeline for this project, then click 'release change'.
 
