@@ -44,10 +44,6 @@ If you are using an existing `pipeline-template` repository, make sure that the 
 
 Clone these repos to the same parent folder on your computer.
 
-???+ warning "Warning: Windows users"
-
-    If you are using WSL on Windows make sure you run the `git clone` command from a WSL terminal.
-
 ### Install Docker
 
 We use a Docker container with VSCode to make setting up your development environment a snap.  We assume users have a
@@ -76,26 +72,22 @@ started.
         * [Install Docker](https://docs.docker.com/engine/install/ubuntu/)
         * [Install Docker Desktop](https://docs.docker.com/desktop/install/linux-install/)
 
-We also recommend [installing VS Code](https://code.visualstudio.com/download) and using the
+We also recommend [installing VSCode](https://code.visualstudio.com/download) and using the
 [ms-vscode-remote.vscode-remote-extensionpack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
 extension, which includes support for editing code in Docker Containers.
 
 ## Development Environment
 
-### Open your `aws-template` repo in VS Code
+### Open your `aws-template` repo in VSCode
 
-???+ warning "Warning: Windows users"
+Open the `aws-template` repository in VSCode. You can either use the command line for this (i.e.,
+`code path/to/aws-template`), or just open it using ^^File -> Open Folder^^.
 
-    If you are using WSL on Windows then you should open VSCode from within a WSL terminal in order for VSCode so it
-    automatically installs the proper WSL interface extension.
+???+ warning "Windows users"
 
-For example, if you checked out the aws-template repository to your `$HOME/projects/tsdat` folder, then you would run
-this to start VSCode:
-
-```shell
-cd $HOME/projects/tsdat
-code aws-template
-```
+    Make sure you have the WSL extension by Microsoft
+    ([ms-vscode-remote.remote-wsl](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl)).
+    installed. Then press ++ctrl+shift+p++ and enter the command **`WSL: Reopen folder in WSL`**
 
 ### Start your tsdat-cdk Docker container
 
@@ -219,7 +211,24 @@ and update your credentials. (1)
     3. In the section, "Option 2: Manually add a profile to your AWS credentials file (Short-term credentials)", click
     on the box to copy the text.
 
-Your credentials file should look like this (with real values instead of the `XXXX`):
+Your credentials file should look like this (with real values instead of the `XXXX`): (1)
+{ .annotate }
+
+1. !!! tip "Tip: Windows WSL users"
+
+        If you've already set up the AWS CLI in Windows, WSL will link to the configuration files located in the Windows
+        location. Your credentials will also be linked to the `.aws/` folder that should now be showing in your VSCode
+        Explorer tab. Edit as necessary, but note this CDK expects a profile called `tsdat` to function.
+
+        You can check that the profile was set properly using:
+        
+        `aws configure list`
+
+        If you're using a profile different from `tsdat`, set the new one using
+        
+        `export AWS_PROFILE=<new_profile>`
+
+        The new profile name should now show up in the output of `aws configure list`
 
 ```txt title="~/.aws/credentials"
 [tsdat]
