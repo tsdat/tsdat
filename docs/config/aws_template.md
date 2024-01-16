@@ -12,6 +12,12 @@ The goal of this guide is to help you deploy your Tsdat pipeline(s) to AWS so th
 enters S3 buckets (Ingest applications), or on a regular cron schedule (VAP applications), and store the processed
 results in an output S3 bucket in a structured format.
 
+Your Tsdat pipelines will be deployed via an AWS Cloud Formation stack. The stack creates an AWS CodeBuild project that
+is connected to your GitHub repository so that an AWS deployment is triggered every time you commit code changes. The
+following images illustrate different aspects of the deployment. The first image shows how the deployed pipelines will
+function on AWS; the second image shows all the specific AWS resources that are included in the stack, and the final
+image shows how the CodeBuild build/deploy cycle works.
+
 === "Deployment result"
 
     Ingest and VAP pipelines can be set up to run on S3 event triggers or on a cron schedule.
@@ -159,9 +165,9 @@ account_id: "XXXXXXXXXXX"  # (2)!
 region: us-west-2
 input_bucket_name: tsdat-input
 output_bucket_name: tsdat-output
-create_buckets: True
+create_buckets: True # (3)!
 
-github_codestar_arn: arn:aws:codestar-connections:us-west-2:... # (3)!
+github_codestar_arn: arn:aws:codestar-connections:us-west-2:... # (4)!
 ```
 
 1. The name of the organization or user that cloned the `aws-template` and `pipeline-template` repos.
@@ -169,7 +175,11 @@ github_codestar_arn: arn:aws:codestar-connections:us-west-2:... # (3)!
 2. Your AWS account ID. You can get this from the AWS console: In the navigation bar at the upper right, choose your
     username and then copy the Account ID. It should be a 12-digit number.
 
-3. This is the ARN of the CodeStar connection to GitHub. Check out the
+3. If you have existing buckets that you would like to use for your pipeline inputs and outputs, then set
+    `create_buckets: False`. If `create_buckets` is set to `True` and the buckets already exist, then the deployment
+    will throw an error.
+
+4. This is the ARN of the CodeStar connection to GitHub. Check out the
     [AWS guide for setting up a CodeStar connection](https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html#connections-create-github-console),
     then copy the ARN of your CodeStar connection here.
 
@@ -218,24 +228,7 @@ and update your credentials. (1)
     3. In the section, "Option 2: Manually add a profile to your AWS credentials file (Short-term credentials)", click
     on the box to copy the text.
 
-Your credentials file should look like this (with real values instead of the `XXXX`): (1)
-{ .annotate }
-
-1. !!! tip "Tip: Windows WSL users"
-
-        If you've already set up the AWS CLI in Windows, WSL will link to the configuration files located in the Windows
-        location. Your credentials will also be linked to the `.aws/` folder that should now be showing in your VSCode
-        Explorer tab. Edit as necessary, but note this CDK expects a profile called `tsdat` to function.
-
-        You can check that the profile was set properly using:
-        
-        `aws configure list`
-
-        If you're using a profile different from `tsdat`, set the new one using
-        
-        `export AWS_PROFILE=<new_profile>`
-
-        The new profile name should now show up in the output of `aws configure list`
+Your credentials file should look like this (with real values instead of the `XXXX`):
 
 ```txt title="~/.aws/credentials"
 [tsdat]
@@ -290,12 +283,13 @@ prefer to have a separate branch for production releases.
 
 !!! tip
 
-    The very first time you run `./deploy_stack.sh` for a given branch you will need to manually release a CodePipeline
-    change in AWS to get it to build the initial container images and lambda functions.
+    The very first time you run `./deploy_stack.sh` for a given branch you will need to manually release a
+    [CodePipeline](https://us-west-2.console.aws.amazon.com/codesuite/codepipeline/pipelines) change in AWS to get it
+    to build the initial container images and lambda functions.
 
-## Deploying Pipeline Changes
+## Deploying `pipeline-template` Changes
 
-### Adding a new pipeline
+### Adding an ingest or vap
 
 The steps to deploy an existing pipeline at a new site, or to deploy an entirely new pipeline are the same:
 
@@ -362,17 +356,19 @@ The steps to deploy an existing pipeline at a new site, or to deploy an entirely
         * **Weekly**
         * **Monthly**
 
-3. Go to the CodePipeline UI in AWS and find the CodePipeline for this project, then click 'release change'.
+3. Go to the [CodePipeline UI in AWS](https://us-west-2.console.aws.amazon.com/codesuite/codepipeline/pipelines) and
+    find the CodePipeline for this project, then click 'release change'.
 
 </div>
 
-### Updating an existing pipeline
+### Updating an ingest or vap
 
 Changes to the deployed branch(es) in the `pipeline-template` repo will be released automatically via the CodePipeline
 build process in AWS, which was set up to watch for branch changes during the `./deploy_stack.sh main` step.
 
-This means that all you have to do to deploy changes to an already-deployed pipeline is just push your changes to the
-`main` branch.
+The AWS CodePipeline build (created during the `./deploy_stack.sh main` step) will automatically watch for changes to
+your `pipeline-template` code in the `main` branch (or whatever branch you specified). This means that any time you push
+changes to that branch, CodePipeline will automatically update and re-deploy any modified ingests or VAPs.
 
 !!! success
 
@@ -443,5 +439,9 @@ each branch you deployed.
 
 1. Make sure the input and output S3 buckets are completely empty.
 2. Delete the CloudFormation stack. It should be named like `pipeline-template-main-CodePipelineStack`
-3. Navigate to the Lambda UI and delete any lambda functions named like `pipeline-template-branch-lambda-*`.
+3. Navigate to the Lambda UI and delete any lambda functions named like `pipeline-template-[BRANCH]-lambda-*`. (1)
+    { .annotate }
+    1. There should one lambda function for every `config: location:` entry in your `aws-template/pipelines_config.yml`
+    file, for each deployed branch.
+
 4. Navigate back to the CloudFormation UI and delete the `CDKToolKit` stack.
