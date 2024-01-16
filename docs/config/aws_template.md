@@ -44,6 +44,12 @@ If you are using an existing `pipeline-template` repository, make sure that the 
 
 Clone these repos to the same parent folder on your computer.
 
+!!! warning "Warning: Windows Users"
+
+    If you are using WSL on Windows, make sure you run the git clone command from a WSL terminal to prevent git from
+    converting all the file line endings to `CRLF`. If your files have `CRLF` line endings, it will cause the AWS
+    pipeline to crash.
+
 ### Install Docker
 
 We use a Docker container with VSCode to make setting up your development environment a snap.  We assume users have a
@@ -83,7 +89,7 @@ extension, which includes support for editing code in Docker Containers.
 Open the `aws-template` repository in VSCode. You can either use the command line for this (i.e.,
 `code path/to/aws-template`), or just open it using ^^File -> Open Folder^^.
 
-???+ warning "Windows users"
+???+ warning "Windows Users"
 
     Make sure you have the WSL extension by Microsoft
     ([ms-vscode-remote.remote-wsl](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl)).
