@@ -19,7 +19,7 @@ pip install "ncconvert[cli]"
 ## Usage
 
 ```shell
-ncconvert to_csv data/*.nc --output-dir output_data/ --verbose
+ncconvert to_csv path/to/your/data/*.nc --output-dir path/to/output/folder/ --verbose
 ```
 
 Formats other than csv are also supported. To see more information about supported formats, run
@@ -31,10 +31,10 @@ ncconvert --help
 A python API is also available for each format, e.g.:
 
 ```python
-import xarray as xr
-from ncconvert import to_csv
+import xarray as xr 
+from ncconvert import to_csv 
 
-ds = xr.open_dataset("netcdf-file.nc")
+ds = xr.open_dataset("path/to/your/netcdf-file.nc") 
 
-to_csv(ds, "output_folder/filename.csv")
+to_csv(ds, "path/to/output/folder/filename.csv") 
 ```
