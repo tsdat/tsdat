@@ -2,8 +2,9 @@
 
 !!! danger "AWS Admin Privileges Required"
 
-    This deployment can only be run by AWS administrators, so we assume the user has a basic understanding of code
-    development, Docker containers, and the AWS cloud.
+    This deployment can only be run by users with AWS administrator privileges, so contact your organization's cloud
+    admins if you need access. In addition, you should have a basic understanding of code development, Docker
+    containers, and the AWS cloud.
 
 ## Overview
 
@@ -46,7 +47,7 @@ Clone these repos to the same parent folder on your computer.
 
 !!! warning "Warning: Windows Users"
 
-    If you are using WSL on Windows, make sure you run the git clone command from a WSL terminal to prevent git from
+    If you are using WSL on Windows, make sure you run the `git clone` command from a WSL terminal to prevent git from
     converting all the file line endings to `CRLF`. If your files have `CRLF` line endings, it will cause the AWS
     pipeline to crash.
 
