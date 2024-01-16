@@ -8,8 +8,8 @@
 
 ## Overview
 
-The goal of this guide is to help you create a functioning pipeline in AWS that allows you to process data on-the-fly as
-it enters S3 buckets (Ingest applications), or on a regular cron schedule (VAP applications), and store the processed
+The goal of this guide is to help you deploy your Tsdat pipeline(s) to AWS so that you can process data on-the-fly as it
+enters S3 buckets (Ingest applications), or on a regular cron schedule (VAP applications), and store the processed
 results in an output S3 bucket in a structured format.
 
 === "Deployment result"
