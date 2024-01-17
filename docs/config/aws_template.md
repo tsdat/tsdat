@@ -57,7 +57,7 @@ Clone these repos to the same parent folder on your computer.
     converting all the file line endings to `CRLF`. If your files have `CRLF` line endings, it will cause the AWS
     pipeline to crash.
 
-### Install Docker
+### Install docker
 
 We use a Docker container with VSCode to make setting up your development environment a snap.  We assume users have a
 basic familiarity with Docker containers. If you are new to Docker, there are many free online tutorials to get you
@@ -91,7 +91,7 @@ extension, which includes support for editing code in Docker Containers.
 
 ## Development Environment
 
-### Open your `aws-template` repo in VSCode
+### Open the `aws-template` repo
 
 Open the `aws-template` repository in VSCode. You can either use the command line for this (i.e.,
 `code path/to/aws-template`), or just open it using ^^File -> Open Folder^^.
@@ -102,7 +102,7 @@ Open the `aws-template` repository in VSCode. You can either use the command lin
     ([ms-vscode-remote.remote-wsl](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl)).
     installed. Then press ++ctrl+shift+p++ and enter the command **`WSL: Reopen folder in WSL`**
 
-### Start your tsdat-cdk Docker container
+### Start the container
 
 From your VSCode window, start a terminal (^^Main Menu -> Terminal -> New^^, OR you can press ++ctrl+grave++).
 
@@ -116,7 +116,7 @@ Then from the VSCode terminal, run:
 1. In our testing we found that just `docker compose up -d` works fine on our team's Windows, Linux, and intel MacOS
 systems, but the `--platform` argument was needed for M1/M2 MacBooks. Milage may vary.
 
-### Attach a new VSCode window to the tsdat-cdk container
+### Attach to the container
 
 1. Type the key combination:  ++ctrl+shift+p++ to bring up the VSCode command palette.
 1. Then from the input box type: "Dev-Containers:  Attach to Running Container..." and select it
@@ -124,7 +124,7 @@ systems, but the `--platform` argument was needed for M1/M2 MacBooks. Milage may
 
 This will start up a new VSCode window that is running from inside your tsdat-cdk container.
 
-### Open the provided cdk.code-workspace file
+### Open the VSCode workspace
 
 From the VSCode window that is attached to the tsdat-cdk container click ^^Main Menu -> File-> Open Workspace from
 File^^. In the file chooser dialog, select `/root/aws-template/.vscode/cdk.code-workspace`
@@ -147,9 +147,9 @@ directory structure like so:
     * :material-file: *`config`*
     * :material-file: *`credentials`*
 
-## Deploying your AWS Stack
+## Deploying the AWS Stack
 
-### Configure AWS/GitHub settings
+### Configure account settings
 
 The top part of the `aws-template/pipelines_config.yml` contains settings related to the AWS-GitHub integration, where
 data should be pulled from & placed, and which AWS account should be used. Open this file and fill out the configuration
@@ -189,7 +189,7 @@ github_codestar_arn: arn:aws:codestar-connections:us-west-2:... # (4)!
         CodeStar access to just your `pipeline-template` and `aws-template` repositories. You can always change this
         later in [GitHub](https://github.com/settings/installations) if you want.
 
-### Configure your AWS profile
+### Configure AWS profile
 
 From a terminal inside your VSCode window attached to the docker container run the following line. You may leave this
 blank aside from the region. You only need to do this once.
@@ -209,7 +209,7 @@ Your `~/.aws/config` file should now look like this:
 region = us-west-2
 ```
 
-### Edit your aws credentials
+### Edit aws credentials
 
 !!! warning
 
@@ -374,7 +374,7 @@ changes to that branch, CodePipeline will automatically update and re-deploy any
 
     You've now deployed a pipeline stack to AWS and you know how to update and add new pipelines on-the-fly!
 
-## Viewing your Resources in AWS
+## Viewing Resources in AWS
 
 You can use the AWS UI to view the resources that were created during the build.
 
@@ -432,7 +432,7 @@ You can use the AWS UI to view the resources that were created during the build.
 
 </div>
 
-## Removing your AWS Stack
+## Removing the AWS Stack
 
 If for some reason you would like to completely remove everything that's been deployed, then follow the steps below for
 each branch you deployed.
