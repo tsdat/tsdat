@@ -22,7 +22,7 @@ pip install "ncconvert[cli]"
 ncconvert to_csv path/to/your/data/*.nc --output-dir path/to/output/folder/ --verbose
 ```
 
-Formats other than csv are also supported. To see more information about supported formats, run
+Format supported other than csv is parquet. To see more information about supported formats, run
 
 ```shell
 ncconvert --help
@@ -37,4 +37,17 @@ from ncconvert import to_csv
 ds = xr.open_dataset("path/to/your/netcdf-file.nc") 
 
 to_csv(ds, "path/to/output/folder/filename.csv") 
+```
+
+```python
+import xarray as xr
+from ncconvert import to_csv_collection
+
+ds = xr.open_dataset("netcdf-file.nc")
+
+# Define the file path where CSV files will be stored
+file_path = "path/to/your/output/file"
+
+# Call the to_csv_collection function
+csv_files, metadata_file = to_csv_collection(dataset, file_path)
 ```
