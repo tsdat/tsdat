@@ -12,6 +12,13 @@ from .base import Pipeline
 __all__ = ["IngestPipeline", "TransformationPipeline"]
 
 
+def add_inputs_attr(dataset: xr.Dataset, inputs: List[str]) -> None:
+    # A len(list)=1 attr doesn't survive round trip, so we keep it a string in that case
+    # https://github.com/pydata/xarray/issues/4798
+    inputs_attr = inputs if len(inputs) != 1 else inputs[0]
+    dataset.attrs["inputs"] = inputs_attr
+
+
 class IngestPipeline(Pipeline):
     """---------------------------------------------------------------------------------
     Pipeline class designed to read in raw, unstandardized time series data and enhance
@@ -36,6 +43,7 @@ class IngestPipeline(Pipeline):
     def run(self, inputs: List[str], **kwargs: Any) -> xr.Dataset:
         dataset = self.retriever.retrieve(inputs, self.dataset_config)
         dataset = self.prepare_retrieved_dataset(dataset)
+        add_inputs_attr(dataset, inputs)
         dataset = self.hook_customize_dataset(dataset)
         dataset = self.quality.manage(dataset)
         dataset = self.hook_finalize_dataset(dataset)
@@ -161,6 +169,7 @@ class TransformationPipeline(IngestPipeline):
             input_data_hook=self.hook_customize_input_datasets,
             **kwargs,
         )
+        add_inputs_attr(dataset, input_keys)
         dataset = self.prepare_retrieved_dataset(dataset)
         dataset = self.hook_customize_dataset(dataset)
         dataset = self.quality.manage(dataset)
