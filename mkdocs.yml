@@ -42,6 +42,7 @@ nav:
       - Deploying to AWS: config/aws_template.md
   - API Reference: API/
   - Contributing: collaboration.md
+  - Extras: extras/
 
 theme:
   name: material
