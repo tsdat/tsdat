@@ -619,15 +619,6 @@ class StorageRetriever(Retriever):
                 if data is not None:
                     retrieved_data.data_vars[name] = data
 
-            # Ensure coordinates are renamed
-            if retrieved_data.data_vars[name].dims != dataset_config[name].dims:
-                old_dims = retrieved_data.data_vars[name].dims
-                new_dims = dataset_config[name].dims
-                for od, nd in zip(old_dims, new_dims):
-                    retrieved_data.data_vars[name] = retrieved_data.data_vars[
-                        name
-                    ].rename({od: nd})
-
         # Construct the retrieved dataset structure
         # TODO: validate dimension alignment
         retrieved_dataset = xr.Dataset(
