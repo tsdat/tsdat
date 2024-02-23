@@ -503,6 +503,27 @@ class GlobalARMTransformParams(BaseModel):
                 break
 
         return selected_params
+    
+
+class GlobalFetchParams(BaseModel):
+    file_padding: Optional[str]  # type: ignore
+    """How far in time to look ahead (+), behind (-), or both to search
+    for files."""
+    @validator("file_padding", pre=True)
+    def default_to_seconds(cls, d: str) -> str:
+        if not d:
+            return ""
+        elif d[-1].isnumeric():
+            return d + "s"
+        else:
+            return d
+    def get_direction(self, d: str) -> int:
+        if "+" in d:
+            return 1, d.replace("+", "")
+        elif "-" in d:
+            return -1, d.replace("-", "")
+        else:
+            return 0, d
 
 
 class StorageRetriever(Retriever):
@@ -511,6 +532,9 @@ class StorageRetriever(Retriever):
     class TransParameters(BaseModel):
         trans_params: Optional[GlobalARMTransformParams] = Field(
             default=None, alias="transformation_parameters"
+        )
+        fetch_params: Optional[GlobalFetchParams] = Field(
+            default=None, alias="fetch_parameters"
         )
 
     parameters: Optional[TransParameters] = None
@@ -643,12 +667,19 @@ class StorageRetriever(Retriever):
             return pd.Timedelta(time_string)
 
     def _get_retrieval_padding(self, input_key: str) -> timedelta:
-        if self.parameters is None or self.parameters.trans_params is None:
-            return timedelta()
-        params = self.parameters.trans_params.select_parameters(input_key)
-        range_td = self._get_timedelta(params["range"].get("time", "0s"))
-        width_td = self._get_timedelta(params["width"].get("time", "0s"))
-        return max(range_td, width_td)
+        if self.parameters is None:
+            return 0, timedelta()
+        elif self.parameters.fetch_params is not None:
+            param = getattr(self.parameters.fetch_params, "file_padding")
+            direction, padding = self.parameters.fetch_params.get_direction(param)
+            return direction, self._get_timedelta(padding)
+        elif self.parameters.trans_params is not None:
+            params = self.parameters.trans_params.select_parameters(input_key)
+            range_td = self._get_timedelta(params["range"].get("time", "0s"))
+            width_td = self._get_timedelta(params["width"].get("time", "0s"))
+            return 0, max(range_td, width_td)
+        else:
+            return 0, timedelta()
 
     def __fetch_inputs(
         self, input_keys: List[StorageRetrieverInput], storage: Storage
@@ -657,8 +688,8 @@ class StorageRetriever(Retriever):
         for key in input_keys:
             padding = self._get_retrieval_padding(key.input_key)
             retrieved_dataset = storage.fetch_data(
-                start=key.start - padding,
-                end=key.end + padding,
+                start=key.start - padding[1] if padding[0] < 1 else key.start,
+                end=key.end + padding[1] if padding[0] > -1 else key.end,
                 datastream=key.datastream,
                 metadata_kwargs=key.kwargs,
             )
