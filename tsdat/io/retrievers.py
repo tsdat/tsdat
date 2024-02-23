@@ -636,14 +636,19 @@ class StorageRetriever(Retriever):
 
         return retrieved_dataset
 
+    def _get_timedelta(self, time_string):
+        if time_string.replace(".", "").isnumeric():
+            return pd.Timedelta(float(time_string), 's')
+        else:
+            return pd.Timedelta(time_string)
+
     def _get_retrieval_padding(self, input_key: str) -> timedelta:
         if self.parameters is None or self.parameters.trans_params is None:
             return timedelta()
         params = self.parameters.trans_params.select_parameters(input_key)
-        return max(
-            pd.Timedelta(params["range"].get("time", "0s")),
-            pd.Timedelta(params["width"].get("time", "0s")),
-        )
+        range_td = self._get_timedelta(params["range"].get("time", "0s"))
+        width_td = self._get_timedelta(params["width"].get("time", "0s"))
+        return max(range_td, width_td)
 
     def __fetch_inputs(
         self, input_keys: List[StorageRetrieverInput], storage: Storage
