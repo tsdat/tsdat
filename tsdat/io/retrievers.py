@@ -649,6 +649,11 @@ class StorageRetriever(Retriever):
             coords=retrieved_data.coords,
             data_vars=retrieved_data.data_vars,
         )
+        
+        # Double check that dataset is trimmed to start and end time
+        # Need to do this if adi_py is not used and more than one
+        # files are pulled in.
+        retrieved_dataset = self.__trim_dataset(retrieved_dataset, storage_input_keys)
 
         # Fix the dtype encoding
         for var_name, var_data in retrieved_dataset.data_vars.items():
@@ -695,6 +700,15 @@ class StorageRetriever(Retriever):
             )
             input_data[key.input_key] = retrieved_dataset
         return input_data
+    
+    def __trim_dataset(
+        self, dataset:xr.Dataset, input_keys: List[StorageRetrieverInput]
+        ) -> xr.Dataset:
+        # Trim dataset to original start and end keys
+        # Start and end keys don't change between inputs
+        start = input_keys[0].start
+        end = input_keys[0].end
+        return dataset.sel(time=slice(start, end))
 
 
 # class ImprovedDefaultRetriever(Retriever):
