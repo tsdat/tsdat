@@ -503,12 +503,13 @@ class GlobalARMTransformParams(BaseModel):
                 break
 
         return selected_params
-    
+
 
 class GlobalFetchParams(BaseModel):
     file_padding: Optional[str]  # type: ignore
     """How far in time to look ahead (+), behind (-), or both to search
     for files."""
+
     @validator("file_padding", pre=True)
     def default_to_seconds(cls, d: str) -> str:
         if not d:
@@ -517,6 +518,7 @@ class GlobalFetchParams(BaseModel):
             return d + "s"
         else:
             return d
+
     def get_direction(self, d: str) -> int:
         if "+" in d:
             return 1, d.replace("+", "")
@@ -649,7 +651,7 @@ class StorageRetriever(Retriever):
             coords=retrieved_data.coords,
             data_vars=retrieved_data.data_vars,
         )
-        
+
         # Double check that dataset is trimmed to start and end time
         # Need to do this if adi_py is not used and more than one
         # files are pulled in.
@@ -667,7 +669,7 @@ class StorageRetriever(Retriever):
 
     def _get_timedelta(self, time_string):
         if time_string.replace(".", "").isnumeric():
-            return pd.Timedelta(float(time_string), 's')
+            return pd.Timedelta(float(time_string), "s")
         else:
             return pd.Timedelta(time_string)
 
@@ -700,10 +702,10 @@ class StorageRetriever(Retriever):
             )
             input_data[key.input_key] = retrieved_dataset
         return input_data
-    
+
     def __trim_dataset(
-        self, dataset:xr.Dataset, input_keys: List[StorageRetrieverInput]
-        ) -> xr.Dataset:
+        self, dataset: xr.Dataset, input_keys: List[StorageRetrieverInput]
+    ) -> xr.Dataset:
         # Trim dataset to original start and end keys
         # Start and end keys don't change between inputs
         start = input_keys[0].start
