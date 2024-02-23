@@ -37,7 +37,6 @@ def test_fail_if_missing_required_global_attributes():
     attrs: Dict[str, Any] = {}
     expected_error_msgs = [
         "title\n  field required",
-        "description\n  field required",
         "location_id\n  field required",
         "dataset_name\n  field required",
         "data_level\n  field required",

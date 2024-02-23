@@ -73,7 +73,7 @@ class NetCDFWriter(FileWriter):
 
             # Remove unexpected netCDF4 encoding parameters
             # https://github.com/pydata/xarray/discussions/5709
-            params = ["szip", "zstd", "bzip2", "blosc", "contiguous", "chunksizes"]
+            params = ["szip", "zstd", "bzip2", "blosc", "contiguous", "chunksizes", 'preferred_chunks']
             [
                 encoding_dict[variable_name].pop(p)
                 for p in params

@@ -1,4 +1,5 @@
 from datetime import datetime
+import warnings
 import logging
 from typing import TYPE_CHECKING, Any, Dict, Hashable, List, Literal, Optional, Tuple
 
@@ -22,6 +23,14 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
+
+
+def error_traceback(error):
+    warnings.warn(
+            "\n\nEncountered an error running transformer. Please ensure necessary"
+            " dependencies are installed."
+        )
+    logger.exception(error)
 
 
 def _create_bounds(
@@ -286,11 +295,7 @@ class _ADIBaseTransformer(DataConverter):
                 transform_parameters=trans_params,
             )
         except Exception as e:
-            logger.exception(
-                "Encountered an error running transformer. Please ensure necessary"
-                " dependencies are installed."
-            )
-            raise e
+            error_traceback(e)
 
         # Map renamed coordinates/variables to their original names
         trans_input_ds = trans_input_ds.rename(

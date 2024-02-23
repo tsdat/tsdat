@@ -37,6 +37,11 @@ COORDINATE_SYSTEM = "coord_sys"
 OUTPUT_DATASTREAM = "output_ds"
 INPUT_DATASTREAM = "input_ds"
 
+
+class BadTransformationSettingsError(ValueError):
+    """Exception class used when bad combinations of parameters are passed to transformation code."""
+
+
 adi_qc_atts = {
     "bit_1_description": (
         "QC_BAD:  Transformation could not finish, value set to missing_value."
@@ -403,6 +408,13 @@ class AdiTransformer:
         Void - transforms are done in-place on output_dataset
         -------------------------------------------------------------------------------------------------------------
         """
+        # ADI can only handle time if it is the very first dim
+        input_variable_dims = input_dataset[variable_name].dims
+        if "time" in input_variable_dims and "time" != input_variable_dims[0]:
+            raise BadTransformationSettingsError(
+                f"Expected 'time' as the first dimension for variable {variable_name},"
+                f" got: {input_variable_dims}"
+            )
 
         # First convert the input and output variables into ADI format
         retrieved_dataset: cds3.Group = self._create_adi_retrieved_dataset(
@@ -520,7 +532,7 @@ class AdiTransformer:
 
         # Now add dimensions to the obs
         xr_input_var = input_dataset[variable_name]
-        xr_input_qc_var = input_dataset[f"qc_{variable_name}"]
+        xr_input_qc_var = input_dataset.data_vars.get(f"qc_{variable_name}")
         dims = (
             xr_input_var.sizes
         )  # dict of dims and their lengths (i.e., {'time': 1440} )
@@ -538,7 +550,8 @@ class AdiTransformer:
 
         # Now add the data variables to the obs group
         self._add_variable_to_adi(xr_input_var, obs_group)
-        self._add_variable_to_adi(xr_input_qc_var, obs_group)
+        if xr_input_qc_var is not None:
+            self._add_variable_to_adi(xr_input_qc_var, obs_group)
 
         # Now add the bounds transform parameters (if they apply)
         self._set_bounds_transform_parameters(variable_name, input_dataset, obs_group)
@@ -695,7 +708,9 @@ class AdiTransformer:
 
         to condensed ACT format:
             flag_masks = 1U, 2U, 4U ;
-            flag_meanings = "Value is equal to _FillValue or NaN", "Value is less than the valid_min.", "Value is greater than the valid_max." ;
+            flag_meanings = "Value is equal to _FillValue or NaN",
+                            "Value is less than the valid_min.",
+                            "Value is greater than the valid_max." ;
             flag_assessments = "Bad", "Bad", "Bad" ;
 
         Parameters
@@ -775,6 +790,12 @@ class AdiTransformer:
         flag_masks = xr_qc_atts.get("flag_masks", [])
         flag_meanings = xr_qc_atts.get("flag_meanings", [])
         flag_assessments = xr_qc_atts.get("flag_assessments", [])
+
+        # Convert to list if only single items
+        convert2list = lambda a: a if isinstance(a, (list, np.ndarray)) else [a]
+        flag_masks = convert2list(flag_masks)
+        flag_meanings = convert2list(flag_meanings)
+        flag_assessments = convert2list(flag_assessments)
 
         # Note that I think ADI may crash if the bit numbers are not contiguous
         adi_qc_atts = {}
