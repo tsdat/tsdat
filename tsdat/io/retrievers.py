@@ -506,11 +506,11 @@ class GlobalARMTransformParams(BaseModel):
 
 
 class GlobalFetchParams(BaseModel):
-    file_padding: Optional[str]  # type: ignore
+    time_padding: Optional[str]  # type: ignore
     """How far in time to look ahead (+), behind (-), or both to search
     for files."""
 
-    @validator("file_padding", pre=True)
+    @validator("time_padding", pre=True)
     def default_to_seconds(cls, d: str) -> str:
         if not d:
             return ""
@@ -677,7 +677,7 @@ class StorageRetriever(Retriever):
         if self.parameters is None:
             return 0, timedelta()
         elif self.parameters.fetch_params is not None:
-            param = getattr(self.parameters.fetch_params, "file_padding")
+            param = getattr(self.parameters.fetch_params, "time_padding")
             direction, padding = self.parameters.fetch_params.get_direction(param)
             return direction, self._get_timedelta(padding)
         elif self.parameters.trans_params is not None:
