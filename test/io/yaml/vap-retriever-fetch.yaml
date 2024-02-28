@@ -1,0 +1,24 @@
+classname: tsdat.io.retrievers.StorageRetriever
+parameters:
+  fetch_parameters:
+    time_padding: 86400s
+  transformation_parameters:
+    range:
+      time: 60s
+    width: {}  # only needed for averaging
+    alignment: {}  # only needed for averaging
+
+coords:
+  # Map onto buoy_z06 time grid
+  time:
+    .*buoy_z06\.a1.*:
+      name: time
+
+data_vars: 
+  temperature:
+    .*buoy_z06\.a1.*:
+      name: temp
+      data_converters:
+        - classname: tsdat.transform.NearestNeighbor
+        - classname: tsdat.io.converters.UnitsConverter
+          input_units: degF

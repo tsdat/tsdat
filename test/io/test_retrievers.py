@@ -45,6 +45,20 @@ def storage_retriever_2D() -> StorageRetriever:
 
 
 @fixture
+def storage_retriever_transform() -> StorageRetriever:
+    config = RetrieverConfig.from_yaml(
+        Path("test/io/yaml/vap-retriever-transform.yaml")
+    )
+    return recursive_instantiate(config)
+
+
+@fixture
+def storage_retriever_fetch() -> StorageRetriever:
+    config = RetrieverConfig.from_yaml(Path("test/io/yaml/vap-retriever-fetch.yaml"))
+    return recursive_instantiate(config)
+
+
+@fixture
 def vap_dataset_config() -> DatasetConfig:
     return DatasetConfig.from_yaml(Path("test/io/yaml/vap-dataset.yaml"))
 
@@ -221,10 +235,10 @@ def test_storage_retriever_2D(
 
 
 @pytest.mark.requires_adi
-def test_storage_retriever_transformations(vap_transform_dataset_config: DatasetConfig):
-    storage_retriever: StorageRetriever = recursive_instantiate(
-        RetrieverConfig.from_yaml(Path("test/io/yaml/vap-retriever-transform.yaml"))
-    )
+def test_storage_retriever_transformations(
+    storage_retriever_transform: StorageRetriever,
+    vap_transform_dataset_config: DatasetConfig,
+):
     storage = FileSystem(
         parameters=FileSystem.Parameters(
             storage_root=Path("test/io/data/retriever-store"),
@@ -291,7 +305,7 @@ def test_storage_retriever_transformations(vap_transform_dataset_config: Dataset
         "--datastream test.trans_inputs.a1 --start 20220413.000000 --end 20220414.000000",
     ]
 
-    ds = storage_retriever.retrieve(
+    ds = storage_retriever_transform.retrieve(
         inputs, dataset_config=vap_transform_dataset_config, storage=storage
     )
 
@@ -367,3 +381,46 @@ def test_storage_retriever_transformations(vap_transform_dataset_config: Dataset
     )
 
     os.remove(path)
+
+
+@pytest.mark.requires_adi
+def test_storage_retriever_file_fetching(
+    storage_retriever_fetch: StorageRetriever, vap_dataset_config: DatasetConfig
+):
+    storage = FileSystem(
+        parameters=FileSystem.Parameters(
+            storage_root=Path("test/io/data/retriever-store"),
+            data_storage_path="data/{datastream}",
+        )
+    )
+
+    inputs = [
+        "humboldt.buoy_z06.a1::20220405.000000::20220406.000000",
+    ]
+
+    retrieved_dataset = storage_retriever_fetch.retrieve(
+        inputs, dataset_config=vap_dataset_config, storage=storage
+    )
+
+    time = np.append(
+        np.arange(
+            np.datetime64("2022-04-05T00:00:00"),
+            np.datetime64("2022-04-06T00:00:00"),
+            np.timedelta64(8, "h"),
+        ),
+        np.datetime64("2022-04-05T20:00:00"),
+    )
+    expected = xr.Dataset(
+        coords={"time": time},  # type: ignore
+        data_vars={
+            "temperature": (  # degF -> degC
+                "time",
+                (np.array([71.4, 71.2, 71.1, 70.5]) - 32) * 5 / 9,
+                {"units": "degC"},
+            ),
+            "qc_temperature": ("time", [0, 0, 0, 0]),
+        },
+        attrs={"datastream": "humboldt.buoy.b1"},
+    )
+
+    xr.testing.assert_allclose(retrieved_dataset, expected)  # type: ignore
