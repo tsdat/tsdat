@@ -2,7 +2,7 @@ classname: tsdat.io.retrievers.StorageRetriever
 parameters: 
   transformation_parameters:
     range:
-      time: 60s
+      time: 3600s
     width: {}  # only needed for averaging
     alignment: {}  # only needed for averaging
 
