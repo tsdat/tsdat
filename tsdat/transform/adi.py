@@ -229,7 +229,7 @@ class TransformParameterConverter:
                 " recognized by ADI and is the default."
             )
 
-        elif parameter_name in ["range", "width"] and value[-1] != "s":
+        elif parameter_name in ["range", "width"] and not isinstance(value, int) and value[-1] != "s":
             seconds = np.timedelta64(value[:-1], value[-1]).item().total_seconds()
             value = str(int(seconds)) + "s"
 
