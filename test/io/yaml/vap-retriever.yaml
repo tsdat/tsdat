@@ -1,10 +1,10 @@
 classname: tsdat.io.retrievers.StorageRetriever
-parameters: 
+parameters:
   transformation_parameters:
     range:
-      time: 3600s
-    width: {}  # only needed for averaging
-    alignment: {}  # only needed for averaging
+      time: 1h # gets converted to seconds
+    width: {} # only needed for averaging
+    alignment: {} # only needed for averaging
 
 coords:
   # Map onto buoy_z06 time grid
@@ -12,7 +12,7 @@ coords:
     .*buoy_z06\.a1.*:
       name: time
 
-data_vars: 
+data_vars:
   temperature:
     .*buoy_z07\.a1.*:
       name: temp
