@@ -229,6 +229,10 @@ class TransformParameterConverter:
                 " recognized by ADI and is the default."
             )
 
+        elif parameter_name in ["range", "width"] and not isinstance(value, int) and value[-1] != "s":
+            seconds = np.timedelta64(value[:-1], value[-1]).item().total_seconds()
+            value = str(int(seconds)) + "s"
+
         else:
             # If this is qc_mask parameter, then we have to convert the value from a binary string to integer
             if parameter_name == "qc_mask":
