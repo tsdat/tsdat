@@ -23,6 +23,26 @@ interface. Installing Ubuntu in WSL is a more involved process:
 5. A new bash terminal will pop up. Wait for the install to run, and create a username and password when prompted. Note,
     if you forget your password, can manually reset it from Windows Powershell.
 
+6. Windows does not allow WSL to automatically connect to wifi, so we'll need to add this manually. Open a WSL bash and 
+enter the following. This unsets the automatic creation of the `/etc/resolv.conf` file and sets a generic nameserver to 
+find the wifi address in Windows.
+
+```bash
+  echo -e "[network]\ngenerateResolvConf = false" | sudo tee -a /etc/wsl.conf
+  sudo unlink /etc/resolv.conf
+  echo nameserver 8.8.8.8 | sudo tee /etc/resolv.conf
+```
+
+You may need to restart WSL by opening Windows Powershell and running `wsl --shutdown`.
+
+7. Another issue that may pop up is WSL's ability to access the Windows screen to display plots. If you get such an 
+error, "Ubuntu can't acess the display...", open ".bashrc" from a WSL terminal:
+```bash
+  sudo nano .bashrc
+```
+Then scroll down through the file searching for the line similar to `export DISPLAY=local_host:0.0` (or the name 
+specified in the error), and replace this with `export DISPLAY=:0`.
+
 ## Setting up VSCode to run with Ubuntu WSL
 
 Now that we have both installed, we need to tell VSCode to look for the WSL container.

@@ -18,7 +18,7 @@ get started.
 ## Examining and downloading the data
 
 Navigate to the [data](https://www.ncdc.noaa.gov/cdo-web/datasets) and download both the documentation and a data sample
-from their global marine data section.
+from the "Global Marine Data" section.
 
 ![webpage screenshot](global_marine_data/global_marine_data_webpage.png)
 
@@ -86,10 +86,10 @@ create an isolated virtual area that we can install packages to.
     manage your environment. See the [Setting Up Wsl](./setup_wsl.md) tutorial for more information.
 
 Once you have anaconda (and optionally WSL) installed, you can run the following command in the terminal from the
-project root (e.g., where `conda-environment.yaml` is at) to create and activate the development environment:
+project root (e.g., where `environment.yaml` is at) to create and activate the development environment:
 
 ```bash
-conda env create --file=conda-environment.yaml
+conda env create
 conda activate tsdat-pipelines
 ```
 
@@ -101,14 +101,14 @@ conda activate tsdat-pipelines
 !!! note
 
     Environments other than conda may be used as long as your python version is >=3.10 and you are able to install
-    dependencies from the `requirements-dev.txt` file.
+    dependencies from the `pyproject.toml` file.
 
 ## Configure Python interpreter in VS Code
 
 Tell VS Code to use your new conda environment:
 
 1. Bring up the command pane in VS Code (shortcut ++f1++ or ++ctrl+shift+p++)
-2. Type `Python: Select Interpreter` and select it.
+2. Type `Python: Select Interpreter` and hit enter.
 3. Select the newly-created `tsdat-pipelines` conda environment from the drop-down list. Note you may need to refresh
     the list (cycle icon in the top right) to see it.
 4. Bring up the command pane and type `Developer: Reload Window` to reload VS Code and ensure the settings changes
@@ -134,20 +134,20 @@ icons in this tutorial. Also useful to know are the commands ++ctrl+grave++ (tog
 Navigate to the `runner.py` file and run
 
 ```bash
-python runner.py pipelines/example_pipeline/test/data/input/buoy.z06.00.20201201.000000.waves.csv
+python runner.py ingest pipelines/example_pipeline/test/data/input/buoy.z06.00.20201201.000000.waves.csv
 ```
 
 This will run the example pipeline provided in the `pipelines/` folder in the template. All pipelines that we create are
 stored in the `pipelines/` folder and are run using
 
 ```bash
-python runner.py <path_to_data>
+python runner.py ingest <path_to_data>
 ```
 
 Additional options for the runner can be queried by running:
 
 ```bash
-python runner.py --help
+python runner.py ingest --help
 ```
 
 ![runner.py screenshot](global_marine_data/intro4.png)
@@ -196,19 +196,31 @@ make cookies
 ```
 
 There will follow a series of prompts that'll be used to auto-fill the new ingest. Fill these in for the particular
-dataset of interest. For this ingest we will not be using custom QC functions, readers/writers, or converters, so select
-no for those as well.
+dataset of interest. For this ingest we will not be using custom QC functions, readers/writers, or converters.
 
 ```txt
-ingest_name [Name of the Ingest]: ncei_arctic_cruise_example
-ingest_location [Location]: arctic_ocean
-ingest_description [Brief description of the ingest]: Historical marine data that are comprised of ship, buoy and platform observations.                           
-Select use_custom_data_reader [1]: 1
-Select use_custom_data_converter [1]: 1
-Select use_custom_qc [1]: 1
-module [ncei_arctic_cruise_example]: ncei_arctic_cruise_example
-classname [NceiArcticCruiseExample]: NceiArcticCruiseExample
-location_id [arctic_ocean]: arctic_ocean
+Please choose a type of pipeline to create [ingest/vap] (ingest): 
+ingest
+What title do you want to give this ingest?: 
+ncei_arctic_cruise_example
+What label should be used for the location of the ingest? (E.g., PNNL, San Francisco, etc.): 
+arctic_ocean
+Briefly describe the ingest: 
+Historical marine data that are comprised of ship, buoy and platform observations.
+Data standards to use with the ingest dataset ['basic','ACDD','IOOS']: 
+basic
+Do you want to use a custom DataReader? [y/N]: 
+n
+Do you want to use a custom DataConverter? [y/N]: 
+n
+Do you want to use a custom QualityChecker or QualityHandler? [y/N]: 
+n
+'ncei_arctic_cruise_example' will be the module name (the folder created under 'pipelines/') Is this OK?  [Y/n]: 
+y
+'NceiArcticCruiseExample' will be the name of your IngestPipeline class (the python class containing your custom python code hooks). Is this OK?  [Y/n]: 
+y
+'arctic_ocean' will be the short label used to represent the location where the data are collected. Is this OK?  [Y/n]: 
+y
 ```
 
 ![cookiecutter prompts](global_marine_data/intro8-b.png)
@@ -327,7 +339,7 @@ coords:
     data_converters:
       - classname: tsdat.io.converters.StringToDatetime
         format: "%Y-%m-%dT%H:%M:%S"
-        timezone: UTC
+        timezone: UTC                       # Update input timezone if necessary
 
 data_vars:
   latitude:
@@ -440,25 +452,30 @@ coords:
     dims: [time]
     dtype: datetime64[s]
     attrs:
-      units: Seconds since 1970-01-01 00:00:00
+      long_name: Time
+      standard_name: time
+      units: Seconds since 1970-01-01 00:00:00 UTC
+      timezone: UTC
 
 data_vars:
-  latitude:                 # Name of variable in retriever.yaml
-    dims: [time]            # Variable dimension(s), separated by ","
-    dtype: float            # Datatype
+  latitude:                   # Name of variable in retriever.yaml
+    dims: [time]              # Variable dimension(s), separated by ","
+    dtype: float              # Datatype
     attrs:
-      long_name: Latitude   # Name used in plotting
-      units: degN           # Units, necessary for unit conversion
-      comment: ""           # Add a comment or description if necessary
-      _FillValue: -999      # Bad data marker in raw dataset, otherwise -9999
-      valid_max: 90         # Expected failure range for "CheckValidMax" QC test
-      valid_min: -90        # Expected failure range for "CheckValidMin" QC test
+      long_name: Latitude     # Name used in plotting
+      standard_name: latitude # Name specified in CF Conventions Table
+      units: degN             # Units, necessary for unit conversion
+      comment: ""             # Add a comment or description if necessary
+      _FillValue: -999        # Bad data marker in raw dataset, otherwise -9999
+      valid_max: 90           # Expected failure range for "CheckValidMax" QC test
+      valid_min: -90          # Expected failure range for "CheckValidMin" QC test
 
   longitude:
     dims: [time]
     dtype: float
     attrs:
       long_name: Longitude
+      standard_name: longitude
       units: degE
       comment: ""
       valid_max: 180
@@ -469,14 +486,17 @@ data_vars:
     dtype: float
     attrs:
       long_name: Pressure at Sea Level
+      standard_name: air_pressure_at_mean_sea_level
       units: dbar
       comment: ""
+      valid_min: 0
 
   temperature:
     dims: [time]
     dtype: float
     attrs:
       long_name: Air Temperature
+      standard_name: air_temperature
       units: degC
       comment: ""
 
@@ -485,42 +505,30 @@ data_vars:
     dtype: float
     attrs:
       long_name: Dew Point
+      standard_name: dew_point_temperature
       units: degC
       comment: ""
-
-  wave_period:
-    dims: [time]
-    dtype: float
-    attrs:
-      long_name: Wave Period
-      units: s
-      comment: Assumed to refer to average wave period
-      valid_max: 30 # Expected max for "CheckValidMax"/Min" QC tests
+      valid_min: 0
 
   wave_height:
     dims: [time]
     dtype: float
     attrs:
       long_name: Wave Height
+      standard_name: sea_surface_wave_mean_height
       units: m
       comment: Assumed to refer to average wave height
+      valid_min: 0
 
-  swell_direction:
+  wave_period:
     dims: [time]
     dtype: float
     attrs:
-      long_name: Swell Direction
-      units: deg from N
-      comment: Assumed to refer to peak wave direction
-      valid_max: 360
-
-  swell_period:
-    dims: [time]
-    dtype: float
-    attrs:
-      long_name: Swell Period
+      long_name: Wave Period
+      standard_name: standard_name: sea_surface_wave_mean_period_from_variance_spectral_density_first_frequency_moment
       units: s
-      comment: Assumed to refer to peak wave period
+      comment: Assumed to refer to average wave period
+      valid_min: 0
       valid_max: 30
 
   swell_height:
@@ -528,16 +536,42 @@ data_vars:
     dtype: float
     attrs:
       long_name: Swell Height
+      standard_name: sea_surface_wave_significant_height
       units: m
       comment: Assumed to refer to significant wave height
+      valid_min: 0
+
+  swell_period:
+    dims: [time]
+    dtype: float
+    attrs:
+      long_name: Swell Period
+      standard_name: sea_surface_wave_period_at_variance_spectral_density_maximum
+      units: s
+      comment: Assumed to refer to peak wave period
+      valid_min: 0
+      valid_max: 30
+
+  swell_direction:
+    dims: [time]
+    dtype: float
+    attrs:
+      long_name: Swell Direction
+      standard_name: sea_surface_primary_swell_wave_from_direction
+      units: deg from N
+      comment: Assumed to refer to peak wave direction
+      valid_min: 0
+      valid_max: 360
 
   wind_direction:
     dims: [time]
     dtype: float
     attrs:
       long_name: Wind Direction
+      standard_name: wind_from_direction
       units: deg from N
       comment: ""
+      valid_min: 0
       valid_max: 360
 
   wind_speed:
@@ -545,11 +579,13 @@ data_vars:
     dtype: float
     attrs:
       long_name: Wind Speed
+      standard_name: wind_speed
       units: m/s
       comment: ""
+      valid_min: 0
 ```
 
-Finally we get to the last two lines in `pipeline.yaml` are `quality` and `storage`. In this tutorial, these files are
+The last two lines in `pipeline.yaml` are `quality` and `storage`. In this tutorial, these files are
 located in the `shared` folder in the top-level directory. If custom QC is selected, these will also be located in the
 `config` folder.
 

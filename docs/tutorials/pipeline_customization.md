@@ -16,7 +16,7 @@ or
 cookiecutter templates/ingest -o ingest/
 ```
 
-And select `2` (yes) to the `Select use_custom_<option>` prompts.
+And select `y` (yes) to the `Do you want to use a custom X?` prompts.
 
 ![cookiecutter prompts](custom/custom1.png)
 
@@ -28,19 +28,20 @@ config folder.
 ## Fill out the Configuration Files
 
 Go ahead and copy the `retriever.yaml`, `dataset.yaml`, and `pipeline.py` files from the NOAA NCEI example data tutorial
-if you using that data. If you are building a custom pipeline, go ahead and fill out these files now.
+if you are using that data. If you are building a custom pipeline, go ahead and fill out these files now.
 
 ## Adding a Custom File Reader
 
-Tsdat has two native file readers: `CSVReader` and `NetCDFReader`. While useful for a number of input files, it is not
-uncommon for raw data files to be saved in some custom format or structure. Tsdat has the flexibility to incorporate
-user-built code to read and pre-process raw data.
+Tsdat has a few native file readers: `CSVReader`, `NetCDFReader`, `ParquetReader` and `ZipReader`, as well as a couple 
+tar file readers (`ZipReader` and `TarReader`). While useful for a number of input files, it is not uncommon for raw data 
+files to be saved in some custom format or structure. Tsdat has the flexibility to incorporate user-built code to read 
+and pre-process raw data.
 
 It is recommended to test your code before inputting to tsdat's framework by first writing and testing a reader on your
 input data in your preferred IDE. This read function should return an xarray Dataset.
 
-Since we're using the same NOAA NCEI data as before, this tutorial with recreate tsdat's csv reader from the user's
-standpoint:
+Since we're using the same NOAA NCEI data as before, we will copy tsdat's built-in CSV reader here for this example. All
+readers in tsdat have this structure:
 
 ```python title="pipelines/custom_pipeline_tutorial/readers.py"
 from typing import Any, Dict, Union
@@ -82,11 +83,12 @@ reader's source code.
 
 ![NCEI reader python file](custom/custom3.png)
 
-Note, after running the reader, the pipeline runs the dataset through the retriever. If variable names are changed in
+Note that `reader.py` is the first bit of code that the pipeline runs after finding the datafile(s). After running 
+`reader.py`, the pipeline configures the dataset using `retriever.yaml`. If variable names are changed in
 the reader source code, this change should be reflected in the variable's input names in `retriever.yaml`.
 
-We now need to tell tsdat now to use our csv file reader. Open the `retriever.yaml` file and replace the `readers` block
-with:
+After setting up the reader, we next need to tell tsdat now to use our csv file reader. Open the `retriever.yaml` file 
+and replace the `readers` block with:
 
 ```yaml title="pipelines/custom_pipeline_tutorial/config/retriever.yaml"
 readers:
@@ -99,25 +101,26 @@ readers:
         index_col: False
 ```
 
-Notice we are not using the `from_dataframe_kwargs` this time, but if we were, `from_dataframe_kwargs` would be listed
-at the same indent level as `read_csv_kwargs`.
+Notice we are not using the `from_dataframe_kwargs` parameter in the reader, but if we were, `from_dataframe_kwargs` 
+would be listed at the same indent level as `read_csv_kwargs`.
 
 ![retriever config screenshot](custom/custom4.png)
 
 ## Adding Custom Data Converter Functions
 
-Tsdat has several native data converters, including the `UnitsConverter` and `StringToDatetime` converters. These
+Tsdat has a couple native data converters, including the `UnitsConverter` and `StringToDatetime` converters. These
 provide the useful functions of converting units and utilizing the datetime package's ability to read time formats,
 given the correct time string.
 
 The custom data converter is an option to add pre-processing to specific variables in the input dataset, while a custom
 file reader gives more flexibility to cover all at once. Converters operate on a variable-by-variable basis, so keep
-this in mind when adding one.
+this in mind when adding one. The converters are run after the pipeline runs the configuration specified in 
+`retriever.yaml`.
 
-As stated in the NCEI NOAA documentation, the units for wind speed are recorded as either 1/10th of a knot or m/s,
-depending on the configuration. Because the rest of the file is saved in imperial units, I'm assuming the data is
-actually saved as 1/10th knots. This isn't a standard unit, so we shall add a data converter to tackle this input in
-the codeblock below.
+For this example, we'll use a custom units conversion. As stated in the NCEI NOAA documentation, the units for wind 
+speed are recorded as either 1/10th of a knot or m/s, depending on the configuration. Because the rest of the file is 
+saved in imperial units, I'm assuming the data is actually saved as kt/10. This isn't a standard unit, so we 
+shall add a data converter to tackle this input in the codeblock below.
 
 ```python title="pipelines/custom_pipeline_tutorial/converters.py"
 import xarray as xr
@@ -129,9 +132,10 @@ from tsdat.config.dataset import DatasetConfig
 
 
 class Kt10Converter(DataConverter):
-    """Converts NCEI windspeed data format from 0.1 knots to m/s
+    """Converts NCEI windspeed data format from kt/10 to m/s. 
+    E.g. 500 kt/10 = 50 kt = 25.7 m/s
 
-    Expects "kt/10" as input and "m/s" as output units
+    Expects "kt/10" as input and "m/s" as output units.
     """
 
     class Parameters(BaseModel, extra=Extra.forbid):
@@ -156,9 +160,7 @@ class Kt10Converter(DataConverter):
         input_units = self.parameters.units
         output_units = dataset_config[variable_name].attrs.units
 
-        if "kt/10" in input_units and "m/s" in output_units:
-            pass
-        else:
+        if ("kt/10" not in input_units) and ("m/s" not in output_units):
             return dataset
 
         data = dataset[variable_name].data / 10 * 0.514444
@@ -297,8 +299,8 @@ We then update the `quality.yaml` file and replace the custom input with our mos
 !!! note
 
     You will need to remove the *Remove missing data points* QC block (the first block with `RemoveFailedValues`) for
-    interpolation to work right. If running multiple QC tests, you will want to make sure they aren't overwriting each
-    other.
+    interpolation to work properly. If running multiple QC tests, you will want to make sure they aren't overwriting 
+    each other.
 
 ```yaml title="pipelines/custom_pipeline_tutorial/config/quality.yaml"
 
@@ -338,7 +340,7 @@ Next, we want to copy the data to this pipeline and rename it to match the regex
 Finally we can run this pipeline. Open a terminal (++ctrl+backslash++) and run
 
 ```bash
-python runner.py pipelines/custom_pipeline_tutorial/test/data/input/custom.sample_data.csv
+python runner.py ingest pipelines/custom_pipeline_tutorial/test/data/input/custom.sample_data.csv
 ```
 
 ![output from running ingest script](custom/custom11.png)
@@ -368,6 +370,14 @@ If you get an error, most of the time there is an error, missing or incorrect in
     try to run the test `CheckMonotonic` on all "COORDS", and one of my coordinate variables is a string array (e.g.,
     'direction': ['x','y','z'], this function will fail). Fix this by replacing "COORDS" with only numeric coordinates
     (e.g. 'time') or add the failing coordinate to the exclude section.
+
+`"CheckMonotonic" fails for "X" values in variable "time"`
+
+:   If a timestamp isn't sequentially increasing, this check will fail the entire pipeline and tell you in the error 
+    message which timestamps have failed (which timestamps are earlier in time than the previous timestamp). This is 
+    typically due to a datalogger writing error. The only built-in fix for this in the pipeline is to change the handler 
+    from `FailPipeline` to `RemoveFailedValues`, which will drop the suspect timestamps and leave a gap. Otherwise the 
+    timestamps will need to be fixed manually, assuming the missing timestamps are recoverable.
 
 `If a QC handler doesn't appear to be running on a variable`
 
