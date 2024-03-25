@@ -15,7 +15,6 @@ __all__ = [
     "CSVReader",
     "ParquetReader",
     "ZarrReader",
-    "TarReader",
     "ZipReader",
 ]
 
