@@ -18,12 +18,14 @@ Before we start, Windows users should note that they need to use Windows Subsyst
 Linux (WSL) to run VAP pipelines, and have conda install on their chosen Linux 
 distribution. Instructions for installing WSL are located [here](./setup_wsl.md).
 
+TODO: Add data and link to MHKDR, add setup errors section, table of contents and what covers what
+
 ## Installing the Pipeline Repository
 We'll begin by cloning or downloading the `sofar_spotter_pipelines` repository. There
 are 4 pipelines in this repository:
   1. "spotter": The ingest pipeline that ingests the raw Spotter CSV files 
   (those ending in _FLT, _LOC, _SST) and runs quality control.
-  2. "vap_gps": A VAP pipelines takes the raw GPS data and bin-averages it into 5 minute
+  2. "vap_gps": A VAP pipelines takes the raw GPS data and bin-averages it into 10 minute
   intervals. It is included for the purposes of this tutorial.
   3. "vap_wave_raw": A VAP pipeline that runs spectral analysis on the ingested buoy 
   motion data to calculate wave statistics and runs quality control. Meant to be run on 
@@ -41,42 +43,7 @@ terminal in VSCode and running `conda env create`. If you are not on a Unix mach
 are not on Windows WSL, this will error out, as one of the dependencies is built in C 
 for Unix.
 
-## The Spotter Ingest Pipeline
-I'll go over briefly the ingest pipeline so we know what we're working with for the VAP
-pipelines to follow.
-
-This ingest is built so that all raw Spotter files can be run from a single command,
-i.e.
-```bash
-python runner.py ingest <path/to/raw_spotter_files/*.CSV>
-```
-will automatically go through all of the downloaded CSV files and pick out the relevant
-ones for the ingest: buoy motion ("_FLT.CSV", "_LOC.CSV", "_SST.CSV"). This pipeline is
-compatible with Spotter2 and Spotter3 raw files.
-
-The FLT pipeline runs using tsdat's built-in CSV reader and then conducts quality control
-in the form of despiking and subsequently checking expected minimums and maximums. The
-despiking algorithm is the Goring and Nikora 2002 phase state space algorithm, and 
-spikes are replaced via a cubic polynomial with the 12 surrounding datapoints. After
-checking spikes, values beyond +/- 3 m are removed. This range should be updated for 
-expected sea states. Plots are created of these XYZ measurements.
-
-The LOC pipeline runs using a custom CSV reader that is a copy of the built-in version,
-though with specific handling for the latitude and longitude variables. Quality control
-is run to check valid min/max values, and a plot is created of the GPS position.
-
-The SST pipeline also runs using a custom CSV reader with a different caveat. A 
-timestamp is not saved to this file; rather the system logs a value in milliseconds. 
-This millisecond value is also recorded in the corresponding (same-numbered) FLT file,
-which is read in to backtrack down the appropriate timestamp. Quality control is run
-to verify the temperature measurements are between 0 and 40 C, and a timeseries plot is 
-saved.
-
-Each of these pipelines saves "a1" level data in netCDF format, one for each raw file.
-We will go over the "vap_gps" pipeline next to run through setting up a basic VAP pipeline
-configuration.
-
-## GPS Averaging Pipeline
+## Creating a New VAP
 
 We can create a new VAP pipeline by running `make cookies` from the terminal, and 
 entering "vap" in the first prompt.
@@ -118,13 +85,78 @@ repository. If you open up this pipeline, you can see that the pipeline structur
 the VAP is very much the same as the ingest pipeline, with a few key differences in the 
 configuration files.
 
+## The Spotter Ingest Pipeline
+I'll go over briefly the ingest pipeline so we know what we're working with for the VAP
+pipelines to follow.
+
+This ingest is built so that all raw Spotter files can be run from a single command,
+i.e.
+```bash
+python runner.py ingest <path/to/raw_spotter_files/*.CSV>
+```
+will automatically go through all of the downloaded CSV files and pick out the relevant
+ones for the ingest: buoy motion ("_FLT.CSV", "_LOC.CSV", "_SST.CSV"). This pipeline is
+compatible with Spotter2 and Spotter3 raw files.
+
+The FLT pipeline runs using tsdat's built-in CSV reader and then conducts quality control
+in the form of despiking and subsequently checking expected minimums and maximums. The
+despiking algorithm is the Goring and Nikora 2002 phase state space algorithm, and 
+spikes are replaced via a cubic polynomial with the 12 surrounding datapoints. After
+checking spikes, values beyond +/- 3 m are removed. This range should be updated for 
+expected sea states. Plots are created of these XYZ measurements.
+
+The LOC pipeline runs using a custom CSV reader that is a copy of the built-in version,
+though with specific handling for the latitude and longitude variables. Quality control
+is run to check valid min/max values, and a plot is created of the GPS position.
+
+The SST pipeline also runs using a custom CSV reader with a different caveat. A 
+timestamp is not saved to this file; rather the system logs a value in milliseconds. 
+This millisecond value is also recorded in the corresponding (same-numbered) FLT file,
+which is read in to backtrack down the appropriate timestamp. Quality control is run
+to verify the temperature measurements are between 0 and 40 C, and a timeseries plot is 
+saved.
+
+Each of these pipelines saves "a1" level data in netCDF format, one for each raw file.
+We will go over the "vap_gps" pipeline next to run through setting up a basic VAP pipeline
+configuration.
+
+## GPS Averaging Pipeline
+
+This particular VAP takes the ingest timeseries data, bins the data and averages it at
+10 minute intervals (bin-averaging). GPS data is used here, but this example pertains 
+to any timeseries.
+
+We'll go over the key differences between the ingest and VAP pipelines setups, 
+starting with how to run a VAP on the command line, then running through
+the configuration files, and finally looking at the pipeline class in pipeline.py. 
+While DataReaders are no longer necessary for VAPs, DataConverters, quality control, 
+and file storage have not changed.
+
+The VAP run command is set up differently from the ingest, where we specify the path 
+to the VAP pipeline configuration file we want to run, as well as a "begin" time and an
+"end" time to span the time region of data we want to collate.
+```bash
+python runner.py vap <path/to/vap/pipeline.yaml> --begin <yyyymmdd.HHMMSS> --end <yyyymmdd.HHMMSS>
+```
+For the purposes of this tutorial, we'll run a single day at the start of Aug, 2021.
+```bash
+python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
+```
+
+Assuming you ran the ingest pipeline given the ingest run command above, running this 
+line will add the file
+`storage/root/data/clallam/clallam.gps.b1/clallam.gps.b1.20210801.000000`. Note that our
+"begin" timestamp is equivalent to the filename timestamp.
+
 ### Dataset Configuration
 
-Our `dataset.yaml` file looks very much the same. In this case, we'll copy paste from 
-pipelines/spotter/dataset_loc.yaml, but add a few geospatial attributes that define then 
-maximum and minimum latitude and longitude values that a user will expect to see in this 
-dataset. In this case, these were found by manually looking at each variable and define 
-the limits of the Spotter buoy's watch circle. We will also use these later in plotting.
+Our `dataset.yaml` file looks very much the same as the ingest pipeline. 
+The configuration is copy-pasted from pipelines/spotter/dataset_loc.yaml, but with a 
+few geospatial attributes added that define the maximum and minimum latitude and 
+longitude values that a user can expect to see. 
+In this case, these were found by manually looking at each variable and define 
+the limits of the Spotter buoy's watch circle. They are also used later to set the 
+limits in the plot hook.
 
 ```yaml
 attrs:
@@ -174,9 +206,11 @@ data_vars:
 
 ### Pipeline Configuration
 
-The main difference in the `pipeline.yaml` is the addition of the "datastreams" 
-parameter. For a VAP, we add all the relevant datastreams that contain variables we want
-to read in. In this case, we just want the "clallam.spotter-gps-1min.a1" data.
+The pipeline configuration file, `pipeline.yaml`, has changed slightly, i.e. there is 
+an additional "datastreams" parameter and "triggers" is now empty. 
+The datastreams parameter covers all of the pipeline outputs that generate variables 
+one wants to retrieve for the VAP pipeline. 
+In this case, we just want the "clallam.spotter-gps-1min.a1" data.
 
 ```yaml
 classname: pipelines.vap_gps.pipeline.VapGPS
@@ -200,19 +234,25 @@ storage:
 
 ### Retriever Configuration
 
-The `retriever.yaml` file contains the largest changes between the ingest and vap 
-pipelines. The VAP retriever class replaces a `DataReader` for tsdat's built-in 
+The retriever configuration file, `retriever.yaml`, has a number of addtions from the 
+ingest version. The `DataReader` class is replaced for tsdat's built-in 
 `StorageRetriever`, which accesses the storage file location to collect files containing
-the datastreams that we specify in `pipeline.yaml`. This retriever requires that all 
-pipelines use the same `storage.yaml` located in the "shared" folder.
+the datastreams that we specify in `pipeline.yaml`. In order for a VAP to work with the 
+appropriate ingest pipelines, they all must use the same `storage.yaml` file located in 
+the "shared" folder.
 
-For this VAP, our goal is to take 10 minute averages of daily GPS data, and 
-we'll do so by windowing the raw data into 10 minute chunks and take the average of 
-each.
+The coordinates and data variables also have additional parameters, "time" in 
+particular. Sometimes it's desirable (real-time measurements) to have measurements that 
+are aligned on a gridded time variable, rather than a random, instrument-dependent 
+offset. 
+For this VAP, a new timegrid is created that is spaced on a 10-minute interval. We do 
+this by ignoring the file input regex, setting the name to "N/A", and setting the 
+`CreateTimeGrid` DataConverter. This TimeGrid will start at the top of the hour and 
+continue at 10-minute intervals to the "end" time specified in the VAP run command. 
 
-To do this, we're actually going to create a new timegrid that is spaced on 10-minute
-intervals, starting on the top of the hour. If we create a new timegrid, Tsdat assumes
-that one of the data transformers will be used.
+If we create a new timegrid, Tsdat assumes that one of the DataTransforms will be 
+used. If a DataTransform is not used, Tsdat will assume the input timestamps are 
+already on a TimeGrid.
 
 ```yaml
 coords:
@@ -223,10 +263,16 @@ coords:
         interval: 10min
 ```
 
-Next, we'll specify the variables we want to retrieve ("lat" and "lon"), the file from
-which they'll be found (".*gps."), and the transformer class we want to use to transform
-the data, in this case `tsdat.transform.BinAverage`. The other built-in options are
-`NearestNeighbor` and `Interpolate`.
+The two variables we're pulling from the ingest pipeline are "lat" and "lon". 
+It's good practice to specify the file regex (gps) with starting and ending breaks (.*)
+on the first indent.
+On the next indent, we'll specify the variable ingest "name" and "data_converters" key.
+
+Note that all VAP functional is incorporated into the Tsdat workflow via DataConverters.
+
+The DataConverter (DataTransform) classname we want to use is
+ `tsdat.transform.BinAverage`. 
+The other built-in options are `NearestNeighbor` and `Interpolate`.
 
 ```yaml
 data_vars:
@@ -243,7 +289,7 @@ data_vars:
 ```
 
 Next we need to specify parameters to run the transformer properly on these variables.
-There are two sets of parameters that we can set for the data transformer, called
+There are two sets of parameters that we can set for the DataTransforms, called
 `fetch_parameters` and `transformation_parameters`:
 
 ```yaml
@@ -271,33 +317,35 @@ parameters:
 ### Transformation Parameters
 
 Both of these sets of parameters are best explained by pictures. 
-For the `BinAverage` transform, "width"
-defines the size of the averaging window (600s = 10 min) and "alignment" defines the 
-location of the window in respect to each timestamp. In the window shown below, the 
-alignment is technically set to "LEFT". No matter what "alignment" is set to, the 
-TimeGrid will always start at 00:00. For instance, if "aligment" is set to "CENTER" and
-the width is 600 s, the 01:00:00 timestamp represents bin-averaged data between 
-00:55:00 and 01:05:00.
+For the `BinAverage` transform, "width" defines the size of the averaging window 
+(600s = 10 min) and "alignment" defines the location of the window in respect to each 
+timestamp. 
 
-![transform_params](vap/tranform_params.png)
+In the window shown below, the alignment is technically set to "LEFT". No matter what 
+"alignment" is set to, the TimeGrid will always start at 00:00. For instance, if 
+"aligment" is set to "CENTER" and the width is 600 s, the 01:00:00 timestamp represents 
+bin-averaged data between 00:55:00 and 01:05:00. Tsdat will attempt to fetch the file
+that contains data for the previous 5 minutes here. If a filename with a timestamp 10 
+minutes prior cannot be found, the 01:00:00 timestamp will be set to nan.
 
 The "range" keyword is relevant for the `NearestNeighbor` and `Interpolate` transforms,
 and defines how far from the last timestamp to search for the next measurement. The
 "range" and "width" parameters should be set in seconds.
 
+![transform_params](vap/tranform_params.png)
+
+
 ### Fetch Parameters
 
 The "time_padding" fetch parameter can be critical to set correctly. To show what this
-parameter does, open up a new terminal and run:
+parameter does, open up a new terminal and run if you haven't already:
 ```bash
 python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
 ```
-This is the structure for running a VAP pipeline. We give the runner the pipeline 
-configuration file we want to use, as well as a "begin" and "end" timestamp. 
 
 When the pipeline completes successfully, navigate to 
-`storage/root/ancillary/clallam/clallam.gps.b1` and look at the timeseries.png file. 
-Notice that data is found for the entire day.
+`storage/root/ancillary/clallam/clallam.gps.b1/clallam.gps.b1.20210903.000000.timeseries.nc`
+and look at the X-axis ticks. Notice that data is found for the entire day.
 
 Now, set `timepadding: 0`, open a terminal and run the vap again:
 ```bash
@@ -307,29 +355,65 @@ Check out the same .png file again. See that half the data is missing for the da
 
 The image below depicts the idea of what this parameter does. Datafiles, particularly
 these from the Spotter buoy, are not saved on any particular time schedule. When this is
-the case, we want to set `time_padding` so that Tsdat is able to retrieve all of the 
-files that contain the data we want.
+the case, we want to set `time_padding` far enough so that Tsdat is able to retrieve 
+all of the files that contain the data we want, but not so far as to significantly 
+slow down the pipeline.
 
 ![fetch_params](vap/fetch_params.png)
 
-For this case, to ensure we have all the data needed for the first part of the day, we set
-`timepadding: -24h`, which tells Tsdat to find files up to 24 hours earlier than the 
-start date we specified.
+Setting `timepadding: -24h` tells Tsdat to find files up to 24 hours earlier than the 
+start date we specified. If we set `timepadding: +24h`, it will grab datafiles 24 hours 
+after the "end" time. Setting `timepadding: 24h` will grab both before and after.
+Units of hour ('h'), minute ('m'), seconds ('s'), and milliseconds ('ms') can be used 
+here. If no units are specified, tsdat will default to using seconds.
 
-If we set `timepadding: +24h`, it will grab datafiles 24 hours after the "end" time. 
-Setting `timepadding: 24h` will grab both before and after.
- Units of hour ('h'), minute ('m'), seconds ('s'), and milliseconds ('ms') can be used 
- here. If no units are specified, tsdat will default to using seconds.
+
+### Pipeline Class Configuration
+The final file that's important to review is the change to the pipeline class located
+in `pipeline.py`. The first is the inherited class change from `IngestPipeline` to 
+`TransformationPipeline`. The second is the addition of the 
+`hook_customize_input_datasets` hook, which allows the user to alter datasets retrieved
+from the ingest pipeline. The input/return here is a dictionary of datasets that are 
+labeled based on their individual datastreams and "begin"/"end" timestamps. The other
+three hooks have not changed.
+
+```python
+class VapGPS(TransformationPipeline):
+    """---------------------------------------------------------------------------------
+    This is an example pipeline meant to demonstrate how one might set up a
+    pipeline using this template repository.
+
+    ---------------------------------------------------------------------------------"""
+
+    def hook_customize_input_datasets(self, input_datasets) -> Dict[str, xr.Dataset]:
+        # Code hook to customize any input datasets prior to datastreams being combined
+        # and data converters being run.
+        return input_datasets
+
+    def hook_customize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
+        # (Optional) Use this hook to modify the dataset before qc is applied
+        return dataset
+
+    def hook_finalize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
+        # (Optional) Use this hook to modify the dataset after qc is applied
+        # but before it gets saved to the storage area
+        return dataset
+
+    def hook_plot_dataset(self, dataset: xr.Dataset):
+        # (Optional, recommended) Create plots.
+        pass
+```
+
 
 ## Closing thoughts on the GPS VAP
 
-With the information contained in the above sections, you will now be able to create 
-most VAP pipelines. The rest of this tutorial reviews the other two VAPs in this 
+With the information contained in the above sections, you can create most VAP 
+pipelines. The rest of this tutorial reviews the other two VAPs in this 
 repository, as well as a number of features/idiosyncracies you might need to know for 
 your own particular use case. This are listed as the following
 
 1. Adding new coordinates to a VAP dataset
 2. Conducting analyses beyond that of bin-averaging, nearest neighbor, and interpolation
-3. Creating a VAP dataset using the time variable from an ingest dataset
-4. More detail on integrating multiple ingest datastreams into a VAP
+3. Creating a VAP dataset using the time coorinate from an ingest dataset
+4. A VAP example that fetches multiple datastreams
 
