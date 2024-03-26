@@ -120,11 +120,11 @@ Each of these pipelines saves "a1" level data in netCDF format, one for each raw
 We will go over the "vap_gps" pipeline next to run through setting up a basic VAP pipeline
 configuration.
 
-## GPS Averaging Pipeline
+## Timeseries Bin-Averaging Pipeline ("vap-gps")
 
-This particular VAP takes the ingest timeseries data, bins the data and averages it at
-10 minute intervals (bin-averaging). GPS data is used here, but this example pertains 
-to any timeseries.
+The "vap_gps" pipeline is a VAP that fetches ingest timeseries data, bins the data and 
+averages it at 10 minute intervals (bin-averaging). GPS data is used here, but this 
+example pertains to any timeseries.
 
 We'll go over the key differences between the ingest and VAP pipelines setups, 
 starting with how to run a VAP on the command line, then running through
@@ -140,7 +140,7 @@ python runner.py vap <path/to/vap/pipeline.yaml> --begin <yyyymmdd.HHMMSS> --end
 ```
 For the purposes of this tutorial, we'll run a single day at the start of Aug, 2021.
 ```bash
-python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
+python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20210801.000000 --end 20210802.000000
 ```
 
 Assuming you ran the ingest pipeline given the ingest run command above, running this 
@@ -340,7 +340,7 @@ and defines how far from the last timestamp to search for the next measurement. 
 The "time_padding" fetch parameter can be critical to set correctly. To show what this
 parameter does, open up a new terminal and run if you haven't already:
 ```bash
-python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
+python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20210801.000000 --end 20210802.000000
 ```
 
 When the pipeline completes successfully, navigate to 
@@ -349,7 +349,7 @@ and look at the X-axis ticks. Notice that data is found for the entire day.
 
 Now, set `timepadding: 0`, open a terminal and run the vap again:
 ```bash
-python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
+python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20210801.000000 --end 20210802.000000
 ```
 Check out the same .png file again. See that half the data is missing for the day. 
 
@@ -412,8 +412,522 @@ pipelines. The rest of this tutorial reviews the other two VAPs in this
 repository, as well as a number of features/idiosyncracies you might need to know for 
 your own particular use case. This are listed as the following
 
-1. Adding new coordinates to a VAP dataset
-2. Conducting analyses beyond that of bin-averaging, nearest neighbor, and interpolation
-3. Creating a VAP dataset using the time coorinate from an ingest dataset
+1. Creating a VAP dataset using the time coorinate from an ingest dataset
+2. Adding new coordinates to a VAP dataset
+3. Conducting analyses beyond that of bin-averaging, nearest neighbor, and interpolation
 4. A VAP example that fetches multiple datastreams
 
+
+## VAP Pipeline using "Non-typical" Analysis ("vap_wave_raw")
+
+The "vap_wave_raw" pipeline takes the buoy surge, sway, and heave measurements, 
+conducts spectral analysis, and estimates wave statistics. Spectral analysis is 
+common in the field of fluid mechanics, but this pipeline will be instructive for any
+analysis that results in new timestamps. The following pipeline, "vap_wave_stats", will
+be more helpful for users who don't need more complex analysis.
+
+### Configuration Files
+
+We'll begin by setting up the pipeline's retriever configuration file. We'll use the 
+same "time_padding" as before, and include variables we want to pull from the ingest
+"pos" datastream output ("time", "x", "y", and "z"). Instead of creating a new 
+TimeGrid, we can simply retrieve "time" like any other variable.
+
+Notice we add a 2nd coordinate here that we will use later that does not exist in the 
+ingest pipeline: "frequency". This coordinate will be generated in our pipeline hook,
+but Tsdat requires that new coordinates are pulled through the retriever, unlike data 
+variables that can be introduced in the dataset configuration.
+
+```yaml
+classname: tsdat.io.retrievers.StorageRetriever
+parameters:
+  fetch_parameters:
+    # How far in time to look after the "end" timestamp (+), before the "begin"
+    # timestamp (-), or both (none) to find filenames that contain needed data
+    time_padding: -24h
+
+coords:
+  time:
+    .*pos.*:
+      name: time
+  frequency:
+    .*pos.*: 
+      name: frequency
+
+data_vars:
+  x:
+    .*pos.*:
+      name: x
+  y:
+    .*pos.*:
+      name: y
+  z:
+    .*pos.*:
+      name: z
+```
+
+In our dataset configuration file, we add all of the variables that are required for our
+analysis, as well as all the variables that will be added in our analysis. Only the 
+first few variables are shown to keep this blip short. This includes our new "frequency"
+coordinate as well.
+
+```yaml
+attrs:
+  title: Wave Statistics
+  description:
+    Wave statistics measured by a Sofar Spotter wave buoy deployed in Clallam Bay, WA
+  location_id: clallam
+  dataset_name: wave
+  data_level: c0
+
+coords:
+  time:
+    dims: [time]
+    dtype: datetime64[ms]
+    attrs:
+      units: Seconds since 1970-01-01 00:00:00 UTC
+      long_name: Time
+      standard_name: time
+      timezone: UTC
+  frequency:
+    dims: [frequency]
+    dtype: float32
+    attrs:
+      long_name: Band Center Frequency
+      units: Hz
+      standard_name: wave_frequency
+
+data_vars:
+  x:
+    dims: [time]
+    dtype: float32
+    attrs:
+      long_name: Buoy Surge
+      standard_name: platform_surge
+      units: m
+      valid_min: -8
+      valid_max: 8
+  y:
+    dims: [time]
+    dtype: float32
+    attrs:
+      long_name: Buoy Sway
+      standard_name: platform_sway
+      units: m
+      valid_min: -8
+      valid_max: 8
+  z:
+    dims: [time]
+    dtype: float32
+    attrs:
+      long_name: Buoy Heave
+      standard_name: platform_heave
+      units: m
+      valid_min: -8
+      valid_max: 8
+  wave_hs:
+    dims: [time]
+    dtype: float32
+    attrs:
+      long_name: Significant Wave Height
+      units: m
+      standard_name: sea_surface_wave_significant_height
+      valid_min: 0
+      valid_max: 20
+  wave_energy_density:
+    dims: [time, frequency]
+    dtype: float32
+    attrs:
+      long_name: Wave Energy Density
+      units: m^2 s
+      standard_name: sea_surface_wave_variance_spectral_density
+      valid_min: 0.0
+  ...
+```
+
+The pipeline configuration file remains simple, and in this case we've added a new 
+quality configuration file. Our datastream this time is `clallam.spotter-pos-400ms.a1`.
+
+```yaml
+classname: pipelines.vap_wave_raw.pipeline.VapWaves
+parameters:
+  datastreams:
+    - clallam.spotter-pos-400ms.a1
+
+triggers: []
+
+retriever:
+  path: pipelines/vap_wave_raw/config/retriever.yaml
+
+dataset:
+  path: pipelines/vap_wave_raw/config/dataset.yaml
+
+quality:
+  path: pipelines/vap_wave_raw/config/quality.yaml
+
+storage:
+  path: shared/storage.yaml
+```
+
+### Pipeline Class
+The TransformationPipeline class is where we do the bulk of the work, as we need to add 
+in all of our analysis code here. 
+
+The first section we add are the global variables we want to use for the rest of 
+analysis, and these are parameter that will never vary with the data streaming through
+the pipeline ("fs", "wat", and "freq_slc").
+
+Next we initiate the class and get to our first hook. This is where we add the new 
+coordinate, "frequency". We'll do this by finding the key we specified in 
+`retriever.yaml` ("pos"), adding the coordinate to that dataset, and returning the 
+"input_datasets" dictionary.
+
+```python
+fs = 2.5  # Hz, Spotter sampling frequency
+wat = 1800  # s, window averaging time
+freq_slc = [0.0455, 1]  # 22 to 1 s periods
+
+
+class VapWaves(TransformationPipeline):
+    """---------------------------------------------------------------------------------
+    This is an example pipeline meant to demonstrate how one might set up a
+    pipeline using this template repository.
+
+    ---------------------------------------------------------------------------------"""
+
+    def hook_customize_input_datasets(self, input_datasets) -> Dict[str, xr.Dataset]:
+        # Code hook to customize any input datasets prior to datastreams being combined
+        # and data converters being run.
+
+        # Need to write in frequency coordinate that will be used later
+        for key in input_datasets:
+            if "pos" in key:
+                # Create FFT frequency vector
+                nfft = fs * wat // 6
+                f = np.fft.fftfreq(int(nfft), 1 / fs)
+                # Use only positive frequencies
+                freq = np.abs(f[1 : int(nfft / 2.0 + 1)])
+                # Trim frequency vector to > 0.0455 Hz (wave periods between 1 and 22 s)
+                freq = freq[np.where((freq > freq_slc[0]) & (freq <= freq_slc[1]))]
+                input_datasets[key] = input_datasets[key].assign_coords(
+                    {"frequency": freq.astype("float32")}
+                )
+
+                return input_datasets
+```
+
+The next hook, `hook_customize_dataset`, is where we add all of our code. This hook 
+is run after the DataTransform classes have been run and the dataset standardized based
+on `dataset.yaml`. The first part of this hook runs the spectral analysis and wave 
+algorithms, and is shown below.
+
+```python
+def hook_customize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
+    # (Optional) Use this hook to modify the dataset before qc is applied
+
+    ds = dataset.copy()
+
+    # Fill small gps so we can calculate a wave spectrum
+    for key in ["x", "y", "z"]:
+        ds[key] = ds[key].interpolate_na(
+            dim="time", method="linear", max_gap=np.timedelta64(5, "s")
+        )
+
+    # Create 2D tensor for spectral analysis
+    disp = xr.DataArray(
+        data=np.array(
+            [
+                ds["x"],
+                ds["y"],
+                ds["z"],
+            ]
+        ),
+        coords={"dir": ["x", "y", "z"], "time": ds.time},
+    )
+
+    ## Using dolfyn to create spectra
+    nbin = fs * wat
+    fft_tool = dolfyn.adv.api.ADVBinner(
+        n_bin=nbin, fs=fs, n_fft=nbin // 6, n_fft_coh=nbin // 6
+    )
+    # Trim frequency vector to > 0.0455 Hz (wave periods smaller than 22 s)
+    slc_freq = slice(freq_slc[0], freq_slc[1])
+
+    # Auto-spectra
+    psd = fft_tool.power_spectral_density(disp, freq_units="Hz")
+    psd = psd.sel(freq=slc_freq)
+    Sxx = psd.sel(S="Sxx")
+    Syy = psd.sel(S="Syy")
+    Szz = psd.sel(S="Szz")
+
+    # Cross-spectra
+    csd = fft_tool.cross_spectral_density(disp, freq_units="Hz")
+    csd = csd.sel(coh_freq=slc_freq)
+    Cxz = csd.sel(C="Cxz").real
+    Cxy = csd.sel(C="Cxy").real
+    Cyz = csd.sel(C="Cyz").real
+
+    ## Wave height and period
+    pd_Szz = Szz.T.to_pandas()
+    Hs = wave.resource.significant_wave_height(pd_Szz)
+    Te = wave.resource.energy_period(pd_Szz)
+    Ta = wave.resource.average_wave_period(pd_Szz)
+    Tp = wave.resource.peak_period(pd_Szz)
+    Tz = wave.resource.average_zero_crossing_period(pd_Szz)
+
+    # Check factor: generally should be greater than or equal to 1
+    k = np.sqrt((Sxx + Syy) / Szz)
+
+    # Calculate peak wave direction and spread
+    a1 = Cxz.values / np.sqrt((Sxx + Syy) * Szz)
+    b1 = Cyz.values / np.sqrt((Sxx + Syy) * Szz)
+    a2 = (Sxx - Syy) / (Sxx + Syy)
+    b2 = 2 * Cxy.values / (Sxx + Syy)
+    theta = np.rad2deg(np.arctan2(b1, a1))  # degrees CCW from East, "to" convention
+    phi = np.rad2deg(np.sqrt(2 * (1 - np.sqrt(a1**2 + b1**2))))
+
+    # Get peak frequency - fill nan slices with 0
+    peak_idx = psd[2].fillna(0).argmax("freq")
+    # degrees CW from North ("from" convention)
+    direction = (270 - theta[:, peak_idx]) % 360
+    # Set direction from -180 to 180
+    direction[direction > 180] -= 360
+    spread = phi[:, peak_idx]
+```
+
+The second part of this hook manually shortens the dataset based on the number of
+new timestamps (sized based on the number of calulated spectra) and resets the time 
+coordinate. We also assign the data variable values, and drop the input variables we 
+don't want to keep.
+
+```python
+    # Trim dataset length
+    ds = ds.isel(time=slice(None, len(psd["time"])))
+    # Set time coordinates
+    time = xr.DataArray(
+        psd["time"], coords={"time": psd["time"]}, attrs=ds["time"].attrs
+    )
+    ds = ds.assign_coords({"time": time})
+    # Make sure mhkit vars are set to float32
+    ds["wave_energy_density"].values = Szz
+    ds["wave_hs"].values = Hs.to_xarray()["Hm0"].astype("float32")
+    ds["wave_te"].values = Te.to_xarray()["Te"].astype("float32")
+    ds["wave_tp"].values = Tp.to_xarray()["Tp"].astype("float32")
+    ds["wave_ta"].values = Ta.to_xarray()["Tm"].astype("float32")
+    ds["wave_tz"].values = Tz.to_xarray()["Tz"].astype("float32")
+    ds["wave_check_factor"].values = k
+    ds["wave_a1_value"].values = a1
+    ds["wave_b1_value"].values = b1
+    ds["wave_a2_value"].values = a2
+    ds["wave_b2_value"].values = b2
+    ds["wave_dp"].values = direction
+    ds["wave_spread"].values = spread
+
+    return ds.drop(("x", "y", "z"))
+```
+
+We don't utilize `hook_finalize_dataset` in this pipeline, and plots are created in 
+`hook_plot_dataset`, which won't be copied here.
+
+
+### Quality Control
+We do incorporate one custom QualityChecker in this pipeline, and it checks that our 
+wave estimations are valid. The `quality.yaml` entry is shown first, followed by the 
+class in `qc.py`.
+
+```yaml
+  - name: Check wave factor
+    checker:
+      classname: pipelines.vap_wave_raw.qc.WaveCheckFactor
+    handlers:
+      - classname: tsdat.qc.handlers.RemoveFailedValues
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          assessment: bad
+          meaning: "Check factor either null or <= 0.5"
+    apply_to:
+      - DATA_VARS
+    exclude: [wave_energy_density, wave_check_factor]
+```
+
+```python
+import numpy as np
+import xarray as xr
+from numpy.typing import NDArray
+from tsdat import QualityChecker, QualityHandler
+
+
+class WaveCheckFactor(QualityChecker):
+    """----------------------------------------------------------------------------
+    Checks for where the wave factor is nan or negative and returns a
+    mask where bad values are labeled as True.
+    (This function runs on a variable by variable basis.)
+    ----------------------------------------------------------------------------"""
+
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
+
+        if "frequency" in dataset[variable_name].dims:
+            check_factor = dataset["wave_check_factor"]
+        else:
+            check_factor = dataset["wave_check_factor"].median("frequency")
+
+        mask = check_factor.isnull() + (check_factor < 0.5)
+
+        return mask
+```
+
+Finally, this pipeline can be run by
+```bash
+python runner.py vap pipelines/vap_waves_raw/pipeline.yaml --begin 20210801.000000 --end 20210802.000000
+```
+
+## VAP Pipeline fetching Multiple Datastreams ("vap_wave_stats")
+
+The "vap_wave_stats" pipeline takes the wave estimations from "vap_wave_raw" and 
+interpolates the GPS and SST measurements onto the wave timestamps. This pipeline also
+adds a new coordinate for a new data variable that is calculated in the code hooks.
+
+### Configuration Files
+In our dataset configuration files, we want to copy-paste in all of the variables from
+the respective dataset configurations. In this pipeline, we also include a slew of 
+metadata variables in accordance with Integrated Ocean Observing System (IOOS) 
+standards.
+
+In our pipeline configuration file, we make sure to add the datastreams that we want 
+this VAP to pull from. In this case, we're fetching data from the "vap_waves_raw"
+pipeline and the GPS and SST pipelines from the "spotter" ingest pipeline.
+
+```yaml
+classname: pipelines.vap_wave_stats.pipeline.VapWaveStats
+parameters:
+  datastreams:
+    - clallam.wave.c0
+    - clallam.spotter-gps-1min.a1
+    - clallam.spotter-sst-1min.a1
+
+triggers: []
+
+retriever:
+  path: pipelines/vap_wave_stats/config/retriever.yaml
+
+dataset:
+  path: pipelines/vap_wave_stats/config/dataset.yaml
+
+quality:
+  path: shared/quality.yaml
+storage:
+  path: shared/storage.yaml
+```
+
+In our retriever configuration, we include the same "time_padding" parameter, and 
+include a "range" of 120s for the `Interpolate` DataTransform. 2 min was chosen with the
+reasoning that it is twice the sampling frequency of the buoy's GPS unit and 
+thermistor, so we're less likely to miss a datapoint.
+
+Next, the 3 coordinates are fetched from the "wave" datastream ("vap_waves_raw"), 
+and the assortment of variables from all 3 input streams. For the non-"wave" datastream 
+variables ("lat", "lon", "sst"), the `tsdat.transform.Interpolate` DataConverter is set.
+`Interpolate` does a simple 1D linear interpolation from the ingest timestamp to the 
+VAP timestamp. `NearestNeighbor` could also be used here if desired.
+
+For the variables pulled from the "wave" datastream (i.e. "wave_hs"), these are already 
+mapped onto the "wave" time coordinate, so we don't need to include a DataTransform 
+here.
+
+```yaml
+classname: tsdat.io.retrievers.StorageRetriever
+parameters:
+  fetch_parameters:
+    # How far in time to look after the "end" timestamp (+), before the "begin"
+    # timestamp (-), or both (none) to find filenames that contain needed data
+    time_padding: -24h
+
+  transformation_parameters:
+    # Where the point lies in the coordinate bounds (CENTER, LEFT, RIGHT)
+    alignment:
+      time: CENTER
+
+    # How far to look for the next available data point
+    range:
+      time: 120s
+
+    # Width of the transformation
+    width:
+      time: 60s
+
+coords:
+  time:
+    .*wave.*:
+      name: time
+  frequency:
+    .*wave.*: 
+      name: frequency
+  direction:
+    .*wave.*: 
+      name: direction
+
+data_vars:
+  lat:
+    .*gps.*:
+      name: lat
+      data_converters:
+        - classname: tsdat.transform.Interpolate
+  lon:
+    .*gps.*:
+      name: lon
+      data_converters:
+        - classname: tsdat.transform.Interpolate
+  sst:
+    .*sst.*:
+      name: sst
+      data_converters:
+        - classname: tsdat.transform.Interpolate
+  wave_hs:
+    .*wave.*: 
+      name: wave_hs
+  ...
+```
+
+### Pipeline Class
+
+This pipeline adds an additional variable and creates a series of plots in pipeline.py
+as well. It's common to need to calculate another variable in a VAP hook, given the 
+inputs. To do so, we add the variable's metadata to dataset.yaml. In this case, that is
+"wave_dir_energy_density":
+```yaml
+  wave_dir_energy_density:
+    dims: [time, frequency, direction]
+    dtype: float32
+    attrs:
+      long_name: Directional Energy Density
+      units: m^2 s / deg
+      standard_name: sea_surface_wave_directional_variance_spectral_density
+      valid_min: 0.0
+```
+
+In `pipeline.py`, we can add values to this variable after conducting our calculations
+```python
+    # Wave energy density is units of Hz and degrees
+    dataset["wave_dir_energy_density"].values = dataset[
+        "wave_energy_density"
+    ] * np.rad2deg(D)
+```
+
+
+
+### Running the pipeline
+
+As the last pipeline in this series, it is designed to output data to be stored on a 
+database. To keep files small, this pipeline is built to collate data in larger 
+segments. The following run command saves and plots data for the month of August.
+
+```bash
+python runner.py vap pipelines/vap_wave_stats/pipeline.yaml --begin 20210801.000000 --end 20210901.000000
+```
+
+
+## Setup Errors
+
+ - Assorted adi-py errors
+ - Faulty adi-py installation
+ - Not setting correct environment in VSCode
