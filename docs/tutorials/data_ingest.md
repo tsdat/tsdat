@@ -1,4 +1,4 @@
-# Pipeline Template Tutorial
+# Ingest Pipeline Tutorial
 
 In this tutorial we will build a data pipeline to ingest global marine data hosted by the National Oceanic and
 Atmospheric Administration's (NOAA) National Centers for Environmental Information (NCEI). The data can be found at
