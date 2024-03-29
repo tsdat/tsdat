@@ -1,3 +1,4 @@
+from .check_correlation import CheckCorrelation
 from .check_fail_delta import CheckFailDelta
 from .check_fail_max import CheckFailMax
 from .check_fail_min import CheckFailMin
@@ -17,6 +18,7 @@ from .check_warn_range_max import CheckWarnRangeMax
 from .check_warn_range_min import CheckWarnRangeMin
 
 __all__ = [
+    "CheckCorrelation",
     "CheckFailDelta",
     "CheckFailMax",
     "CheckFailMin",
