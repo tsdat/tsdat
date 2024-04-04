@@ -410,7 +410,8 @@ temperature:
 Matching the line numbers of the above code-block:
 
 * `line 1` Desired name of the variable in the output data - user editable
-* `line 2` Name of the variable in the input data - should directly match raw input data
+* `line 2` Name of the variable in the input data - should directly match raw input data. Can also be a list of possible 
+names found in the raw data.
 * `line 3` Converter keyword - add if a converter is desired
 * `line 4` Classname of data converter to run, in this case unit conversion. See the
     [customization tutorial](./pipeline_customization.md) for a how-to on applying custom data conversions.
