@@ -5,7 +5,6 @@ from .check_fail_range_min import CheckFailRangeMin
 from .check_fail_range_max import CheckFailRangeMax
 from .check_missing import CheckMissing
 from .check_monotonic import CheckMonotonic
-from .check_outliers import CheckOutliers
 from .check_valid_delta import CheckValidDelta
 from .check_valid_max import CheckValidMax
 from .check_valid_min import CheckValidMin
@@ -25,7 +24,6 @@ __all__ = [
     "CheckFailRangeMin",
     "CheckMissing",
     "CheckMonotonic",
-    "CheckOutliers",
     "CheckValidDelta",
     "CheckValidMax",
     "CheckValidMin",
