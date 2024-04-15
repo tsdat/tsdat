@@ -23,8 +23,6 @@ Raw Spotter data to follow along in this VAP can be downloaded from the
 "Raw Data from Spotter Buoy.zip" and download it. Unzip the folder and run the *spotter*
 ingest pipeline.
 
-TODO: Add setup errors section, table of contents and what covers what, sh file
-
 ## Installing the Pipeline Repository
 We'll begin by cloning or downloading the `sofar_spotter_pipelines` repository. There
 are 4 pipelines in this repository:
@@ -964,9 +962,128 @@ segments. The following run command saves and plots data for the month of August
 python runner.py vap pipelines/vap_wave_stats/pipeline.yaml --begin 20230801.000000 --end 20230901.000000
 ```
 
+### Running a slew of time periods locally on a VAP
 
-## Setup Errors
+Though the VAP is primarily built for running real-time data on the cloud, you can set
+up an shell script (.sh) to run multiple pipelines on a time period
 
- - Assorted adi-py errors
- - Faulty adi-py installation
- - Not setting correct environment in VSCode
+```sh
+#!/bin/bash
+
+# Set the proper path to your conda shell script
+source ~/miniconda3/etc/profile.d/conda.sh
+# Set the conda environment name
+conda activate tsdat-pipelines
+
+# Uncomment the following if your system needs these settings
+#export LD_LIBRARY_PATH=$HOME/miniconda3/envs/tsdat-pipelines/lib:$LD_LIBRARY_PATH
+#export DISPLAY=:0
+
+# Run pipelines
+python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230727.000000 --end 20230801.000000
+python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230801.000000 --end 20230901.000000
+python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230901.000000 --end 20231001.000000
+python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20231001.000000 --end 20231101.000000
+python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20231101.000000 --end 20231105.000000
+
+```
+
+Run this shell script using `bash script_name.sh`
+
+
+# Setup Errors
+### Incorrect environment in VSCode
+
+If VSCode didn't properly initiate the repository conda environment 
+(default: "tsdat-pipelines"), you'll get this error:
+
+```
+ERROR: Could not initialize udunits unit system
+ -> Can't open installed, default, unit database
+ERROR: Could not initialize udunits unit system
+ -> Can't open installed, default, unit database
+ERROR: Could not create var-to-array converter for: /retrieved_data/input_ds/obs1/_vars_/time
+```
+
+### ADI-Py installation errors:
+The following is the error that pops up if the ADI-Py libraries are not 
+installed, not installed correctly, or have been installed and aren't found:
+
+```bash 
+WARNING:tsdat.transform.adi:Warning: ADI libraries are not installed. Some time series transformation functions may not work.
+C:\Users\mcve343\tsdat-dev\tsdat\tsdat\transform\converters.py:29: UserWarning:
+
+Encountered an error running transformer. Please ensure necessary dependencies are installed.
+warnings.warn(
+ERROR:tsdat.transform.converters:'NoneType' object has no attribute 'Group'
+Traceback (most recent call last):
+File "C:\Users\anaconda3\lib\site-packages\tsdat\tsdat\transform\converters.py", line 291, in convert
+    transformer.transform(
+File "C:\Users\anaconda3\lib\site-packages\tsdat\tsdat\transform\adi.py", line 424, in transform
+    retrieved_dataset: cds3.Group = self._create_adi_retrieved_dataset(
+File "C:\Users\mcve343\tsdat-dev\tsdat\tsdat\transform\adi.py", line 525, in _create_adi_retrieved_dataset
+    dataset_group = cds3.Group.define(None, "retrieved_data")
+AttributeError: 'NoneType' object has no attribute 'Group'
+```
+
+1. You'll get this error if trying to run a VAP on Windows. VAPs cannot be run in 
+Windows. You must install WSL and run a pipeline from WSL.
+2. If you are running a VAP in WSL or a Unix machine (Linux or Mac) and get above 
+series of errors
+
+    - Make sure you're running in the correct conda environment ("tsdat-pipelines" is
+    the default)
+
+    - Ensure the ADI-Py libraries were installed properly by recreating the conda 
+    environment by running `conda env create` from the pipeline-template repository.
+
+    - Older versions of ADI-Py have had an environmental path not set. If rebuilding
+    the repository environment does not work, you'll need to set this path manually in
+    your terminal:
+
+        ```
+        export LD_LIBRARY_PATH=$HOME/miniconda3/envs/tsdat-pipelines/lib:$LD_LIBRARY_PATH
+        ```
+
+        Replace "miniconda3" and "tsdat-pipelines" to your correct conda distribution and 
+        environment names, respectively.
+
+3, If using WSL, you may get a second, display related error. To set WSL to use your
+machine's LCD, set `export DISPLAY=:0`. This line can be added to the ".bashrc" file
+to permanently fix this.
+
+### NaN input to ADI-Py libraries
+If a variable is set to use one of the DataTransforms and the retrieved variable is 
+either missing or all nan, then the ADI-Py libraries will fail abruptly with a short
+error message:
+
+```bash 
+pipelines/<pipeline_name>/test/test_pipeline.py Fatal Python error: Floating point exception
+```
+
+The key to solving this error is to specify a particular value for that variable, if
+it's missing in the `hook_customize_input_datasets` function hook in `pipeline.py`.
+
+
+### Setting up the VSCode debugger
+It's helpful to create a debugger configuration for building and testing a VAP. Do this
+by navigating to `.vscode/launch.json` in the repository main folder, and copy-paste
+and edit the following configuration for the VAP and time period you want to run 
+(you'll also need to add a comma to the end of the previous configuration):
+```json
+        {
+            "name": "Debug VAP",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}//runner.py",
+            "console": "integratedTerminal",
+            "args": [
+                "vap",
+                "pipelines/<pipeline_name>/config/pipeline.yaml",
+                "--begin",
+                "yyyyddmm.000000",
+                "--end",
+                "yyyyddmm.000000"
+            ]
+        },
+```
