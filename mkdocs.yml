@@ -27,7 +27,9 @@ extra:
 
 nav:
   - About: index.md
-  - Getting Started: getting_started.md
+  - Getting Started: 
+      - Getting Started: getting_started.md
+      - Example Pipelines: example_pipelines.md
   - Tutorials: tutorials/
   - Developer Guide:
       - Customizing Tsdat: config/configuring_tsdat.md
