@@ -1,40 +1,46 @@
 # Value Added Product (VAP) Pipeline Tutorial
 
-In this tutorial, we'll go over how to create Value Added Product (VAP) pipelines using tsdat. The purpose of a VAP
-pipeline is to conduct additional processing and/or analysis on top of data that has been through ingest pipelines. This
-can range from something as simple as combining datasets produced in the ingest pipelines; improved quality control that
-requires variables from multiple datasets; bin-averaging or custom analysis algorithms; to calculating new qualities
-from raw inputs (e.g. calculating salinity from independent measurements of temperature and conductivity).
+The purpose of a VAP pipeline is to conduct additional processing and/or analysis on top of data that has been through
+ingest pipelines. This can range from something as simple as combining datasets produced in the ingest pipelines;
+improved quality control that requires variables from multiple datasets; bin-averaging or custom analysis algorithms; to
+calculating new qualities from raw inputs (e.g. calculating salinity from independent measurements of temperature and
+conductivity).
 
-In this tutorial, we'll run through a data pipeline workflow that takes in raw CSV files measured by a Sofar Spotter
- wave buoy and combine them into a final product that includes quality-controlled and standardized wave statistics,
- buoy location, and sea surface temperature. The source code for this workflow is located
- [**here**](https://github.com/ME-Data-Pipeline-Software/sofar_spotter_pipelines).
+In this tutorial, we'll run through a Value Added Product (VAP) pipeline workflow that takes in raw CSV files measured
+by a Sofar Spotter wave buoy and combines them into a final product that includes quality-controlled and standardized
+wave statistics, buoy location, and sea surface temperature.
 
-Before we start, Windows users should note that they need to use Windows Subsystem for Linux (WSL) to run VAP pipelines,
-and have conda install on their chosen Linux distribution. Instructions for installing WSL are located
-[**here**](./setup_wsl.md).
+!!! warning "Prerequisite steps"
 
-Raw Spotter data to follow along in this VAP can be downloaded from the
-[Marine Hydrokinetic Data Repository (MHKDR)](https://mhkdr.openei.org/submissions/545). Find the entry called
-`Raw Data from Spotter Buoy.zip` and download it. Unzip the folder and run the *`spotter`* ingest pipeline.
+    === "Download the Data"
+
+        Raw Spotter data to follow along in this VAP can be downloaded from the
+        [Marine Hydrokinetic Data Repository (MHKDR)](https://mhkdr.openei.org/submissions/545). Find the entry called
+        `Raw Data from Spotter Buoy.zip` and download it. Unzip the folder and run the *`spotter`* ingest pipeline.
+
+    === "Windows Users: Setup WSL and VSCode"
+        
+        Before we start, Windows users should note that they need to use Windows Subsystem for Linux (WSL) to run VAP pipelines,
+        and have conda install on their chosen Linux distribution. Instructions for installing WSL are located
+        [**here**](./setup_wsl.md).
 
 ## Installing the Pipeline Repository
 
-We'll begin by cloning or downloading the `sofar_spotter_pipelines` repository. There are 4 pipelines in this
-repository:
+We'll begin by cloning or downloading the
+[**sofar_spotter_pipelines**](https://github.com/ME-Data-Pipeline-Software/sofar_spotter_pipelines) repository. There
+are 4 pipelines in this repository:
 
-  1. **spotter**: The ingest pipeline that ingests the raw Spotter CSV files (those ending in `_FLT`, `_LOC`, `_SST`)
-  and runs quality control.
-  2. **vap_gps**: A VAP pipelines takes the raw GPS data and bin-averages it into 10 minute intervals. It is included
-  for the purposes of this tutorial.
-  3. **vap_wave_raw**: A VAP pipeline that runs spectral analysis on the ingested buoy motion data to calculate wave
-  statistics and runs quality control. Meant to be run on a daily interval.
-  4. **vap_wave_stats**: The final VAP pipeline that takes the wave statistics from **vap_wave_raw** and interpolates
-  GPS positions and sea surface temperature (SST) measurements onto the wave timestamps. Also does some additional
-  calculations and summary plots. Meant to be run on a monthly interval.
+1. **`pipelines/spotter`**: The pipeline that ingests the raw Spotter CSV files (those ending in `_FLT`, `_LOC`, `_SST`)
+and runs quality control.
+2. **`pipelines/vap_gps`**: A VAP pipeline takes the raw GPS data and bin-averages it into 10 minute intervals. It is
+included for the purposes of this tutorial.
+3. **`pipelines/vap_wave_raw`**: A VAP pipeline that runs spectral analysis on the ingested buoy motion data to
+calculate wave statistics and runs quality control. Meant to be run on a daily interval.
+4. **`pipelines/vap_wave_stats`**: The final VAP pipeline that takes the wave statistics from `pipelines/vap_wave_raw`
+and interpolates GPS positions and sea surface temperature (SST) measurements onto the wave timestamps. Also does some
+additional calculations and summary plots. Meant to be run on a monthly interval.
 
-The instructions for running pipelines in this repository are located in the top-level README and are the same as in the
+Instructions for running pipelines in this repository are in the top-level `README` and are the same as the
 [ingest pipeline tutorial](./data_ingest.md).
 
 If you haven't already, create a new environment for running pipelines by opening a new terminal in VSCode and running
@@ -43,12 +49,12 @@ dependencies is built in C for Unix.
 
 ## Creating a New VAP
 
-We can create a new VAP pipeline by running `make cookies` from the terminal, and entering "vap" in the first prompt.
+We can create a new VAP pipeline by running `make cookies` from the terminal, and entering "`vap`" in the first prompt.
 
 You will then run through the same set of prompts as you do in the ingest pipeline. You may want to use the same
 parameters as the ingest pipeline you want to read from.
 
-The following will generate a new pipeline called *vap_gps*, which has already been done for this repository. If you
+The following will generate a new pipeline called **`vap_gps`**, which has already been done for this repository. If you
 open up this pipeline, you can see that the pipeline structure for the VAP is very much the same as the ingest pipeline,
 with a few key differences in the configuration files.
 
@@ -69,58 +75,69 @@ What would you like to rename the pipeline class to?: VapGPS
 'cpr' will be the short label used to represent the location where the data are collected. Is this OK?  [Y/n]: y
 ```
 
-## Ingest Pipeline (spotter)
+## Ingest Pipeline (`spotter`)
 
 We'll briefly go over the ingest pipeline so we know what we're working with for the VAP pipelines to follow.
 
 This ingest is built so that all raw Spotter files can be run from a single command:
 
 ```shell
-python runner.py ingest <path/to/raw_spotter_files/*.CSV>
+python runner.py ingest path/to/raw_spotter_files/*.CSV
 ```
 
 This command will automatically go through all of the downloaded CSV files and pick out the relevant ones for the
 ingest: buoy motion (`_FLT.CSV`), buoy location (`_LOC.CSV`), and sea surface temperature (`_SST.CSV`). This pipeline is
 compatible with Spotter2 and Spotter3 raw files.
 
-**Buoy Motion (FLT)**:
+!!! note "Supported spotter ingests"
 
-1. Reads in data using tsdat's built-in CSV reader
-2. Conducts quality control
-   1. Check for "spikes" (1) using windows of 1500 points
-   ([Goring and Nikora 2002](http://dx.doi.org/10.1061/(ASCE)0733-9429(2002)128:1(117)))
+    === "Buoy Motion (`_FLT.CSV`)"
 
-   2. Replace spikes via a cubic polynomial with the 12 surrounding data points
-   3. Check valid min/max
-   4. Values beyond +/- 3 m are removed. This range should be updated for expected sea states.
-3. Plots are created of these XYZ measurements.
+        1. Reads in data using tsdat's built-in CSV reader.
+        2. Conducts quality control using custom qc checks (:material-file: *`qc.py`*):
+            - Checks for "spikes" using windows of 1500 points
+                ([Goring and Nikora 2002](http://dx.doi.org/10.1061/(ASCE)0733-9429(2002)128:1(117))).
+            - Replaces spikes via a cubic polynomial with the 12 surrounding data points.
+            - Checks values against valid min/max. Values beyond +/- 3m are removed. This range should be updated for
+            expected sea states.
+        3. Creates plots of these XYZ measurements (:material-file: *`pipeline.py`*).
 
-**Buoy Location (FLT)**:
+        Relevant config files: :material-file: *`config/dataset_flt.yaml`*, :material-file:
+        *`config/pipeline_flt.yaml`*, :material-file: *`config/retriever.yaml`*, :material-file: *`config/quality.yaml`*
 
-1. Reads in data using custom CSV reader
-2. Conducts quality control
-   1. Check valid min/max
-   2. Removed failed values
-3. Plots are created of the GPS positions
+    === "Buoy Location (`_LOC.CSV`)"
 
-**Sea Surface Temperature (SST)**:
+        1. Reads in data using custom CSV reader (:material-file: *`readers.py`*).
+        2. Conducts quality control:
+            - Checks values against valid min/max.
+            - Removes values which failed quality checks.
+        3. Creates plots of the GPS positions (:material-file: *`pipeline.py`*).
+        
+        Relevant config files: :material-file: *`config/dataset_loc.yaml`*, :material-file:
+        *`config/pipeline_loc.yaml`*, :material-file: *`config/retriever.yaml`*, :material-file: *`config/quality.yaml`*
 
-1. Reads in data using custom CSV reader with a caveat. A timestamp is not saved to this file; rather the system logs a
-value in milliseconds. This millisecond value is also recorded in the corresponding (same-numbered) FLT file, which is
-read in to back down the appropriate timestamp.
-2. Conducts quality control
-   1. Check valid min/max
-   2. Values beyond 0 and 40 degrees C are removed
-3. Timeseries plot of temperature is saved
+    === "Sea Surface Temperature (`_SST.CSV`)"
 
-Each of these pipelines saves "a1" level data in netCDF format, one for each raw file.
+        1. Reads in data using custom CSV reader with a caveat (:material-file: *`readers.py`*):
+            - A timestamp is not saved to this file; rather the system logs a value in milliseconds. This millisecond
+            value is also recorded in the corresponding (same-numbered) `_FLT.CSV` file, which is read in to back down
+            the appropriate timestamp.
+        2. Conducts quality control:
+            - Checks valid min/max.
+            - Removes values beyond 0 and 40 degrees C.
+        3. Creates a timeseries plot of temperature (:material-file: *`pipeline.py`*).
+        
+        Relevant config files: :material-file: *`config/dataset_sst.yaml`*, :material-file:
+        *`config/pipeline_sst.yaml`*, :material-file: *`config/retriever.yaml`*, :material-file: *`config/quality.yaml`*
+
+Each of these pipelines saves "`a1`" level data in netCDF format, one for each raw file.
 
 ## Metadata
 
 For all of the pipelines in this repository to run properly, we'll need to replace the metadata with that for this
 Puerto Rico deployment. This primarily means setting the attributes sections of the dataset configuration files
-(`dataset.yaml`). For example, the `dataset_xxx.yaml` file for all of the *spotter* pipelines means changing the
-"title", "description" and "location_id":
+(`dataset.yaml`). For example, the `dataset_xxx.yaml` file for all of the **`spotter`** pipelines means changing the
+"`title`", "`description`" and "`location_id`" attributes:
 
 ```yaml
 attrs:
