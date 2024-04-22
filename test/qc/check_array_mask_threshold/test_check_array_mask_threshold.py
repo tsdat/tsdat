@@ -1,4 +1,3 @@
-import xarray as xr
 import numpy as np
 from pytest import raises
 
@@ -24,7 +23,7 @@ class TestCheckArrayMaskThreshold:
         with raises(KeyError):
             checker.run(array_mask_data['other']['data'], 'notCorr')
 
-    def test_invalid_invalid_comparitor(self):
+    def test_invalid_comparitor(self):
         checker = CheckArrayMaskThreshold()
         checker.parameters.comparitor = 'invalid'
         with raises(ValueError):
