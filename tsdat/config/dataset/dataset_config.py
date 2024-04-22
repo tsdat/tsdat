@@ -10,12 +10,9 @@ from pydantic import (
 )
 from pydantic.fields import ModelField
 
-from .attributes import ACDDGlobalAttrs, GlobalAttributes, IOOSGlobalAttrs
-from .utils import YamlModel
-from .variables import Coordinate, Variable
-
-__all__ = ["DatasetConfig", "ACDDDatasetConfig", "IOOSDatasetConfig"]
-
+from ..attributes import GlobalAttributes
+from ..utils import YamlModel
+from ..variables import Coordinate, Variable
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +73,7 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
 
     @validator("coords", "data_vars")
     def variable_names_are_legal(
-        cls, vars: Dict[str, Variable], field: ModelField
+            cls, vars: Dict[str, Variable], field: ModelField
     ) -> Dict[str, Variable]:
         for name in vars.keys():
             pattern = re.compile(r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
@@ -90,7 +87,7 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
     @validator("coords", "data_vars", pre=True)
     @classmethod
     def set_variable_name_property(
-        cls, vars: Dict[str, Dict[str, Any]]
+            cls, vars: Dict[str, Dict[str, Any]]
     ) -> Dict[str, Dict[str, Any]]:
         for name in vars.keys():
             vars[name]["name"] = name
@@ -123,22 +120,3 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
 
     def __contains__(self, __o: object) -> bool:
         return (__o in self.coords) or (__o in self.data_vars)
-
-
-class ACDDDatasetConfig(DatasetConfig):
-    attrs: ACDDGlobalAttrs = Field(
-        ...,
-        description=(
-            "Attributes that pertain to the dataset as a whole (as opposed to"
-            " attributes that are specific to individual variables."
-        ),
-    )
-
-
-class IOOSDatasetConfig(DatasetConfig):
-    attrs: IOOSGlobalAttrs = Field(
-        description=(
-            "Attributes that pertain to the dataset as a whole (as opposed to"
-            " attributes that are specific to individual variables."
-        ),
-    )
