@@ -10,21 +10,15 @@ In this tutorial, we'll run through a Value Added Product (VAP) pipeline workflo
 by a Sofar Spotter wave buoy and combines them into a final product that includes quality-controlled and standardized
 wave statistics, buoy location, and sea surface temperature.
 
-!!! warning "Prerequisite steps"
+## Prerequisites
 
-    === "Download the Data"
+!!! tip "Windows Users: Setup WSL and VSCode"
 
-        Raw Spotter data to follow along in this VAP can be downloaded from the
-        [Marine Hydrokinetic Data Repository (MHKDR)](https://mhkdr.openei.org/submissions/545). Find the entry called
-        `Raw Data from Spotter Buoy.zip` and download it. Unzip the folder and run the *`spotter`* ingest pipeline.
+    Before we start, Windows users should note that they need to use Windows Subsystem for Linux (WSL) to run VAP
+    pipelines, and have conda installed on their chosen Linux distribution. Instructions for installing WSL are located
+    [**here**](./setup_wsl.md).
 
-    === "Windows Users: Setup WSL and VSCode"
-        
-        Before we start, Windows users should note that they need to use Windows Subsystem for Linux (WSL) to run VAP pipelines,
-        and have conda install on their chosen Linux distribution. Instructions for installing WSL are located
-        [**here**](./setup_wsl.md).
-
-## Installing the Pipeline Repository
+### Install the Pipeline Repository
 
 We'll begin by cloning or downloading the
 [**sofar_spotter_pipelines**](https://github.com/ME-Data-Pipeline-Software/sofar_spotter_pipelines) repository. There
@@ -47,33 +41,42 @@ If you haven't already, create a new environment for running pipelines by openin
 `conda env create`. If you are not on a Unix machine or are not on Windows WSL, this will error out, as one of the
 dependencies is built in C for Unix.
 
-## Creating a New VAP
+### Update metadata
 
-We can create a new VAP pipeline by running `make cookies` from the terminal, and entering "`vap`" in the first prompt.
+For the pipelines in this repository to run properly, we'll need to make sure all the metadata is up-to-date. This
+primarily means updating the `title`, `description` and `location_id` attributes in each :material-file:
+*`dataset.yaml`* file for this Puerto Rico deployment. E.g., for the `spotter` `_FLT.CSV` ingest, we would make the
+following changes to the dataset config file:
 
-You will then run through the same set of prompts as you do in the ingest pipeline. You may want to use the same
-parameters as the ingest pipeline you want to read from.
+```yaml title="pipelines/spotter/config/dataset_flt.yaml" hl_lines="2-4"
+attrs:
+  title: Culebra Wave Data
+  description: Raw XYZ data taken by a Sofar Spotter buoy deployed NW of Culebra Is., Puerto Rico
+  location_id: cpr
+  dataset_name: spotter
+  data_level: a1
+  qualifier: pos
+  temporal: 400ms
+  fs: 2.5 # Hz
+  n_bin: 1500 # 2.5 Hz * 600 s
 
-The following will generate a new pipeline called **`vap_gps`**, which has already been done for this repository. If you
-open up this pipeline, you can see that the pipeline structure for the VAP is very much the same as the ingest pipeline,
-with a few key differences in the configuration files.
-
-```txt
-Please choose a type of pipeline to create [ingest/vap] (ingest): vap
-What title do you want to give this ingest?: GPS Location
-What label should be used for the location of the ingest? (E.g., PNNL, San Francisco, etc.): cpr
-Briefly describe the ingest: 
-GPS location measured by a Sofar Spotter wave buoy deployed near Culebra, Puerto Rico
-Data standards to use with the ingest dataset ['basic','ACDD','IOOS']: basic
-Do you want to use a custom DataReader? [y/N]: n
-Do you want to use a custom DataConverter? [y/N]: n
-Do you want to use a custom QualityChecker or QualityHandler? [y/N]: n
-'vap_gps_location' will be the module name (the folder created under 'pipelines/') Is this OK?  [Y/n]: n
-What would you like to rename the module to?: vap_gps
-'VapGpsLocation' will be the name of your TransformationPipeline class (the python class containing your custom python code hooks). Is this OK? [Y/n]: n
-What would you like to rename the pipeline class to?: VapGPS
-'cpr' will be the short label used to represent the location where the data are collected. Is this OK?  [Y/n]: y
+# ...
 ```
+
+For each of the following dataset configuration files in the :material-folder: *`pipelines/`* folder, set `location_id:
+cpr` and update the `title` and `description` attributes to indicate that the data is for a buoy deployment northwest of
+Culebra Island, Puerto Rico:
+
+* :material-folder: **`spotter/config/`**: :material-file: *`dataset_flt.yaml`*, :material-file: *`dataset_loc.yaml`*, :material-file: *`dataset_gps.yaml`*
+* :material-folder: **`vap_gps/config/`**: :material-file: *`dataset.yaml`*
+* :material-folder: **`vap_wave_raw/config/`**: :material-file: *`dataset.yaml`*
+* :material-folder: **`vap_wave_stats/config/`**: :material-file: *`dataset.yaml`*
+
+### Download the data
+
+Raw Spotter data to follow along in this VAP can be downloaded from the [Marine Hydrokinetic Data Repository
+(MHKDR)](https://mhkdr.openei.org/submissions/545). Find the entry called `Raw Data from Spotter Buoy.zip` and download
+it. Unzip the folder and run the `spotter` ingest pipeline.
 
 ## Ingest Pipeline (`spotter`)
 
@@ -93,7 +96,7 @@ compatible with Spotter2 and Spotter3 raw files.
 
     === "Buoy Motion (`_FLT.CSV`)"
 
-        1. Reads in data using tsdat's built-in CSV reader.
+        1. Reads in data using Tsdat's built-in CSV reader.
         2. Conducts quality control using custom qc checks (:material-file: *`qc.py`*):
             - Checks for "spikes" using windows of 1500 points
                 ([Goring and Nikora 2002](http://dx.doi.org/10.1061/(ASCE)0733-9429(2002)128:1(117))).
@@ -132,277 +135,219 @@ compatible with Spotter2 and Spotter3 raw files.
 
 Each of these pipelines saves "`a1`" level data in netCDF format, one for each raw file.
 
-## Metadata
+## Timeseries Bin-Averaging Pipeline (`vap_gps`)
 
-For all of the pipelines in this repository to run properly, we'll need to replace the metadata with that for this
-Puerto Rico deployment. This primarily means setting the attributes sections of the dataset configuration files
-(`dataset.yaml`). For example, the `dataset_xxx.yaml` file for all of the **`spotter`** pipelines means changing the
-"`title`", "`description`" and "`location_id`" attributes:
+The `vap_gps` pipeline fetches ingest timeseries data and averages it at 10 minute intervals (bin-averaging). GPS data
+is used here, but this example pertains to any timeseries.
 
-```yaml
-attrs:
-  title: Culebra Wave Data
-  description:
-    Raw XYZ data taken by a Sofar Spotter buoy deployed NW of Culebra Is., Puerto Rico
-  location_id: cpr
-  dataset_name: spotter
-  data_level: a1
-  qualifier: pos
-  temporal: 400ms
-  fs: 2.5 # Hz
-  n_bin: 1500 # 2.5 Hz * 600 s
-```
+We'll go over the key differences between the ingest and VAP pipeline setups, starting with how to run a VAP on the
+command line, then running through the configuration files, and finally looking at the pipeline class in :material-file:
+`pipeline.py`. While `DataReaders` are no longer necessary for VAPs, `DataConverters`, `QualityChecker`s /
+`QualityHandler`s, and `FileStorage` classes have not changed.
 
-## Timeseries Bin-Averaging Pipeline (*vap_gps*)
+### Running the VAP
 
-The *vap_gps* pipeline is a VAP that fetches ingest timeseries data, bins the data and averages it at 10 minute
-intervals (bin-averaging). GPS data is used here, but this example will pertain to any timeseries.
+Instead of a filename, we specify the path to the VAP pipeline configuration file we want to run, as well as a "begin"
+time and an "end" time to span the time region of data we want to collate. For the purposes of this tutorial, we'll run
+a single day at the start of Aug, 2023 using this command:
 
-We'll go over the key differences between the ingest and VAP pipelines setups, starting with how to run a VAP on the
-command line, then running through the configuration files, and finally looking at the pipeline class in pipeline.py.
-While DataReaders are no longer necessary for VAPs, DataConverters, quality control Checkers/Handlers, and file storage
-have not changed.
-
-The VAP run command is set up differently from the ingest. Instead of a filename, we specify the path to the VAP
-pipeline configuration file we want to run, as well as a "begin" time and an "end" time to span the time region of data
-we want to collate.
-
-```bash
-python runner.py vap <path/to/vap/pipeline.yaml> --begin <yyyymmdd.HHMMSS> --end <yyyymmdd.HHMMSS>
-```
-
-For the purposes of this tutorial, we'll run a single day at the start of Aug, 2023.
-
-```bash
-python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
+```txt
+python runner.py vap pipelines/vap_gps/config/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
 ```
 
 Assuming you downloaded the raw data, updated the `dataset_xxx.yaml` files, and ran the ingest pipeline given the ingest
-run command, running this line will add the file `storage/root/data/cpr/cpr.gps.b1/cpr.gps.b1.20230801.000000`. Note
-that our "begin" timestamp is similar to the filename timestamp.
+run command, running this line will add :material-file: `storage/root/data/cpr/cpr.gps.b1/cpr.gps.b1.20230801.000000` to
+the storage area. Note that our "begin" timestamp is similar to the timestamp in the filename.
 
-### Dataset Configuration
+### Configuration files (`vap_gps`)
 
-The *vap_gps* `dataset.yaml` file looks very much the same as the ingest pipeline. The configuration is copy-pasted from
-pipelines/spotter/dataset_loc.yaml, but with a few geospatial attributes added that define the maximum and minimum
-latitude and longitude values that a user can expect to see. In this case, these were found by manually looking at each
-variable and define the limits of the Spotter buoy's watch circle. They are also used later to set the limits in the
-plot hook.
+!!! note "Configuration file updates"
 
-```yaml
-attrs:
-  title: GPS Location
-  description:
-    GPS location measured by a Sofar Spotter buoy deployed NW of Culebra Is., Puerto Rico
-  location_id: cpr
-  dataset_name: gps
-  data_level: b1
-  geospatial_lat_min: 48.2735
-  geospatial_lat_max: 48.2742
-  geospatial_lat_units: degrees_north
-  geospatial_lon_min: -124.2870
-  geospatial_lon_max: -124.2852
-  geospatial_lon_units: degrees_east
+    === ":exclamation: Retriever Configuration"
 
-coords:
-  time:
-    dims: [time]
-    dtype: datetime64[ms]
-    attrs:
-      units: Seconds since 1970-01-01 00:00:00 UTC
-      long_name: Time
-      standard_name: time
-      timezone: UTC
+        There are several significant changes and additions to the retrieval configuration file from the ingest version:
 
-data_vars:
-  lat:
-    dims: [time]
-    dtype: float32
-    attrs:
-      units: degrees_north
-      long_name: Latitude
-      standard_name: latitude
-      valid_min: -90
-      valid_max: 90
-  lon:
-    dims: [time]
-    dtype: float32
-    attrs:
-      units: degrees_east
-      long_name: Longitude
-      standard_name: longitude
-      valid_min: -180
-      valid_max: 180
-```
+        1. VAP pipelines pull input data from the storage area, so the **`tsdat.io.retrievers.StorageRetriever`** class
+        is used (Ingests use `tsdat.io.retrievers.DefaultRetriever`). This means that there is no `DataReader` setup
+        needed; it'll just use the :material-file: *`shared/storage.yaml`* configurations to read the input data.
 
-### Pipeline Configuration
+        2. The coordinates and data variables also make use of new `data_converters` to support transformations:
 
-The pipeline configuration file, `pipeline.yaml`, has changed slightly, i.e. there is an additional "datastreams"
-parameter and "triggers" is now empty. The datastreams parameter covers all of the pipeline outputs that generate
-variables one wants to retrieve for the VAP pipeline. In this case, we just want the "cpr.spotter-gps-1min.a1" data.
+            - **`tsdat.transform.CreateTimeGrid`**: creates a new time grid using the specified interval. (1)
+            { .annotate }
 
-```yaml
-classname: pipelines.vap_gps.pipeline.VapGPS
-parameters:
-  datastreams:
-    - cpr.spotter-gps-1min.a1
+                1. **EXAMPLE:**  This `TimeGrid` will start at the top of the hour and continue at 10-minute intervals
+                    to the "end" time specified in the VAP run command. It is important to set the `name: N/A`, as this
+                    tells Tsdat not to search for `time` in the input dataset and instead create the time grid from the
+                    given parameters.
 
-triggers: []
+                    ```yaml
+                    coords:
+                      time:
+                        name: N/A
+                        data_converters:
+                          - classname: tsdat.transform.CreateTimeGrid
+                            interval: 10min
+                    ```
 
-retriever:
-  path: pipelines/vap_gps/config/retriever.yaml
+            - **`tsdat.transform.BinAverage`**: Downsamples the data onto the output coordinate grid using
+            bin-averaging.
+            - **`tsdat.transform.NearestNeighbor`**: Aligns the data onto the output coordinate grid using a
+            nearest-neighbor approach.
+            - **`tsdat.transform.Interpolate`**: Upsamples the data onto the output coordinate grid via interpolation.
 
-dataset:
-  path: pipelines/vap_gps/config/dataset.yaml
+        3. There are some new options for the `tsdat.io.retrievers.StorageRetriever` class: **`transform_parameters`**
+        and **`fetch_parameters`**. These are explained in more detail in the annotations (+) in the code block below:
 
-quality:
-  path: shared/quality.yaml
-storage:
-  path: shared/storage.yaml
-```
+        ```yaml title="pipelines/vap_gps/config/retriever.yaml" hl_lines="3-4 6-9"
+        classname: tsdat.io.retrievers.StorageRetriever
+        parameters:
+          fetch_parameters: #(1)!
+            time_padding: -24h
+        
+          transformation_parameters: #(2)!
+            alignment: {time: CENTER}
+            range: {time: 60s}
+            width: {time: 600s}
 
-### Retriever Configuration
+        coords:
+          time:
+            name: N/A
+            data_converters:
+              - classname: tsdat.transform.CreateTimeGrid
+                interval: 10min
 
-The retriever configuration file, `retriever.yaml`, has a number of additions from the ingest version. The `DataReader`
-class is replaced for tsdat's built-in `StorageRetriever`, which accesses the storage file location to collect files
-containing the datastreams that we specify in `pipeline.yaml`. In order for a VAP to work with the appropriate ingest
-pipelines, they all must use the same `storage.yaml` file located in the "shared" folder.
+        data_vars:
+          lat:
+            .*gps.*:
+              name: lat
+              data_converters:
+                - classname: tsdat.transform.BinAverage
+          lon:
+            .*gps.*:
+              name: lon
+              data_converters:
+                - classname: tsdat.transform.BinAverage
+        ```
 
-The coordinates and data variables also have additional parameters, "time" in particular. Sometimes it's desirable
-(real-time measurements) to have measurements that are aligned on a gridded time variable, rather than a random,
-instrument-dependent offset.
+        1. **NEW:** The new `time_padding` parameter in the `fetch_parameters` section specifies how far in time to look
+            for data before the "begin" timestamp (e.g., `-24h`), after the "end" timestamp (e.g., `+24h`), or both
+            (e.g., `24h`). (1) Units of hours ('**h**'), minutes ('**m**'), seconds ('**s**', *used as default*), and
+            milliseconds ('**ms**') are allowed.
+            { .annotate } 
+                
+            1. Recall that the "begin" and "end" timestamps are set via the command line for VAPs:
 
-For this VAP, a new timegrid is created that is spaced on a 10-minute interval. We do this by ignoring the file input
-regex, setting the name to "N/A", and setting the `CreateTimeGrid` DataConverter. This TimeGrid will start at the top of
-the hour and continue at 10-minute intervals to the "end" time specified in the VAP run command.
+                ```txt hl_lines="3 4"
+                python runner.py vap \
+                    pipelines/vap_gps/pipeline.yaml \
+                    --begin 20210801.000000 \
+                    --end 20210802.000000
+                ```
 
-If we create a new timegrid, Tsdat assumes that one of the DataTransforms will be used. If a DataTransform is not used,
-Tsdat will assume the input timestamps are already on a TimeGrid.
+            In our retriever config file we set `timepadding: -24h`, which tells Tsdat to fetch files up to 24 hours
+            earlier than the "begin" timestamp. If we had set `timepadding: +24h`, it would fetch data files 24 hours
+            after the "end" timestamp. Setting `timepadding: 24h` would fetch data files from both 24 hours before the
+            "begin" timestamp and 24 hours after the "end" timestamp.
 
-```yaml
-coords:
-  time:
-    name: N/A
-    data_converters:
-      - classname: tsdat.transform.CreateTimeGrid
-        interval: 10min
-```
+            The image below depicts the idea of what this parameter does. Data files, particularly these from the
+            Spotter buoy, are not saved on any particular time schedule. When this is the case, we want to set
+            `time_padding` far enough so that Tsdat is able to retrieve all of the files that contain the data we want,
+            but not so far as to significantly slow down the pipeline.
 
-The two variables we're pulling from the ingest pipeline are "lat" and "lon". It's good practice to specify the file
-regex (gps) with starting and ending breaks `(.*)` on the first indent. On the next indent, we'll specify the variable
-ingest "name" and "data_converters" key.
+            ![fetch_params](vap/fetch_params.png)
 
-Note that all VAP functional is incorporated into the Tsdat workflow via DataConverters.
+            **HANDS-ON EXAMPLE:** Open up a new terminal and run the following command, if you haven't already:
 
-The DataConverter (DataTransform) classname we want to use is `tsdat.transform.BinAverage`. The other built-in options
-are `tsdat.transform.NearestNeighbor` and `tsdat.transform.Interpolate`.
+            ```txt
+            python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20210801.000000 --end 20210802.000000
+            ```
 
-```yaml
-data_vars:
-  lat:
-    .*gps.*:
-      name: lat
-      data_converters:
-        - classname: tsdat.transform.BinAverage
-  lon:
-    .*gps.*:
-      name: lon
-      data_converters:
-        - classname: tsdat.transform.BinAverage
-```
+            When the pipeline finishes, navigate to the :material-file: *`cpr.gps.b1.20210903.000000.timeseries.png`*
+            file in the :material-folder: *`storage/root/ancillary/cpr/cpr.gps.b1/`* folder and look at the X-axis
+            ticks. Notice that data is found for the entire day.
 
-Next we need to specify parameters to run the transformer properly on these variables. There are two sets of parameters
-that we can set for the DataTransforms, called `fetch_parameters` and `transformation_parameters`:
+            Now, set `timepadding: 0`, open a terminal and run the vap again:
 
-```yaml
-classname: tsdat.io.retrievers.StorageRetriever
-parameters:
-  fetch_parameters:
-    # How far in time to look after the "end" timestamp (+), before the "begin"
-    # timestamp (-), or both (none) to find filenames that contain needed data
-    time_padding: -24h
+            ```txt
+            python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20210801.000000 --end 20210802.000000
+            ```
 
-  transformation_parameters:
-    # Where the point lies in the coordinate bounds (CENTER, LEFT, RIGHT)
-    alignment:
-      time: CENTER
+            Check out the same .png file again. See that half the data is missing for the day.
 
-    # How far to look for the next available data point
-    range:
-      time: 60s
 
-    # Width of the transformation
-    width:
-      time: 600s
-```
+        2. **NEW:** The new `transform_parameters` section holds parameters (**`alignment`**, **`range`**, **`width`**)
+            that control how data are transformed in the pipeline.
 
-### Transformation Parameters
+            - **`alignment`** defines the location of the window in respect to each output timestamp (`LEFT`, `RIGHT`,
+            or `CENTER`).
+            - **`range`** defines how far (in seconds) from the first/last timestamp to search for the previous/next
+            measurement.
+            - **`width`** defines the size of the averaging window in seconds (600s = 10 min).
+            
+            **EXAMPLE:** In the window shown below, the `alignment` is technically set to "`LEFT`", which just means
+            that the 00:00 timestamp represents measurements from 00:00 to 10:00. No matter what "`alignment`" is set
+            to, `CreateTimeGrid` will always start at 00:00. For instance, if "`alignment`" were set to "`CENTER`" and the
+            `width` is 600s (10 minutes), the 01:00:00 timestamp represents bin-averaged data between 00:55:00 and 01:05:00. Tsdat will attempt to fetch the
+            file that contains data for the previous 5 minutes here. If a filename with a timestamp 10 minutes prior cannot
+            be found, the data variables at the 01:00:00 timestamp will be set to nan.
 
-Both of these sets of parameters are best explained by pictures. For the `BinAverage` transform, "width" defines the
-size of the averaging window (600s = 10 min) and "alignment" defines the location of the window in respect to each
-timestamp.
+            ![transform_params](vap/tranform_params.png)
 
-In the window shown below, the alignment is technically set to "LEFT". No matter what "alignment" is set to, the
-TimeGrid will always start at 00:00. For instance, if "alignment" is set to "CENTER" and the width is 600 s, the
-01:00:00 timestamp represents bin-averaged data between 00:55:00 and 01:05:00. Tsdat will attempt to fetch the file
-that contains data for the previous 5 minutes here. If a filename with a timestamp 10 minutes prior cannot be found,
-the 01:00:00 timestamp will be set to nan.
+    === "Pipeline Configuration"
 
-The "range" keyword is relevant for the `NearestNeighbor` and `Interpolate` transforms, and defines how far from the
-last timestamp to search for the next measurement. The "range" and "width" parameters should be set in seconds.
+        The pipeline configuration file has changed slightly to accommodate the change in how the VAP pipelines are run.
+        The command line arguments for VAP pipelines include just the pipeline config file and the time period to run,
+        so the `datastreams` parameter has been added to the config file, which tells the VAP which inputs it should
+        look for. Likewise, the `triggers` parameter has been set as empty, since it it no longer run on a per-file
+        basis.
+        
+        ```yaml title="pipelines/vap_gps/config/pipeline.yaml" hl_lines="3 4 6"
+        classname: pipelines.vap_gps.pipeline.VapGPS
+        parameters:
+          datastreams:
+            - cpr.spotter-gps-1min.a1 #(1)!
+        
+        triggers: [] #(2)!
+        
+        retriever:
+          path: pipelines/vap_gps/config/retriever.yaml
+        
+        dataset:
+          path: pipelines/vap_gps/config/dataset.yaml
+        
+        quality:
+          path: shared/quality.yaml
+        
+        storage:
+          path: shared/storage.yaml
+        ```
 
-![transform_params](vap/tranform_params.png)
+        1. **NEW:** The `datastreams` parameter denotes all the *input datastreams* that are needed in the vap pipeline.
+            In this case, we just want data from the `cpr.spotter-gps-1min.a1` datastream (the output of the `spotter`
+            ingest which ran on `_GPS.CSV` files).
+        
+        2. **NEW:** The `triggers` parameter should be set as empty (`[]`) for VAPs because the inputs are determined by
+        the `datastreams` parameter now.
 
-### Fetch Parameters
+### Pipeline class (`VapGPS`)
 
-The "time_padding" fetch parameter can be critical to set correctly. To show what this parameter does, open up a new
-terminal and run if you haven't already:
+The final file that's important to review is are the changes to the pipeline class located in `pipeline.py`:
 
-```bash
-python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20210801.000000 --end 20210802.000000
-```
+1. The VAP class inherits from `tsdat.TransformationPipeline` instead of `tsdat.IngestPipeline`.
+2. The `tsdat.TransformationPipeline` class allows the user to plug-in a new code hook: `hook_customize_input_datasets`,
+which allows the user to alter datasets retrieved from the ingest pipeline. The input/return here is a dictionary of
+datasets that are labeled based on their individual datastreams and "begin"/"end" timestamps. The other three hooks have not changed.
 
-When the pipeline completes successfully, navigate to
-`storage/root/ancillary/cpr/cpr.gps.b1/cpr.gps.b1.20210903.000000.timeseries.nc` and look at the X-axis ticks. Notice
-that data is found for the entire day.
+```python title="pipelines/vap_gps/pipeline.py"
+from typing import Dict
+import tsdat
+import xarray as xr
 
-Now, set `timepadding: 0`, open a terminal and run the vap again:
 
-```bash
-python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20210801.000000 --end 20210802.000000
-```
+class VapGPS(tsdat.TransformationPipeline):
 
-Check out the same .png file again. See that half the data is missing for the day.
-
-The image below depicts the idea of what this parameter does. Data files, particularly these from the Spotter buoy, are
-not saved on any particular time schedule. When this is the case, we want to set `time_padding` far enough so that Tsdat
-is able to retrieve all of the files that contain the data we want, but not so far as to significantly slow down the
-pipeline.
-
-![fetch_params](vap/fetch_params.png)
-
-Setting `timepadding: -24h` tells Tsdat to fetch files up to 24 hours earlier than the start date we specified. If we
-set `timepadding: +24h`, it will fetch datafiles 24 hours after the "end" time. Setting `timepadding: 24h` will fetch
-both before and after. Units of hours ('h'), minutes ('m'), seconds ('s'), and milliseconds ('ms') can be used here. If
-no units are specified, tsdat will default to using seconds.
-
-### Pipeline Class Configuration
-
-The final file that's important to review is the change to the pipeline class located in `pipeline.py`. The first is the
-inherited class change from `IngestPipeline` to `TransformationPipeline`. The second is the addition of the
-`hook_customize_input_datasets` hook, which allows the user to alter datasets retrieved from the ingest pipeline. The
-input/return here is a dictionary of datasets that are labeled based on their individual datastreams and "begin"/"end"
-timestamps. The other three hooks have not changed.
-
-```python
-class VapGPS(TransformationPipeline):
-    """---------------------------------------------------------------------------------
-    This is an example pipeline meant to demonstrate how one might set up a
-    pipeline using this template repository.
-
-    ---------------------------------------------------------------------------------"""
-
-    def hook_customize_input_datasets(self, input_datasets) -> Dict[str, xr.Dataset]:
+    def hook_customize_input_datasets(self, input_datasets: Dict[str, xr.Dataset]) -> Dict[str, xr.Dataset]:
         # Code hook to customize any input datasets prior to datastreams being combined
         # and data converters being run.
         return input_datasets
@@ -416,199 +361,202 @@ class VapGPS(TransformationPipeline):
         # but before it gets saved to the storage area
         return dataset
 
-    def hook_plot_dataset(self, dataset: xr.Dataset):
+    def hook_plot_dataset(self, dataset: xr.Dataset) -> None:
         # (Optional, recommended) Create plots.
         pass
 ```
 
-### Closing thoughts on the GPS VAP
+### Closing thoughts on `vap_gps`
 
 With the information contained in the above sections, you can create most VAP pipelines. The rest of this tutorial
 reviews the other two VAPs in this repository, as well as a number of features/idiosyncrasies you might need to know for
 your own particular use case. This are listed as the following:
 
-1. Creating a VAP dataset using the time coordinate from an ingest dataset
-2. Adding new coordinates to a VAP dataset
-3. Conducting analyses beyond that of bin-averaging, nearest neighbor, and interpolation
-4. A VAP example that fetches multiple datastreams
+* Creating a VAP dataset using the time coordinate from an ingest dataset
+* Adding new coordinates to a VAP dataset
+* Conducting analyses beyond that of bin-averaging, nearest neighbor, and interpolation
+* A VAP example that fetches multiple datastreams
 
-## VAP Pipeline using "Non-typical" Analysis (*vap_wave_raw*)
+## VAP Pipeline using "Non-typical" Analysis (`vap_wave_raw`)
 
-The *vap_wave_raw* pipeline takes the buoy surge, sway, and heave measurements, conducts spectral analysis, and
+The `vap_wave_raw` pipeline takes the buoy surge, sway, and heave measurements, conducts spectral analysis, and
 estimates wave statistics. Spectral analysis is common in the field of fluid mechanics, but this pipeline will be
-instructive for any analysis that results in new timestamps. The following pipeline, *vap_wave_stats*, will be more
+instructive for any analysis that results in new timestamps. The following pipeline, `vap_wave_stats`, will be more
 helpful for users who don't need more complex analysis.
 
-### Configuration Files
+### Configuration Files (`vap_wave_raw`)
 
-We'll begin by setting up the pipeline's retriever configuration file. We'll use the same "time_padding" as before, and
-include variables we want to pull from the ingest "pos" datastream output ("time", "x", "y", and "z"). Instead of
-creating a new TimeGrid, we can simply retrieve "time" like any other variable.
+!!! note "Configuration file updates"
 
-Notice we add a 2nd coordinate here that we will use later that does not exist in the ingest pipeline: "frequency". This
-coordinate will be generated in our pipeline hook, but Tsdat requires that new coordinates are pulled through the
-retriever, unlike data variables that can be introduced in the dataset configuration.
+    === "Retriever configuration"
 
-```yaml
-classname: tsdat.io.retrievers.StorageRetriever
-parameters:
-  fetch_parameters:
-    # How far in time to look after the "end" timestamp (+), before the "begin"
-    # timestamp (-), or both (none) to find filenames that contain needed data
-    time_padding: -24h
+        We'll begin by setting up the pipeline's retriever configuration file. We'll use the same `time_padding` as
+        before, and include variables we want to pull from the ingest "pos" datastream output (`time`, `x`, `y`, and
+        `z`). Instead of creating a new time grid, we can simply retrieve `time` like any other variable.
+        
+        Notice we add a 2nd coordinate here that we will use later that does not exist in the ingest pipeline:
+        `frequency`. This coordinate will be generated in our pipeline hook, but Tsdat requires that new coordinates are
+        pulled through the retriever, unlike data variables that can be introduced in the dataset configuration.
+        
+        ```yaml title="pipelines/vap_wave_raw/config/retriever.yaml"
+        classname: tsdat.io.retrievers.StorageRetriever
+        parameters:
+          fetch_parameters:
+            time_padding: -24h
+        
+        coords:
+          time:
+            .*pos.*:
+              name: time
+          frequency:
+            .*pos.*: 
+              name: frequency
+        
+        data_vars:
+          x:
+            .*pos.*:
+              name: x
+          y:
+            .*pos.*:
+              name: y
+          z:
+            .*pos.*:
+              name: z
+        ```
 
-coords:
-  time:
-    .*pos.*:
-      name: time
-  frequency:
-    .*pos.*: 
-      name: frequency
+    === "Pipeline Configuration"
 
-data_vars:
-  x:
-    .*pos.*:
-      name: x
-  y:
-    .*pos.*:
-      name: y
-  z:
-    .*pos.*:
-      name: z
-```
+        The pipeline configuration file remains simple, and in this case we've added a new quality configuration file.
+        Our input datastream this time is `cpr.spotter-pos-400ms.a1`.
+        
+        ```yaml title="pipelines/wave_wave_raw/config/pipeline.yaml"
+        classname: pipelines.vap_wave_raw.pipeline.VapWaves
+        parameters:
+          datastreams:
+            - cpr.spotter-pos-400ms.a1
+        
+        triggers: []
+        
+        retriever:
+          path: pipelines/vap_wave_raw/config/retriever.yaml
+        
+        dataset:
+          path: pipelines/vap_wave_raw/config/dataset.yaml
+        
+        quality:
+          path: pipelines/vap_wave_raw/config/quality.yaml
+        
+        storage:
+          path: shared/storage.yaml
+        ```
 
-In our dataset configuration file, we add all of the variables that are required for our analysis, as well as all the
-variables that will be added in our analysis. Only the first few variables are shown to keep this blip short. This
-includes our new "frequency" coordinate as well.
+    === "Dataset configuration"
 
-```yaml
-attrs:
-  title: Wave Statistics
-  description:
-    Wave statistics measured by a Sofar Spotter wave buoy deployed in Culebra, Puerto Rico
-  location_id: cpr
-  dataset_name: wave
-  data_level: c0
+        In our dataset configuration file, we add all of the variables that are required for our analysis, as well as all the
+        variables that will be added in our analysis. Only the first few variables are shown to keep this blip short. This
+        includes our new `frequency` coordinate as well.
+        
+        ```yaml title="pipelines/vap_wave_raw/config/dataset.yaml"
+        attrs:
+          title: Wave Statistics
+          description: Wave statistics measured by a Sofar Spotter wave buoy deployed in Culebra, Puerto Rico.
+          location_id: cpr
+          dataset_name: wave
+          data_level: c0
+        
+        coords:
+          time:
+            dims: [time]
+            dtype: datetime64[ms]
+            attrs:
+              units: Seconds since 1970-01-01 00:00:00 UTC
+              long_name: Time
+              standard_name: time
+              timezone: UTC
+          frequency:
+            dims: [frequency]
+            dtype: float32
+            attrs:
+              long_name: Band Center Frequency
+              units: Hz
+              standard_name: wave_frequency
+        
+        data_vars:
+          x:
+            dims: [time]
+            dtype: float32
+            attrs:
+              long_name: Buoy Surge
+              standard_name: platform_surge
+              units: m
+              valid_min: -8
+              valid_max: 8
+          y:
+            dims: [time]
+            dtype: float32
+            attrs:
+              long_name: Buoy Sway
+              standard_name: platform_sway
+              units: m
+              valid_min: -8
+              valid_max: 8
+          z:
+            dims: [time]
+            dtype: float32
+            attrs:
+              long_name: Buoy Heave
+              standard_name: platform_heave
+              units: m
+              valid_min: -8
+              valid_max: 8
+          wave_hs:
+            dims: [time]
+            dtype: float32
+            attrs:
+              long_name: Significant Wave Height
+              units: m
+              standard_name: sea_surface_wave_significant_height
+              valid_min: 0
+              valid_max: 20
+          wave_energy_density:
+            dims: [time, frequency]
+            dtype: float32
+            attrs:
+              long_name: Wave Energy Density
+              units: m^2 s
+              standard_name: sea_surface_wave_variance_spectral_density
+              valid_min: 0.0
+        # ...
+        ```
 
-coords:
-  time:
-    dims: [time]
-    dtype: datetime64[ms]
-    attrs:
-      units: Seconds since 1970-01-01 00:00:00 UTC
-      long_name: Time
-      standard_name: time
-      timezone: UTC
-  frequency:
-    dims: [frequency]
-    dtype: float32
-    attrs:
-      long_name: Band Center Frequency
-      units: Hz
-      standard_name: wave_frequency
+### Pipeline Class (`VapWaves`)
 
-data_vars:
-  x:
-    dims: [time]
-    dtype: float32
-    attrs:
-      long_name: Buoy Surge
-      standard_name: platform_surge
-      units: m
-      valid_min: -8
-      valid_max: 8
-  y:
-    dims: [time]
-    dtype: float32
-    attrs:
-      long_name: Buoy Sway
-      standard_name: platform_sway
-      units: m
-      valid_min: -8
-      valid_max: 8
-  z:
-    dims: [time]
-    dtype: float32
-    attrs:
-      long_name: Buoy Heave
-      standard_name: platform_heave
-      units: m
-      valid_min: -8
-      valid_max: 8
-  wave_hs:
-    dims: [time]
-    dtype: float32
-    attrs:
-      long_name: Significant Wave Height
-      units: m
-      standard_name: sea_surface_wave_significant_height
-      valid_min: 0
-      valid_max: 20
-  wave_energy_density:
-    dims: [time, frequency]
-    dtype: float32
-    attrs:
-      long_name: Wave Energy Density
-      units: m^2 s
-      standard_name: sea_surface_wave_variance_spectral_density
-      valid_min: 0.0
-  ...
-```
-
-The pipeline configuration file remains simple, and in this case we've added a new quality configuration file. Our
-datastream this time is `cpr.spotter-pos-400ms.a1`.
-
-```yaml
-classname: pipelines.vap_wave_raw.pipeline.VapWaves
-parameters:
-  datastreams:
-    - cpr.spotter-pos-400ms.a1
-
-triggers: []
-
-retriever:
-  path: pipelines/vap_wave_raw/config/retriever.yaml
-
-dataset:
-  path: pipelines/vap_wave_raw/config/dataset.yaml
-
-quality:
-  path: pipelines/vap_wave_raw/config/quality.yaml
-
-storage:
-  path: shared/storage.yaml
-```
-
-### Pipeline Class
-
-The TransformationPipeline class is where we do the bulk of the work, as we need to add in all of our analysis code
+The `TransformationPipeline` class is where we do the bulk of the work, as we need to add in all of our analysis code
 here.
-
-The first section we add are the global variables we want to use for the rest of analysis, and these are parameter that
-will never vary with the data streaming through the pipeline ("fs", "wat", and "freq_slc").
 
 Next we edit the first hook. Tsdat does not allow for new coordinates to be added through `dataset.yaml` like it does
 for new data variables. So this first hook, which operates directly after fetching the input datasets, is where we add
 the new coordinate, "frequency". We'll do this by finding the key we specified in `retriever.yaml` ("pos"), adding the
 coordinate to that dataset, and returning the "input_datasets" dictionary.
 
-```python
+```python title="pipelines/vap_wave_raw/pipeline.py"
+from typing import Dict
+import numpy as np
+import tsdat
+import xarray as xr
+import matplotlib.pyplot as plt
+from mhkit import wave, dolfyn
+from cmocean.cm import amp_r, dense, haline
+
+
 fs = 2.5  # Hz, Spotter sampling frequency
 wat = 1800  # s, window averaging time
 freq_slc = [0.0455, 1]  # 22 to 1 s periods
 
 
-class VapWaves(TransformationPipeline):
-    """---------------------------------------------------------------------------------
-    This is an example pipeline meant to demonstrate how one might set up a
-    pipeline using this template repository.
-
-    ---------------------------------------------------------------------------------"""
+class VapWaves(tsdat.TransformationPipeline):
 
     def hook_customize_input_datasets(self, input_datasets) -> Dict[str, xr.Dataset]:
-        # Code hook to customize any input datasets prior to datastreams being combined
-        # and data converters being run.
-
         # Need to write in frequency coordinate that will be used later
         for key in input_datasets:
             if "pos" in key:
@@ -620,10 +568,7 @@ class VapWaves(TransformationPipeline):
                 # Trim frequency vector to > 0.0455 Hz (wave periods between 1 and 22 s)
                 freq = freq[np.where((freq > freq_slc[0]) & (freq <= freq_slc[1]))]
                 # Set the frequency coordinate
-                input_datasets[key] = input_datasets[key].assign_coords(
-                    {"frequency": freq.astype("float32")}
-                )
-
+                input_datasets[key] = input_datasets[key].assign_coords({"frequency": freq.astype("float32")})
                 return input_datasets
 ```
 
@@ -735,16 +680,18 @@ input variables we don't want to keep.
     return ds.drop(("x", "y", "z"))
 ```
 
-We don't utilize `hook_finalize_dataset` in this pipeline, and plots are created in `hook_plot_dataset`, which won't be
-copied here.
+We don't utilize `hook_finalize_dataset` in this pipeline, and plots are created in `hook_plot_dataset`, which
+won't be copied here.
 
 ### Quality Control
 
-We do incorporate one custom QualityChecker in this pipeline, and it checks that our wave estimations are valid. The
-`quality.yaml` entry is shown first, followed by the class in `qc.py`. These are implemented in the same manner as the
-ingest pipeline.
+We do incorporate one custom `QualityChecker` in this pipeline which checks that our wave estimations are valid.
+These are implemented in the same manner as the ingest pipeline.
 
-```yaml
+```yaml title="pipelines/vap_wave_raw/config/quality.yaml"
+managers:
+  # ...
+
   - name: Check wave factor
     checker:
       classname: pipelines.vap_wave_raw.qc.WaveCheckFactor
@@ -759,7 +706,7 @@ ingest pipeline.
     exclude: [wave_energy_density, wave_check_factor]
 ```
 
-```python
+```python title="pipelines/vap_wave_raw/qc.py"
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
@@ -767,11 +714,8 @@ from tsdat import QualityChecker, QualityHandler
 
 
 class WaveCheckFactor(QualityChecker):
-    """----------------------------------------------------------------------------
-    Checks for where the wave factor is nan or negative and returns a
-    mask where bad values are labeled as True.
-    (This function runs on a variable by variable basis.)
-    ----------------------------------------------------------------------------"""
+    """Checks for where the wave factor is nan or negative and returns a mask where bad values are labeled as
+    True. This function runs on a variable-by-variable basis."""
 
     def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
 
@@ -787,119 +731,142 @@ class WaveCheckFactor(QualityChecker):
 
 Finally, this pipeline can be run by:
 
-```bash
+```txt
 python runner.py vap pipelines/vap_waves_raw/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
 ```
 
-## VAP Pipeline fetching Multiple Datastreams (*vap_wave_stats*)
+## VAP Pipeline fetching Multiple Datastreams (`vap_wave_stats`)
 
-The *vap_wave_stats* pipeline takes the wave estimations from *vap_wave_raw* and interpolates the GPS and SST
+The `vap_wave_stats` pipeline takes the wave estimations from `vap_wave_raw` and interpolates the GPS and SST
 measurements onto the wave timestamps. This pipeline also adds a new coordinate for a new data variable that is
 calculated in the code hooks.
 
-### Configuration Files
+### Configuration files (`vap_wave_stats`)
 
-In our dataset configuration files, we want to copy-paste in all of the variables from the respective dataset
-configurations. In this pipeline, we also include a slew of metadata variables in accordance with Integrated Ocean
-Observing System (IOOS) standards.
+!!! note "Configuration file updates"
 
-In our pipeline configuration file, we make sure to add the datastreams that we want this VAP to pull from. In this
-case, we're fetching data from the "vap_waves_raw" pipeline and the GPS and SST pipelines from the *spotter* ingest
-pipeline.
+    === "Retriever Configuration"
 
-```yaml
-classname: pipelines.vap_wave_stats.pipeline.VapWaveStats
-parameters:
-  datastreams:
-    - cpr.wave.c0
-    - cpr.spotter-gps-1min.a1
-    - cpr.spotter-sst-1min.a1
+        In our retriever configuration, we include the same "time_padding" parameter, and include a "range" of 120s for the
+        `Interpolate` DataTransform. 2 min was chosen with the reasoning that it is twice the sampling frequency of the buoy's
+        GPS unit and thermistor, so we're less likely to miss a data point.
+        
+        Next, the 3 coordinates are fetched from the "wave" datastream (`vap_waves_raw`), and the assortment of variables from
+        all 3 input streams. For the non-"wave" datastream variables ("lat", "lon", "sst"), the `tsdat.transform.Interpolate`
+        DataConverter is set. `Interpolate` does a simple 1D linear interpolation from the ingest timestamp to the VAP
+        timestamp. `NearestNeighbor` could also be used here in the same manner if desired.
+        
+        For the variables pulled from the "wave" datastream (i.e. "wave_hs"), these are already mapped onto the "wave" time
+        coordinate, so we don't need to include a DataTransform here.
+        
+        ```yaml title="pipelines/vap_wave_stats/config/retriever.yaml"
+        classname: tsdat.io.retrievers.StorageRetriever
+        parameters:
+          fetch_parameters:
+            # How far in time to look after the "end" timestamp (+), before the "begin"
+            # timestamp (-), or both (none) to find filenames that contain needed data
+            time_padding: -24h
+        
+          transformation_parameters:
+            # Where the point lies in the coordinate bounds (CENTER, LEFT, RIGHT)
+            alignment:
+              time: CENTER
+        
+            # How far to look for the next available data point
+            range:
+              time: 120s
+        
+            # Width of the transformation
+            width:
+              time: 60s
+        
+        coords:
+          time:
+            .*wave.*:
+              name: time
+          frequency:
+            .*wave.*: 
+              name: frequency
+          direction:
+            .*wave.*: 
+              name: direction
+        
+        data_vars:
+          lat:
+            .*gps.*:
+              name: lat
+              data_converters:
+                - classname: tsdat.transform.Interpolate
+          lon:
+            .*gps.*:
+              name: lon
+              data_converters:
+                - classname: tsdat.transform.Interpolate
+          sst:
+            .*sst.*:
+              name: sst
+              data_converters:
+                - classname: tsdat.transform.Interpolate
+          wave_hs:
+            .*wave.*: 
+              name: wave_hs
+          ...
+        ```
 
-triggers: []
+    === "Pipeline Configuration"
 
-retriever:
-  path: pipelines/vap_wave_stats/config/retriever.yaml
+        In our pipeline configuration file, we make sure to add the datastreams that we want this VAP to pull from. In this
+        case, we're fetching data from the `vap_waves_raw` pipeline and the GPS and SST pipelines from the `spotter` ingest
+        pipeline.
+        
+        ```yaml title="pipelines/vap_wave_stats/config/pipeline.yaml"
+        classname: pipelines.vap_wave_stats.pipeline.VapWaveStats
+        parameters:
+          datastreams:
+            - cpr.wave.c0
+            - cpr.spotter-gps-1min.a1
+            - cpr.spotter-sst-1min.a1
+        
+        triggers: []
+        
+        retriever:
+          path: pipelines/vap_wave_stats/config/retriever.yaml
+        
+        dataset:
+          path: pipelines/vap_wave_stats/config/dataset.yaml
+        
+        quality:
+          path: shared/quality.yaml
+        storage:
+          path: shared/storage.yaml
+        ```
 
-dataset:
-  path: pipelines/vap_wave_stats/config/dataset.yaml
+    === "Dataset Configuration"
 
-quality:
-  path: shared/quality.yaml
-storage:
-  path: shared/storage.yaml
-```
+        In our dataset configuration file, we want to copy-paste in all of the variables from the respective dataset
+        configurations. In this pipeline, we also include a slew of metadata variables in accordance with Integrated Ocean
+        Observing System (IOOS) standards.
 
-In our retriever configuration, we include the same "time_padding" parameter, and include a "range" of 120s for the
-`Interpolate` DataTransform. 2 min was chosen with the reasoning that it is twice the sampling frequency of the buoy's
-GPS unit and thermistor, so we're less likely to miss a data point.
+        This pipeline adds a new additional variable to the dataset (`wave_dir_energy_density`). This variable is
+        calculated in the pipeline code, not retrieved from an input datastream (note its absence from the retriever
+        configuration file)
 
-Next, the 3 coordinates are fetched from the "wave" datastream ("vap_waves_raw"), and the assortment of variables from
-all 3 input streams. For the non-"wave" datastream variables ("lat", "lon", "sst"), the `tsdat.transform.Interpolate`
-DataConverter is set. `Interpolate` does a simple 1D linear interpolation from the ingest timestamp to the VAP
-timestamp. `NearestNeighbor` could also be used here in the same manner if desired.
-
-For the variables pulled from the "wave" datastream (i.e. "wave_hs"), these are already mapped onto the "wave" time
-coordinate, so we don't need to include a DataTransform here.
-
-```yaml
-classname: tsdat.io.retrievers.StorageRetriever
-parameters:
-  fetch_parameters:
-    # How far in time to look after the "end" timestamp (+), before the "begin"
-    # timestamp (-), or both (none) to find filenames that contain needed data
-    time_padding: -24h
-
-  transformation_parameters:
-    # Where the point lies in the coordinate bounds (CENTER, LEFT, RIGHT)
-    alignment:
-      time: CENTER
-
-    # How far to look for the next available data point
-    range:
-      time: 120s
-
-    # Width of the transformation
-    width:
-      time: 60s
-
-coords:
-  time:
-    .*wave.*:
-      name: time
-  frequency:
-    .*wave.*: 
-      name: frequency
-  direction:
-    .*wave.*: 
-      name: direction
-
-data_vars:
-  lat:
-    .*gps.*:
-      name: lat
-      data_converters:
-        - classname: tsdat.transform.Interpolate
-  lon:
-    .*gps.*:
-      name: lon
-      data_converters:
-        - classname: tsdat.transform.Interpolate
-  sst:
-    .*sst.*:
-      name: sst
-      data_converters:
-        - classname: tsdat.transform.Interpolate
-  wave_hs:
-    .*wave.*: 
-      name: wave_hs
-  ...
-```
+        ```yaml
+        wave_dir_energy_density:
+          dims: [time, frequency, direction]
+          dtype: float32
+          attrs:
+            long_name: Directional Energy Density
+            units: m^2 s / deg
+            standard_name: sea_surface_wave_directional_variance_spectral_density
+            valid_min: 0.0
+        ```
 
 ### Pipeline Class
 
-This pipeline adds a new additional variable to the dataset and creates a series of plots in pipeline.py as well. It's
+This pipeline adds a new additional variable to the dataset and creates a series of plots in `pipeline.py` as well. It's
 common to need to calculate another variable in a VAP hook, and to do so, we add the variable's metadata to
-dataset.yaml. In this case, that is "wave_dir_energy_density":
+`dataset.yaml`. In this case, that is "wave_dir_energy_density":
 
 ```yaml
   wave_dir_energy_density:
@@ -915,55 +882,62 @@ dataset.yaml. In this case, that is "wave_dir_energy_density":
 In `pipeline.py`, we can set the variables "values" after calculating said variable.
 
 ```python
-    # Wave energy density is units of Hz and degrees
-    dataset["wave_dir_energy_density"].values = dataset[
-        "wave_energy_density"
-    ] * np.rad2deg(D)
+class VapWaveStats(tsdat.TransformationPipeline):
+    def hook_customize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
+        # ...
+
+        # Wave energy density is units of Hz and degrees
+        dataset["wave_dir_energy_density"].values = dataset[
+            "wave_energy_density"
+        ] * np.rad2deg(D)
+
+        # ...
 ```
 
 ### Running the pipeline
 
-As the last pipeline in this series, it is designed to output data to be stored on a database. To keep files small, this
-pipeline is built to collate data in larger segments. The following run command saves and plots data for the month of
-August.
+As the last pipeline in this series, it is designed to output data to be stored on a database. To keep the number of
+files small, this pipeline is built to collate data in larger segments. The following run command saves and plots data
+for the month of August.
 
 ```bash
 python runner.py vap pipelines/vap_wave_stats/pipeline.yaml --begin 20230801.000000 --end 20230901.000000
 ```
 
-### Running a slew of time periods locally on a VAP
+!!! tip "Running a slew of time periods locally on a VAP"
 
-Though the VAP is primarily built for running real-time data on the cloud, you can set up an shell script (.sh) to run
-multiple pipelines on a time period
+    Though the VAP is primarily built for running real-time data on the cloud, you can set up an shell script (`.sh`) to
+    run multiple pipelines on a time period.
 
-```sh
-#!/bin/bash
+    ```bash title="run_pipelines.sh"
+    #!/bin/bash
 
-# Set the proper path to your conda shell script
-source ~/miniconda3/etc/profile.d/conda.sh
-# Set the conda environment name
-conda activate tsdat-pipelines
+    # Set the proper path to your conda shell script
+    source ~/miniconda3/etc/profile.d/conda.sh
+    # Set the conda environment name
+    conda activate tsdat-pipelines
 
-# Uncomment the following if your system needs these settings
-#export LD_LIBRARY_PATH=$HOME/miniconda3/envs/tsdat-pipelines/lib:$LD_LIBRARY_PATH
-#export DISPLAY=:0
+    # Uncomment the following if your system needs these settings
+    #export LD_LIBRARY_PATH=$HOME/miniconda3/envs/tsdat-pipelines/lib:$LD_LIBRARY_PATH
+    #export DISPLAY=:0
 
-# Run pipelines
-python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230727.000000 --end 20230801.000000
-python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230801.000000 --end 20230901.000000
-python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230901.000000 --end 20231001.000000
-python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20231001.000000 --end 20231101.000000
-python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20231101.000000 --end 20231105.000000
+    # Run pipelines
+    python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230727.000000 --end 20230801.000000
+    python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230801.000000 --end 20230901.000000
+    python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230901.000000 --end 20231001.000000
+    python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20231001.000000 --end 20231101.000000
+    python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20231101.000000 --end 20231105.000000
 
-```
+    ```
 
-Run this shell script using `bash script_name.sh`
+    You can make this script executable using `chmod +x ./run_pipelines.sh` and then you can run this shell script using
+    **`./run_pipelines.sh`** from the command line.
 
-## Setup Errors
+## Common Setup Errors
 
 ### Incorrect environment in VSCode
 
-If VSCode didn't properly initiate the repository conda environment (default: "tsdat-pipelines"), you'll get this error:
+If VSCode didn't properly initiate the repository conda environment (default: `tsdat-pipelines`), you'll get this error:
 
 ```txt
 ERROR: Could not initialize udunits unit system
@@ -999,19 +973,19 @@ AttributeError: 'NoneType' object has no attribute 'Group'
 a pipeline from WSL.
 2. If you are running a VAP in WSL or a Unix machine (Linux or Mac) and get above series of errors
 
-    - Make sure you're running in the correct conda environment ("tsdat-pipelines" is the default)
+    * Make sure you're running in the correct conda environment (`tsdat-pipelines` is the default)
 
-    - Ensure the ADI-Py libraries were installed properly by recreating the conda environment by running `conda env
+    * Ensure the ADI-Py libraries were installed properly by recreating the conda environment by running `conda env
     create` from the pipeline-template repository.
 
-    - Older versions of ADI-Py have had an environmental path not set. If rebuilding the repository environment does not
+    * Older versions of ADI-Py have had an environmental path not set. If rebuilding the repository environment does not
     work, you'll need to set this path manually in your terminal:
 
         ```shell
         export LD_LIBRARY_PATH=$HOME/miniconda3/envs/tsdat-pipelines/lib:$LD_LIBRARY_PATH
         ```
 
-        Replace "miniconda3" and "tsdat-pipelines" to your correct conda distribution and environment names,
+        Replace `miniconda3` and `tsdat-pipelines` to your correct conda distribution and environment names,
         respectively.
 
 3. If using WSL, you may get a second, display related error. To set WSL to use your machine's LCD, set
@@ -1035,20 +1009,20 @@ It's helpful to create a debugger configuration for building and testing a VAP. 
 `.vscode/launch.json` in the repository main folder, and copy-paste and edit the following configuration for the VAP and
 time period you want to run (you'll also need to add a comma to the end of the previous configuration):
 
-```json
-        {
-            "name": "Debug VAP",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}//runner.py",
-            "console": "integratedTerminal",
-            "args": [
-                "vap",
-                "pipelines/<pipeline_name>/config/pipeline.yaml",
-                "--begin",
-                "yyyyddmm.000000",
-                "--end",
-                "yyyyddmm.000000"
-            ]
-        },
+```json title=".vscode/launch.json"
+{
+    "name": "Debug VAP",
+    "type": "python",
+    "request": "launch",
+    "program": "${workspaceFolder}/runner.py",
+    "console": "integratedTerminal",
+    "args": [
+        "vap",
+        "pipelines/<pipeline_name>/config/pipeline.yaml",
+        "--begin",
+        "yyyymmdd.000000",
+        "--end",
+        "yyyymmdd.000000"
+    ]
+},
 ```
