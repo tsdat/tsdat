@@ -78,9 +78,9 @@ Raw Spotter data to follow along in this VAP can be downloaded from the [Marine 
 (MHKDR)](https://mhkdr.openei.org/submissions/545). Find the entry called `Raw Data from Spotter Buoy.zip` and download
 it. Unzip the folder and run the `spotter` ingest pipeline.
 
-## Ingest Pipeline (`spotter`)
+## Ingest Pipeline
 
-We'll briefly go over the ingest pipeline so we know what we're working with for the VAP pipelines to follow.
+We'll briefly go over the `spotter` ingest pipeline so we know what we're working with for the VAP pipelines to follow.
 
 This ingest is built so that all raw Spotter files can be run from a single command:
 
@@ -135,15 +135,15 @@ compatible with Spotter2 and Spotter3 raw files.
 
 Each of these pipelines saves "`a1`" level data in netCDF format, one for each raw file.
 
-## Timeseries Bin-Averaging Pipeline (`vap_gps`)
+## Timeseries Bin-Averaging Pipeline
 
 The `vap_gps` pipeline fetches ingest timeseries data and averages it at 10 minute intervals (bin-averaging). GPS data
 is used here, but this example pertains to any timeseries.
 
 We'll go over the key differences between the ingest and VAP pipeline setups, starting with how to run a VAP on the
 command line, then running through the configuration files, and finally looking at the pipeline class in :material-file:
-`pipeline.py`. While `DataReaders` are no longer necessary for VAPs, `DataConverters`, `QualityChecker`s /
-`QualityHandler`s, and `FileStorage` classes have not changed.
+`pipeline.py`. While `DataReaders` are no longer necessary for VAPs, `DataConverters`, `QualityCheckers` /
+`QualityHandlers`, and `FileStorage` classes have not changed.
 
 ### Running the VAP
 
@@ -190,11 +190,12 @@ the storage area. Note that our "begin" timestamp is similar to the timestamp in
                             interval: 10min
                     ```
 
-            - **`tsdat.transform.BinAverage`**: Downsamples the data onto the output coordinate grid using
-            bin-averaging.
+            - **`tsdat.transform.BinAverage`**: Averages the data onto the output coordinate grid using
+            specified averaging time window.
             - **`tsdat.transform.NearestNeighbor`**: Aligns the data onto the output coordinate grid using a
             nearest-neighbor approach.
-            - **`tsdat.transform.Interpolate`**: Upsamples the data onto the output coordinate grid via interpolation.
+            - **`tsdat.transform.Interpolate`**: Interpolates the data onto the output coordinate grid via linear 
+            interpolation.
 
         3. There are some new options for the `tsdat.io.retrievers.StorageRetriever` class: **`transform_parameters`**
         and **`fetch_parameters`**. These are explained in more detail in the annotations (+) in the code block below:
@@ -232,7 +233,7 @@ the storage area. Note that our "begin" timestamp is similar to the timestamp in
 
         1. **NEW:** The new `time_padding` parameter in the `fetch_parameters` section specifies how far in time to look
             for data before the "begin" timestamp (e.g., `-24h`), after the "end" timestamp (e.g., `+24h`), or both
-            (e.g., `24h`). (1) Units of hours ('**h**'), minutes ('**m**'), seconds ('**s**', *used as default*), and
+            (e.g., `24h`). (1) Units of hours ('**h**'), minutes ('**m**'), seconds ('**s**', *default*), and
             milliseconds ('**ms**') are allowed.
             { .annotate } 
                 
@@ -241,11 +242,11 @@ the storage area. Note that our "begin" timestamp is similar to the timestamp in
                 ```txt hl_lines="3 4"
                 python runner.py vap \
                     pipelines/vap_gps/pipeline.yaml \
-                    --begin 20210801.000000 \
-                    --end 20210802.000000
+                    --begin 20230801.000000 \
+                    --end 20230802.000000
                 ```
 
-            In our retriever config file we set `timepadding: -24h`, which tells Tsdat to fetch files up to 24 hours
+            In our retriever config file, we set `timepadding: -24h`, which tells Tsdat to fetch files up to 24 hours
             earlier than the "begin" timestamp. If we had set `timepadding: +24h`, it would fetch data files 24 hours
             after the "end" timestamp. Setting `timepadding: 24h` would fetch data files from both 24 hours before the
             "begin" timestamp and 24 hours after the "end" timestamp.
@@ -260,20 +261,20 @@ the storage area. Note that our "begin" timestamp is similar to the timestamp in
             **HANDS-ON EXAMPLE:** Open up a new terminal and run the following command, if you haven't already:
 
             ```txt
-            python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20210801.000000 --end 20210802.000000
+            python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
             ```
 
-            When the pipeline finishes, navigate to the :material-file: *`cpr.gps.b1.20210903.000000.timeseries.png`*
+            When the pipeline finishes, navigate to the :material-file: *`cpr.gps.b1.20230801.000000.timeseries.png`*
             file in the :material-folder: *`storage/root/ancillary/cpr/cpr.gps.b1/`* folder and look at the X-axis
             ticks. Notice that data is found for the entire day.
 
             Now, set `timepadding: 0`, open a terminal and run the vap again:
 
             ```txt
-            python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20210801.000000 --end 20210802.000000
+            python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
             ```
 
-            Check out the same .png file again. See that half the data is missing for the day.
+            Check out the same .png file again. Note the X-axis and see that half the data is missing for the day.
 
 
         2. **NEW:** The new `transform_parameters` section holds parameters (**`alignment`**, **`range`**, **`width`**)
@@ -283,14 +284,15 @@ the storage area. Note that our "begin" timestamp is similar to the timestamp in
             or `CENTER`).
             - **`range`** defines how far (in seconds) from the first/last timestamp to search for the previous/next
             measurement.
-            - **`width`** defines the size of the averaging window in seconds (600s = 10 min).
+            - **`width`** defines the size of the averaging window in seconds ("600s" = 10 min).
             
-            **EXAMPLE:** In the window shown below, the `alignment` is technically set to "`LEFT`", which just means
-            that the 00:00 timestamp represents measurements from 00:00 to 10:00. No matter what "`alignment`" is set
-            to, `CreateTimeGrid` will always start at 00:00. For instance, if "`alignment`" were set to "`CENTER`" and the
-            `width` is 600s (10 minutes), the 01:00:00 timestamp represents bin-averaged data between 00:55:00 and 01:05:00. Tsdat will attempt to fetch the
-            file that contains data for the previous 5 minutes here. If a filename with a timestamp 10 minutes prior cannot
-            be found, the data variables at the 01:00:00 timestamp will be set to nan.
+            **EXAMPLE:** In the window shown below, the `alignment` is technically set to `LEFT`, which just means
+            that the 00:00 timestamp represents measurements from 00:00 to 10:00. No matter what `alignment` is set
+            to, `CreateTimeGrid` will always start at 00:00. For instance, if `alignment` were set to `CENTER` and the
+            `width` is 600s (10 minutes), the 01:00:00 timestamp represents bin-averaged data between 00:55:00 and 
+            01:05:00. Tsdat will attempt to fetch the file that contains data for the previous 5 minutes here. I.e. if a 
+            filename with a timestamp 10 minutes prior cannot be found, the data variables at the 01:00:00 timestamp 
+            will be set to nan.
 
             ![transform_params](vap/tranform_params.png)
 
@@ -370,19 +372,19 @@ class VapGPS(tsdat.TransformationPipeline):
 
 With the information contained in the above sections, you can create most VAP pipelines. The rest of this tutorial
 reviews the other two VAPs in this repository, as well as a number of features/idiosyncrasies you might need to know for
-your own particular use case. This are listed as the following:
+your own particular use case. These are listed as the following:
 
 * Creating a VAP dataset using the time coordinate from an ingest dataset
 * Adding new coordinates to a VAP dataset
 * Conducting analyses beyond that of bin-averaging, nearest neighbor, and interpolation
 * A VAP example that fetches multiple datastreams
 
-## VAP Pipeline using "Non-typical" Analysis (`vap_wave_raw`)
+## VAP Pipeline using "Non-typical" Analysis
 
-The `vap_wave_raw` pipeline takes the buoy surge, sway, and heave measurements, conducts spectral analysis, and
+The `vap_wave_raw` pipeline takes the buoy's surge, sway, and heave measurements, conducts spectral analysis, and
 estimates wave statistics. Spectral analysis is common in the field of fluid mechanics, but this pipeline will be
 instructive for any analysis that results in new timestamps. The following pipeline, `vap_wave_stats`, will be more
-helpful for users who don't need more complex analysis.
+helpful for users who don't need complex analysis.
 
 ### Configuration Files (`vap_wave_raw`)
 
@@ -531,11 +533,11 @@ helpful for users who don't need more complex analysis.
 
 ### Pipeline Class (`VapWaves`)
 
-The `TransformationPipeline` class is where we do the bulk of the work, as we need to add in all of our analysis code
+The `TransformationPipeline` class is where we do the bulk of the work, i.e. we need to add in all of our analysis code
 here.
 
-Next we edit the first hook. Tsdat does not allow for new coordinates to be added through `dataset.yaml` like it does
-for new data variables. So this first hook, which operates directly after fetching the input datasets, is where we add
+We start by editing the first hook. Tsdat does not allow for new coordinates to be added through `dataset.yaml` like it 
+does for new data variables. The first hook, which operates directly after fetching the input datasets, is where we add
 the new coordinate, "frequency". We'll do this by finding the key we specified in `retriever.yaml` ("pos"), adding the
 coordinate to that dataset, and returning the "input_datasets" dictionary.
 
@@ -680,8 +682,8 @@ input variables we don't want to keep.
     return ds.drop(("x", "y", "z"))
 ```
 
-We don't utilize `hook_finalize_dataset` in this pipeline, and plots are created in `hook_plot_dataset`, which
-won't be copied here.
+We don't utilize the third hook, `hook_finalize_dataset`, in this pipeline, and plots are created in 
+`hook_plot_dataset`, which won't be copied here.
 
 ### Quality Control
 
@@ -735,7 +737,7 @@ Finally, this pipeline can be run by:
 python runner.py vap pipelines/vap_waves_raw/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
 ```
 
-## VAP Pipeline fetching Multiple Datastreams (`vap_wave_stats`)
+## VAP Pipeline fetching Multiple Datastreams
 
 The `vap_wave_stats` pipeline takes the wave estimations from `vap_wave_raw` and interpolates the GPS and SST
 measurements onto the wave timestamps. This pipeline also adds a new coordinate for a new data variable that is
@@ -751,7 +753,7 @@ calculated in the code hooks.
         `Interpolate` DataTransform. 2 min was chosen with the reasoning that it is twice the sampling frequency of the buoy's
         GPS unit and thermistor, so we're less likely to miss a data point.
         
-        Next, the 3 coordinates are fetched from the "wave" datastream (`vap_waves_raw`), and the assortment of variables from
+        Next, 3 coordinates are fetched from the "wave" datastream (`vap_waves_raw`), and the assortment of variables from
         all 3 input streams. For the non-"wave" datastream variables ("lat", "lon", "sst"), the `tsdat.transform.Interpolate`
         DataConverter is set. `Interpolate` does a simple 1D linear interpolation from the ingest timestamp to the VAP
         timestamp. `NearestNeighbor` could also be used here in the same manner if desired.
@@ -949,8 +951,8 @@ ERROR: Could not create var-to-array converter for: /retrieved_data/input_ds/obs
 
 ### ADI-Py installation errors
 
-The following is the error that pops up if the ADI-Py libraries are not installed, not installed correctly, or have been
-installed and aren't found:
+The following is the error that pops up if the ADI-Py libraries are not installed, were not installed correctly, or
+ have been installed but not found:
 
 ```txt
 WARNING:tsdat.transform.adi:Warning: ADI libraries are not installed. Some time series transformation functions may not work.
@@ -989,25 +991,25 @@ a pipeline from WSL.
         respectively.
 
 3. If using WSL, you may get a second, display related error. To set WSL to use your machine's LCD, set
-`export DISPLAY=:0`. This line can be added to the `.bashrc` file to permanently fix this.
+`export DISPLAY=:0`. This line can be added to WSL's `.bashrc` file to permanently fix this.
 
 ### NaN input to ADI-Py libraries
 
-If a variable is set to use one of the DataTransforms and the retrieved variable is either missing or all nan, then the
+If a variable is set to use a `DataTransform` and the retrieved variable is either missing or all nan, then the
 ADI-Py libraries will fail abruptly with a short error message:
 
 ```bash
 pipelines/<pipeline_name>/test/test_pipeline.py Fatal Python error: Floating point exception
 ```
 
-The key to solving this error is to specify a particular value for that variable, if it's missing in the
+The key to solving this error is to specify a value for that variable, if it's missing, in the
 `hook_customize_input_datasets` function hook in `pipeline.py`.
 
 ### Setting up the VSCode debugger
 
 It's helpful to create a debugger configuration for building and testing a VAP. Do this by navigating to
-`.vscode/launch.json` in the repository main folder, and copy-paste and edit the following configuration for the VAP and
-time period you want to run (you'll also need to add a comma to the end of the previous configuration):
+`.vscode/launch.json` in the repository main folder, and copy-paste/edit the following configuration for the VAP and
+time period you want to run. (You'll also need to add a comma to the end of the previous configuration.).
 
 ```json title=".vscode/launch.json"
 {
@@ -1026,3 +1028,6 @@ time period you want to run (you'll also need to add a comma to the end of the p
     ]
 },
 ```
+
+Then navigate to VSCode's debugger tool ("ctrl + shift + d"), click the drop down, select "Debug VAP", and click the
+green arrow. Don't forget to set your breakpoints.
