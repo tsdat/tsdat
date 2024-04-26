@@ -27,7 +27,9 @@ extra:
 
 nav:
   - About: index.md
-  - Getting Started: getting_started.md
+  - Getting Started: 
+      - Getting Started: getting_started.md
+      - Example Pipelines: example_pipelines.md
   - Tutorials:
       - WSL and VSCode for Windows: tutorials/setup_wsl.md
       - Ingest Pipeline Tutorial: tutorials/data_ingest.md
