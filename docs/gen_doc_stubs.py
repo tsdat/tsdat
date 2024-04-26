@@ -11,6 +11,8 @@ for path in sorted(Path("tsdat").glob("**/*.py")):
     if path.name.startswith("_"):
         continue
 
+    # TODO: Not sure of the reference need for this file? But refactor changed this file up a bit,
+    #  so some examination is warranted to see what this might break.
     # base.py doesn't need API docs, main.py is too small to be useful
     if path.name in ["base.py", "main.py"]:
         continue
