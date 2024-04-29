@@ -8,11 +8,10 @@ from pydantic import (
 from pydantic.fields import ModelField
 from typing import Any, Dict, List, Pattern, Union
 
-from ..config.retriever import RetrieverConfig
-from .dataset import DatasetConfig
-from .quality import QualityConfig
-from .storage import StorageConfig
-from .utils import (
+from ..dataset import DatasetConfig
+from ..quality import QualityConfig
+from ..storage import StorageConfig
+from ..utils import (
     ParameterizedConfigClass,
     YamlModel,
     Overrideable,
@@ -20,9 +19,8 @@ from .utils import (
     matches_overrideable_schema,
     recursive_instantiate,
 )
-from ..pipeline.base import Pipeline
-
-__all__ = ["PipelineConfig"]
+from ...config.retriever import RetrieverConfig
+from ...pipeline.base import Pipeline
 
 
 class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
@@ -65,9 +63,9 @@ class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
 
     triggers: List[Pattern] = Field(  # type: ignore
         description="A list of regex patterns matching input keys to determine if the"
-        " pipeline should be run. Please ensure these are specific as possible in order"
-        " to match the desired input keys without any false positive matches (this is"
-        " more important in repositories with many pipelines)."
+                    " pipeline should be run. Please ensure these are specific as possible in order"
+                    " to match the desired input keys without any false positive matches (this is"
+                    " more important in repositories with many pipelines)."
     )
 
     # Overrideable is used to trick pydantic into letting us generate json schema for
@@ -78,21 +76,21 @@ class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
     )
     dataset: Union[Overrideable[DatasetConfig], DatasetConfig] = Field(
         description="Specify the dataset configurations that describe the structure and"
-        " metadata of the dataset produced by this pipeline.",
+                    " metadata of the dataset produced by this pipeline.",
     )
     quality: Union[Overrideable[QualityConfig], QualityConfig] = Field(
         description="Specify the quality checks and controls that should be applied to"
-        " the dataset as part of this pipeline."
+                    " the dataset as part of this pipeline."
     )
     storage: Union[Overrideable[StorageConfig], StorageConfig] = Field(
         description="Specify the Storage configurations that should be used to save"
-        " data produced by this pipeline."
+                    " data produced by this pipeline."
     )
 
     @validator("retriever", "dataset", "quality", "storage", pre=True)
     @classmethod
     def merge_overrideable_yaml(
-        cls, v: Dict[str, Any], values: Dict[str, Any], field: ModelField
+            cls, v: Dict[str, Any], values: Dict[str, Any], field: ModelField
     ):
         object_field_mapping = {
             "retriever": RetrieverConfig,
