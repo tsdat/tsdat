@@ -53,7 +53,7 @@ parameters:
         - humboldt.lidar.b0
         - humboldt.met.b0
 
-triggers: {}
+triggers: []
 
 retriever:
     path: pipelines/example_pipeline/config/retriever.yaml

@@ -27,8 +27,15 @@ extra:
 
 nav:
   - About: index.md
-  - Getting Started: getting_started.md
-  - Tutorials: tutorials/
+  - Getting Started: 
+      - Getting Started: getting_started.md
+      - Example Pipelines: example_pipelines.md
+  - Tutorials:
+      - WSL and VSCode for Windows: tutorials/setup_wsl.md
+      - Ingest Pipeline Tutorial: tutorials/data_ingest.md
+      - Ingest Pipeline Customization: tutorials/pipeline_customization.md
+      - Value Added Product (VAP) Pipeline Tutorial: tutorials/vap_pipelines.md
+      - Deploying to AWS: tutorials/aws_template.md
   - Developer Guide:
       - Customizing Tsdat: config/configuring_tsdat.md
       - Dataset Config: config/dataset_config.md
@@ -39,7 +46,6 @@ nav:
       - Pipeline Code Hooks: config/hook_functions.md
       - Transformation Pipelines: config/transform_config.md
       - Pydantic and Parameters: config/pydantic.md
-      - Deploying to AWS: config/aws_template.md
   - API Reference: API/
   - Contributing: collaboration.md
   - Extras: extras/
