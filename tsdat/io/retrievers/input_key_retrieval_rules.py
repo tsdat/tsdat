@@ -5,10 +5,9 @@ from typing import (
 )
 
 from ..base import (
-    InputKey,
     RetrievedVariable,
-    VarName,
 )
+from ...const import InputKey, VarName
 
 
 class InputKeyRetrievalRules:

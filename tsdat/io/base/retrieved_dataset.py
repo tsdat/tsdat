@@ -5,7 +5,7 @@ from typing import (
 
 import xarray as xr
 
-from .var_name import VarName
+from ...const import VarName
 
 
 class RetrievedDataset(NamedTuple):

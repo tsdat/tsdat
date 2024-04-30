@@ -14,7 +14,7 @@ for path in sorted(Path("tsdat").glob("**/*.py")):
     # TODO: Not sure of the reference need for this file? But refactor changed this file up a bit,
     #  so some examination is warranted to see what this might break.
     # base.py doesn't need API docs, main.py is too small to be useful
-    if path.name in ["base.py", "main.py"]:
+    if path.name in ["main.py"]:
         continue
 
     module_path = path.with_suffix("")

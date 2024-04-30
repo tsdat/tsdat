@@ -4,7 +4,7 @@ from typing import (
 )
 
 from .retrieved_variable import RetrievedVariable
-from .var_name import VarName
+from ...const import VarName
 
 
 class RetrievalRuleSelections(NamedTuple):

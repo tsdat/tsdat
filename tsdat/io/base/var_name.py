@@ -1,1 +1,0 @@
-VarName = str

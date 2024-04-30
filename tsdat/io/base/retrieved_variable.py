@@ -6,7 +6,7 @@ from typing import (
 from pydantic import BaseModel, Extra
 
 from .data_converter import DataConverter
-from .input_key import InputKey
+from ...const import InputKey
 
 
 # TODO: This needs a better name

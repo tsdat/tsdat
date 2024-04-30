@@ -16,10 +16,10 @@ from .storage_retriever_input import StorageRetrieverInput
 from .perform_data_retrieval import perform_data_retrieval
 from ...config.dataset import DatasetConfig
 from ..base import (
-    InputKey,
     Retriever,
     Storage,
 )
+from ...const import InputKey
 
 
 class StorageRetriever(Retriever):

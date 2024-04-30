@@ -8,12 +8,11 @@ from typing import (
 )
 
 from ..base import (
-    InputKey,
     RetrievalRuleSelections,
     RetrievedDataset,
     RetrievedVariable,
-    VarName,
 )
+from ...const import InputKey, VarName
 
 logger = logging.getLogger(__name__)
 

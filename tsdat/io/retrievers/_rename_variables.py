@@ -7,8 +7,8 @@ from typing import (
 from .input_key_retrieval_rules import InputKeyRetrievalRules
 from ..base import (
     RetrievedVariable,
-    VarName,
 )
+from ...const import VarName
 
 logger = logging.getLogger(__name__)
 

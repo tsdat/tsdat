@@ -1,1 +1,2 @@
 InputKey = str
+VarName = str
