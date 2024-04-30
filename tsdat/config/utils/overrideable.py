@@ -15,7 +15,6 @@ from .config import Config
 from .yaml_model import YamlModel
 
 
-
 class Overrideable(YamlModel, GenericModel, Generic[Config], extra=Extra.forbid):
     path: FilePath = Field(
         description=(
@@ -41,6 +40,7 @@ class Overrideable(YamlModel, GenericModel, Generic[Config], extra=Extra.forbid)
         ),
     )
 
+    # TODO: This seems like legacy/prototype code that's unused, probably should be removed?
     # def get_defaults_dict(self) -> Dict[Any, Any]:
     #     txt = self.path.read_text()
     #     return list(yaml.safe_load_all(txt))[0]

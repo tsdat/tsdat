@@ -214,6 +214,7 @@ class VariableAttributes(AttributeModel):
         ),
     )
 
+    # TODO: Seems like a static method here, should refactor into as such.
     @validator("units")
     def validate_unit(cls, unit_str: str) -> str:
         # Not recognized by pint, but we want it to be valid

@@ -14,7 +14,6 @@ from pydantic import (
 from pydantic.utils import import_string
 
 
-
 class ParameterizedConfigClass(BaseModel, extra=Extra.forbid):
     # Unfortunately, the classname has to be a string type unless PyObject becomes JSON
     # serializable: https://github.com/samuelcolvin/pydantic/discussions/3842

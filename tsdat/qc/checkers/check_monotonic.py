@@ -65,6 +65,8 @@ class CheckMonotonic(QualityChecker):
 
         axis = self.get_axis(variable)
         zero = np.timedelta64(0) if is_datetime_like(variable.data) else 0
+
+        # TODO: `direction` would be better assigned as a class var on init than within a method.
         direction: Literal["increasing", "decreasing", ""] = ""
 
         if self.parameters.require_decreasing:
