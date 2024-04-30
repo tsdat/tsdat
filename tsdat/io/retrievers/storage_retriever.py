@@ -35,6 +35,7 @@ class StorageRetriever(Retriever):
 
     parameters: Optional[TransParameters] = None
 
+    # TODO: `input_data_hook` is not included in docstring.
     def retrieve(
             self,
             input_keys: List[str],
@@ -161,6 +162,7 @@ class StorageRetriever(Retriever):
 
         return retrieved_dataset
 
+    # TODO: Seems like a static method here, should refactor into as such.
     def _get_timedelta(self, time_string):
         if time_string.replace(".", "").isnumeric():
             return pd.Timedelta(float(time_string), "s")
@@ -199,6 +201,7 @@ class StorageRetriever(Retriever):
             input_data[key.input_key] = retrieved_dataset
         return input_data
 
+    # TODO: Seems like a static method here, should refactor into as such.
     def __trim_dataset(
             self, dataset: xr.Dataset, input_keys: List[StorageRetrieverInput]
     ) -> xr.Dataset:

@@ -21,6 +21,7 @@ class GlobalFetchParams(BaseModel):
 
     # TODO: Method definition says that a lone `int` is returned, but return statements return
     #  a `tuple[int, str]`. This should be corrected.
+    # TODO: Seems like a static method here, should refactor into as such.
     def get_direction(self, d: str) -> int:
         if "+" in d:
             return 1, d.replace("+", "")

@@ -62,6 +62,7 @@ class TarReader(ArchiveReader):
 
     parameters: Parameters = Parameters()
 
+    # TODO: The `input_key` parameter is not referenced in the docstring.
     def read(self, input_key: str) -> Dict[str, xr.Dataset]:
         """------------------------------------------------------------------------------------
         Extracts the file into memory and uses registered `DataReaders` to read each relevant
@@ -101,6 +102,9 @@ class TarReader(ArchiveReader):
                 continue
 
             for key in self.parameters.readers.keys():
+                # TODO: This could return `None`, but isn't specified as optional typing. Type
+                #  specification should be Optional[DataReader], where Optional is imported from
+                #  the typing library.
                 reader: DataReader = self.parameters.readers.get(key, None)
                 if reader:
                     tar_bytes = BytesIO(tar.extractfile(filename).read())  # type: ignore

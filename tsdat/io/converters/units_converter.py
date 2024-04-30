@@ -33,6 +33,8 @@ class UnitsConverter(DataConverter):
             self,
             data: xr.DataArray,
             variable_name: str,
+            # TODO: If this is in quotes because of a circular reference, that should be hashed out,
+            #  and this should be here just as a placeholder until that's resolved.
             dataset_config: "DatasetConfig",
             retrieved_dataset: RetrievedDataset,
             **kwargs: Any,

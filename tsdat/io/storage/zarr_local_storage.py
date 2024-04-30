@@ -75,5 +75,6 @@ class ZarrLocalStorage(FileSystem):
 
 # TODO:
 #  HACK: Update forward refs to get around error I couldn't replicate with simpler code
-#  "pydantic.errors.ConfigError: field "parameters" not yet prepared so type is still a ForwardRef..."
+#  "pydantic.errors.ConfigError: field "parameters" not yet prepared
+#  so type is still a ForwardRef..."
 ZarrLocalStorage.update_forward_refs(Parameters=ZarrLocalStorage.Parameters)

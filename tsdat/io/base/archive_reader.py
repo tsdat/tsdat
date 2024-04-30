@@ -5,6 +5,8 @@ from typing import (
 from .data_reader import DataReader
 
 
+# TODO: Generally it's bad practice to not implement all abstract methods from an imported base
+#  class. The DataReader abstract class has the `read` method, which is not implemented here.
 class ArchiveReader(DataReader):
     """------------------------------------------------------------------------------------
     Base class for DataReader objects that read data from archives.
