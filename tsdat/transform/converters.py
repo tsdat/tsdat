@@ -331,6 +331,9 @@ class NearestNeighbor(_ADIBaseTransformer):
     transformation_type: str = "TRANS_SUBSAMPLE"
 
 
+# TODO: Looks like a documentation reference here to `converters.py`. Should be changed
+#  given the refactor.
+
 # tsdat/
 #   adi/  (current)
 #       __init__.py
