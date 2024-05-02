@@ -63,7 +63,6 @@ class TarReader(ArchiveReader):
 
     parameters: Parameters = Parameters()
 
-    # TODO: The `input_key` parameter is not referenced in the docstring.
     def read(self, input_key: str) -> Dict[str, xr.Dataset]:
         """------------------------------------------------------------------------------------
         Extracts the file into memory and uses registered `DataReaders` to read each relevant
@@ -71,12 +70,7 @@ class TarReader(ArchiveReader):
         {filename: xr.Dataset}.
 
         Args:
-            file (Union[str, BytesIO]): The file to read in. Can be provided as a filepath or
-            a bytes-like object. It is used to open the tar file.
-            name (str, optional): A label used to help trace the origin of the data read-in.
-            It is used in the key in the returned dictionary. Must be provided if the `file`
-            argument is not string-like. If `file` is a string and `name` is not specified then
-            the label will be set by `file`. Defaults to None.
+            input_key (str): The file to read in. It is used to open the tar file.
 
         Returns:
             Dict[str, xr.Dataset]: A mapping of {label: xr.Dataset}.
