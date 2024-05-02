@@ -1,3 +1,4 @@
+from typing import Optional
 import re
 import tarfile
 from io import BytesIO
@@ -102,10 +103,7 @@ class TarReader(ArchiveReader):
                 continue
 
             for key in self.parameters.readers.keys():
-                # TODO: This could return `None`, but isn't specified as optional typing. Type
-                #  specification should be Optional[DataReader], where Optional is imported from
-                #  the typing library.
-                reader: DataReader = self.parameters.readers.get(key, None)
+                reader: Optional[DataReader] = self.parameters.readers.get(key, None)
                 if reader:
                     tar_bytes = BytesIO(tar.extractfile(filename).read())  # type: ignore
                     data = reader.read(tar_bytes)  # type: ignore
