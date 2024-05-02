@@ -214,9 +214,9 @@ class VariableAttributes(AttributeModel):
         ),
     )
 
-    # TODO: Seems like a static method here, should refactor into as such.
     @validator("units")
-    def validate_unit(cls, unit_str: str) -> str:
+    @staticmethod
+    def validate_unit(unit_str: str) -> str:
         # Not recognized by pint, but we want it to be valid
         if unit_str == "%" or unit_str.startswith("Seconds since"):
             return unit_str
