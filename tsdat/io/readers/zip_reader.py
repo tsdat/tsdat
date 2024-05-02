@@ -92,13 +92,9 @@ class ZipReader(ArchiveReader):
         else:
             fileobj = input_key
 
-        # TODO: Python has a built-in function, [`zip`]
-        #  (https://docs.python.org/3.8/library/functions.html#zip).
-        #  Though not strictly a problem, it's generally bad form to name a variable the
-        #  same as a built-in function
-        zip = ZipFile(file=fileobj, **self.parameters.read_zip_kwargs)  # type: ignore
+        zip_file = ZipFile(file=fileobj, **self.parameters.read_zip_kwargs)  # type: ignore
 
-        for filename in zip.namelist():
+        for filename in zip_file.namelist():
             if re.match(self.parameters.exclude, filename):  # type: ignore
                 continue
 
@@ -111,7 +107,7 @@ class ZipReader(ArchiveReader):
                 #  the typing library.
                 reader: DataReader = self.parameters.readers.get(key, None)
                 if reader:
-                    zip_bytes = BytesIO(zip.read(filename))
+                    zip_bytes = BytesIO(zip_file.read(filename))
                     data = reader.read(zip_bytes)  # type: ignore
 
                     if isinstance(data, xr.Dataset):
