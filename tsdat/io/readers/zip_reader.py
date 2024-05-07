@@ -1,6 +1,6 @@
 import re
 from io import BytesIO
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from zipfile import ZipFile
 
 import xarray as xr
@@ -102,10 +102,7 @@ class ZipReader(ArchiveReader):
                 if not re.match(key, filename):
                     continue
 
-                # TODO: This could return `None`, but isn't specified as optional typing. Type
-                #  specification should be Optional[DataReader], where Optional is imported from
-                #  the typing library.
-                reader: DataReader = self.parameters.readers.get(key, None)
+                reader: Optional[DataReader] = self.parameters.readers.get(key, None)
                 if reader:
                     zip_bytes = BytesIO(zip_file.read(filename))
                     data = reader.read(zip_bytes)  # type: ignore

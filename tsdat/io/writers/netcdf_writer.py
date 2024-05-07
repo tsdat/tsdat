@@ -33,9 +33,10 @@ class NetCDFWriter(FileWriter):
     parameters: Parameters = Field(default_factory=Parameters)
     file_extension: str = "nc"
 
-    def write(
-            self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
-    ) -> None:
+    def write(self, dataset: xr.Dataset,
+              filepath: Optional[Path] = None,
+              **kwargs: Any,
+              ) -> None:
         to_netcdf_kwargs = copy.deepcopy(self.parameters.to_netcdf_kwargs)
         encoding_dict: Dict[str, Dict[str, Any]] = {}
         to_netcdf_kwargs["encoding"] = encoding_dict

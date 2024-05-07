@@ -73,7 +73,6 @@ class FileSystem(Storage):
         Note that this will only be called if the DataReader returns a dictionary of
         xr.Datasets for a single input key."""
 
-        # TODO: Seems like a static method here, should refactor into as such.
         @validator("storage_root")
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
             if not storage_root.is_dir():
@@ -192,10 +191,10 @@ class FileSystem(Storage):
         filepaths = (p for p in dirpath.glob(pattern))
         return self._filter_between_dates(filepaths, start, end)
 
-    # TODO: Seems like a static method here, should refactor into as such.
-    def _filter_between_dates(
-            self, filepaths: Iterable[Path], start: datetime, end: datetime
-    ) -> List[Path]:
+    @staticmethod
+    def _filter_between_dates(filepaths: Iterable[Path],
+                              start: datetime, end: datetime
+                              ) -> List[Path]:
         start_date_str = start.strftime("%Y%m%d.%H%M%S")
         end_date_str = end.strftime("%Y%m%d.%H%M%S")
 
@@ -229,10 +228,9 @@ class FileSystem(Storage):
         dirpath = dir_template.substitute(substitutions)
         return self.parameters.storage_root / dirpath
 
-    # TODO: Seems like a static method here, should refactor into as such.
-    def _extract_time_substitutions(
-            self, template_str: str, start: datetime, end: datetime
-    ) -> Tuple[Path, str]:
+    @staticmethod
+    def _extract_time_substitutions(template_str: str, start: datetime, end: datetime
+                                    ) -> Tuple[Path, str]:
         """Extracts the root path above unresolved time substitutions and provides a pattern to search below that."""
         year = start.strftime("%Y") if start.year == end.year else "*"
         month = (

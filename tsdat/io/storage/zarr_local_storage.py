@@ -62,9 +62,9 @@ class ZarrLocalStorage(FileSystem):
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
     handler: ZarrHandler = Field(default_factory=ZarrHandler)
 
-    def _filter_between_dates(
-            self, filepaths: Iterable[Path], start: datetime, end: datetime
-    ) -> List[Path]:
+    def _filter_between_dates(self, filepaths: Iterable[Path],
+                              start: datetime, end: datetime,
+                              ) -> List[Path]:
         # Zarr filenames don't include dates. There should also only be one filepath
         # matching the data to fetch, so warn if otherwise
         zarr_files = sorted(filepaths)

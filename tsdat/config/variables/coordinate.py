@@ -9,7 +9,6 @@ from .variable import Variable
 
 class Coordinate(Variable):
     @root_validator(skip_on_failure=True)
-    @classmethod
     def coord_dimensioned_by_self(cls, values: Any) -> Any:
         name, dims = values["name"], values["dims"]
         if [name] != dims:

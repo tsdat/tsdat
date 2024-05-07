@@ -26,7 +26,6 @@ class FileHandler(DataHandler):
     writer: FileWriter
     extension: str
 
-    # TODO: Seems like a static method here, should refactor into as such.
     @validator("extension", pre=True)
     def no_leading_dot(cls, v: str, values: Dict[str, Any]) -> str:
         return v.lstrip(".")

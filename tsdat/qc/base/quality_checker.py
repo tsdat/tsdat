@@ -15,9 +15,8 @@ class QualityChecker(ParameterizedClass, ABC):
     ---------------------------------------------------------------------------------"""
 
     @abstractmethod
-    def run(
-            self, dataset: xr.Dataset, variable_name: str
-    ) -> Union[NDArray[np.bool_], None]:
+    def run(self, dataset: xr.Dataset, variable_name: str,
+            ) -> Union[NDArray[np.bool_], None]:
         """-----------------------------------------------------------------------------
         Identifies and flags quality problems with the data.
 

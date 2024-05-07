@@ -10,7 +10,6 @@ from pydantic import (
 class AttributeModel(BaseModel, extra=Extra.allow):
     # HACK: root is needed for now: https://github.com/samuelcolvin/pydantic/issues/515
     @root_validator(skip_on_failure=True)
-    @classmethod
     def validate_all_ascii(cls, values: Dict[Any, Any]) -> Dict[str, str]:
         for key, value in values.items():
             if not isinstance(key, str) or not key.isascii():

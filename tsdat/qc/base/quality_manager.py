@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List
+from typing import Callable, Dict, Hashable, List
 
 import xarray as xr
 from pydantic import BaseModel, Extra
@@ -66,12 +66,10 @@ class QualityManager(BaseModel, extra=Extra.forbid):
 
         return [v for v in variables if v not in self.exclude]
 
-    # TODO: IDE is giving me the following warning on the return value:
-    #  Expected type 'list[str]', got 'list[Hashable]' instead
-    # TODO: Seems like a static method here, should refactor into as such.
-    def _get_dataset_coords(self, dataset: xr.Dataset) -> List[str]:
+    @staticmethod
+    def _get_dataset_coords(dataset: xr.Dataset) -> List[Hashable]:
         return list(dataset.coords)
 
-    # TODO: Seems like a static method here, should refactor into as such.
-    def _get_dataset_data_vars(self, dataset: xr.Dataset) -> List[str]:
+    @staticmethod
+    def _get_dataset_data_vars(dataset: xr.Dataset) -> List[str]:
         return [str(v) for v in dataset.data_vars if not str(v).startswith("qc_")]

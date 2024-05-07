@@ -50,7 +50,6 @@ class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
     )
 
     @validator("coords", "data_vars")
-    @classmethod
     def coerce_to_patterned_retriever(cls,
                                       var_dict: Dict[str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]]
                                       ) -> Dict[str, Dict[Pattern[str], RetrievedVariableConfig]]:  # type: ignore

@@ -56,14 +56,12 @@ class FileSystemS3(FileSystem):
         
         Defaults to ``us-west-2``."""
 
-        # TODO: Seems like a static method here, should refactor into as such.
         @validator("storage_root")
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
             return storage_root  # HACK: Don't run parent validator to create storage root file
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
 
-    # TODO: Seems like a static method here, should refactor into as such.
     @validator("parameters")
     def _check_authentication(cls, parameters: Parameters):
         import botocore.exceptions
@@ -80,7 +78,6 @@ class FileSystemS3(FileSystem):
             )
         return parameters
 
-    # TODO: Seems like a static method here, should refactor into as such.
     @validator("parameters")
     def _ensure_bucket_exists(cls, parameters: Parameters):
         import botocore.exceptions

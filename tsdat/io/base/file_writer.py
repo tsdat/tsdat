@@ -24,7 +24,6 @@ class FileWriter(DataWriter, ABC):
     file_extension: str
 
     @validator("file_extension")
-    @classmethod
     def no_leading_dot(cls, v: str) -> str:
         return v.lstrip(".")
 

@@ -36,14 +36,12 @@ class RecordQualityResults(QualityHandler):
         meaning: str
         """A string that describes the test applied."""
 
-        # TODO: Seems like a static method here, should refactor into as such.
         @root_validator(pre=True)
         def deprecate_bit_parameter(cls, values: Dict[str, Any]) -> Dict[str, Any]:
             if "bit" in values:
                 logger.warning("The 'bit' argument is deprecated, please remove it.")
             return values
 
-        # TODO: Seems like a static method here, should refactor into as such.
         @validator("assessment", pre=True)
         def to_lower(cls, assessment: Any) -> str:
             if isinstance(assessment, str):
@@ -54,9 +52,9 @@ class RecordQualityResults(QualityHandler):
 
     parameters: Parameters
 
-    def run(
-            self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
-    ) -> xr.Dataset:
+    def run(self, dataset: xr.Dataset, variable_name: str,
+            failures: NDArray[np.bool_],
+            ) -> xr.Dataset:
         dataset.qcfilter.add_test(
             variable_name,
             index=failures if failures.any() else None,
@@ -66,8 +64,8 @@ class RecordQualityResults(QualityHandler):
         )
         return dataset
 
-    # TODO: Seems like a static method here, should refactor into as such.
-    def get_next_bit_number(self, dataset: xr.Dataset, variable_name: str) -> int:
+    @staticmethod
+    def get_next_bit_number(dataset: xr.Dataset, variable_name: str) -> int:
         if (qc_var := dataset.get(f"qc_{variable_name}")) is None:
             return 1
         masks = qc_var.attrs.get("flag_masks")

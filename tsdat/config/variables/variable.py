@@ -52,6 +52,8 @@ class Variable(BaseModel, extra=Extra.forbid):
             " 'long_name', and 'standard_name' attributes, if possible."
         )
     )
+
+    # TODO: Leftover code I assume? Remove?
     # @validator("name")
     # @classmethod
     # def validate_name_is_ascii(cls, v: str) -> str:
@@ -60,10 +62,8 @@ class Variable(BaseModel, extra=Extra.forbid):
     #     return v
 
     @validator("attrs")
-    @classmethod
-    def set_default_fill_value(
-            cls, attrs: VariableAttributes, values: Dict[str, Any]
-    ) -> VariableAttributes:
+    def set_default_fill_value(cls, attrs: VariableAttributes, values: Dict[str, Any]
+                               ) -> VariableAttributes:
         dtype: str = values["dtype"]
         if (
                 "fill_value" in attrs.__fields_set__  # Preserve _FillValues set explicitly

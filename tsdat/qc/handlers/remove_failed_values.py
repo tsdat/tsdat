@@ -13,9 +13,9 @@ class RemoveFailedValues(QualityHandler):
     ------------------------------------------------------------------------------------
     """
 
-    def run(
-            self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
-    ) -> xr.Dataset:
+    def run(self, dataset: xr.Dataset, variable_name: str,
+            failures: NDArray[np.bool_]
+            ) -> xr.Dataset:
         if failures.any():
             if variable_name in dataset.dims:
                 mask = xr.DataArray(

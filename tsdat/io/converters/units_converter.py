@@ -6,6 +6,7 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from ..base import DataConverter, RetrievedDataset
+from ...config.dataset import DatasetConfig
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +34,7 @@ class UnitsConverter(DataConverter):
             self,
             data: xr.DataArray,
             variable_name: str,
-            # TODO: If this is in quotes because of a circular reference, that should be hashed out,
-            #  and this should be here just as a placeholder until that's resolved.
-            dataset_config: "DatasetConfig",
+            dataset_config: DatasetConfig,
             retrieved_dataset: RetrievedDataset,
             **kwargs: Any,
     ) -> Optional[xr.DataArray]:

@@ -22,9 +22,10 @@ class ZarrWriter(FileWriter):
     parameters: Parameters = Field(default_factory=Parameters)
     file_extension: str = "zarr"
 
-    def write(
-            self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
-    ) -> None:
+    def write(self, dataset: xr.Dataset,
+              filepath: Optional[Path] = None,
+              **kwargs: Any,
+              ) -> None:
         encoding_dict: Dict[str, Dict[str, Any]] = {}
         for variable_name in cast(Iterable[str], dataset.variables):
             # Prevent Xarray from setting 'nan' as the default _FillValue

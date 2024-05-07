@@ -50,10 +50,7 @@ class StringToDatetime(DataConverter):
     """Any parameters set here will be passed to `pd.to_datetime` as keyword
     arguments."""
 
-    # TODO: Though not strictly a problem, it's generally bad form to name a method parameter the
-    #  same as a class variable.
     @validator("format")
-    @classmethod
     def warn_if_no_format_set(cls, format: Optional[str]) -> Optional[str]:
         if not format:
             logger.warning(

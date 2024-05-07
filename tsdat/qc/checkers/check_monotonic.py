@@ -25,7 +25,6 @@ class CheckMonotonic(QualityChecker):
         dim: Optional[str] = None
 
         @validator("require_increasing")
-        @classmethod
         def check_monotonic_not_increasing_and_decreasing(
                 cls, inc: bool, values: Dict[str, Any]
         ) -> bool:
@@ -38,9 +37,8 @@ class CheckMonotonic(QualityChecker):
 
     parameters: Parameters = Parameters()
 
-    def run(
-            self, dataset: xr.Dataset, variable_name: str
-    ) -> Union[NDArray[np.bool_], None]:
+    def run(self, dataset: xr.Dataset, variable_name: str,
+            ) -> Union[NDArray[np.bool_], None]:
         variable = dataset[variable_name]
         failures = np.full(variable.shape, False)
 

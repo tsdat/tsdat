@@ -27,9 +27,8 @@ class CheckMin(ThresholdChecker, ABC):
 
     ---------------------------------------------------------------------------------"""
 
-    def run(
-            self, dataset: xr.Dataset, variable_name: str
-    ) -> Union[NDArray[np.bool_], None]:
+    def run(self, dataset: xr.Dataset, variable_name: str,
+            ) -> Union[NDArray[np.bool_], None]:
         var_data = dataset[variable_name]
         failures: NDArray[np.bool_] = np.zeros_like(var_data, dtype=np.bool_)  # type: ignore
 

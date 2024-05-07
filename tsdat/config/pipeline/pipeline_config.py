@@ -88,10 +88,8 @@ class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
     )
 
     @validator("retriever", "dataset", "quality", "storage", pre=True)
-    @classmethod
-    def merge_overrideable_yaml(
-            cls, v: Dict[str, Any], values: Dict[str, Any], field: ModelField
-    ):
+    def merge_overrideable_yaml(cls, v: Dict[str, Any],
+                                values: Dict[str, Any], field: ModelField):
         object_field_mapping = {
             "retriever": RetrieverConfig,
             "dataset": DatasetConfig,

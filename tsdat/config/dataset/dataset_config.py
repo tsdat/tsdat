@@ -65,16 +65,14 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
     )
 
     @validator("coords")
-    @classmethod
     def time_in_coords(cls, coords: Dict[str, Coordinate]) -> Dict[str, Coordinate]:
         if "time" not in coords:
             raise ValueError("Required coordinate definition 'time' is missing.")
         return coords
 
     @validator("coords", "data_vars")
-    def variable_names_are_legal(
-            cls, vars: Dict[str, Variable], field: ModelField
-    ) -> Dict[str, Variable]:
+    def variable_names_are_legal(cls, vars: Dict[str, Variable], field: ModelField
+                                 ) -> Dict[str, Variable]:
         for name in vars.keys():
             pattern = re.compile(r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
             if not pattern.match(name):
@@ -85,16 +83,13 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
         return vars
 
     @validator("coords", "data_vars", pre=True)
-    @classmethod
-    def set_variable_name_property(
-            cls, vars: Dict[str, Dict[str, Any]]
-    ) -> Dict[str, Dict[str, Any]]:
+    def set_variable_name_property(cls, vars: Dict[str, Dict[str, Any]]
+                                   ) -> Dict[str, Dict[str, Any]]:
         for name in vars.keys():
             vars[name]["name"] = name
         return vars
 
     @root_validator(skip_on_failure=True)
-    @classmethod
     def validate_variable_name_uniqueness(cls, values: Any) -> Any:
         coord_names = set(values["coords"].keys())
         var_names = set(values["data_vars"].keys())

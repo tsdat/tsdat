@@ -29,10 +29,8 @@ class QualityConfig(YamlModel, extra=Extra.forbid):
     )
 
     @validator("managers")
-    @classmethod
-    def validate_manager_names_are_unique(
-            cls, v: List[ManagerConfig]
-    ) -> List[ManagerConfig]:
+    def validate_manager_names_are_unique(cls, v: List[ManagerConfig]
+                                          ) -> List[ManagerConfig]:
         if duplicates := find_duplicates(v):
             raise ValueError(f"Duplicate quality manager names found: {duplicates}")
         return v

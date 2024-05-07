@@ -215,8 +215,7 @@ class VariableAttributes(AttributeModel):
     )
 
     @validator("units")
-    @staticmethod
-    def validate_unit(unit_str: str) -> str:
+    def validate_unit(cls, unit_str: str) -> str:
         # Not recognized by pint, but we want it to be valid
         if unit_str == "%" or unit_str.startswith("Seconds since"):
             return unit_str
@@ -231,7 +230,6 @@ class VariableAttributes(AttributeModel):
         return unit_str
 
     @root_validator
-    @classmethod
     def validate_units_are_commented(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if not values["units"]:
             if not values["comment"] or "Unknown units." not in values["comment"]:

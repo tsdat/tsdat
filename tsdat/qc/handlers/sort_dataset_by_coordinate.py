@@ -22,9 +22,9 @@ class SortDatasetByCoordinate(QualityHandler):
 
     parameters: Parameters = Parameters()
 
-    def run(
-            self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
-    ) -> xr.Dataset:
+    def run(self, dataset: xr.Dataset, variable_name: str,
+            failures: NDArray[np.bool_],
+            ) -> xr.Dataset:
         if failures.any():
             dataset = dataset.sortby(variable_name, ascending=self.parameters.ascending)  # type: ignore
             record_corrections_applied(

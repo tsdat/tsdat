@@ -15,7 +15,6 @@ class GlobalARMTransformParams(BaseModel):
     dim_range: Dict[Pattern, Dict[str, str]] = Field(..., alias="range")  # type: ignore
     width: Dict[Pattern, Dict[str, str]]  # type: ignore
 
-    # TODO: Seems like a static method here, should refactor into as such.
     @validator("alignment", "dim_range", "width", pre=True)
     def default_pattern(cls, d: Dict[Any, Any]) -> Dict[Pattern[str], Dict[str, str]]:
         if not d:
