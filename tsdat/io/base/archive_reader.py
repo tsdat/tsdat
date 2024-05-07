@@ -1,3 +1,4 @@
+from abc import ABC
 from typing import (
     Dict,
 )
@@ -5,9 +6,7 @@ from typing import (
 from .data_reader import DataReader
 
 
-# TODO: Generally it's bad practice to not implement all abstract methods from an imported base
-#  class. The DataReader abstract class has the `read` method, which is not implemented here.
-class ArchiveReader(DataReader):
+class ArchiveReader(DataReader, ABC):
     """------------------------------------------------------------------------------------
     Base class for DataReader objects that read data from archives.
     Subclasses of `ArchiveHandler` may define additional parameters to support various
