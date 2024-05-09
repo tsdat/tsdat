@@ -84,7 +84,7 @@ class FileSystem(Storage):
     handler: FileHandler = Field(default_factory=NetCDFHandler)
 
     def save_ancillary_file(
-            self, filepath: Path, target_path: Union[Path, None] = None
+        self, filepath: Path, target_path: Union[Path, None] = None
     ):
         """Saves an ancillary filepath to the datastream's ancillary storage area.
 
@@ -119,12 +119,12 @@ class FileSystem(Storage):
         logger.info("Saved %s dataset to %s", datastream, filepath.as_posix())
 
     def fetch_data(
-            self,
-            start: datetime,
-            end: datetime,
-            datastream: str,
-            metadata_kwargs: Union[Dict[str, str], None] = None,
-            **kwargs: Any,
+        self,
+        start: datetime,
+        end: datetime,
+        datastream: str,
+        metadata_kwargs: Union[Dict[str, str], None] = None,
+        **kwargs: Any,
     ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Fetches data for a given datastream between a specified time range.
@@ -166,12 +166,12 @@ class FileSystem(Storage):
         return dataset.sel(time=slice(start, end))
 
     def _find_data(
-            self,
-            start: datetime,
-            end: datetime,
-            datastream: str,
-            metadata_kwargs: Dict[str, str],
-            **kwargs: Any,
+        self,
+        start: datetime,
+        end: datetime,
+        datastream: str,
+        metadata_kwargs: Dict[str, str],
+        **kwargs: Any,
     ) -> List[Path]:
         dir_template = Template(self.parameters.data_storage_path.as_posix())
         extension = self.handler.writer.file_extension
@@ -192,9 +192,9 @@ class FileSystem(Storage):
         return self._filter_between_dates(filepaths, start, end)
 
     @staticmethod
-    def _filter_between_dates(filepaths: Iterable[Path],
-                              start: datetime, end: datetime
-                              ) -> List[Path]:
+    def _filter_between_dates(
+        filepaths: Iterable[Path], start: datetime, end: datetime
+    ) -> List[Path]:
         start_date_str = start.strftime("%Y%m%d.%H%M%S")
         end_date_str = end.strftime("%Y%m%d.%H%M%S")
 
@@ -229,8 +229,9 @@ class FileSystem(Storage):
         return self.parameters.storage_root / dirpath
 
     @staticmethod
-    def _extract_time_substitutions(template_str: str, start: datetime, end: datetime
-                                    ) -> Tuple[Path, str]:
+    def _extract_time_substitutions(
+        template_str: str, start: datetime, end: datetime
+    ) -> Tuple[Path, str]:
         """Extracts the root path above unresolved time substitutions and provides a pattern to search below that."""
         year = start.strftime("%Y") if start.year == end.year else "*"
         month = (

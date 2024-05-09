@@ -149,7 +149,7 @@ class FileSystemS3(FileSystem):
         return last_modified
 
     def modified_since(
-            self, datastream: str, last_modified: datetime
+        self, datastream: str, last_modified: datetime
     ) -> List[datetime]:
         """Returns the data times of all files modified after the specified datetime."""
         substitutions = get_fields_from_datastream(datastream)
@@ -159,11 +159,11 @@ class FileSystemS3(FileSystem):
             datetime.strptime(get_file_datetime_str(obj.key), "%Y%m%d.%H%M%S")
             for obj in self._bucket.objects.filter(Prefix=prefix)
             if obj.last_modified is not None
-               and obj.last_modified.astimezone(timezone.utc) > last_modified
+            and obj.last_modified.astimezone(timezone.utc) > last_modified
         ]
 
     def save_ancillary_file(
-            self, filepath: Path, target_path: Union[Path, None] = None
+        self, filepath: Path, target_path: Union[Path, None] = None
     ):
         """Saves an ancillary filepath to the datastream's ancillary storage area.
 
@@ -189,7 +189,7 @@ class FileSystemS3(FileSystem):
                 if filepath.is_dir():
                     continue
                 s3_key = (
-                        standard_fpath.parent / filepath.relative_to(tmp_dir)
+                    standard_fpath.parent / filepath.relative_to(tmp_dir)
                 ).as_posix()
                 self._bucket.upload_file(Filename=filepath.as_posix(), Key=s3_key)
                 logger.info(
@@ -200,12 +200,12 @@ class FileSystemS3(FileSystem):
                 )
 
     def _find_data(
-            self,
-            start: datetime,
-            end: datetime,
-            datastream: str,
-            metadata_kwargs: Dict[str, str],
-            **kwargs: Any,
+        self,
+        start: datetime,
+        end: datetime,
+        datastream: str,
+        metadata_kwargs: Dict[str, str],
+        **kwargs: Any,
     ) -> List[Path]:
         dir_template = Template(self.parameters.data_storage_path.as_posix())
         extension = self.handler.writer.file_extension

@@ -26,10 +26,12 @@ class CSVWriter(FileWriter):
     parameters: Parameters = Field(default_factory=Parameters)
     file_extension: str = "csv"
 
-    def write(self, dataset: xr.Dataset,
-              filepath: Optional[Path] = None,
-              **kwargs: Any,
-              ) -> None:
+    def write(
+        self,
+        dataset: xr.Dataset,
+        filepath: Optional[Path] = None,
+        **kwargs: Any,
+    ) -> None:
         # QUESTION: Is this format capable of "round-tripping"?
         # (i.e., ds != read(write(ds)) for csv format)
         d1: List[Hashable] = []

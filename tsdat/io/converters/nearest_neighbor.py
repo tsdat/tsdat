@@ -14,12 +14,12 @@ class NearestNeighbor(DataConverter):
     """The coordinate axis this converter should be applied on. Defaults to 'time'."""
 
     def convert(
-            self,
-            data: xr.DataArray,
-            variable_name: str,
-            dataset_config: DatasetConfig,
-            retrieved_dataset: RetrievedDataset,
-            **kwargs: Any,
+        self,
+        data: xr.DataArray,
+        variable_name: str,
+        dataset_config: DatasetConfig,
+        retrieved_dataset: RetrievedDataset,
+        **kwargs: Any,
     ) -> Optional[xr.DataArray]:
         # Assume that the coord index in the output matches coord index in the retrieved
         # structure.

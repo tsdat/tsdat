@@ -34,7 +34,8 @@ class StringToDatetime(DataConverter):
             pandas.to_datetime() function as keyword arguments. Note that 'format' is
             already included as a keyword argument. Defaults to {}.
 
-    ------------------------------------------------------------------------------------"""
+    ------------------------------------------------------------------------------------
+    """
 
     format: Optional[str] = None
     """The date format the string is using (e.g., '%Y-%m-%d %H:%M:%S' for date strings
@@ -61,12 +62,12 @@ class StringToDatetime(DataConverter):
         return format
 
     def convert(
-            self,
-            data: xr.DataArray,
-            variable_name: str,
-            dataset_config: DatasetConfig,
-            retrieved_dataset: RetrievedDataset,
-            **kwargs: Any,
+        self,
+        data: xr.DataArray,
+        variable_name: str,
+        dataset_config: DatasetConfig,
+        retrieved_dataset: RetrievedDataset,
+        **kwargs: Any,
     ) -> Optional[xr.DataArray]:
         dt: Any = pd.to_datetime(
             data.data,

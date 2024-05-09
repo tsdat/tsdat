@@ -1,5 +1,4 @@
 from ..utils import ParameterizedConfigClass
 
 
-class DataHandlerConfig(ParameterizedConfigClass):
-    ...
+class DataHandlerConfig(ParameterizedConfigClass): ...

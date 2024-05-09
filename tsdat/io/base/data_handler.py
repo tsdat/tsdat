@@ -8,9 +8,7 @@ from pydantic.fields import ModelField
 
 from .data_reader import DataReader
 from .data_writer import DataWriter
-from ...utils import (
-    ParameterizedClass
-)
+from ...utils import ParameterizedClass
 
 
 class DataHandler(ParameterizedClass):

@@ -14,9 +14,12 @@ class QualityHandler(ParameterizedClass, ABC):
     ---------------------------------------------------------------------------------"""
 
     @abstractmethod
-    def run(self, dataset: xr.Dataset, variable_name: str,
-            failures: NDArray[np.bool_],
-            ) -> xr.Dataset:
+    def run(
+        self,
+        dataset: xr.Dataset,
+        variable_name: str,
+        failures: NDArray[np.bool_],
+    ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Takes some action on data that has had quality issues identified.
 

@@ -98,7 +98,7 @@ class Storage(ParameterizedClass, ABC):
         """
 
     def modified_since(
-            self, datastream: str, last_modified: datetime
+        self, datastream: str, last_modified: datetime
     ) -> List[datetime]:
         """Find the list of data dates that have been modified since the passed
         last modified date.
@@ -134,12 +134,12 @@ class Storage(ParameterizedClass, ABC):
 
     @abstractmethod
     def fetch_data(
-            self,
-            start: datetime,
-            end: datetime,
-            datastream: str,
-            metadata_kwargs: Union[Dict[str, str], None] = None,
-            **kwargs: Any,
+        self,
+        start: datetime,
+        end: datetime,
+        datastream: str,
+        metadata_kwargs: Union[Dict[str, str], None] = None,
+        **kwargs: Any,
     ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Fetches a dataset from the storage area.
@@ -163,15 +163,15 @@ class Storage(ParameterizedClass, ABC):
         ...
 
     def get_ancillary_filepath(
-            self,
-            title: str,
-            extension: str = "png",
-            dataset: Union[xr.Dataset, None] = None,
-            datastream: Union[str, None] = None,
-            start: Union[datetime, None] = None,
-            root_dir: Union[Path, None] = None,
-            mkdirs: bool = True,
-            **kwargs: str,
+        self,
+        title: str,
+        extension: str = "png",
+        dataset: Union[xr.Dataset, None] = None,
+        datastream: Union[str, None] = None,
+        start: Union[datetime, None] = None,
+        root_dir: Union[Path, None] = None,
+        mkdirs: bool = True,
+        **kwargs: str,
     ) -> Path:
         """Returns the filepath for the given datastream and title of an ancillary file
         to be created.
@@ -256,7 +256,7 @@ class Storage(ParameterizedClass, ABC):
 
     @abstractmethod
     def save_ancillary_file(
-            self, filepath: Path, target_path: Union[Path, None] = None
+        self, filepath: Path, target_path: Union[Path, None] = None
     ):
         """Saves an ancillary filepath to the datastream's ancillary storage area.
 

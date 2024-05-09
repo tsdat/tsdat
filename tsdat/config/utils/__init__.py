@@ -16,7 +16,6 @@ __all__ = [
     "Overrideable",
     "ParameterizedConfigClass",
     "YamlModel",
-
     "get_code_version",
     "read_yaml",
     "recursive_instantiate",

@@ -14,10 +14,10 @@ class InputKeyRetrievalRules:
     """Gathers variable retrieval rules for the given input key."""
 
     def __init__(
-            self,
-            input_key: InputKey,
-            coord_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
-            data_var_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
+        self,
+        input_key: InputKey,
+        coord_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
+        data_var_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
     ):
         self.input_key = input_key
         self.coords: Dict[VarName, RetrievedVariable] = {}

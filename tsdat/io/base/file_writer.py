@@ -29,7 +29,7 @@ class FileWriter(DataWriter, ABC):
 
     @abstractmethod
     def write(
-            self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
+        self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
     ) -> None:
         """-----------------------------------------------------------------------------
         Writes the dataset to the provided filepath.

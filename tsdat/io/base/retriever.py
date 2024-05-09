@@ -42,7 +42,7 @@ class Retriever(ParameterizedClass, ABC):
 
     @abstractmethod
     def retrieve(
-            self, input_keys: List[str], dataset_config: DatasetConfig, **kwargs: Any
+        self, input_keys: List[str], dataset_config: DatasetConfig, **kwargs: Any
     ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Prepares the raw dataset mapping for use in downstream pipeline processes.

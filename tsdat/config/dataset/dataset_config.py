@@ -71,8 +71,9 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
         return coords
 
     @validator("coords", "data_vars")
-    def variable_names_are_legal(cls, vars: Dict[str, Variable], field: ModelField
-                                 ) -> Dict[str, Variable]:
+    def variable_names_are_legal(
+        cls, vars: Dict[str, Variable], field: ModelField
+    ) -> Dict[str, Variable]:
         for name in vars.keys():
             pattern = re.compile(r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
             if not pattern.match(name):
@@ -83,8 +84,9 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
         return vars
 
     @validator("coords", "data_vars", pre=True)
-    def set_variable_name_property(cls, vars: Dict[str, Dict[str, Any]]
-                                   ) -> Dict[str, Dict[str, Any]]:
+    def set_variable_name_property(
+        cls, vars: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, Dict[str, Any]]:
         for name in vars.keys():
             vars[name]["name"] = name
         return vars

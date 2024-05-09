@@ -23,14 +23,15 @@ class QualityConfig(YamlModel, extra=Extra.forbid):
 
     managers: List[ManagerConfig] = Field(
         description="Register a list of QualityManager(s) that should be used to detect"
-                    " and handle data quality issues. Each QualityManager configuration block must"
-                    " consists of a label, a QualityChecker, at least one QualityHandler, and a"
-                    " list of variables that the manager should be applied to."
+        " and handle data quality issues. Each QualityManager configuration block must"
+        " consists of a label, a QualityChecker, at least one QualityHandler, and a"
+        " list of variables that the manager should be applied to."
     )
 
     @validator("managers")
-    def validate_manager_names_are_unique(cls, v: List[ManagerConfig]
-                                          ) -> List[ManagerConfig]:
+    def validate_manager_names_are_unique(
+        cls, v: List[ManagerConfig]
+    ) -> List[ManagerConfig]:
         if duplicates := find_duplicates(v):
             raise ValueError(f"Duplicate quality manager names found: {duplicates}")
         return v

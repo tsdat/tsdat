@@ -25,9 +25,12 @@ class ThresholdChecker(QualityChecker, ABC):
     attribute_name: str
     """The attribute on the data variable that should be used to get the threshold."""
 
-    def _get_threshold(self, dataset: xr.Dataset,
-                       variable_name: str, min_: bool,
-                       ) -> Union[float, None]:
+    def _get_threshold(
+        self,
+        dataset: xr.Dataset,
+        variable_name: str,
+        min_: bool,
+    ) -> Union[float, None]:
         threshold = dataset[variable_name].attrs.get(self.attribute_name, None)
         if threshold is not None:
             if isinstance(threshold, list):

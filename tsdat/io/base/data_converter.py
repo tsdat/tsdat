@@ -21,12 +21,12 @@ class DataConverter(ParameterizedClass, ABC):
 
     @abstractmethod
     def convert(
-            self,
-            data: xr.DataArray,
-            variable_name: str,
-            dataset_config: DatasetConfig,
-            retrieved_dataset: RetrievedDataset,
-            **kwargs: Any,
+        self,
+        data: xr.DataArray,
+        variable_name: str,
+        dataset_config: DatasetConfig,
+        retrieved_dataset: RetrievedDataset,
+        **kwargs: Any,
     ) -> Optional[xr.DataArray]:
         """-----------------------------------------------------------------------------
         Runs the data converter on the retrieved data.

@@ -33,10 +33,12 @@ class NetCDFWriter(FileWriter):
     parameters: Parameters = Field(default_factory=Parameters)
     file_extension: str = "nc"
 
-    def write(self, dataset: xr.Dataset,
-              filepath: Optional[Path] = None,
-              **kwargs: Any,
-              ) -> None:
+    def write(
+        self,
+        dataset: xr.Dataset,
+        filepath: Optional[Path] = None,
+        **kwargs: Any,
+    ) -> None:
         to_netcdf_kwargs = copy.deepcopy(self.parameters.to_netcdf_kwargs)
         encoding_dict: Dict[str, Dict[str, Any]] = {}
         to_netcdf_kwargs["encoding"] = encoding_dict
@@ -53,14 +55,22 @@ class NetCDFWriter(FileWriter):
             # Prevent Xarray from setting 'nan' as the default _FillValue
             encoding_dict[variable_name] = dataset[variable_name].encoding.copy()  # type: ignore
             if (
-                    "_FillValue" not in encoding_dict[variable_name]
-                    and "_FillValue" not in dataset[variable_name].attrs
+                "_FillValue" not in encoding_dict[variable_name]
+                and "_FillValue" not in dataset[variable_name].attrs
             ):
                 encoding_dict[variable_name]["_FillValue"] = None
 
             # Remove unexpected netCDF4 encoding parameters
             # https://github.com/pydata/xarray/discussions/5709
-            params = ["szip", "zstd", "bzip2", "blosc", "contiguous", "chunksizes", 'preferred_chunks']
+            params = [
+                "szip",
+                "zstd",
+                "bzip2",
+                "blosc",
+                "contiguous",
+                "chunksizes",
+                "preferred_chunks",
+            ]
             [
                 encoding_dict[variable_name].pop(p)
                 for p in params
@@ -68,7 +78,7 @@ class NetCDFWriter(FileWriter):
             ]
 
             if self.parameters.compression_level and (
-                    dataset[variable_name].dtype.kind not in ["U", "O"]
+                dataset[variable_name].dtype.kind not in ["U", "O"]
             ):
                 encoding_dict[variable_name].update(
                     {

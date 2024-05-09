@@ -52,9 +52,12 @@ class RecordQualityResults(QualityHandler):
 
     parameters: Parameters
 
-    def run(self, dataset: xr.Dataset, variable_name: str,
-            failures: NDArray[np.bool_],
-            ) -> xr.Dataset:
+    def run(
+        self,
+        dataset: xr.Dataset,
+        variable_name: str,
+        failures: NDArray[np.bool_],
+    ) -> xr.Dataset:
         dataset.qcfilter.add_test(
             variable_name,
             index=failures if failures.any() else None,
