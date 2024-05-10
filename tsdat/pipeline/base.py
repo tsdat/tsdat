@@ -116,7 +116,7 @@ class Pipeline(ParameterizedClass, ABC):
             var_attrs = model_to_dict(self.dataset_config[name].attrs)
             dataset[name].attrs.update(var_attrs)
 
-        history = f"Ran by {getuser()} at {datetime.now().isoformat()}"
+        history = f"Created by {getuser()} at {datetime.now().isoformat()}"
         dataset.attrs["history"] = history
 
         return dataset
