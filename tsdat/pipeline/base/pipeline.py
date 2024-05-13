@@ -79,7 +79,7 @@ class Pipeline(ParameterizedClass, ABC):
         return dataset
 
     def _add_dataset_variables(
-            self, dataset: xr.Dataset, vars_to_add: Iterable[str]
+        self, dataset: xr.Dataset, vars_to_add: Iterable[str]
     ) -> xr.Dataset:
         for name in vars_to_add:
             dims = self.dataset_config[name].dims
@@ -104,7 +104,7 @@ class Pipeline(ParameterizedClass, ABC):
         return dataset
 
     def _add_dataset_attrs(
-            self, dataset: xr.Dataset, output_vars: Iterable[str]
+        self, dataset: xr.Dataset, output_vars: Iterable[str]
     ) -> xr.Dataset:
         global_attrs = model_to_dict(self.dataset_config.attrs)
         dataset.attrs.update(**global_attrs)

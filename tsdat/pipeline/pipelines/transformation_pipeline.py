@@ -76,7 +76,7 @@ class TransformationPipeline(IngestPipeline):
 
     @staticmethod
     def hook_customize_input_datasets(
-            input_datasets: Dict[str, xr.Dataset], **kwargs: Any
+        input_datasets: Dict[str, xr.Dataset], **kwargs: Any
     ) -> Dict[str, xr.Dataset]:
         """-----------------------------------------------------------------------------
         Code hook to customize any input datasets prior to datastreams being combined

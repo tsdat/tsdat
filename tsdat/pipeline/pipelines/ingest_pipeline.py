@@ -89,7 +89,7 @@ class IngestPipeline(Pipeline):
         pass
 
     def get_ancillary_filepath(
-            self, title: str, extension: str = "png", **kwargs: Any
+        self, title: str, extension: str = "png", **kwargs: Any
     ) -> Path:
         """Returns the path to where an ancillary file should be saved so that it can be
         synced to the storage area automatically.
