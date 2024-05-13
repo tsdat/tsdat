@@ -31,29 +31,31 @@ class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
     # HACK: Can't do Pattern[str]: https://github.com/samuelcolvin/pydantic/issues/2636
     readers: Optional[Dict[Pattern, DataReaderConfig]] = Field(  # type: ignore
         description="A dictionary mapping regex patterns to DataReaders that should be"
-                    " used to read the input data. For each input given to the Retriever, the"
-                    " mapping will be used to determine which DataReader to use. The patterns will"
-                    " be searched in the order they are defined and the DataReader corresponding"
-                    " with the first pattern that matches the input key will be used."
+        " used to read the input data. For each input given to the Retriever, the"
+        " mapping will be used to determine which DataReader to use. The patterns will"
+        " be searched in the order they are defined and the DataReader corresponding"
+        " with the first pattern that matches the input key will be used."
     )
     coords: Dict[str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]] = Field(  # type: ignore
         {},
         description="A dictionary mapping output coordinate variable names to the"
-                    " retrieval rules and preprocessing actions (i.e. DataConverters) that should"
-                    " be applied to each retrieved coordinate variable.",
+        " retrieval rules and preprocessing actions (i.e. DataConverters) that should"
+        " be applied to each retrieved coordinate variable.",
     )
     data_vars: Dict[str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]] = Field(  # type: ignore
         {},
         description="A dictionary mapping output data_variable variable names to the"
-                    " retrieval rules and preprocessing actions (i.e. DataConverters) that should"
-                    " be applied to each retrieved coordinate variable.",
+        " retrieval rules and preprocessing actions (i.e. DataConverters) that should"
+        " be applied to each retrieved coordinate variable.",
     )
 
     @validator("coords", "data_vars")
-    @classmethod
-    def coerce_to_patterned_retriever(cls,
-                                      var_dict: Dict[str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]]
-                                      ) -> Dict[str, Dict[Pattern[str], RetrievedVariableConfig]]:  # type: ignore
+    def coerce_to_patterned_retriever(
+        cls,
+        var_dict: Dict[
+            str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]
+        ],
+    ) -> Dict[str, Dict[Pattern[str], RetrievedVariableConfig]]:  # type: ignore
         to_return: Dict[str, Dict[Pattern[str], RetrievedVariableConfig]] = {}  # type: ignore
         for name, var_retriever in var_dict.items():  # type: ignore
             if isinstance(var_retriever, RetrievedVariableConfig):

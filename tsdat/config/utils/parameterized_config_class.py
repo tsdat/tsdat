@@ -14,7 +14,6 @@ from pydantic import (
 from pydantic.utils import import_string
 
 
-
 class ParameterizedConfigClass(BaseModel, extra=Extra.forbid):
     # Unfortunately, the classname has to be a string type unless PyObject becomes JSON
     # serializable: https://github.com/samuelcolvin/pydantic/discussions/3842
@@ -37,7 +36,6 @@ class ParameterizedConfigClass(BaseModel, extra=Extra.forbid):
     )
 
     @validator("classname")
-    @classmethod
     def classname_looks_like_a_module(cls, v: StrictStr) -> StrictStr:
         if "." not in v or not v.replace(".", "").replace("_", "").isalnum():
             raise ValueError(f"Classname '{v}' is not a valid classname.")

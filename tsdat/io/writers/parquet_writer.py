@@ -26,7 +26,10 @@ class ParquetWriter(FileWriter):
     file_extension: str = "parquet"
 
     def write(
-            self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
+        self,
+        dataset: xr.Dataset,
+        filepath: Optional[Path] = None,
+        **kwargs: Any,
     ) -> None:
         # QUESTION: Can we reliably write the dataset metadata to a separate file such
         # that it can always be retrieved? If not, should we declare this as a format

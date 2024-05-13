@@ -9,7 +9,6 @@ class GlobalFetchParams(BaseModel):
     """How far in time to look ahead (+), behind (-), or both to search
     for files."""
 
-    # TODO: Seems like a static method here, should refactor into as such.
     @validator("time_padding", pre=True)
     def default_to_seconds(cls, d: str) -> str:
         if not d:
@@ -19,9 +18,8 @@ class GlobalFetchParams(BaseModel):
         else:
             return d
 
-    # TODO: Method definition says that a lone `int` is returned, but return statements return
-    #  a `tuple[int, str]`. This should be corrected.
-    def get_direction(self, d: str) -> int:
+    @staticmethod
+    def get_direction(d: str) -> tuple[int, str]:
         if "+" in d:
             return 1, d.replace("+", "")
         elif "-" in d:

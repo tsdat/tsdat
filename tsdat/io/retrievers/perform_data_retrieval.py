@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 def perform_data_retrieval(
-        input_data: Dict[InputKey, xr.Dataset],
-        coord_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
-        data_var_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
+    input_data: Dict[InputKey, xr.Dataset],
+    coord_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
+    data_var_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
 ) -> Tuple[RetrievedDataset, RetrievalRuleSelections]:
     # TODO: Also retrieve QC and Bounds variables -- possibly in ancillary structure?
 

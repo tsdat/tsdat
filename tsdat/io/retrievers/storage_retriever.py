@@ -35,15 +35,16 @@ class StorageRetriever(Retriever):
 
     parameters: Optional[TransParameters] = None
 
+    # TODO: `input_data_hook` is not included in docstring.
     def retrieve(
-            self,
-            input_keys: List[str],
-            dataset_config: DatasetConfig,
-            storage: Optional[Storage] = None,
-            input_data_hook: Optional[
-                Callable[[Dict[str, xr.Dataset]], Dict[str, xr.Dataset]]
-            ] = None,
-            **kwargs: Any,
+        self,
+        input_keys: List[str],
+        dataset_config: DatasetConfig,
+        storage: Optional[Storage] = None,
+        input_data_hook: Optional[
+            Callable[[Dict[str, xr.Dataset]], Dict[str, xr.Dataset]]
+        ] = None,
+        **kwargs: Any,
     ) -> xr.Dataset:
         """------------------------------------------------------------------------------------
         Retrieves input data from the storage area.
@@ -161,6 +162,7 @@ class StorageRetriever(Retriever):
 
         return retrieved_dataset
 
+    # TODO: Seems like a static method here, should refactor into as such.
     def _get_timedelta(self, time_string):
         if time_string.replace(".", "").isnumeric():
             return pd.Timedelta(float(time_string), "s")
@@ -185,7 +187,7 @@ class StorageRetriever(Retriever):
             return 0, timedelta()
 
     def __fetch_inputs(
-            self, input_keys: List[StorageRetrieverInput], storage: Storage
+        self, input_keys: List[StorageRetrieverInput], storage: Storage
     ) -> Dict[InputKey, xr.Dataset]:
         input_data: Dict[InputKey, xr.Dataset] = {}
         for key in input_keys:
@@ -199,8 +201,9 @@ class StorageRetriever(Retriever):
             input_data[key.input_key] = retrieved_dataset
         return input_data
 
+    # TODO: Seems like a static method here, should refactor into as such.
     def __trim_dataset(
-            self, dataset: xr.Dataset, input_keys: List[StorageRetrieverInput]
+        self, dataset: xr.Dataset, input_keys: List[StorageRetrieverInput]
     ) -> xr.Dataset:
         # Trim dataset to original start and end keys
         # Start and end keys don't change between inputs

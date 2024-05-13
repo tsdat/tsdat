@@ -60,7 +60,7 @@ class DefaultRetriever(Retriever):
     key."""
 
     def retrieve(
-            self, input_keys: List[str], dataset_config: DatasetConfig, **kwargs: Any
+        self, input_keys: List[str], dataset_config: DatasetConfig, **kwargs: Any
     ) -> xr.Dataset:
         raw_mapping = self._get_raw_mapping(input_keys)
         dataset_mapping: Dict[str, xr.Dataset] = {}

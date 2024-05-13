@@ -4,9 +4,7 @@ from typing import (
 )
 
 import xarray as xr
-from ...utils import (
-    ParameterizedClass
-)
+from ...utils import ParameterizedClass
 
 
 class DataWriter(ParameterizedClass, ABC):

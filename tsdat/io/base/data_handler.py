@@ -8,9 +8,7 @@ from pydantic.fields import ModelField
 
 from .data_reader import DataReader
 from .data_writer import DataWriter
-from ...utils import (
-    ParameterizedClass
-)
+from ...utils import ParameterizedClass
 
 
 class DataHandler(ParameterizedClass):
@@ -33,7 +31,6 @@ class DataHandler(ParameterizedClass):
     reader: DataReader
     writer: DataWriter
 
-    # TODO: Seems like a static method here, should refactor into as such.
     @validator("reader", "writer", pre=True, check_fields=False, always=True)
     def patch_parameters(cls, v: DataReader, values: Dict[str, Any], field: ModelField):
         params = values.get("parameters", {}).pop(field.name, {})

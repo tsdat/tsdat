@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 def _rename_variables(
-        dataset: xr.Dataset,
-        input_config: InputKeyRetrievalRules,
+    dataset: xr.Dataset,
+    input_config: InputKeyRetrievalRules,
 ) -> xr.Dataset:
     """-----------------------------------------------------------------------------
     Renames variables in the retrieved dataset according to retrieval configurations.
@@ -41,7 +41,7 @@ def _rename_variables(
         return data_to_rename
 
     def drop_var_input_config(
-            input_data: Dict[VarName, RetrievedVariable], output_name: str
+        input_data: Dict[VarName, RetrievedVariable], output_name: str
     ):
         # Drop output_name from input_config.coords or input_config.data_vars
         n = input_data[output_name].name  # type: ignore

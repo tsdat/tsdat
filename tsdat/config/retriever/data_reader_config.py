@@ -1,5 +1,4 @@
 from ..utils import ParameterizedConfigClass
 
 
-class DataReaderConfig(ParameterizedConfigClass):
-    ...
+class DataReaderConfig(ParameterizedConfigClass): ...

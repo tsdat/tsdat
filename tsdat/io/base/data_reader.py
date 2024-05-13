@@ -25,8 +25,8 @@ class DataReader(ParameterizedClass, ABC):
 
     @abstractmethod
     def read(
-            self,
-            input_key: str,
+        self,
+        input_key: str,
     ) -> Union[xr.Dataset, Dict[str, xr.Dataset]]:
         """-----------------------------------------------------------------------------
         Reads data given an input key.

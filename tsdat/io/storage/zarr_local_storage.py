@@ -63,7 +63,10 @@ class ZarrLocalStorage(FileSystem):
     handler: ZarrHandler = Field(default_factory=ZarrHandler)
 
     def _filter_between_dates(
-            self, filepaths: Iterable[Path], start: datetime, end: datetime
+        self,
+        filepaths: Iterable[Path],
+        start: datetime,
+        end: datetime,
     ) -> List[Path]:
         # Zarr filenames don't include dates. There should also only be one filepath
         # matching the data to fetch, so warn if otherwise
@@ -75,5 +78,6 @@ class ZarrLocalStorage(FileSystem):
 
 # TODO:
 #  HACK: Update forward refs to get around error I couldn't replicate with simpler code
-#  "pydantic.errors.ConfigError: field "parameters" not yet prepared so type is still a ForwardRef..."
+#  "pydantic.errors.ConfigError: field "parameters" not yet prepared
+#  so type is still a ForwardRef..."
 ZarrLocalStorage.update_forward_refs(Parameters=ZarrLocalStorage.Parameters)

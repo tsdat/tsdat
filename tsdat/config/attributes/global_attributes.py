@@ -165,7 +165,6 @@ class GlobalAttributes(AttributeModel):
     )
 
     @validator("history", "code_version", pre=True)
-    @classmethod
     def warn_if_dynamic_properties_are_set(cls, v: str, field: ModelField) -> str:
         if v:
             logger.warning(
@@ -175,7 +174,6 @@ class GlobalAttributes(AttributeModel):
         return ""
 
     @root_validator(skip_on_failure=True)
-    @classmethod
     def add_datastream_field(cls, values: Dict[str, StrictStr]) -> Dict[str, StrictStr]:
         if not values["datastream"]:
             values["datastream"] = get_datastream(**values)

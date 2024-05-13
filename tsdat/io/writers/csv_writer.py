@@ -27,7 +27,10 @@ class CSVWriter(FileWriter):
     file_extension: str = "csv"
 
     def write(
-            self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
+        self,
+        dataset: xr.Dataset,
+        filepath: Optional[Path] = None,
+        **kwargs: Any,
     ) -> None:
         # QUESTION: Is this format capable of "round-tripping"?
         # (i.e., ds != read(write(ds)) for csv format)

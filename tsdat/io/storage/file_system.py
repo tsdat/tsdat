@@ -73,7 +73,6 @@ class FileSystem(Storage):
         Note that this will only be called if the DataReader returns a dictionary of
         xr.Datasets for a single input key."""
 
-        # TODO: Seems like a static method here, should refactor into as such.
         @validator("storage_root")
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
             if not storage_root.is_dir():
@@ -85,7 +84,7 @@ class FileSystem(Storage):
     handler: FileHandler = Field(default_factory=NetCDFHandler)
 
     def save_ancillary_file(
-            self, filepath: Path, target_path: Union[Path, None] = None
+        self, filepath: Path, target_path: Union[Path, None] = None
     ):
         """Saves an ancillary filepath to the datastream's ancillary storage area.
 
@@ -120,12 +119,12 @@ class FileSystem(Storage):
         logger.info("Saved %s dataset to %s", datastream, filepath.as_posix())
 
     def fetch_data(
-            self,
-            start: datetime,
-            end: datetime,
-            datastream: str,
-            metadata_kwargs: Union[Dict[str, str], None] = None,
-            **kwargs: Any,
+        self,
+        start: datetime,
+        end: datetime,
+        datastream: str,
+        metadata_kwargs: Union[Dict[str, str], None] = None,
+        **kwargs: Any,
     ) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Fetches data for a given datastream between a specified time range.
@@ -167,12 +166,12 @@ class FileSystem(Storage):
         return dataset.sel(time=slice(start, end))
 
     def _find_data(
-            self,
-            start: datetime,
-            end: datetime,
-            datastream: str,
-            metadata_kwargs: Dict[str, str],
-            **kwargs: Any,
+        self,
+        start: datetime,
+        end: datetime,
+        datastream: str,
+        metadata_kwargs: Dict[str, str],
+        **kwargs: Any,
     ) -> List[Path]:
         dir_template = Template(self.parameters.data_storage_path.as_posix())
         extension = self.handler.writer.file_extension
@@ -192,9 +191,9 @@ class FileSystem(Storage):
         filepaths = (p for p in dirpath.glob(pattern))
         return self._filter_between_dates(filepaths, start, end)
 
-    # TODO: Seems like a static method here, should refactor into as such.
+    @staticmethod
     def _filter_between_dates(
-            self, filepaths: Iterable[Path], start: datetime, end: datetime
+        filepaths: Iterable[Path], start: datetime, end: datetime
     ) -> List[Path]:
         start_date_str = start.strftime("%Y%m%d.%H%M%S")
         end_date_str = end.strftime("%Y%m%d.%H%M%S")
@@ -229,9 +228,9 @@ class FileSystem(Storage):
         dirpath = dir_template.substitute(substitutions)
         return self.parameters.storage_root / dirpath
 
-    # TODO: Seems like a static method here, should refactor into as such.
+    @staticmethod
     def _extract_time_substitutions(
-            self, template_str: str, start: datetime, end: datetime
+        template_str: str, start: datetime, end: datetime
     ) -> Tuple[Path, str]:
         """Extracts the root path above unresolved time substitutions and provides a pattern to search below that."""
         year = start.strftime("%Y") if start.year == end.year else "*"
@@ -246,5 +245,6 @@ class FileSystem(Storage):
 
 # TODO:
 #  HACK: Update forward refs to get around error I couldn't replicate with simpler code
-#  "pydantic.errors.ConfigError: field "parameters" not yet prepared so type is still a ForwardRef..."
+#  "pydantic.errors.ConfigError: field "parameters" not yet prepared
+#  so type is still a ForwardRef..."
 FileSystem.update_forward_refs(Parameters=FileSystem.Parameters)

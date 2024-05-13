@@ -60,6 +60,9 @@ class FailPipeline(QualityHandler):
             if len(failed_where) == 1:  # 1D
                 failed_indexes = list(failed_where[0][: self.parameters.display_limit])
             else:
+                # TODO: IDE is giving this the following warning on the var assignment:
+                #  Expected type 'list[int] | list[list[int]]', got
+                #  'list[list[ndarray[Any, dtype[signedinteger | long]]]]' instead
                 failed_indexes = [
                     [dim_idxs[i] for dim_idxs in failed_where]
                     for i in range(

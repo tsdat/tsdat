@@ -8,9 +8,9 @@ logger = logging.getLogger(__name__)
 
 
 def _reindex_dataset_coords(
-        dataset: xr.Dataset,
-        dataset_config: DatasetConfig,
-        input_config: InputKeyRetrievalRules,
+    dataset: xr.Dataset,
+    dataset_config: DatasetConfig,
+    input_config: InputKeyRetrievalRules,
 ) -> xr.Dataset:
     """-----------------------------------------------------------------------------
     Swaps dimensions and coordinates to match the structure of the DatasetConfig.

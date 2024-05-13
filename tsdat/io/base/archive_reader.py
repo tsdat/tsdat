@@ -1,3 +1,4 @@
+from abc import ABC
 from typing import (
     Dict,
 )
@@ -5,7 +6,7 @@ from typing import (
 from .data_reader import DataReader
 
 
-class ArchiveReader(DataReader):
+class ArchiveReader(DataReader, ABC):
     """------------------------------------------------------------------------------------
     Base class for DataReader objects that read data from archives.
     Subclasses of `ArchiveHandler` may define additional parameters to support various

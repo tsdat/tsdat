@@ -6,6 +6,7 @@ import xarray as xr
 from numpy.typing import NDArray
 
 from ..base import DataConverter, RetrievedDataset
+from ...config.dataset import DatasetConfig
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +31,12 @@ class UnitsConverter(DataConverter):
     """The units of the input data."""
 
     def convert(
-            self,
-            data: xr.DataArray,
-            variable_name: str,
-            dataset_config: "DatasetConfig",
-            retrieved_dataset: RetrievedDataset,
-            **kwargs: Any,
+        self,
+        data: xr.DataArray,
+        variable_name: str,
+        dataset_config: DatasetConfig,
+        retrieved_dataset: RetrievedDataset,
+        **kwargs: Any,
     ) -> Optional[xr.DataArray]:
         input_units = self._get_input_units(data)
         if not input_units:
@@ -50,10 +51,10 @@ class UnitsConverter(DataConverter):
 
         output_units = dataset_config[variable_name].attrs.units
         if (
-                not output_units
-                or output_units == "1"
-                or output_units == "unitless"
-                or input_units == output_units
+            not output_units
+            or output_units == "1"
+            or output_units == "unitless"
+            or input_units == output_units
         ):
             if not output_units:
                 logger.warning(

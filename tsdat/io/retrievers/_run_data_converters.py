@@ -9,9 +9,9 @@ from ..base import (
 
 
 def _run_data_converters(
-        dataset: xr.Dataset,
-        dataset_config: DatasetConfig,
-        input_config: InputKeyRetrievalRules,
+    dataset: xr.Dataset,
+    dataset_config: DatasetConfig,
+    input_config: InputKeyRetrievalRules,
 ) -> xr.Dataset:
     """------------------------------------------------------------------------------------
     Runs the declared DataConverters on the dataset's coords and data_vars.

@@ -1,6 +1,6 @@
 import re
 from io import BytesIO
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from zipfile import ZipFile
 
 import xarray as xr
@@ -92,18 +92,19 @@ class ZipReader(ArchiveReader):
         else:
             fileobj = input_key
 
-        zip = ZipFile(file=fileobj, **self.parameters.read_zip_kwargs)  # type: ignore
+        zip_file = ZipFile(file=fileobj, **self.parameters.read_zip_kwargs)  # type: ignore
 
-        for filename in zip.namelist():
+        for filename in zip_file.namelist():
             if re.match(self.parameters.exclude, filename):  # type: ignore
                 continue
 
             for key in self.parameters.readers.keys():
                 if not re.match(key, filename):
                     continue
-                reader: DataReader = self.parameters.readers.get(key, None)
+
+                reader: Optional[DataReader] = self.parameters.readers.get(key, None)
                 if reader:
-                    zip_bytes = BytesIO(zip.read(filename))
+                    zip_bytes = BytesIO(zip_file.read(filename))
                     data = reader.read(zip_bytes)  # type: ignore
 
                     if isinstance(data, xr.Dataset):

@@ -1,3 +1,4 @@
+from typing import Optional
 import re
 import tarfile
 from io import BytesIO
@@ -69,12 +70,7 @@ class TarReader(ArchiveReader):
         {filename: xr.Dataset}.
 
         Args:
-            file (Union[str, BytesIO]): The file to read in. Can be provided as a filepath or
-            a bytes-like object. It is used to open the tar file.
-            name (str, optional): A label used to help trace the origin of the data read-in.
-            It is used in the key in the returned dictionary. Must be provided if the `file`
-            argument is not string-like. If `file` is a string and `name` is not specified then
-            the label will be set by `file`. Defaults to None.
+            input_key (str): The file to read in. It is used to open the tar file.
 
         Returns:
             Dict[str, xr.Dataset]: A mapping of {label: xr.Dataset}.
@@ -101,7 +97,7 @@ class TarReader(ArchiveReader):
                 continue
 
             for key in self.parameters.readers.keys():
-                reader: DataReader = self.parameters.readers.get(key, None)
+                reader: Optional[DataReader] = self.parameters.readers.get(key, None)
                 if reader:
                     tar_bytes = BytesIO(tar.extractfile(filename).read())  # type: ignore
                     data = reader.read(tar_bytes)  # type: ignore

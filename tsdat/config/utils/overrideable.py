@@ -15,7 +15,6 @@ from .config import Config
 from .yaml_model import YamlModel
 
 
-
 class Overrideable(YamlModel, GenericModel, Generic[Config], extra=Extra.forbid):
     path: FilePath = Field(
         description=(
@@ -40,13 +39,3 @@ class Overrideable(YamlModel, GenericModel, Generic[Config], extra=Extra.forbid)
             " https://python-json-pointer.readthedocs.io/en/latest/tutorial.html"
         ),
     )
-
-    # def get_defaults_dict(self) -> Dict[Any, Any]:
-    #     txt = self.path.read_text()
-    #     return list(yaml.safe_load_all(txt))[0]
-
-    # def merge_overrides(self) -> Dict[Any, Any]:
-    #     defaults = self.get_defaults_dict()
-    #     for pointer, new_value in self.overrides.items():
-    #         set_pointer(defaults, pointer, new_value)
-    #     return defaults

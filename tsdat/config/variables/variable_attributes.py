@@ -230,7 +230,6 @@ class VariableAttributes(AttributeModel):
         return unit_str
 
     @root_validator
-    @classmethod
     def validate_units_are_commented(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if not values["units"]:
             if not values["comment"] or "Unknown units." not in values["comment"]:

@@ -56,14 +56,12 @@ class FileSystemS3(FileSystem):
         
         Defaults to ``us-west-2``."""
 
-        # TODO: Seems like a static method here, should refactor into as such.
         @validator("storage_root")
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
             return storage_root  # HACK: Don't run parent validator to create storage root file
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
 
-    # TODO: Seems like a static method here, should refactor into as such.
     @validator("parameters")
     def _check_authentication(cls, parameters: Parameters):
         import botocore.exceptions
@@ -80,7 +78,6 @@ class FileSystemS3(FileSystem):
             )
         return parameters
 
-    # TODO: Seems like a static method here, should refactor into as such.
     @validator("parameters")
     def _ensure_bucket_exists(cls, parameters: Parameters):
         import botocore.exceptions
@@ -152,7 +149,7 @@ class FileSystemS3(FileSystem):
         return last_modified
 
     def modified_since(
-            self, datastream: str, last_modified: datetime
+        self, datastream: str, last_modified: datetime
     ) -> List[datetime]:
         """Returns the data times of all files modified after the specified datetime."""
         substitutions = get_fields_from_datastream(datastream)
@@ -162,11 +159,11 @@ class FileSystemS3(FileSystem):
             datetime.strptime(get_file_datetime_str(obj.key), "%Y%m%d.%H%M%S")
             for obj in self._bucket.objects.filter(Prefix=prefix)
             if obj.last_modified is not None
-               and obj.last_modified.astimezone(timezone.utc) > last_modified
+            and obj.last_modified.astimezone(timezone.utc) > last_modified
         ]
 
     def save_ancillary_file(
-            self, filepath: Path, target_path: Union[Path, None] = None
+        self, filepath: Path, target_path: Union[Path, None] = None
     ):
         """Saves an ancillary filepath to the datastream's ancillary storage area.
 
@@ -192,7 +189,7 @@ class FileSystemS3(FileSystem):
                 if filepath.is_dir():
                     continue
                 s3_key = (
-                        standard_fpath.parent / filepath.relative_to(tmp_dir)
+                    standard_fpath.parent / filepath.relative_to(tmp_dir)
                 ).as_posix()
                 self._bucket.upload_file(Filename=filepath.as_posix(), Key=s3_key)
                 logger.info(
@@ -203,12 +200,12 @@ class FileSystemS3(FileSystem):
                 )
 
     def _find_data(
-            self,
-            start: datetime,
-            end: datetime,
-            datastream: str,
-            metadata_kwargs: Dict[str, str],
-            **kwargs: Any,
+        self,
+        start: datetime,
+        end: datetime,
+        datastream: str,
+        metadata_kwargs: Dict[str, str],
+        **kwargs: Any,
     ) -> List[Path]:
         dir_template = Template(self.parameters.data_storage_path.as_posix())
         extension = self.handler.writer.file_extension
@@ -260,5 +257,6 @@ class FileSystemS3(FileSystem):
 
 # TODO:
 #  HACK: Update forward refs to get around error I couldn't replicate with simpler code
-#  "pydantic.errors.ConfigError: field "parameters" not yet prepared so type is still a ForwardRef..."
+#  "pydantic.errors.ConfigError: field "parameters" not yet prepared
+#  so type is still a ForwardRef..."
 FileSystemS3.update_forward_refs(Parameters=FileSystemS3.Parameters)

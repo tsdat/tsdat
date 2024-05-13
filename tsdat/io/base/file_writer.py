@@ -24,13 +24,12 @@ class FileWriter(DataWriter, ABC):
     file_extension: str
 
     @validator("file_extension")
-    @classmethod
     def no_leading_dot(cls, v: str) -> str:
         return v.lstrip(".")
 
     @abstractmethod
     def write(
-            self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
+        self, dataset: xr.Dataset, filepath: Optional[Path] = None, **kwargs: Any
     ) -> None:
         """-----------------------------------------------------------------------------
         Writes the dataset to the provided filepath.
