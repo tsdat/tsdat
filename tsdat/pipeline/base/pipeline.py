@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import numpy as np
 import xarray as xr
 from abc import ABC, abstractmethod
@@ -7,12 +5,10 @@ from getpass import getuser
 from datetime import datetime
 from typing import Any, Iterable, List, Pattern, cast
 from pydantic import Field
-from ..config.dataset import DatasetConfig
-from ..io.base import Retriever, Storage
-from ..qc.base import QualityManagement
-from ..utils import ParameterizedClass, model_to_dict
-
-__all__ = ["Pipeline"]
+from ...config.dataset import DatasetConfig
+from ...io.base import Retriever, Storage
+from ...qc.base import QualityManagement
+from ...utils import ParameterizedClass, model_to_dict
 
 
 class Pipeline(ParameterizedClass, ABC):
@@ -83,7 +79,7 @@ class Pipeline(ParameterizedClass, ABC):
         return dataset
 
     def _add_dataset_variables(
-        self, dataset: xr.Dataset, vars_to_add: Iterable[str]
+            self, dataset: xr.Dataset, vars_to_add: Iterable[str]
     ) -> xr.Dataset:
         for name in vars_to_add:
             dims = self.dataset_config[name].dims
@@ -108,7 +104,7 @@ class Pipeline(ParameterizedClass, ABC):
         return dataset
 
     def _add_dataset_attrs(
-        self, dataset: xr.Dataset, output_vars: Iterable[str]
+            self, dataset: xr.Dataset, output_vars: Iterable[str]
     ) -> xr.Dataset:
         global_attrs = model_to_dict(self.dataset_config.attrs)
         dataset.attrs.update(**global_attrs)
