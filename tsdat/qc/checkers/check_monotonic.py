@@ -25,9 +25,8 @@ class CheckMonotonic(QualityChecker):
         dim: Optional[str] = None
 
         @validator("require_increasing")
-        @classmethod
         def check_monotonic_not_increasing_and_decreasing(
-                cls, inc: bool, values: Dict[str, Any]
+            cls, inc: bool, values: Dict[str, Any]
         ) -> bool:
             if inc and values["require_decreasing"]:
                 raise ValueError(
@@ -39,7 +38,9 @@ class CheckMonotonic(QualityChecker):
     parameters: Parameters = Parameters()
 
     def run(
-            self, dataset: xr.Dataset, variable_name: str
+        self,
+        dataset: xr.Dataset,
+        variable_name: str,
     ) -> Union[NDArray[np.bool_], None]:
         variable = dataset[variable_name]
         failures = np.full(variable.shape, False)
@@ -65,6 +66,8 @@ class CheckMonotonic(QualityChecker):
 
         axis = self.get_axis(variable)
         zero = np.timedelta64(0) if is_datetime_like(variable.data) else 0
+
+        # TODO: `direction` would be better assigned as a class var on init than within a method.
         direction: Literal["increasing", "decreasing", ""] = ""
 
         if self.parameters.require_decreasing:

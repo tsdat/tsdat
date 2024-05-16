@@ -53,7 +53,10 @@ class RecordQualityResults(QualityHandler):
     parameters: Parameters
 
     def run(
-            self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
+        self,
+        dataset: xr.Dataset,
+        variable_name: str,
+        failures: NDArray[np.bool_],
     ) -> xr.Dataset:
         dataset.qcfilter.add_test(
             variable_name,
@@ -64,7 +67,8 @@ class RecordQualityResults(QualityHandler):
         )
         return dataset
 
-    def get_next_bit_number(self, dataset: xr.Dataset, variable_name: str) -> int:
+    @staticmethod
+    def get_next_bit_number(dataset: xr.Dataset, variable_name: str) -> int:
         if (qc_var := dataset.get(f"qc_{variable_name}")) is None:
             return 1
         masks = qc_var.attrs.get("flag_masks")

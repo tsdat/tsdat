@@ -27,9 +27,9 @@ logger = logging.getLogger(__name__)
 
 def error_traceback(error):
     warnings.warn(
-            "\n\nEncountered an error running transformer. Please ensure necessary"
-            " dependencies are installed."
-        )
+        "\n\nEncountered an error running transformer. Please ensure necessary"
+        " dependencies are installed."
+    )
     logger.exception(error)
 
 
@@ -330,6 +330,9 @@ class Interpolate(_ADIBaseTransformer):
 class NearestNeighbor(_ADIBaseTransformer):
     transformation_type: str = "TRANS_SUBSAMPLE"
 
+
+# TODO: Looks like a documentation reference here to `converters.py`. Should be changed
+#  given the refactor.
 
 # tsdat/
 #   adi/  (current)
