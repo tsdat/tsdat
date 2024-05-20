@@ -25,7 +25,7 @@ class TransformParameterConverter:
     }
 
     def convert_to_adi_format(
-            self, transform_parameters: Dict[Any, Any]
+        self, transform_parameters: Dict[Any, Any]
     ) -> Dict[str, str]:
         transforms: Dict[Any, Any] = {}
         """ 
@@ -78,13 +78,13 @@ class TransformParameterConverter:
         return transforms
 
     def _write_transform_parameter_row(
-            self,
-            transforms: Dict[str, str],
-            file_name: str,
-            base_var_name: Optional[str],
-            dim_name: str,
-            parameter_name: str,
-            value: str,
+        self,
+        transforms: Dict[str, str],
+        file_name: str,
+        base_var_name: Optional[str],
+        dim_name: str,
+        parameter_name: str,
+        value: str,
     ):
         # ADI transforms requires that the qc_ variable name is used instead of the actual variable name, so we need
         # to append it here
@@ -105,9 +105,9 @@ class TransformParameterConverter:
             )
 
         elif (
-                parameter_name in ["range", "width"]
-                and not isinstance(value, int)
-                and value[-1] != "s"
+            parameter_name in ["range", "width"]
+            and not isinstance(value, int)
+            and value[-1] != "s"
         ):
             seconds = np.timedelta64(value[:-1], value[-1]).item().total_seconds()
             value = str(int(seconds)) + "s"

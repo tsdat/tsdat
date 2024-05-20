@@ -21,15 +21,15 @@ class CreateTimeGrid(DataConverter):
     argument. E.g., '30s', '5min', '10min', '1H', etc."""
 
     def convert(
-            self,
-            data: xr.DataArray,
-            variable_name: str,
-            dataset_config: Optional["DatasetConfig"] = None,
-            retrieved_dataset: Optional[RetrievedDataset] = None,
-            retriever: Optional["StorageRetriever"] = None,
-            time_span: Optional[Tuple[datetime, datetime]] = None,
-            input_key: Optional[str] = None,
-            **kwargs: Any,
+        self,
+        data: xr.DataArray,
+        variable_name: str,
+        dataset_config: Optional["DatasetConfig"] = None,
+        retrieved_dataset: Optional[RetrievedDataset] = None,
+        retriever: Optional["StorageRetriever"] = None,
+        time_span: Optional[Tuple[datetime, datetime]] = None,
+        input_key: Optional[str] = None,
+        **kwargs: Any,
     ) -> Optional[xr.DataArray]:
         if time_span is None:
             raise ValueError("time_span argument required for CreateTimeGrid variable")
@@ -53,12 +53,12 @@ class CreateTimeGrid(DataConverter):
         )
 
         if (
-                retrieved_dataset is not None
-                and input_key is not None
-                and retriever is not None
-                and retriever.parameters is not None
-                and retriever.parameters.trans_params is not None
-                and retriever.parameters.trans_params.select_parameters(input_key)
+            retrieved_dataset is not None
+            and input_key is not None
+            and retriever is not None
+            and retriever.parameters is not None
+            and retriever.parameters.trans_params is not None
+            and retriever.parameters.trans_params.select_parameters(input_key)
         ):
             params = retriever.parameters.trans_params.select_parameters(input_key)
             width = params["width"].get(variable_name)

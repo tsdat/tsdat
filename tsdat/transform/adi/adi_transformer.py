@@ -42,11 +42,11 @@ from ...const import COORDINATE_SYSTEM, INPUT_DATASTREAM, OUTPUT_DATASTREAM
 # TODO: This class is *massive* and should be trimmed down. Recommended refactor into smaller classses and/or functions.
 class AdiTransformer:
     def transform(
-            self,
-            variable_name: str,
-            input_dataset: xr.Dataset,
-            output_dataset: xr.Dataset,
-            transform_parameters: Dict[str, Any],
+        self,
+        variable_name: str,
+        input_dataset: xr.Dataset,
+        output_dataset: xr.Dataset,
+        transform_parameters: Dict[str, Any],
     ):
         """-------------------------------------------------------------------------------------------------------------
         This function will use ADI libraries to transform one data variable to the shape defined for the output.
@@ -251,7 +251,7 @@ class AdiTransformer:
         cds3.Group.delete(adi_dataset)
 
     def _create_adi_retrieved_dataset(
-            self, variable_name: str, input_dataset: xr.Dataset
+        self, variable_name: str, input_dataset: xr.Dataset
     ) -> CDSGroup:
         """-----------------------------------------------------------------------------------------------------------------
         Create the following structure in ADI:
@@ -317,7 +317,7 @@ class AdiTransformer:
         return dataset_group
 
     def _create_adi_transformed_dataset(
-            self, variable_name: str, output_dataset: xr.Dataset
+        self, variable_name: str, output_dataset: xr.Dataset
     ) -> CDSGroup:
         """-----------------------------------------------------------------------------------------------------------------
         Create the following structure in ADI:
@@ -382,10 +382,10 @@ class AdiTransformer:
         return transformed_data
 
     def _update_xr_attrs(
-            self,
-            variable_name: str,
-            output_dataset: xr.Dataset,
-            transformed_dataset: CDSGroup,
+        self,
+        variable_name: str,
+        output_dataset: xr.Dataset,
+        transformed_dataset: CDSGroup,
     ):
         # Sync the transform attributes back to the xarray variable and qc_variable
         adi_var = (
@@ -434,9 +434,9 @@ class AdiTransformer:
             # Collect the qc atts together, since we need to convert them together
             for att_name, att_value in xr_atts_dict.items():
                 if (
-                        att_name == "flag_masks"
-                        or att_name == "flag_meanings"
-                        or att_name == "flag_assessments"
+                    att_name == "flag_masks"
+                    or att_name == "flag_meanings"
+                    or att_name == "flag_assessments"
                 ):
                     qc_atts[att_name] = att_value
                 else:
@@ -566,10 +566,10 @@ class AdiTransformer:
         return adi_qc_atts
 
     def _add_variable_to_adi(
-            self,
-            xr_var: xr.DataArray,
-            parent_group: CDSGroup,
-            coordinate_system_name: str = None,
+        self,
+        xr_var: xr.DataArray,
+        parent_group: CDSGroup,
+        coordinate_system_name: str = None,
     ):
         """-----------------------------------------------------------------------------------------------------------------
         Add a variable specified by an xarray DataArray to the given ADI dataset.
@@ -661,7 +661,7 @@ class AdiTransformer:
         return cds_type
 
     def _set_bounds_transform_parameters(
-            self, variable_name: str, xr_dataset: xr.Dataset, obs_or_coord_group: CDSGroup
+        self, variable_name: str, xr_dataset: xr.Dataset, obs_or_coord_group: CDSGroup
     ):
         # Get the bounds variable for each dimension used by our variable.  If no bounds variable exists, then skip.
         # Bounds variable saves the offset for each data point instead of full value

@@ -19,15 +19,15 @@ class _ADIBaseTransformer(DataConverter):
     coord: str = "ALL"
 
     def convert(
-            self,
-            data: xr.DataArray,
-            variable_name: str,
-            dataset_config: "DatasetConfig",
-            retrieved_dataset: RetrievedDataset,
-            retriever: Optional["StorageRetriever"] = None,
-            input_dataset: Optional[xr.Dataset] = None,
-            input_key: Optional[str] = None,
-            **kwargs: Any,
+        self,
+        data: xr.DataArray,
+        variable_name: str,
+        dataset_config: "DatasetConfig",
+        retrieved_dataset: RetrievedDataset,
+        retriever: Optional["StorageRetriever"] = None,
+        input_dataset: Optional[xr.Dataset] = None,
+        input_key: Optional[str] = None,
+        **kwargs: Any,
     ) -> Optional[xr.DataArray]:
         if variable_name in dataset_config.coords:
             raise ValueError(

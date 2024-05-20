@@ -5,9 +5,9 @@ import xarray as xr
 
 
 def _create_bounds(
-        coordinate: xr.DataArray,
-        alignment: Literal["LEFT", "RIGHT", "CENTER"],
-        width: str,
+    coordinate: xr.DataArray,
+    alignment: Literal["LEFT", "RIGHT", "CENTER"],
+    width: str,
 ) -> xr.DataArray:
     """Creates coordinate bounds with the specified alignment and bound width."""
     coord_vals = coordinate.data
