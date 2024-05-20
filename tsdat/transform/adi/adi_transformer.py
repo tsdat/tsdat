@@ -30,273 +30,23 @@ except ImportError:
     CDSVar = Any
     CDSObject = Any
 
+from .bad_transformation_settings_error import BadTransformationSettingsError
+from .transform_parameter_converter import TransformParameterConverter
+from .adi_qc_atts import adi_qc_atts
+from ...const import COORDINATE_SYSTEM, INPUT_DATASTREAM, OUTPUT_DATASTREAM
 
 # We will always use the same coordinate system, input datastream, and output datastream name for every ADI dataset
 # conversion, since tsdat only will allow one coordinate system and libtrans doesn't care what the names are.
-COORDINATE_SYSTEM = "coord_sys"
-OUTPUT_DATASTREAM = "output_ds"
-INPUT_DATASTREAM = "input_ds"
 
 
-class BadTransformationSettingsError(ValueError):
-    """Exception class used when bad combinations of parameters are passed to transformation code."""
-
-
-adi_qc_atts = {
-    "bit_1_description": (
-        "QC_BAD:  Transformation could not finish, value set to missing_value."
-    ),
-    "bit_1_assessment": "Bad",
-    "bit_2_description": (
-        "QC_INDETERMINATE:  Some, or all, of the input values used to create this"
-        " output value had a QC assessment of Indeterminate."
-    ),
-    "bit_2_assessment": "Indeterminate",
-    "bit_3_description": (
-        "QC_INTERPOLATE:  Indicates a non-standard interpolation using points other"
-        " than the two that bracket the target index was applied."
-    ),
-    "bit_3_assessment": "Indeterminate",
-    "bit_4_description": (
-        "QC_EXTRAPOLATE:  Indicates extrapolation is performed out from two points on"
-        " the same side of the target index."
-    ),
-    "bit_4_assessment": "Indeterminate",
-    "bit_5_description": (
-        "QC_NOT_USING_CLOSEST:  Nearest good point is not the nearest actual point."
-    ),
-    "bit_5_assessment": "Indeterminate",
-    "bit_6_description": (
-        "QC_SOME_BAD_INPUTS:  Some, but not all, of the inputs in the averaging window"
-        " were flagged as bad and excluded from the transform."
-    ),
-    "bit_6_assessment": "Indeterminate",
-    "bit_7_description": (
-        "QC_ZERO_WEIGHT:  The weights for all the input points to be averaged for this"
-        " output bin were set to zero."
-    ),
-    "bit_7_assessment": "Indeterminate",
-    "bit_8_description": (
-        "QC_OUTSIDE_RANGE:  No input samples exist in the transformation region, value"
-        " set to missing_value."
-    ),
-    "bit_8_assessment": "Bad",
-    "bit_9_description": (
-        "QC_ALL_BAD_INPUTS:  All the input values in the transformation region are bad,"
-        " value set to missing_value."
-    ),
-    "bit_9_assessment": "Bad",
-    "bit_10_description": (
-        "QC_BAD_STD:  Standard deviation over averaging interval is greater than limit"
-        " set by transform parameter std_bad_max."
-    ),
-    "bit_10_assessment": "Bad",
-    "bit_11_description": (
-        "QC_INDETERMINATE_STD:  Standard deviation over averaging interval is greater"
-        " than limit set by transform parameter std_ind_max."
-    ),
-    "bit_11_assessment": "Indeterminate",
-    "bit_12_description": (
-        "QC_BAD_GOODFRAC:  Fraction of good and indeterminate points over averaging"
-        " interval are less than limit set by transform parameter goodfrac_bad_min."
-    ),
-    "bit_12_assessment": "Bad",
-    "bit_13_description": (
-        "QC_INDETERMINATE_GOODFRAC:  Fraction of good and indeterminate points over"
-        " averaging interval is less than limit set by transform parameter"
-        " goodfrac_ind_min."
-    ),
-    "bit_13_assessment": "Indeterminate",
-}
-
-
-class ADITransformationTypes:
-    # Allowed ADI transform algorithms - these are the values that can be used in transformation_type parameter
-    TRANS_AUTO = "TRANS_AUTO"
-    TRANS_INTERPOLATE = "TRANS_INTERPOLATE"
-    TRANS_SUBSAMPLE = "TRANS_SUBSAMPLE"
-    TRANS_BIN_AVERAGE = "TRANS_BIN_AVERAGE"
-    TRANS_PASSTHROUGH = "TRANS_PASSTHROUGH"
-
-
-class ADIAlignments:
-    LEFT = "LEFT"
-    CENTER = "CENTER"
-    RIGHT = "RIGHT"
-
-    label_to_int = {LEFT: 0, CENTER: 0.5, RIGHT: 1}
-
-    @staticmethod
-    def get_adi_value(parameter_value: str):
-        return ADIAlignments.label_to_int.get(parameter_value)
-
-
-class TransformParameterConverter:
-    # Maps which type of object ADI needs to apply the transform parameters to
-    transform_param_type = {
-        "transformation_type": COORDINATE_SYSTEM,
-        "width": COORDINATE_SYSTEM,
-        "alignment": COORDINATE_SYSTEM,
-        "input_datastream_alignment": INPUT_DATASTREAM,
-        "input_datastream_width": INPUT_DATASTREAM,
-        "range": INPUT_DATASTREAM,
-        "qc_mask": INPUT_DATASTREAM,
-        "missing_value": INPUT_DATASTREAM,
-        "qc_bad": INPUT_DATASTREAM,
-        "std_ind_max": COORDINATE_SYSTEM,
-        "std_bad_max": COORDINATE_SYSTEM,
-        "goodfrac_ind_min": COORDINATE_SYSTEM,
-        "goodfrac_bad_min": COORDINATE_SYSTEM,
-    }
-
-    def convert_to_adi_format(
-        self, transform_parameters: Dict[Any, Any]
-    ) -> Dict[str, str]:
-        transforms: Dict[Any, Any] = {}
-        """ 
-        Example of input dictionary structure:
-        
-        transform_parameters = {
-                "transformation_type": {
-                    "time": "TRANS_AUTO"
-                },
-                "range": {
-                    "time": 1800
-                },
-                "alignment": {
-                    "time": LEFT
-                }
-        }
-        """
-
-        for parameter_name, transform_parameter in transform_parameters.items():
-            parameter_type = self.transform_param_type.get(parameter_name)
-            transform_parameter_name = self._get_adi_transform_parameter_name(
-                parameter_name, parameter_type
-            )
-
-            # TODO: for now we are not supporting variable overrides or datastream-specific overrides.
-            #   When we do, we will need to revise this syntax.  For now, the keys are the dimensions and the
-            #   values are the defaults
-            for dim_name, value in transform_parameter.items():
-                if parameter_type == COORDINATE_SYSTEM:
-                    file_name = COORDINATE_SYSTEM
-                    self._write_transform_parameter_row(
-                        transforms,
-                        file_name,
-                        None,
-                        dim_name,
-                        transform_parameter_name,
-                        value,
-                    )
-                else:  # INPUT_DATASTREAM
-                    file_name = INPUT_DATASTREAM
-                    self._write_transform_parameter_row(
-                        transforms,
-                        file_name,
-                        None,
-                        dim_name,
-                        transform_parameter_name,
-                        value,
-                    )
-
-        return transforms
-
-    def _write_transform_parameter_row(
-        self,
-        transforms: Dict[str, str],
-        file_name: str,
-        base_var_name: str,
-        dim_name: str,
-        parameter_name: str,
-        value: str,
-    ):
-        # ADI transforms requires that the qc_ variable name is used instead of the actual variable name, so we need
-        # to append it here
-        variable_name = base_var_name
-        if parameter_name == "qc_bad" or parameter_name == "qc_mask":
-            if base_var_name and base_var_name[0:3] != "qc_":
-                variable_name = f"qc_{base_var_name}"
-
-        elif parameter_name == "alignment":
-            value = ADIAlignments.get_adi_value(value)
-
-        if parameter_name == "range" and value == "LENGTH_OF_PROCESSING_INTERVAL":
-            # If this parameter is range and value is LENGTH_OF_PROCESSING_INTERVAL, then we can't save the parameter
-            # because ADI doesn't recognize LENGTH_OF_PROCESSING_INTERVAL as a valid option.
-            print(
-                "Omitting range=LENGTH_OF_PROCESSING_INTERVAL since it is not"
-                " recognized by ADI and is the default."
-            )
-
-        elif (
-            parameter_name in ["range", "width"]
-            and not isinstance(value, int)
-            and value[-1] != "s"
-        ):
-            seconds = np.timedelta64(value[:-1], value[-1]).item().total_seconds()
-            value = str(int(seconds)) + "s"
-
-        else:
-            # If this is qc_mask parameter, then we have to convert the value from a binary string to integer
-            if parameter_name == "qc_mask":
-                value = self._convert_bit_positions_to_integer(value)
-
-            elif parameter_name == "qc_bad":
-                value = ", ".join(value)
-
-            if file_name not in transforms:
-                transforms[file_name] = ""
-
-            row_text = f"{parameter_name} = {value};"
-
-            # If dim is null, then it was deliberately set that way, so we should not include it in the file
-            if dim_name:
-                row_text = f"{dim_name}:{row_text}"
-            if variable_name:
-                row_text = f"{variable_name}:{row_text}"
-
-            # Append the current row to the existing text
-            existing_text = transforms[file_name]
-            transforms[file_name] = f"{existing_text}{row_text}\n"
-
-    def _convert_bit_positions_to_integer(self, bit_position_array):
-        """
-        Convert an array of bit positions starting at bit 1 for the zeroeth bit (ie., [1,3]) into an
-        integer with the proper bits flipped.
-        """
-        int_value = 0
-        for bit_position in bit_position_array:  # ie., [1,3]
-            power = int(bit_position) - 1
-            int_value += int(math.pow(2, power))
-
-        return int_value
-
-    def _get_adi_transform_parameter_name(self, parameter_name: str, file_type: str):
-        """
-        Convert transform parameter name from PCM format to names used in adi transform files.
-        """
-        name = parameter_name.strip().lower()
-
-        if name == "transformation_type":
-            name = "transform"  # We use a different name in our UI than in the file
-
-        elif file_type == "input_datastream" and name == "input_datastream_alignment":
-            name = "alignment"
-
-        elif file_type == "input_datastream" and name == "input_datastream_width":
-            name = "width"
-
-        return name
-
-
+# TODO: This class is *massive* and should be trimmed down. Recommended refactor into smaller classses and/or functions.
 class AdiTransformer:
     def transform(
-        self,
-        variable_name: str,
-        input_dataset: xr.Dataset,
-        output_dataset: xr.Dataset,
-        transform_parameters: Dict[str, Any],
+            self,
+            variable_name: str,
+            input_dataset: xr.Dataset,
+            output_dataset: xr.Dataset,
+            transform_parameters: Dict[str, Any],
     ):
         """-------------------------------------------------------------------------------------------------------------
         This function will use ADI libraries to transform one data variable to the shape defined for the output.
@@ -501,7 +251,7 @@ class AdiTransformer:
         cds3.Group.delete(adi_dataset)
 
     def _create_adi_retrieved_dataset(
-        self, variable_name: str, input_dataset: xr.Dataset
+            self, variable_name: str, input_dataset: xr.Dataset
     ) -> CDSGroup:
         """-----------------------------------------------------------------------------------------------------------------
         Create the following structure in ADI:
@@ -567,7 +317,7 @@ class AdiTransformer:
         return dataset_group
 
     def _create_adi_transformed_dataset(
-        self, variable_name: str, output_dataset: xr.Dataset
+            self, variable_name: str, output_dataset: xr.Dataset
     ) -> CDSGroup:
         """-----------------------------------------------------------------------------------------------------------------
         Create the following structure in ADI:
@@ -632,10 +382,10 @@ class AdiTransformer:
         return transformed_data
 
     def _update_xr_attrs(
-        self,
-        variable_name: str,
-        output_dataset: xr.Dataset,
-        transformed_dataset: CDSGroup,
+            self,
+            variable_name: str,
+            output_dataset: xr.Dataset,
+            transformed_dataset: CDSGroup,
     ):
         # Sync the transform attributes back to the xarray variable and qc_variable
         adi_var = (
@@ -684,9 +434,9 @@ class AdiTransformer:
             # Collect the qc atts together, since we need to convert them together
             for att_name, att_value in xr_atts_dict.items():
                 if (
-                    att_name == "flag_masks"
-                    or att_name == "flag_meanings"
-                    or att_name == "flag_assessments"
+                        att_name == "flag_masks"
+                        or att_name == "flag_meanings"
+                        or att_name == "flag_assessments"
                 ):
                     qc_atts[att_name] = att_value
                 else:
@@ -816,10 +566,10 @@ class AdiTransformer:
         return adi_qc_atts
 
     def _add_variable_to_adi(
-        self,
-        xr_var: xr.DataArray,
-        parent_group: CDSGroup,
-        coordinate_system_name: str = None,
+            self,
+            xr_var: xr.DataArray,
+            parent_group: CDSGroup,
+            coordinate_system_name: str = None,
     ):
         """-----------------------------------------------------------------------------------------------------------------
         Add a variable specified by an xarray DataArray to the given ADI dataset.
@@ -911,7 +661,7 @@ class AdiTransformer:
         return cds_type
 
     def _set_bounds_transform_parameters(
-        self, variable_name: str, xr_dataset: xr.Dataset, obs_or_coord_group: CDSGroup
+            self, variable_name: str, xr_dataset: xr.Dataset, obs_or_coord_group: CDSGroup
     ):
         # Get the bounds variable for each dimension used by our variable.  If no bounds variable exists, then skip.
         # Bounds variable saves the offset for each data point instead of full value
