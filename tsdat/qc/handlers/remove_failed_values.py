@@ -18,10 +18,8 @@ class RemoveFailedValues(QualityHandler):
     ) -> xr.Dataset:
         if failures.any():
             if variable_name in dataset.dims:
-                mask = xr.DataArray(
-                    failures, coords={variable_name: dataset[variable_name]}
-                )
-                dataset = dataset.where(~mask, drop=True)
+                idx = np.argwhere(~failures).squeeze()
+                dataset = dataset.isel({variable_name: idx})
             else:
                 fill_value = dataset[variable_name].attrs.get("_FillValue", None)
                 dataset[variable_name] = dataset[variable_name].where(~failures, fill_value)  # type: ignore
