@@ -178,11 +178,7 @@ def test_storage_retriever(
     )
 
     expected = xr.Dataset(
-        coords={
-            "time": pd.date_range(
-                "2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left"
-            )
-        },  # type: ignore
+        coords={"time": pd.date_range("2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left")},  # type: ignore
         data_vars={
             "temperature": (  # degF -> degC
                 "time",
