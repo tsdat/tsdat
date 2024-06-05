@@ -419,10 +419,8 @@ def test_storage_retriever_file_fetching(
         data_vars={
             "temperature": (  # degF -> degC
                 "time",
-                [71.4, 71.2, 71.1, 70.5],
-                {"units": "degF"},
-                # (np.array([71.4, 71.2, 71.1, 70.5]) - 32) * 5 / 9,
-                # {"units": "degC"},
+                (np.array([71.4, 71.2, 71.1, 70.5]) - 32) * 5 / 9,
+                {"units": "degC"},
             ),
             "qc_temperature": ("time", [0, 0, 0, 0]),
         },
