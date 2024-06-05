@@ -20,5 +20,5 @@ data_vars:
       name: temp
       data_converters:
         - classname: tsdat.transform.NearestNeighbor
-        # - classname: tsdat.io.converters.UnitsConverter
-        #   input_units: degF
+        - classname: tsdat.io.converters.UnitsConverter
+          input_units: degF
