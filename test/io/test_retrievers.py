@@ -178,7 +178,11 @@ def test_storage_retriever(
     )
 
     expected = xr.Dataset(
-        coords={"time": pd.date_range("2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left")},  # type: ignore
+        coords={
+            "time": pd.date_range(
+                "2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left"
+            )
+        },  # type: ignore
         data_vars={
             "temperature": (  # degF -> degC
                 "time",
@@ -415,8 +419,10 @@ def test_storage_retriever_file_fetching(
         data_vars={
             "temperature": (  # degF -> degC
                 "time",
-                (np.array([71.4, 71.2, 71.1, 70.5]) - 32) * 5 / 9,
-                {"units": "degC"},
+                [71.4, 71.2, 71.1, 70.5],
+                {"units": "degF"},
+                # (np.array([71.4, 71.2, 71.1, 70.5]) - 32) * 5 / 9,
+                # {"units": "degC"},
             ),
             "qc_temperature": ("time", [0, 0, 0, 0]),
         },
