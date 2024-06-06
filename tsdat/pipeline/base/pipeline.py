@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import numpy as np
 import xarray as xr
 from abc import ABC, abstractmethod
@@ -7,12 +5,10 @@ from getpass import getuser
 from datetime import datetime
 from typing import Any, Iterable, List, Pattern, cast
 from pydantic import Field
-from ..config.dataset import DatasetConfig
-from ..io.base import Retriever, Storage
-from ..qc.base import QualityManagement
-from ..utils import ParameterizedClass, model_to_dict
-
-__all__ = ["Pipeline"]
+from ...config.dataset import DatasetConfig
+from ...io.base import Retriever, Storage
+from ...qc.base import QualityManagement
+from ...utils import ParameterizedClass, model_to_dict
 
 
 class Pipeline(ParameterizedClass, ABC):
