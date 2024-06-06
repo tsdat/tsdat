@@ -1,129 +1,17 @@
-from datetime import datetime
-import warnings
-import logging
-from typing import TYPE_CHECKING, Any, Dict, Hashable, List, Literal, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Hashable, List, Optional, Tuple
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 
-from ..io.base import DataConverter, RetrievedDataset
+from ...io.base import DataConverter, RetrievedDataset
 
 # Prevent any chance of runtime circular imports for typing-only imports
 if TYPE_CHECKING:  # pragma: no cover
-    from ..config.dataset import DatasetConfig  # pragma: no cover
-    from ..io.retrievers import StorageRetriever  # pragma: no cover
+    from ...config.dataset import DatasetConfig  # pragma: no cover
+    from ...io.retrievers import StorageRetriever  # pragma: no cover
 
-__all__ = [
-    "CreateTimeGrid",
-    "Automatic",
-    "BinAverage",
-    "Interpolate",
-    "NearestNeighbor",
-]
-
-logger = logging.getLogger(__name__)
-
-
-def error_traceback(error):
-    warnings.warn(
-        "\n\nEncountered an error running transformer. Please ensure necessary"
-        " dependencies are installed."
-    )
-    logger.exception(error)
-
-
-def _create_bounds(
-    coordinate: xr.DataArray,
-    alignment: Literal["LEFT", "RIGHT", "CENTER"],
-    width: str,
-) -> xr.DataArray:
-    """Creates coordinate bounds with the specified alignment and bound width."""
-    coord_vals = coordinate.data
-    # TODO: handle for units
-
-    units = ""
-    for i, s in enumerate(width):
-        if s.isalpha():
-            units = width[i:]
-            width = width[:i]
-    _width = float(width)
-
-    if np.issubdtype(coordinate.dtype, np.datetime64):  # type: ignore
-        coord_vals = np.array([np.datetime64(val) for val in coord_vals])
-        _width = np.timedelta64(int(_width), units or "s")
-
-    if alignment == "LEFT":
-        begin = coord_vals
-        end = coord_vals + _width
-    elif alignment == "CENTER":
-        begin = coord_vals - _width / 2
-        end = coord_vals + _width / 2
-    elif alignment == "RIGHT":
-        begin = coord_vals - _width
-        end = coord_vals
-
-    bounds_array = np.stack((begin, end), axis=-1)  # type: ignore
-    return xr.DataArray(
-        bounds_array,
-        dims=[coordinate.name, "bound"],
-        coords={coordinate.name: coordinate},
-    )
-
-
-class CreateTimeGrid(DataConverter):
-    interval: str
-    """The frequency of time points. This is passed to pd.timedelta_range as the 'freq'
-    argument. E.g., '30s', '5min', '10min', '1H', etc."""
-
-    def convert(
-        self,
-        data: xr.DataArray,
-        variable_name: str,
-        dataset_config: Optional["DatasetConfig"] = None,
-        retrieved_dataset: Optional[RetrievedDataset] = None,
-        retriever: Optional["StorageRetriever"] = None,
-        time_span: Optional[Tuple[datetime, datetime]] = None,
-        input_key: Optional[str] = None,
-        **kwargs: Any,
-    ) -> Optional[xr.DataArray]:
-        if time_span is None:
-            raise ValueError("time_span argument required for CreateTimeGrid variable")
-
-        # TODO: if not time_span, then get the time range from the retrieved data
-
-        start, end = time_span[0], time_span[1]
-        time_deltas = pd.timedelta_range(
-            start="0 days",
-            end=end - start,
-            freq=self.interval,
-            closed="left",
-        )
-        date_times = time_deltas + start
-
-        time_grid = xr.DataArray(
-            name=variable_name,
-            data=date_times,
-            dims=variable_name,
-            attrs={"units": "Seconds since 1970-01-01 00:00:00"},
-        )
-
-        if (
-            retrieved_dataset is not None
-            and input_key is not None
-            and retriever is not None
-            and retriever.parameters is not None
-            and retriever.parameters.trans_params is not None
-            and retriever.parameters.trans_params.select_parameters(input_key)
-        ):
-            params = retriever.parameters.trans_params.select_parameters(input_key)
-            width = params["width"].get(variable_name)
-            alignment = params["alignment"].get(variable_name)
-            if width is not None and alignment is not None:
-                bounds = _create_bounds(time_grid, alignment=alignment, width=width)
-                retrieved_dataset.data_vars[f"{variable_name}_bound"] = bounds
-
-        return time_grid
+from ._create_bounds import _create_bounds
+from .error_traceback import error_traceback
 
 
 class _ADIBaseTransformer(DataConverter):
@@ -313,38 +201,3 @@ class _ADIBaseTransformer(DataConverter):
         ]
 
         return None
-
-
-class Automatic(_ADIBaseTransformer):
-    transformation_type: str = "TRANS_AUTO"
-
-
-class BinAverage(_ADIBaseTransformer):
-    transformation_type: str = "TRANS_BIN_AVERAGE"
-
-
-class Interpolate(_ADIBaseTransformer):
-    transformation_type: str = "TRANS_INTERPOLATE"
-
-
-class NearestNeighbor(_ADIBaseTransformer):
-    transformation_type: str = "TRANS_SUBSAMPLE"
-
-
-# TODO: Looks like a documentation reference here to `converters.py`. Should be changed
-#  given the refactor.
-
-# tsdat/
-#   adi/  (current)
-#       __init__.py
-#       converters.py
-#       transform.py
-#   transform/ (proposed)
-#       __init__.py
-#       adi.py
-#       converters.py
-#
-# retriever.yml
-#   converters:
-#       - classname: tsdat.io.converters.TransformNearest (Current)
-#       - classname: tsdat.transform.NearestNeighbor (Proposed)
