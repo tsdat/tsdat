@@ -1,25 +1,27 @@
 from datetime import timedelta
-import pandas as pd
-import xarray as xr
-from pydantic import BaseModel, Field
 from typing import (
     Any,
     Callable,
     Dict,
     List,
     Optional,
+    Tuple,
 )
 
-from .global_arm_transform_params import GlobalARMTransformParams
-from .global_fetch_params import GlobalFetchParams
-from .storage_retriever_input import StorageRetrieverInput
-from .perform_data_retrieval import perform_data_retrieval
+import pandas as pd
+import xarray as xr
+from pydantic import BaseModel, Field
+
 from ...config.dataset import DatasetConfig
+from ...const import InputKey
 from ..base import (
     Retriever,
     Storage,
 )
-from ...const import InputKey
+from .global_arm_transform_params import GlobalARMTransformParams
+from .global_fetch_params import GlobalFetchParams
+from .perform_data_retrieval import perform_data_retrieval
+from .storage_retriever_input import StorageRetrieverInput
 
 
 class StorageRetriever(Retriever):
@@ -106,6 +108,7 @@ class StorageRetriever(Retriever):
                 name=name,
             )
             retrieved_data.coords[name] = new_coord
+            print(f"{name}: {len(new_coord)}")
         # Q: Do data_vars need to be renamed or reindexed before data converters run?
 
         # Run data converters on coordinates, then on data variables
@@ -128,6 +131,8 @@ class StorageRetriever(Retriever):
         for name, var_def in retrieval_selections.data_vars.items():
             for converter in var_def.data_converters:
                 var_data = retrieved_data.data_vars[name]
+                if "temp" in name:
+                    print(f"after: {var_data.values}")
                 data = converter.convert(
                     data=var_data,
                     variable_name=name,
@@ -138,6 +143,8 @@ class StorageRetriever(Retriever):
                     input_key=var_def.source,
                 )
                 if data is not None:
+                    if "temp" in name:
+                        print(f"after: {data.values}")
                     retrieved_data.data_vars[name] = data
 
         # Construct the retrieved dataset structure
@@ -169,9 +176,7 @@ class StorageRetriever(Retriever):
         else:
             return pd.Timedelta(time_string)
 
-    # TODO: Method definition says that a lone `timedelta` is returned, but return statements return
-    #  a `tuple[int, timedelta]`. This should be corrected.
-    def _get_retrieval_padding(self, input_key: str) -> timedelta:
+    def _get_retrieval_padding(self, input_key: str) -> Tuple[int | float, timedelta]:
         if self.parameters is None:
             return 0, timedelta()
         elif self.parameters.fetch_params is not None:

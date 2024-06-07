@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -178,7 +179,11 @@ def test_storage_retriever(
     )
 
     expected = xr.Dataset(
-        coords={"time": pd.date_range("2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left")},  # type: ignore
+        coords={
+            "time": pd.date_range(
+                "2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left"
+            )
+        },  # type: ignore
         data_vars={
             "temperature": (  # degF -> degC
                 "time",
@@ -383,6 +388,15 @@ def test_storage_retriever_transformations(
     os.remove(path)
 
 
+def to_degC(degF: Any) -> Any:
+    return (degF - 32) * 5 / 9
+
+
+def to_degF(degC: Any) -> Any:
+    return (degC * 9 / 5) + 32
+
+
+# BUG: This test fails on ubuntu – not sure why
 @pytest.mark.requires_adi
 def test_storage_retriever_file_fetching(
     storage_retriever_fetch: StorageRetriever, vap_dataset_config: DatasetConfig
@@ -415,7 +429,7 @@ def test_storage_retriever_file_fetching(
         data_vars={
             "temperature": (  # degF -> degC
                 "time",
-                (np.array([71.4, 71.2, 71.1, 70.5]) - 32) * 5 / 9,
+                to_degC(np.array([71.4, 71.2, 71.1, 70.5])),
                 {"units": "degC"},
             ),
             "qc_temperature": ("time", [0, 0, 0, 0]),
@@ -424,3 +438,4 @@ def test_storage_retriever_file_fetching(
     )
 
     xr.testing.assert_allclose(retrieved_dataset, expected)  # type: ignore
+    assert False
