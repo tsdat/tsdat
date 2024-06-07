@@ -17,11 +17,30 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Cache conda environment
+        id: cache-conda-env
+        uses: actions/cache@v3
+        with:
+          path: ~/conda-env
+          key: conda-env-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('environment.yml') }}
+          restore-keys: |
+            conda-env-${{ runner.os }}-python-${{ matrix.python-version }}-
       - uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: ${{ matrix.python-version }}
           channels: arm-doe,conda-forge
           activate-environment: tsdat
+      - run: |
+          if [ -d ~/conda-env ]; then
+            echo "Using cached environment"
+            conda env update --prefix ~/conda-env --file environment.yml --prune
+          else
+            echo "Creating new environment"
+            conda env create --prefix ~/conda-env --file environment.yml
+          fi
+          echo "CONDA_ENV_PATH=~/conda-env" >> $GITHUB_ENV
+
+      - run: echo "${{ env.CONDA_ENV_PATH }}/bin" >> $GITHUB_PATH
       - run: |
           conda activate tsdat
           conda install -n base conda-libmamba-solver
