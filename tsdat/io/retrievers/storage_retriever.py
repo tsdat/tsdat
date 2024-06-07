@@ -89,6 +89,9 @@ class StorageRetriever(Retriever):
             if modded_input_data is not None:
                 input_data = modded_input_data
 
+        key = "humboldt.buoy_z06.a1::20220405.000000::20220406.000000"
+        print(f"{input_data[key] = }")
+
         # Perform coord/variable retrieval
         retrieved_data, retrieval_selections = perform_data_retrieval(
             input_data=input_data,
@@ -131,8 +134,7 @@ class StorageRetriever(Retriever):
         for name, var_def in retrieval_selections.data_vars.items():
             for converter in var_def.data_converters:
                 var_data = retrieved_data.data_vars[name]
-                if "temp" in name:
-                    print(f"temp before: {var_data.values}")
+                print(f"{name} before {converter.__repr_name__()}: {var_data.values}")
                 data = converter.convert(
                     data=var_data,
                     variable_name=name,
@@ -143,9 +145,15 @@ class StorageRetriever(Retriever):
                     input_key=var_def.source,
                 )
                 if data is not None:
-                    if "temp" in name:
-                        print(f"temp after: {data.values}")
+                    print(f"{name} after {converter.__repr_name__()}: {data.values}")
                     retrieved_data.data_vars[name] = data
+                else:
+                    print(
+                        f"{converter.__repr_name__()} returned None -- likely modified in-place"
+                    )
+                    print(
+                        f"{name} after {converter.__repr_name__()}: {var_data.values}"
+                    )
 
         # Construct the retrieved dataset structure
         # TODO: validate dimension alignment
