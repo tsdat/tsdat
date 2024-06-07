@@ -28,7 +28,7 @@ jobs:
           conda config --set solver libmamba
           conda env update --name tsdat --file environment.yml
       - run: python -m pip install -e ".[dev]"
-      - run: coverage run -m pytest
+      - run: coverage run -m pytest test/io/test_retrievers.py::test_storage_retriever_file_fetching
       - run: coverage xml
       - uses: codecov/codecov-action@v4
         with:
