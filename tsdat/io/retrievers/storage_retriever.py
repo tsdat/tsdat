@@ -108,7 +108,7 @@ class StorageRetriever(Retriever):
                 name=name,
             )
             retrieved_data.coords[name] = new_coord
-            print(f"{name}: {len(new_coord)}")
+            print(f"len({name}): {len(new_coord)}")
         # Q: Do data_vars need to be renamed or reindexed before data converters run?
 
         # Run data converters on coordinates, then on data variables
@@ -132,7 +132,7 @@ class StorageRetriever(Retriever):
             for converter in var_def.data_converters:
                 var_data = retrieved_data.data_vars[name]
                 if "temp" in name:
-                    print(f"after: {var_data.values}")
+                    print(f"temp before: {var_data.values}")
                 data = converter.convert(
                     data=var_data,
                     variable_name=name,
@@ -144,7 +144,7 @@ class StorageRetriever(Retriever):
                 )
                 if data is not None:
                     if "temp" in name:
-                        print(f"after: {data.values}")
+                        print(f"temp after: {data.values}")
                     retrieved_data.data_vars[name] = data
 
         # Construct the retrieved dataset structure
