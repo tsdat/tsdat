@@ -172,7 +172,8 @@ class _ADIBaseTransformer(DataConverter):
         # program can still exit suddenly due to the C-libraries core-dumping or
         # otherwise crashing.
         # TODO: Improve error logging
-        print(f"NearestNeighbor input temp: {trans_input_ds['temperature'].values}")
+        print(f"{trans_params =}")
+        print(f"trans_input_ds temp: {trans_input_ds['temperature'].values}")
         try:
             from tsdat.transform.adi import AdiTransformer
 
@@ -186,7 +187,7 @@ class _ADIBaseTransformer(DataConverter):
         except Exception as e:
             error_traceback(e)
 
-        print(f"NearestNeighbor output temp: {trans_input_ds['temperature'].values}")
+        print(f"trans_output_ds temp: {trans_output_ds['temperature'].values}")
 
         # Map renamed coordinates/variables to their original names
         trans_input_ds = trans_input_ds.rename(
