@@ -438,3 +438,4 @@ def test_storage_retriever_file_fetching(
     )
 
     xr.testing.assert_allclose(retrieved_dataset, expected)  # type: ignore
+    assert False
