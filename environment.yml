@@ -4,3 +4,4 @@ channels:
   - conda-forge
 dependencies:
   - adi_py>=3.19.2,<=3.20.0
+  - libdsproc3<=2.67.0
