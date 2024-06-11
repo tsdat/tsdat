@@ -216,17 +216,26 @@ class AdiTransformer:
             .get_var(qc_variable_name)
         )
 
+        print(f"\n{adi_transform_parameters = }")
         adi_input_var_data = adi_input_var.get_data(cds3.FLOAT, 0)
         adi_output_var_data = adi_output_var.get_data(cds3.FLOAT, 0)
-        print(f"\n(pre-trans) {adi_input_var_data = }")
+        adi_input_qc_var_data = adi_input_qc_var.get_data(cds3.INT, 0)
+        adi_output_qc_var_data = adi_output_qc_var.get_data(cds3.INT, 0)
+        print(f"(pre-trans) {adi_input_var_data = }")
+        print(f"(pre-trans) {adi_input_qc_var_data = }")
         print(f"(pre-trans) {adi_output_var_data = }")
+        print(f"(pre-trans) {adi_output_qc_var_data = }")
         trans.transform_driver(
             adi_input_var, adi_input_qc_var, adi_output_var, adi_output_qc_var
         )
         adi_input_var_data = adi_input_var.get_data(cds3.FLOAT, 0)
         adi_output_var_data = adi_output_var.get_data(cds3.FLOAT, 0)
+        adi_input_qc_var_data = adi_input_qc_var.get_data(cds3.INT, 0)
+        adi_output_qc_var_data = adi_output_qc_var.get_data(cds3.INT, 0)
         print(f"(post-trans) {adi_input_var_data = }")
+        print(f"(post-trans) {adi_input_qc_var_data = }")
         print(f"(post-trans) {adi_output_var_data = }\n")
+        print(f"(post-trans) {adi_output_qc_var_data = }")
 
         # Now copy any changed variable attributes back to the xr out variables.
         self._update_xr_attrs(variable_name, output_dataset, transformed_dataset)
