@@ -30,10 +30,10 @@ except ImportError:
     CDSVar = Any
     CDSObject = Any
 
+from ...const import COORDINATE_SYSTEM, INPUT_DATASTREAM, OUTPUT_DATASTREAM
+from .adi_qc_atts import adi_qc_atts
 from .bad_transformation_settings_error import BadTransformationSettingsError
 from .transform_parameter_converter import TransformParameterConverter
-from .adi_qc_atts import adi_qc_atts
-from ...const import COORDINATE_SYSTEM, INPUT_DATASTREAM, OUTPUT_DATASTREAM
 
 # We will always use the same coordinate system, input datastream, and output datastream name for every ADI dataset
 # conversion, since tsdat only will allow one coordinate system and libtrans doesn't care what the names are.
@@ -183,7 +183,7 @@ class AdiTransformer:
         )
         qc_variable_name = f"qc_{variable_name}"
 
-        # Now convert the tranform parameters into ADI format
+        # Now convert the transform parameters into ADI format
         adi_transform_parameters = TransformParameterConverter().convert_to_adi_format(
             transform_parameters
         )
@@ -216,9 +216,17 @@ class AdiTransformer:
             .get_var(qc_variable_name)
         )
 
+        adi_input_var_data = adi_input_var.get_data(cds3.FLOAT, 0)
+        adi_output_var_data = adi_output_var.get_data(cds3.FLOAT, 0)
+        print(f"\n(pre-trans) {adi_input_var_data = }")
+        print(f"(pre-trans) {adi_output_var_data = }")
         trans.transform_driver(
             adi_input_var, adi_input_qc_var, adi_output_var, adi_output_qc_var
         )
+        adi_input_var_data = adi_input_var.get_data(cds3.FLOAT, 0)
+        adi_output_var_data = adi_output_var.get_data(cds3.FLOAT, 0)
+        print(f"(post-trans) {adi_input_var_data = }")
+        print(f"(post-trans) {adi_output_var_data = }\n")
 
         # Now copy any changed variable attributes back to the xr out variables.
         self._update_xr_attrs(variable_name, output_dataset, transformed_dataset)
@@ -231,7 +239,7 @@ class AdiTransformer:
         return "time" in var.get_name()
 
     def _free_memory(self, adi_dataset: CDSGroup):
-        # First we MUST walk through the object tree and detatch data pointers for all variables. We need
+        # First we MUST walk through the object tree and detach data pointers for all variables. We need
         #   to do this because the group delete will delete everything in the hierarchy, and we don't want  to
         #   delete the data because it's being shared with xarray.
         #   * Note that we don't attach/detatch for time because we have to copy those values because of numpy datetime64
