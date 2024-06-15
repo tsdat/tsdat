@@ -1,19 +1,19 @@
 import os
 import shutil
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import moto
 import numpy as np
-import pytest
 import pandas as pd
+import pytest
 import xarray as xr
 from pytest import fixture
-from tsdat.io.base import Storage
 
-from tsdat.io.storage import FileSystem, ZarrLocalStorage, FileSystemS3
+from tsdat.io.base import Storage
+from tsdat.io.storage import FileSystem, FileSystemS3, ZarrLocalStorage
 from tsdat.testing import assert_close
 
 
@@ -170,6 +170,9 @@ def test_fetch_returns_empty(
 
 
 def test_last_modified(s3_storage: FileSystemS3, sample_dataset: xr.Dataset):
+    # Last modified should be robust with regards to the storage path
+    s3_storage.parameters.data_storage_path /= "{year}/{month}/nc"
+
     # Should be empty at first
     datastream = sample_dataset.attrs["datastream"]
     assert s3_storage.last_modified(datastream=datastream) is None

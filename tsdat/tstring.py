@@ -35,7 +35,7 @@ def _substitute(
 
         `substitute("{a}.{b}.{d}", mapping, True) == "x.y.{d}"  # True`
 
-        `substitute("{a}.{b}.{d}", mapping, False)  # raises ValueError
+        `substitute("{a}.{b}.{d}", mapping, False)  # raises ValueError`
 
     Args:
         template (str): The template string. Variables to substitute should be wrapped
@@ -123,112 +123,6 @@ def _generate_regex(template: str) -> str:
 
     regex_pattern += "$"
     return regex_pattern
-
-
-# def _generate_regex(template: str) -> str:
-#     regex_pattern = "^"
-#     i = 0
-#     while i < len(template):
-#         char = template[i]
-#         if char == "{":
-#             var_start = i + 1
-#             var_end = template.index("}", var_start)
-#             var_name = template[var_start:var_end]
-#             regex_pattern += f"(?P<{var_name}>[^.*]+)?"
-#             i = var_end + 1
-#         elif char == "[":
-#             regex_pattern += "(?:"
-#             i += 1
-#         elif char == "]":
-#             regex_pattern += ")?"
-#             i += 1
-#         else:
-#             regex_pattern += re.escape(char)
-#             i += 1
-#     regex_pattern += "$"
-#     return regex_pattern
-
-
-# def _generate_regex(template: str) -> str:
-#     regex_pattern = "^"
-#     is_optional = False
-#     optional_part = ""
-
-#     i = 0
-#     while i < len(template):
-#         char = template[i]
-#         if char == "{":
-#             var_start = i + 1
-#             var_end = template.index("}", var_start)
-#             var_name = template[var_start:var_end]
-
-#             if is_optional:
-#                 # regex_pattern += f"(?:{re.escape(optional_part)}(?P<{var_name}>[^.]*))?"
-#                 regex_pattern += f"(?:{re.escape(optional_part)}(?P<{var_name}>.*?))?"
-#                 optional_part = ""
-#             else:
-#                 regex_pattern += f"(?P<{var_name}>[^.]*)"
-
-#             i = var_end + 1
-#         elif char == "[":
-#             is_optional = True
-#             optional_part = ""
-#             i += 1
-#         elif char == "]":
-#             is_optional = False
-#             regex_pattern += re.escape(optional_part) + ")?"
-#             optional_part = ""
-#             i += 1
-#         else:
-#             if is_optional:
-#                 optional_part += char
-#             else:
-#                 regex_pattern += re.escape(char)
-#             i += 1
-
-#     regex_pattern += "$"
-#     return regex_pattern
-
-
-# def _generate_regex(template: str) -> str:
-#     regex_pattern = "^"
-#     is_optional = False
-#     optional_part = ""
-
-#     i = 0
-#     while i < len(template):
-#         char = template[i]
-#         if char == "{":
-#             var_start = i + 1
-#             var_end = template.index("}", var_start)
-#             var_name = template[var_start:var_end]
-
-#             if is_optional:
-#                 regex_pattern += f"(?:{re.escape(optional_part)}(?P<{var_name}>.*?))?"
-#                 optional_part = ""
-#             else:
-#                 regex_pattern += f"(?P<{var_name}>.*?)"
-
-#             i = var_end + 1
-#         elif char == "[":
-#             is_optional = True
-#             optional_part = ""
-#             i += 1
-#         elif char == "]":
-#             is_optional = False
-#             if optional_part:
-#                 regex_pattern += f"(?:{re.escape(optional_part)})?"
-#             optional_part = ""
-#             i += 1
-#         else:
-#             if is_optional:
-#                 optional_part += char
-#             else:
-#                 regex_pattern += re.escape(char)
-#             i += 1
-
-#     regex_pattern += "$"
-#     return regex_pattern
 
 
 class Template:
@@ -335,3 +229,6 @@ class Template:
             return match.groupdict()
         else:
             return None
+
+    def join(self, other: Template) -> Template:
+        return Template(self.template + "/" + other.template)
