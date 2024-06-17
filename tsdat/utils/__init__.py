@@ -4,6 +4,7 @@ from .standards_type import StandardsType
 from .assign_data import assign_data
 from .datetime_substitutions import datetime_substitutions
 from .decode_cf import decode_cf
+from .generate_schema import generate_schema
 from .get_datastream import get_datastream
 from .get_fields_from_dataset import get_fields_from_dataset
 from .get_fields_from_datastream import get_fields_from_datastream
