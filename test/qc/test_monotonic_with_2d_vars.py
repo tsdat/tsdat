@@ -11,9 +11,8 @@ def test_monotonic_with_2d_vars(sample_dataset_2d: xr.Dataset, caplog: Any):
         failures = CheckMonotonic().run(sample_dataset_2d, "wind_speed")
     assert failures is None
     assert (
-            "Variable 'wind_speed' has shape '(3, 4)'. 2D variables must provide a 'dim'"
-            " parameter"
-            in caplog.text
+        "Variable 'wind_speed' has shape '(3, 4)'. 2D variables must provide a 'dim'"
+        " parameter" in caplog.text
     )
 
     # Regular check

@@ -5,8 +5,10 @@ from tsdat.qc.checkers.oceanography import CheckGoringNikora2002
 
 
 class TestCheckGoringNikora2002:
-    test_data = pd.read_csv('./test/qc/check_goring_nikora_2002/gn2002_test_data.csv').to_xarray()
-    test_col = 'water_level'
+    test_data = pd.read_csv(
+        "./test/qc/check_goring_nikora_2002/gn2002_test_data.csv"
+    ).to_xarray()
+    test_col = "water_level"
 
     def test_defaults(self):
         checker = CheckGoringNikora2002()
@@ -17,4 +19,4 @@ class TestCheckGoringNikora2002:
     def test_wrong_var_name(self):
         checker = CheckGoringNikora2002()
         with raises(KeyError):
-            checker.run(self.test_data, 'wrong_var_name')
+            checker.run(self.test_data, "wrong_var_name")

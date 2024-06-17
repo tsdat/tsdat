@@ -5,8 +5,10 @@ from tsdat.qc.handlers import CubicSplineInterp
 
 
 class TestCubicSplineInterp:
-    test_data = pd.read_csv('./test/qc/cubic_spline_interp/cubic_spline_interp_test_data.csv').to_xarray()
-    test_col = 'col1'
+    test_data = pd.read_csv(
+        "./test/qc/cubic_spline_interp/cubic_spline_interp_test_data.csv"
+    ).to_xarray()
+    test_col = "col1"
 
     def test_cubic_spline_interp(self):
         active_data = self.test_data.copy(deep=True)
@@ -18,7 +20,10 @@ class TestCubicSplineInterp:
         )
 
         results = handler.run(active_data, variable_name=self.test_col, failures=mask)
-        assert results[self.test_col].values[missing_idx] != self.test_data[self.test_col].values[missing_idx]
+        assert (
+            results[self.test_col].values[missing_idx]
+            != self.test_data[self.test_col].values[missing_idx]
+        )
 
     @staticmethod
     def _build_missing_mask(n: int, n_points: int) -> tuple[np.ndarray[np.bool_], int]:

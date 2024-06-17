@@ -9,7 +9,7 @@ from tsdat.testing import assert_close
 
 
 def test_record_quality_results(
-        sample_dataset: xr.Dataset, caplog: pytest.LogCaptureFixture
+    sample_dataset: xr.Dataset, caplog: pytest.LogCaptureFixture
 ):
     expected: xr.Dataset = sample_dataset.copy(deep=True)  # type: ignore
     expected["qc_monotonic_var"] = xr.full_like(expected["monotonic_var"], fill_value=0)  # type: ignore
