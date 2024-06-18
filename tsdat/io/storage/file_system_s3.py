@@ -9,14 +9,14 @@ from typing import Any, Dict, List, Union
 
 import xarray as xr
 from pydantic import Field, validator
+
 from tsdat.tstring import Template
 
-from .file_system import FileSystem
 from ...utils import (
     get_fields_from_datastream,
     get_file_datetime_str,
 )
-from ..handlers import FileHandler
+from .file_system import FileSystem
 
 logger = logging.getLogger(__name__)
 
@@ -134,33 +134,59 @@ class FileSystemS3(FileSystem):
 
     def last_modified(self, datastream: str) -> Union[datetime, None]:
         """Returns the datetime of the last modification to the datastream's storage area."""
-        substitutions = get_fields_from_datastream(datastream)
+        substitutions: dict[str, str] = {}
         substitutions["datastream"] = datastream
-        prefix = self._get_data_directory(substitutions).as_posix()
+        substitutions.update(get_fields_from_datastream(datastream))
+
+        datapath = self._resolve_full_datapath(substitutions, fill=".*")
+        if ".*" in datapath:
+            split_idx = datapath.index(".*")
+            prefix, glob = datapath[:split_idx], datapath[split_idx:]
+        else:
+            prefix, glob = datapath, ".*"  # somehow already fully-resolved?
 
         last_modified = None
         for obj in self._bucket.objects.filter(Prefix=prefix):
-            if obj.last_modified is not None:
-                last_modified = (
-                    obj.last_modified.astimezone(timezone.utc)
-                    if last_modified is None
-                    else max(last_modified, obj.last_modified)
-                )
+            suffix = obj.key[len(prefix) :]
+            if re.compile(glob).fullmatch(suffix):
+                if obj.last_modified is not None:
+                    last_modified = (
+                        obj.last_modified.astimezone(timezone.utc)
+                        if last_modified is None
+                        else max(last_modified, obj.last_modified)
+                    )
         return last_modified
 
     def modified_since(
         self, datastream: str, last_modified: datetime
     ) -> List[datetime]:
-        """Returns the data times of all files modified after the specified datetime."""
-        substitutions = get_fields_from_datastream(datastream)
+        """Returns the data datetimes of all files modified after the specified time."""
+        substitutions: dict[str, str] = {}
         substitutions["datastream"] = datastream
-        prefix = self._get_data_directory(substitutions).as_posix()
-        return [
-            datetime.strptime(get_file_datetime_str(obj.key), "%Y%m%d.%H%M%S")
-            for obj in self._bucket.objects.filter(Prefix=prefix)
-            if obj.last_modified is not None
-            and obj.last_modified.astimezone(timezone.utc) > last_modified
-        ]
+        substitutions.update(get_fields_from_datastream(datastream))
+
+        datapath = self._resolve_full_datapath(substitutions, fill=".*")
+        if ".*" in datapath:
+            split_idx = datapath.index(".*")
+            prefix, glob = datapath[:split_idx], datapath[split_idx:]
+        else:
+            prefix, glob = datapath, ".*"  # somehow already fully-resolved?
+
+        _modified_since: list[datetime] = []
+        for obj in self._bucket.objects.filter(Prefix=prefix):
+            suffix = obj.key[len(prefix) :]
+            if re.compile(glob).fullmatch(suffix):
+                if (
+                    obj.last_modified is not None
+                    and obj.last_modified.astimezone(timezone.utc) > last_modified
+                ):
+                    _modified_since.append(
+                        datetime.strptime(
+                            get_file_datetime_str(obj.key), "%Y%m%d.%H%M%S"
+                        )
+                    )
+
+        return _modified_since
 
     def save_ancillary_file(
         self, filepath: Path, target_path: Union[Path, None] = None

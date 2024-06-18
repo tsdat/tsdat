@@ -6,6 +6,7 @@ from typing import Any, Dict, Iterable, List, Tuple, Union
 
 import xarray as xr
 from pydantic import Field, validator
+
 from tsdat.tstring import Template
 
 from ...utils import (
@@ -173,6 +174,8 @@ class FileSystem(Storage):
         metadata_kwargs: Dict[str, str],
         **kwargs: Any,
     ) -> List[Path]:
+        # TODO: We should join the storage path and filename templates, then do the
+        # time substitutions on the full path.
         dir_template = Template(self.parameters.data_storage_path.as_posix())
         extension = self.handler.writer.file_extension
         semi_resolved = dir_template.substitute(
@@ -215,18 +218,29 @@ class FileSystem(Storage):
         return dataset_list
 
     def _get_dataset_filepath(self, dataset: xr.Dataset) -> Path:
+        substitutions: dict[str, str] = {}
         extension = self.handler.writer.file_extension
-        substitutions = get_fields_from_dataset(dataset)
-        substitutions.update(extension=extension, ext=extension)
-        data_dir = self._get_data_directory(substitutions)
-        filename_template = Template(self.parameters.data_filename_template)
-        filename = filename_template.substitute(substitutions)
-        return data_dir / filename
+        substitutions.update(
+            get_fields_from_dataset(dataset),
+            extension=extension,
+            ext=extension,
+        )
+        # TODO: this needs to catch errors and give a meaningful message
+        data_dir = Path(self._resolve_full_datapath(substitutions, fill=None))
+        return data_dir
 
-    def _get_data_directory(self, substitutions: Dict[str, str]) -> Path:
-        dir_template = Template(self.parameters.data_storage_path.as_posix())
-        dirpath = dir_template.substitute(substitutions)
-        return self.parameters.storage_root / dirpath
+    def _resolve_full_datapath(
+        self, substitutions: Dict[str, str], fill: str | None = None
+    ) -> str:
+        """Gets the resolved+ path to data files (including the filename component),
+        filling unknown path/filename components with 'fill' (default '*') to allow for
+        a glob search of matching files."""
+        dirpath = Template(
+            self.parameters.storage_root
+            / self.parameters.data_storage_path
+            / self.parameters.data_filename_template
+        ).substitute(mapping=substitutions, allow_missing=fill is not None, fill=fill)
+        return dirpath
 
     @staticmethod
     def _extract_time_substitutions(
@@ -241,6 +255,32 @@ class FileSystem(Storage):
         if (split := resolved.find("*")) != -1:
             return Path(resolved[:split]), resolved[split:] + "/*"
         return Path(resolved), "*"
+
+    def resolve_template(self, template: Path | Template | str, **substitutions) -> str:
+        if not isinstance(template, Template):
+            template = Template(str(template))
+        resolved = template.substitute(
+            substitutions, allow_missing=True, fill="*"
+        )  # TODO
+        return resolved
+
+    @property
+    def full_data_filepath(self) -> Path:
+        full_path = Template(
+            self.parameters.storage_root
+            / self.parameters.data_storage_path
+            / self.parameters.data_filename_template
+        )
+
+        ...
+
+    @property
+    def _default_substitutions(self) -> Dict[str, str]:
+        extension = self.handler.extension
+        return dict(
+            extension=extension,
+            ext=extension,
+        )
 
 
 # TODO:
