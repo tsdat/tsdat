@@ -1,3 +1,4 @@
+import re
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -217,10 +218,15 @@ class VariableAttributes(AttributeModel):
     @validator("units")
     def validate_unit(cls, unit_str: str) -> str:
         # Not recognized by pint, but we want it to be valid
-        if unit_str == "%" or unit_str.lower().startswith("seconds since"):
+        if unit_str.lower().startswith("seconds since"):
             return unit_str
         # Validate with pint unit registry
         try:
+            # Add exponent symbol (m2 s-2 -> m^2 s^-2)
+            unit_exponent = re.compile(r'(?<=[A-Za-z\)])(?![A-Za-z\)])'
+                           r'(?<![0-9\-][eE])(?<![0-9\-])(?=[0-9\-])')
+            unit_str = unit_exponent.sub("^", unit_str)
+            # Get unit
             ureg(unit_str)
         except PintError:
             logger.warning(
