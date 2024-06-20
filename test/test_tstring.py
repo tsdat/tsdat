@@ -45,6 +45,18 @@ def test_failures(
         Template(template).substitute(mapping, allow_missing=allow_missing)
 
 
+def test_fill():
+    template = Template("{a}.{b}[.{c}]")
+
+    # Fill should fill in any values that are missing
+    result = template.substitute(dict(a="x"), allow_missing=True, fill="y")
+    assert result == "x.y.y"
+
+    # Fill is only done if allow_missing is True
+    with pytest.raises(ValueError):
+        template.substitute(dict(a="x"), allow_missing=False, fill="y")
+
+
 @pytest.mark.parametrize(
     ("expected", "mapping", "keywords"),
     (
