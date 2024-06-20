@@ -217,7 +217,7 @@ class VariableAttributes(AttributeModel):
     @validator("units")
     def validate_unit(cls, unit_str: str) -> str:
         # Not recognized by pint, but we want it to be valid
-        if unit_str == "%" or unit_str.startswith("Seconds since"):
+        if unit_str == "%" or unit_str.lower().startswith("seconds since"):
             return unit_str
         # Validate with pint unit registry
         try:
