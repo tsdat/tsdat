@@ -1,8 +1,8 @@
 import logging
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple, Union
+from typing import Any, Dict, Iterable, List, Union
 
 import xarray as xr
 from pydantic import Field, validator
@@ -82,7 +82,79 @@ class FileSystem(Storage):
             return storage_root
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
-    handler: FileHandler = Field(default_factory=NetCDFHandler)
+    handler: FileHandler = Field(default_factory=NetCDFHandler)  # type: ignore
+
+    @property
+    def data_filepath_template(self) -> Template:
+        return Template(
+            self.parameters.storage_root
+            / self.parameters.data_storage_path
+            / self.parameters.data_filename_template
+        )
+
+    @property
+    def ancillary_filepath_template(self) -> Template:
+        return Template(
+            self.parameters.storage_root
+            / self.parameters.data_storage_path
+            / self.parameters.ancillary_filename_template
+        )
+
+    def last_modified(self, datastream: str) -> Union[datetime, None]:
+        """Find the last modified time for any data in that datastream.
+
+        Args:
+            datastream (str): The datastream.
+
+        Returns:
+            datetime: The datetime of the last modification.
+        """
+        filepath_glob = self.data_filepath_template.substitute(
+            self._get_substitutions(datastream=datastream),
+            allow_missing=True,
+            fill="*",
+        )
+        matches = self._get_matching_files(filepath_glob)
+        last_modified = None
+        for file in matches:
+            mod_timestamp = file.lstat().st_mtime
+            mod_time = datetime.fromtimestamp(mod_timestamp).astimezone(timezone.utc)
+            last_modified = (
+                mod_time if last_modified is None else max(last_modified, mod_time)
+            )
+        return last_modified
+
+    def modified_since(
+        self, datastream: str, last_modified: datetime
+    ) -> List[datetime]:
+        """Find the list of data dates that have been modified since the passed
+        last modified date.
+
+        Args:
+            datastream (str): _description_
+            last_modified (datetime): Should be equivalent to run date (the last time
+                data were changed)
+
+        Returns:
+            List[datetime]: The data dates of files that were changed since the last
+                modified date
+        """
+        filepath_glob = self.data_filepath_template.substitute(
+            self._get_substitutions(datastream=datastream),
+            allow_missing=True,
+            fill="*",
+        )
+        matches = self._get_matching_files(filepath_glob)
+        results: list[datetime] = []
+        for file in matches:
+            mod_timestamp = file.lstat().st_mtime
+            mod_time = datetime.fromtimestamp(mod_timestamp).astimezone(timezone.utc)
+            if mod_time > last_modified:
+                data_timestamp = datetime.strptime(
+                    get_file_datetime_str(file.name), "%Y%m%d.%H%M%S"
+                )
+                results.append(data_timestamp)
+        return results
 
     def save_ancillary_file(
         self, filepath: Path, target_path: Union[Path, None] = None
@@ -114,7 +186,10 @@ class FileSystem(Storage):
 
         -----------------------------------------------------------------------------"""
         datastream = dataset.attrs["datastream"]
-        filepath = self._get_dataset_filepath(dataset)
+        substitutions = self._get_substitutions(datastream=datastream, dataset=dataset)
+        filepath = Path(
+            self.data_filepath_template.substitute(substitutions, allow_missing=False)
+        )
         filepath.parent.mkdir(exist_ok=True, parents=True)
         self.handler.writer.write(dataset, filepath)
         logger.info("Saved %s dataset to %s", datastream, filepath.as_posix())
@@ -144,18 +219,8 @@ class FileSystem(Storage):
             the specified datetimes.
 
         -----------------------------------------------------------------------------"""
-        if metadata_kwargs is None:
-            metadata_kwargs = {}
-        metadata_kwargs = {
-            "datastream": datastream,
-            **get_fields_from_datastream(datastream),
-            **metadata_kwargs,
-        }
         data_files = self._find_data(
-            start,
-            end,
-            datastream,
-            metadata_kwargs=metadata_kwargs,
+            start, end, datastream, metadata_kwargs=metadata_kwargs
         )
         datasets = self._open_data_files(*data_files)
         dataset = xr.merge(datasets, **self.parameters.merge_fetched_data_kwargs)  # type: ignore
@@ -171,28 +236,29 @@ class FileSystem(Storage):
         start: datetime,
         end: datetime,
         datastream: str,
-        metadata_kwargs: Dict[str, str],
+        metadata_kwargs: Dict[str, str] | None = None,
         **kwargs: Any,
     ) -> List[Path]:
-        # TODO: We should join the storage path and filename templates, then do the
-        # time substitutions on the full path.
-        dir_template = Template(self.parameters.data_storage_path.as_posix())
-        extension = self.handler.writer.file_extension
-        semi_resolved = dir_template.substitute(
-            {
-                **dict(
-                    datastream=datastream,
-                    extension=extension,
-                    ext=extension,
-                ),
-                **metadata_kwargs,
-            },
-            allow_missing=True,
+        substitutions = self._get_substitutions(
+            datastream=datastream, time_range=(start, end), extra=metadata_kwargs
         )
-        dirpath, pattern = self._extract_time_substitutions(semi_resolved, start, end)
-        dirpath = self.parameters.storage_root / dirpath
-        filepaths = (p for p in dirpath.glob(pattern))
-        return self._filter_between_dates(filepaths, start, end)
+        filepath_glob = self.data_filepath_template.substitute(
+            substitutions, allow_missing=True, fill="*"
+        )
+        matches = self._get_matching_files(filepath_glob)
+        return self._filter_between_dates(matches, start, end)
+
+    def _get_matching_files(self, filepath_glob: str) -> list[Path]:
+        assert (
+            "*" in filepath_glob  # need some regex remaining to match with
+        ), "Naming scheme must distinguish between files within the same datastream"
+        path_components = Path(filepath_glob).parts
+        for i, path_component in enumerate(path_components):
+            if "*" in path_component:
+                break
+        prefix, suffix = Path(*path_components[:i]), str(Path(*path_components[i:]))  # type: ignore
+        matches = list(prefix.glob(suffix))
+        return matches
 
     @staticmethod
     def _filter_between_dates(
@@ -217,70 +283,41 @@ class FileSystem(Storage):
             dataset_list.append(data)
         return dataset_list
 
-    def _get_dataset_filepath(self, dataset: xr.Dataset) -> Path:
-        substitutions: dict[str, str] = {}
-        extension = self.handler.writer.file_extension
-        substitutions.update(
-            get_fields_from_dataset(dataset),
-            extension=extension,
-            ext=extension,
-        )
-        # TODO: this needs to catch errors and give a meaningful message
-        data_dir = Path(self._resolve_full_datapath(substitutions, fill=None))
-        return data_dir
+    def _get_substitutions(
+        self,
+        datastream: str | None = None,
+        time_range: tuple[datetime, datetime] | None = None,
+        dataset: xr.Dataset | None = None,
+        extra: dict[str, str] | None = None,
+    ) -> Dict[str, str]:
+        """Gets substitutions for file extension and datastream components."""
+        extension = self.handler.extension or self.handler.writer.file_extension
 
-    def _resolve_full_datapath(
-        self, substitutions: Dict[str, str], fill: str | None = None
-    ) -> str:
-        """Gets the resolved+ path to data files (including the filename component),
-        filling unknown path/filename components with 'fill' (default '*') to allow for
-        a glob search of matching files."""
-        dirpath = Template(
-            self.parameters.storage_root
-            / self.parameters.data_storage_path
-            / self.parameters.data_filename_template
-        ).substitute(mapping=substitutions, allow_missing=fill is not None, fill=fill)
-        return dirpath
+        sub = dict(ext=extension, extension=extension)
 
-    @staticmethod
-    def _extract_time_substitutions(
-        template_str: str, start: datetime, end: datetime
-    ) -> Tuple[Path, str]:
-        """Extracts the root path above unresolved time substitutions and provides a pattern to search below that."""
-        year = start.strftime("%Y") if start.year == end.year else "*"
-        month = (
-            start.strftime("%m") if year != "*" and start.month == end.month else "*"
-        )
-        resolved = Template(template_str).substitute(year=year, month=month, day="*")
-        if (split := resolved.find("*")) != -1:
-            return Path(resolved[:split]), resolved[split:] + "/*"
-        return Path(resolved), "*"
+        if datastream is not None:
+            sub.update(
+                datastream=datastream,
+                **get_fields_from_datastream(datastream),
+            )
 
-    def resolve_template(self, template: Path | Template | str, **substitutions) -> str:
-        if not isinstance(template, Template):
-            template = Template(str(template))
-        resolved = template.substitute(
-            substitutions, allow_missing=True, fill="*"
-        )  # TODO
-        return resolved
+        # Get substitutions for year/month/day
+        if time_range is not None:
+            start, end = time_range
+            if start.year == end.year:
+                sub["year"] = start.strftime("%Y")  # yyyy
+                if start.month == end.month:
+                    sub["month"] = start.strftime("%m")  # mm
+                    if start.day == end.day:
+                        sub["day"] = start.strftime("%d")  # dd
 
-    @property
-    def full_data_filepath(self) -> Path:
-        full_path = Template(
-            self.parameters.storage_root
-            / self.parameters.data_storage_path
-            / self.parameters.data_filename_template
-        )
+        if extra is not None:
+            sub.update(extra)
 
-        ...
+        if dataset is not None:
+            sub.update(get_fields_from_dataset(dataset))
 
-    @property
-    def _default_substitutions(self) -> Dict[str, str]:
-        extension = self.handler.extension
-        return dict(
-            extension=extension,
-            ext=extension,
-        )
+        return sub
 
 
 # TODO:
