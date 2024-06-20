@@ -223,8 +223,10 @@ class VariableAttributes(AttributeModel):
         # Validate with pint unit registry
         try:
             # Add exponent symbol (m2 s-2 -> m^2 s^-2)
-            unit_exponent = re.compile(r'(?<=[A-Za-z\)])(?![A-Za-z\)])'
-                           r'(?<![0-9\-][eE])(?<![0-9\-])(?=[0-9\-])')
+            unit_exponent = re.compile(
+                r"(?<=[A-Za-z\)])(?![A-Za-z\)])"
+                r"(?<![0-9\-][eE])(?<![0-9\-])(?=[0-9\-])"
+            )
             unit_str = unit_exponent.sub("^", unit_str)
             # Get unit
             ureg(unit_str)
