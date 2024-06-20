@@ -1,10 +1,11 @@
 import logging
 from typing import Any, Optional
+from pydantic import validator
 
-import act  # type: ignore
+import numpy as np
 import xarray as xr
-from numpy.typing import NDArray
 
+from tsdat.config.variables.ureg import ureg, check_unit
 from ..base import DataConverter, RetrievedDataset
 from ...config.dataset import DatasetConfig
 
@@ -38,22 +39,27 @@ class UnitsConverter(DataConverter):
         retrieved_dataset: RetrievedDataset,
         **kwargs: Any,
     ) -> Optional[xr.DataArray]:
+
+        # Get input units and convert udunits for pint if need be
         input_units = self._get_input_units(data)
+        input_units = check_unit(input_units, keep_exp=True)
+        
+        # Assume if no units supplied, variable is dimensionless
         if not input_units:
             logger.warning(
-                "Input units for variable '%s' could not be found. Please ensure these"
-                " are set either in the retrieval configuration file, or are set on the"
-                " 'units' attribute of the '%s' variable in the dataset to converted.",
+                "Input units for variable '%s' could not be found. Assuming variable " 
+                "'%s' is dimensionless.",
                 variable_name,
                 variable_name,
             )
-            return None
 
         output_units = dataset_config[variable_name].attrs.units
+        output_units = check_unit(output_units, keep_exp=True)
+        
+        out_dtype = dataset_config[variable_name].dtype
         if (
             not output_units
             or output_units == "1"
-            or output_units == "unitless"
             or input_units == output_units
         ):
             if not output_units:
@@ -65,19 +71,23 @@ class UnitsConverter(DataConverter):
                 )
             return None
 
-        converted: NDArray[Any] = act.utils.data_utils.convert_units(  # type: ignore
-            data=data.data,
-            in_units=input_units,
-            out_units=output_units,
-        )
+        # Run pint
+        converted = (data.data * ureg(input_units)).to(output_units)
+        converted = converted.magnitude
+
+        # Set output datatype from dataset config
+        converted = converted.astype(out_dtype)
         data_array = data.copy(data=converted)
-        data_array.attrs["units"] = output_units
+        
+        # Use original output units text
+        data_array.attrs["units"] = dataset_config[variable_name].attrs.units
         logger.debug(
             "Converted '%s's units from '%s' to '%s'",
             variable_name,
             input_units,
             output_units,
         )
+
         return data_array
 
     def _get_input_units(self, data: xr.DataArray) -> str:

@@ -10,7 +10,7 @@ from pydantic import (
     validator,
 )
 
-from .ureg import ureg
+from .ureg import check_unit
 from ..attributes import AttributeModel
 
 logger = logging.getLogger(__name__)
@@ -217,19 +217,9 @@ class VariableAttributes(AttributeModel):
 
     @validator("units")
     def validate_unit(cls, unit_str: str) -> str:
-        # Not recognized by pint, but we want it to be valid
-        if unit_str.lower().startswith("seconds since"):
-            return unit_str
-        # Validate with pint unit registry
         try:
-            # Add exponent symbol (m2 s-2 -> m^2 s^-2)
-            unit_exponent = re.compile(
-                r"(?<=[A-Za-z\)])(?![A-Za-z\)])"
-                r"(?<![0-9\-][eE])(?<![0-9\-])(?=[0-9\-])"
-            )
-            unit_str = unit_exponent.sub("^", unit_str)
-            # Get unit
-            ureg(unit_str)
+            # Validate with pint unit registry
+            unit_str = check_unit(unit_str, keep_exp=False)
         except PintError:
             logger.warning(
                 f"'{unit_str}' is not a valid unit or combination of units. The string"
