@@ -1,3 +1,4 @@
+import re
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -9,7 +10,7 @@ from pydantic import (
     validator,
 )
 
-from .ureg import ureg
+from .ureg import check_unit
 from ..attributes import AttributeModel
 
 logger = logging.getLogger(__name__)
@@ -216,12 +217,9 @@ class VariableAttributes(AttributeModel):
 
     @validator("units")
     def validate_unit(cls, unit_str: str) -> str:
-        # Not recognized by pint, but we want it to be valid
-        if unit_str == "%" or unit_str.startswith("Seconds since"):
-            return unit_str
-        # Validate with pint unit registry
         try:
-            ureg(unit_str)
+            # Validate with pint unit registry
+            unit_str = check_unit(unit_str, keep_exp=False)
         except PintError:
             logger.warning(
                 f"'{unit_str}' is not a valid unit or combination of units. The string"

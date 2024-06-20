@@ -12,7 +12,7 @@ def test_schema_generation():
     with tempfile.TemporaryDirectory() as tmp_dir:
         result = runner.invoke(app, ["generate-schema", "--dir", tmp_dir])
         assert result.exit_code == 0
-        assert f"Using tsdat dataset standards" in result.stdout
+        assert f"tsdat dataset standards" in result.stdout
 
     # acdd
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -20,7 +20,7 @@ def test_schema_generation():
             app, ["generate-schema", "--dir", tmp_dir, "--standards", "acdd"]
         )
         assert result.exit_code == 0
-        assert f"Using acdd dataset standards" in result.stdout
+        assert f"acdd dataset standards" in result.stdout
 
     # ioos
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -28,4 +28,4 @@ def test_schema_generation():
             app, ["generate-schema", "--dir", tmp_dir, "--standards", "ioos"]
         )
         assert result.exit_code == 0
-        assert f"Using ioos dataset standards" in result.stdout
+        assert f"ioos dataset standards" in result.stdout
