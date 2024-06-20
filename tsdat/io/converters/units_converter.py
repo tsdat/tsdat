@@ -43,11 +43,11 @@ class UnitsConverter(DataConverter):
         # Get input units and convert udunits for pint if need be
         input_units = self._get_input_units(data)
         input_units = check_unit(input_units, keep_exp=True)
-        
+
         # Assume if no units supplied, variable is dimensionless
         if not input_units:
             logger.warning(
-                "Input units for variable '%s' could not be found. Assuming variable " 
+                "Input units for variable '%s' could not be found. Assuming variable "
                 "'%s' is dimensionless.",
                 variable_name,
                 variable_name,
@@ -55,13 +55,9 @@ class UnitsConverter(DataConverter):
 
         output_units = dataset_config[variable_name].attrs.units
         output_units = check_unit(output_units, keep_exp=True)
-        
+
         out_dtype = dataset_config[variable_name].dtype
-        if (
-            not output_units
-            or output_units == "1"
-            or input_units == output_units
-        ):
+        if not output_units or output_units == "1" or input_units == output_units:
             if not output_units:
                 logger.warning(
                     "Output units for variable %s could not be found. Please ensure"
@@ -78,7 +74,7 @@ class UnitsConverter(DataConverter):
         # Set output datatype from dataset config
         converted = converted.astype(out_dtype)
         data_array = data.copy(data=converted)
-        
+
         # Use original output units text
         data_array.attrs["units"] = dataset_config[variable_name].attrs.units
         logger.debug(

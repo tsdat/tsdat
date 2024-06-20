@@ -30,21 +30,3 @@ data_vars:
     attrs:
       units: "1"
       _FillValue: null # Should remove the _FillValue attribute entirely
-
-  temp:
-    dims: [time]
-    dtype: float
-    attrs:
-      units: degree_C
-
-  percent:
-    dims: [time]
-    dtype: float
-    attrs:
-      units: "%"
-
-  exponent:
-    dims: [time]
-    dtype: float
-    attrs:
-      units: m s-1
