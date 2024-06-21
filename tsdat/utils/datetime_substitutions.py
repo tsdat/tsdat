@@ -6,7 +6,7 @@ import pandas as pd
 
 
 def datetime_substitutions(
-    time: Union[datetime, np.datetime64, None]
+    time: Union[datetime, np.datetime64, None],
 ) -> Dict[str, str]:
     substitutions: Dict[str, str] = {}
     if time is not None:
@@ -18,6 +18,12 @@ def datetime_substitutions(
             hour=t.strftime("%H"),
             minute=t.strftime("%M"),
             second=t.strftime("%S"),
+            yyyy=t.strftime("%Y"),
+            mm=t.strftime("%m"),
+            dd=t.strftime("%d"),
+            HH=t.strftime("%H"),
+            MM=t.strftime("%M"),
+            SS=t.strftime("%S"),
             date_time=t.strftime("%Y%m%d.%H%M%S"),
             date=t.strftime("%Y%m%d"),
             time=t.strftime("%H%M%S"),

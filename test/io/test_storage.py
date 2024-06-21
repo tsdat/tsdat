@@ -1,19 +1,20 @@
+import logging
 import os
 import shutil
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
 import time
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import moto
 import numpy as np
-import pytest
 import pandas as pd
+import pytest
 import xarray as xr
 from pytest import fixture
-from tsdat.io.base import Storage
 
-from tsdat.io.storage import FileSystem, ZarrLocalStorage, FileSystemS3
+from tsdat.io.base import Storage
+from tsdat.io.storage import FileSystem, FileSystemS3, ZarrLocalStorage
 from tsdat.testing import assert_close
 
 
@@ -157,7 +158,10 @@ def test_fetch_returns_empty(
     request: pytest.FixtureRequest,
 ):
     # pytest can't pass fixtures through pytest.mark.parametrize so we use this approach
-    storage: Storage = request.getfixturevalue(storage_fixture)
+    storage: FileSystem | FileSystemS3 | ZarrLocalStorage = request.getfixturevalue(
+        storage_fixture
+    )
+    storage.parameters.data_storage_path /= "{year}/{month}/{day}"
 
     expected_dataset = xr.Dataset()  # empty
     dataset = storage.fetch_data(
@@ -169,31 +173,38 @@ def test_fetch_returns_empty(
     assert_close(dataset, expected_dataset)
 
 
-def test_last_modified(s3_storage: FileSystemS3, sample_dataset: xr.Dataset):
+@pytest.mark.parametrize(
+    "storage_fixture",
+    ["file_storage", "s3_storage"],
+)
+def test_last_modified(
+    storage_fixture: str, request: pytest.FixtureRequest, sample_dataset: xr.Dataset
+):
+    storage: FileSystem | FileSystemS3 = request.getfixturevalue(storage_fixture)
+
+    # Last modified should be robust with regards to the storage path
+    storage.parameters.data_storage_path /= "{year}/{month}/{day}/{ext}"
+
     # Should be empty at first
     datastream = sample_dataset.attrs["datastream"]
-    assert s3_storage.last_modified(datastream=datastream) is None
+    assert storage.last_modified(datastream=datastream) is None
 
     # Last mod time is date saved, today
-    s3_storage.save_data(sample_dataset)
-    last_mod = s3_storage.last_modified(datastream=datastream)
+    storage.save_data(sample_dataset)
+    last_mod = storage.last_modified(datastream=datastream)
     assert last_mod is not None
     assert last_mod.date() == datetime.today().astimezone(timezone.utc).date()
 
     # Modded files should be empty relative to last saved file
-    modded_files = s3_storage.modified_since(
-        datastream=datastream, last_modified=last_mod
-    )
+    modded_files = storage.modified_since(datastream=datastream, last_modified=last_mod)
     assert modded_files == []
 
     # Modded files should be the datetimes of the files saved since the last mod time
     time.sleep(2)  # prevents race condition where files have the same last mod time
     ds1 = sample_dataset.copy(deep=True)
     ds1["time"] = ds1["time"] + np.timedelta64(2, "D")
-    s3_storage.save_data(ds1)
-    modded_files = s3_storage.modified_since(
-        datastream=datastream, last_modified=last_mod
-    )
+    storage.save_data(ds1)
+    modded_files = storage.modified_since(datastream=datastream, last_modified=last_mod)
     expected_time = pd.to_datetime(ds1["time"].data[0]).to_pydatetime()
     assert modded_files == [expected_time]
 
@@ -300,3 +311,28 @@ def test_storage_saves_ancillary_files(
     else:
         assert expected_filepath.exists()
         os.remove(expected_filepath)
+
+
+def test_last_modified_zarr(
+    zarr_storage: ZarrLocalStorage,
+    sample_dataset: xr.Dataset,
+    caplog: pytest.LogCaptureFixture,
+):
+    datastream = sample_dataset.attrs["datastream"]
+
+    with caplog.at_level(logging.WARNING):
+        assert zarr_storage.last_modified(datastream) is None
+        assert caplog.records[0].levelname == "WARNING"
+        assert (
+            "ZarrLocalStorage does not support last_modified()"
+            in caplog.records[0].message
+        )
+        caplog.clear()
+
+    with caplog.at_level(logging.WARNING):
+        assert zarr_storage.modified_since(datastream, datetime(2022, 1, 1)) == []
+        assert caplog.records[0].levelname == "WARNING"
+        assert (
+            "ZarrLocalStorage does not support modified_since()"
+            in caplog.records[0].message
+        )

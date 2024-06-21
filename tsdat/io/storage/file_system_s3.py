@@ -5,20 +5,22 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from time import time
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Protocol, Union
 
 import xarray as xr
 from pydantic import Field, validator
-from tsdat.tstring import Template
 
-from .file_system import FileSystem
 from ...utils import (
-    get_fields_from_datastream,
     get_file_datetime_str,
 )
-from ..handlers import FileHandler
+from .file_system import FileSystem
 
 logger = logging.getLogger(__name__)
+
+
+class S3Object(Protocol):
+    key: str
+    last_modified: datetime
 
 
 class FileSystemS3(FileSystem):
@@ -133,38 +135,65 @@ class FileSystemS3(FileSystem):
         return round(time() / seconds)
 
     def last_modified(self, datastream: str) -> Union[datetime, None]:
-        """Returns the datetime of the last modification to the datastream's storage area."""
-        substitutions = get_fields_from_datastream(datastream)
-        substitutions["datastream"] = datastream
-        prefix = self._get_data_directory(substitutions).as_posix()
+        """Returns the datetime of the last modification to the datastream's storage
+        area."""
+        filepath_glob = self.data_filepath_template.substitute(
+            self._get_substitutions(datastream=datastream),
+            allow_missing=True,
+            fill=".*",
+        )
+        s3_objects = self._get_matching_s3_objects(filepath_glob)
 
         last_modified = None
-        for obj in self._bucket.objects.filter(Prefix=prefix):
+        for obj in s3_objects:
             if obj.last_modified is not None:
+                mod_time = obj.last_modified.astimezone(timezone.utc)
                 last_modified = (
-                    obj.last_modified.astimezone(timezone.utc)
-                    if last_modified is None
-                    else max(last_modified, obj.last_modified)
+                    mod_time if last_modified is None else max(last_modified, mod_time)
                 )
         return last_modified
 
     def modified_since(
         self, datastream: str, last_modified: datetime
     ) -> List[datetime]:
-        """Returns the data times of all files modified after the specified datetime."""
-        substitutions = get_fields_from_datastream(datastream)
-        substitutions["datastream"] = datastream
-        prefix = self._get_data_directory(substitutions).as_posix()
+        """Returns the data datetimes of all files modified after the specified time."""
+        filepath_glob = self.data_filepath_template.substitute(
+            self._get_substitutions(datastream=datastream),
+            allow_missing=True,
+            fill=".*",
+        )
+        s3_objects = self._get_matching_s3_objects(filepath_glob)
         return [
             datetime.strptime(get_file_datetime_str(obj.key), "%Y%m%d.%H%M%S")
-            for obj in self._bucket.objects.filter(Prefix=prefix)
-            if obj.last_modified is not None
-            and obj.last_modified.astimezone(timezone.utc) > last_modified
+            for obj in s3_objects
+            if (
+                obj.last_modified is not None
+                and obj.last_modified.astimezone(timezone.utc) > last_modified
+            )
         ]
 
-    def save_ancillary_file(
-        self, filepath: Path, target_path: Union[Path, None] = None
-    ):
+    def _get_matching_s3_objects(self, filepath_glob: str) -> List[S3Object]:
+        assert (
+            ".*" in filepath_glob or "[0-9]{6}" in filepath_glob  # need some regex
+        ), "Naming scheme must distinguish between files within the same datastream"
+
+        split_idx = filepath_glob.rindex("/")  # default
+        if ".*" in filepath_glob:
+            split_idx = min(split_idx, filepath_glob.index(".*"))
+        if "[0-9]{6}" in filepath_glob:
+            split_idx = min(split_idx, filepath_glob.index("[0-9]"))
+
+        prefix, glob = filepath_glob[:split_idx], re.compile(filepath_glob[split_idx:])
+
+        matches: list[S3Object] = []
+        for obj in self._bucket.objects.filter(Prefix=prefix):
+            suffix = obj.key[len(prefix) :]
+            if glob.fullmatch(suffix):
+                matches.append(obj)
+
+        return matches
+
+    def save_ancillary_file(self, filepath: Path, target_path: Path):  # type: ignore
         """Saves an ancillary filepath to the datastream's ancillary storage area.
 
         NOTE: In most cases this function should not be used directly. Instead, prefer
@@ -180,53 +209,47 @@ class FileSystemS3(FileSystem):
         logger.info("Saved ancillary file to: %s", target_path.as_posix())
 
     def save_data(self, dataset: xr.Dataset, **kwargs: Any):
-        datastream: str = dataset.attrs["datastream"]
-        standard_fpath = self._get_dataset_filepath(dataset)
+        filepath = Path(
+            self.data_filepath_template.substitute(
+                self._get_substitutions(dataset=dataset),
+                allow_missing=False,
+            )
+        )
         with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_filepath = Path(tmp_dir) / standard_fpath.name
-            self.handler.writer.write(dataset, tmp_filepath)
-            for filepath in Path(tmp_dir).glob("**/*"):
-                if filepath.is_dir():
-                    continue
-                s3_key = (
-                    standard_fpath.parent / filepath.relative_to(tmp_dir)
-                ).as_posix()
-                self._bucket.upload_file(Filename=filepath.as_posix(), Key=s3_key)
-                logger.info(
-                    "Saved %s data file to s3://%s/%s",
-                    datastream,
-                    self.parameters.bucket,
-                    s3_key,
-                )
+            self.handler.writer.write(dataset, Path(tmp_dir) / filepath.name)
+            for file in Path(tmp_dir).glob("**/*"):
+                if file.is_file():
+                    key = (filepath.parent / file.relative_to(tmp_dir)).as_posix()
+                    self._bucket.upload_file(Filename=file.as_posix(), Key=key)
+                    logger.info(
+                        "Saved %s data file to s3://%s/%s",
+                        dataset.attrs["datastream"],
+                        self.parameters.bucket,
+                        key,
+                    )
+        return None
 
     def _find_data(
         self,
         start: datetime,
         end: datetime,
         datastream: str,
-        metadata_kwargs: Dict[str, str],
+        metadata_kwargs: Dict[str, str] | None = None,
         **kwargs: Any,
     ) -> List[Path]:
-        dir_template = Template(self.parameters.data_storage_path.as_posix())
-        extension = self.handler.writer.file_extension
-        semi_resolved = dir_template.substitute(
-            {
-                **dict(
-                    datastream=datastream,
-                    extension=extension,
-                    ext=extension,
-                ),
-                **metadata_kwargs,
-            },
-            allow_missing=True,
+        substitutions = self._get_substitutions(
+            datastream=datastream,
+            time_range=(start, end),
+            extra=metadata_kwargs,
         )
-        dirpath, pattern = self._extract_time_substitutions(semi_resolved, start, end)
-        dirpath = self.parameters.storage_root / dirpath
-        pattern = pattern.replace("*", ".*")
-
-        objects = self._bucket.objects.filter(Prefix=dirpath.as_posix())
-        filepaths = (Path(p.key) for p in objects if re.search(pattern, p.key))
-        return self._filter_between_dates(filepaths, start, end)
+        filepath_glob = self.data_filepath_template.substitute(
+            substitutions,
+            allow_missing=True,
+            fill=".*",
+        )
+        matches = self._get_matching_s3_objects(filepath_glob)
+        paths = [Path(obj.key) for obj in matches]
+        return self._filter_between_dates(paths, start, end)
 
     def _open_data_files(self, *filepaths: Path) -> List[xr.Dataset]:
         dataset_list: List[xr.Dataset] = []

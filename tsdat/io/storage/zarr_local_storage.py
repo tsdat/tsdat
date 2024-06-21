@@ -5,8 +5,8 @@ from typing import Iterable, List
 
 from pydantic import Field
 
-from .file_system import FileSystem
 from ..handlers import ZarrHandler
+from .file_system import FileSystem
 
 logger = logging.getLogger(__name__)
 
@@ -62,11 +62,19 @@ class ZarrLocalStorage(FileSystem):
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
     handler: ZarrHandler = Field(default_factory=ZarrHandler)
 
+    def last_modified(self, datastream: str) -> datetime | None:
+        logger.warning("ZarrLocalStorage does not support last_modified()")
+        return None
+
+    def modified_since(
+        self, datastream: str, last_modified: datetime
+    ) -> List[datetime]:
+        logger.warning("ZarrLocalStorage does not support modified_since()")
+        return []
+
+    @staticmethod
     def _filter_between_dates(
-        self,
-        filepaths: Iterable[Path],
-        start: datetime,
-        end: datetime,
+        filepaths: Iterable[Path], start: datetime, end: datetime
     ) -> List[Path]:
         # Zarr filenames don't include dates. There should also only be one filepath
         # matching the data to fetch, so warn if otherwise
@@ -74,6 +82,18 @@ class ZarrLocalStorage(FileSystem):
         if len(zarr_files) > 1:
             logger.warning("More than zarr file found: %s", zarr_files)
         return zarr_files
+
+    def _get_matching_files(self, filepath_glob: str) -> list[Path]:
+        if "*" not in filepath_glob:
+            filepath = Path(filepath_glob)
+            return [filepath] if filepath.exists() else []
+        path_components = Path(filepath_glob).parts
+        for i, path_component in enumerate(path_components):
+            if "*" in path_component:
+                break
+        prefix, suffix = Path(*path_components[:i]), str(Path(*path_components[i:]))  # type: ignore
+        matches = list(prefix.glob(suffix))
+        return matches
 
 
 # TODO:

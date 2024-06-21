@@ -1,4 +1,5 @@
 from typing import Dict
+
 import pytest
 
 from tsdat.tstring import Template
@@ -42,6 +43,18 @@ def test_failures(
 ):
     with pytest.raises(error):
         Template(template).substitute(mapping, allow_missing=allow_missing)
+
+
+def test_fill():
+    template = Template("{a}.{b}[.{c}]")
+
+    # Fill should fill in any values that are missing
+    result = template.substitute(dict(a="x"), allow_missing=True, fill="y")
+    assert result == "x.y.y"
+
+    # Fill is only done if allow_missing is True
+    with pytest.raises(ValueError):
+        template.substitute(dict(a="x"), allow_missing=False, fill="y")
 
 
 @pytest.mark.parametrize(
@@ -151,3 +164,26 @@ def test_repr():
 def test_str():
     template = Template("{a}{b}{c}")
     assert str(template) == "{a}{b}{c}"
+
+
+@pytest.mark.parametrize(
+    ("expected", "left", "right", "mapping"),
+    (
+        ("a.b/c", Template("{x}.{y}"), "{z}", dict(x="a", y="b", z="c")),
+        ("a.b/z", Template("{x}.{y}"), "z", dict(x="a", y="b")),
+        ("ab/c", Template("ab"), Template("{z}"), dict(z="c")),
+        ("ab/z", Template("ab"), "z", dict()),
+    ),
+)
+def test_div(
+    expected: str, left: Template, right: Template | str, mapping: Dict[str, str]
+):
+    assert (left / right).substitute(mapping) == expected
+
+    left /= right  # test idiv
+    assert left.substitute(mapping) == expected
+
+
+def test_div_error():
+    with pytest.raises(ValueError):
+        _ = Template("{a}") / "{"  # not balanced
