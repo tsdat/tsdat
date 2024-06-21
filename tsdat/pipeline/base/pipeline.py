@@ -1,10 +1,12 @@
+from abc import ABC, abstractmethod
+from datetime import datetime
+from getpass import getuser
+from typing import Any, Iterable, List, Pattern, cast
+
 import numpy as np
 import xarray as xr
-from abc import ABC, abstractmethod
-from getpass import getuser
-from datetime import datetime
-from typing import Any, Iterable, List, Pattern, cast
 from pydantic import Field
+
 from ...config.dataset import DatasetConfig
 from ...io.base import Retriever, Storage
 from ...qc.base import QualityManagement
@@ -106,6 +108,8 @@ class Pipeline(ParameterizedClass, ABC):
     def _add_dataset_attrs(
         self, dataset: xr.Dataset, output_vars: Iterable[str]
     ) -> xr.Dataset:
+        from tsdat import get_version
+
         global_attrs = model_to_dict(self.dataset_config.attrs)
         dataset.attrs.update(**global_attrs)
 
@@ -113,7 +117,7 @@ class Pipeline(ParameterizedClass, ABC):
             var_attrs = model_to_dict(self.dataset_config[name].attrs)
             dataset[name].attrs.update(var_attrs)
 
-        history = f"Created by {getuser()} at {datetime.now().isoformat()}"
+        history = f"Created by {getuser()} at {datetime.now().isoformat()} using tsdat v{get_version()}"
         dataset.attrs["history"] = history
 
         return dataset
