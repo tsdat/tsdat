@@ -23,7 +23,7 @@ classifiers = [
 dependencies = [    
   "xarray[io]",
   "pandas[hdf5, parquet]",
-  "netCDF4",
+  "netCDF4 <=1.7.0",
   "h5netcdf",
   "pyarrow",
   "cftime",
