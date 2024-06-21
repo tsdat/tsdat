@@ -39,7 +39,7 @@ class CubicSplineInterp(QualityHandler):
     parameters: Parameters = Parameters()
 
     def run(
-            self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
+        self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
     ) -> xr.Dataset:
         if failures.any():
             dataset[variable_name] = clean_fill(

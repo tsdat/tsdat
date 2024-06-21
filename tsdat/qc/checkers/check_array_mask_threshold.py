@@ -7,12 +7,12 @@ from ..base import QualityChecker
 
 
 class Comparitor(str, Enum):
-    less_than = '<'
-    less_than_eq = '<='
-    greater_than = '>'
-    greater_than_eq = '>='
-    equal = '=='
-    not_equal = '!'
+    less_than = "<"
+    less_than_eq = "<="
+    greater_than = ">"
+    greater_than_eq = ">="
+    equal = "=="
+    not_equal = "!"
 
 
 class CheckArrayMaskThreshold(QualityChecker):
@@ -36,20 +36,40 @@ class CheckArrayMaskThreshold(QualityChecker):
         # Get mask based on specified comparitor
         match self.parameters.comparitor:
             case Comparitor.less_than:
-                mask = dataset[variable_name].values < self.parameters.correlation_threshold
+                mask = (
+                    dataset[variable_name].values
+                    < self.parameters.correlation_threshold
+                )
             case Comparitor.less_than_eq:
-                mask = dataset[variable_name].values <= self.parameters.correlation_threshold
+                mask = (
+                    dataset[variable_name].values
+                    <= self.parameters.correlation_threshold
+                )
             case Comparitor.greater_than:
-                mask = dataset[variable_name].values > self.parameters.correlation_threshold
+                mask = (
+                    dataset[variable_name].values
+                    > self.parameters.correlation_threshold
+                )
             case Comparitor.greater_than_eq:
-                mask = dataset[variable_name].values >= self.parameters.correlation_threshold
+                mask = (
+                    dataset[variable_name].values
+                    >= self.parameters.correlation_threshold
+                )
             case Comparitor.equal:
-                mask = dataset[variable_name].values == self.parameters.correlation_threshold
+                mask = (
+                    dataset[variable_name].values
+                    == self.parameters.correlation_threshold
+                )
             case Comparitor.not_equal:
-                mask = dataset[variable_name].values != self.parameters.correlation_threshold
+                mask = (
+                    dataset[variable_name].values
+                    != self.parameters.correlation_threshold
+                )
             case _:
-                raise ValueError(f"`comparitor` parameter of {self.parameters.comparitor} is invalid."
-                                 f" Please specify one of `<`, `<=`, `>`, `>=`, `==`, or `!=`.")
+                raise ValueError(
+                    f"`comparitor` parameter of {self.parameters.comparitor} is invalid."
+                    f" Please specify one of `<`, `<=`, `>`, `>=`, `==`, or `!=`."
+                )
 
         # Combine for 1D velocity variables
         if len(dataset[variable_name].shape) == 1:

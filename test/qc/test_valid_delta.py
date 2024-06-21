@@ -5,7 +5,6 @@ import xarray as xr
 from tsdat.qc.checkers import CheckValidDelta
 
 
-
 def test_valid_delta():
     ds = xr.Dataset(
         coords={
