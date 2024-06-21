@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import time
@@ -157,7 +158,10 @@ def test_fetch_returns_empty(
     request: pytest.FixtureRequest,
 ):
     # pytest can't pass fixtures through pytest.mark.parametrize so we use this approach
-    storage: Storage = request.getfixturevalue(storage_fixture)
+    storage: FileSystem | FileSystemS3 | ZarrLocalStorage = request.getfixturevalue(
+        storage_fixture
+    )
+    storage.parameters.data_storage_path /= "{year}/{month}/{day}"
 
     expected_dataset = xr.Dataset()  # empty
     dataset = storage.fetch_data(
@@ -307,3 +311,28 @@ def test_storage_saves_ancillary_files(
     else:
         assert expected_filepath.exists()
         os.remove(expected_filepath)
+
+
+def test_last_modified_zarr(
+    zarr_storage: ZarrLocalStorage,
+    sample_dataset: xr.Dataset,
+    caplog: pytest.LogCaptureFixture,
+):
+    datastream = sample_dataset.attrs["datastream"]
+
+    with caplog.at_level(logging.WARNING):
+        assert zarr_storage.last_modified(datastream) is None
+        assert caplog.records[0].levelname == "WARNING"
+        assert (
+            "ZarrLocalStorage does not support last_modified()"
+            in caplog.records[0].message
+        )
+        caplog.clear()
+
+    with caplog.at_level(logging.WARNING):
+        assert zarr_storage.modified_since(datastream, datetime(2022, 1, 1)) == []
+        assert caplog.records[0].levelname == "WARNING"
+        assert (
+            "ZarrLocalStorage does not support modified_since()"
+            in caplog.records[0].message
+        )

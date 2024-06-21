@@ -78,7 +78,7 @@ class FileSystem(Storage):
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
             if not storage_root.is_dir():
                 logger.info("Creating storage root at: %s", storage_root.as_posix())
-                storage_root.mkdir(parents=True)
+                storage_root.mkdir(parents=True, exist_ok=True)
             return storage_root
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
