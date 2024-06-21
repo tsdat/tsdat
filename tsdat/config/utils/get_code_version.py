@@ -2,7 +2,6 @@ import logging
 import os
 
 from dunamai import Style, Version
-from jsonpointer import set_pointer  # type: ignore
 
 logger = logging.getLogger(__name__)
 
