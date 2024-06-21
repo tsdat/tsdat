@@ -8,7 +8,7 @@ from numpy.testing import assert_allclose
 @pytest.fixture
 def input_dataset() -> xr.Dataset:
     # Data points every hour for one day
-    time = pd.date_range(start="2023-02-01", freq="H", periods=24)
+    time = pd.date_range(start="2023-02-01", freq="h", periods=24)
     range_vals = np.array([0, 1])
     input_foo_values = np.linspace((0, 0), (23, 23), num=24)
     input_qc_foo_values = np.zeros((24, 2), dtype=int)

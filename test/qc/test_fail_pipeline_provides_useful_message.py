@@ -22,7 +22,7 @@ def test_fail_pipeline_provides_useful_message(caplog: Any):
         [[False, False, False], [False, False, False], [False, True, False]]
     )
     with pytest.raises(
-            DataQualityError, match=r".*Quality results for variable 'position'.*"
+        DataQualityError, match=r".*Quality results for variable 'position'.*"
     ) as err:
         _ = FailPipeline().run(ds, "position", failures)
 
