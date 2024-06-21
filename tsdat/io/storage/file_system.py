@@ -74,7 +74,7 @@ class FileSystem(Storage):
         Note that this will only be called if the DataReader returns a dictionary of
         xr.Datasets for a single input key."""
 
-        @validator("storage_root")
+        @validator("storage_root", allow_reuse=True)
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
             if not storage_root.is_dir():
                 logger.info("Creating storage root at: %s", storage_root.as_posix())
