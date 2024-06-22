@@ -1,15 +1,16 @@
-import tempfile
 import os
-from typing import Any, Dict, Type
-import pandas as pd
-import xarray as xr
+import tempfile
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, Type
+
+import pandas as pd
 import pytest
+import xarray as xr
 from pandas.testing import assert_frame_equal
-from tsdat.io.base import DataReader, FileHandler
-from tsdat.testing import assert_close
+
 from tsdat.config.utils import recursive_instantiate
+from tsdat.io.base import DataReader, FileHandler
 from tsdat.io.handlers import (
     CSVHandler,
     NetCDFHandler,
@@ -20,17 +21,18 @@ from tsdat.io.readers import (
     CSVReader,
     NetCDFReader,
     ParquetReader,
-    ZarrReader,
     TarReader,
+    ZarrReader,
     ZipReader,
 )
 from tsdat.io.writers import (
     CSVWriter,
     NetCDFWriter,
-    SplitNetCDFWriter,
     ParquetWriter,
+    SplitNetCDFWriter,
     ZarrWriter,
 )
+from tsdat.testing import assert_close
 
 
 @pytest.fixture
@@ -209,21 +211,21 @@ def test_csv_writer(sample_2D_dataset: xr.Dataset):
         tmp_file.with_suffix(".time.1d.csv"),
         index_col=0,
         parse_dates=True,
-        infer_datetime_format=True,
+        date_format="%Y-%m-%d %H:%M:%S %Z",
     )
     df2: pd.DataFrame = pd.read_csv(  # type: ignore
         tmp_file.with_suffix(".height.2d.csv"),
         index_col=[0, 1],
         header=0,
         parse_dates=True,
-        infer_datetime_format=True,
+        date_format="%Y-%m-%d %H:%M:%S %Z",
     )
     df3: pd.DataFrame = pd.read_csv(  # type: ignore
         tmp_file.with_suffix(".depth.2d.csv"),
         index_col=[0, 1],
         header=0,
         parse_dates=True,
-        infer_datetime_format=True,
+        date_format="%Y-%m-%d %H:%M:%S %Z",
     )
     df4: pd.DataFrame = df1.join(df2).join(df3)  # type: ignore
     assert_frame_equal(df4, expected)

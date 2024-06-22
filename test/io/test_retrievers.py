@@ -409,7 +409,7 @@ def test_storage_retriever_file_fetching(
             np.timedelta64(8, "h"),
         ),
         np.datetime64("2022-04-05T20:00:00"),
-    )
+    ).astype("datetime64[ns]")
     expected = xr.Dataset(
         coords={"time": time},  # type: ignore
         data_vars={

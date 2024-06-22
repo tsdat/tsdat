@@ -410,7 +410,7 @@ temperature:
 Matching the line numbers of the above code-block:
 
 * `line 1` Desired name of the variable in the output data - user editable
-* `line 2` Name of the variable in the input data - should directly match raw input data. Can also be a list of possible 
+* `line 2` Name of the variable in the input data - should directly match raw input data. Can also be a list of possible
 names found in the raw data.
 * `line 3` Converter keyword - add if a converter is desired
 * `line 4` Classname of data converter to run, in this case unit conversion. See the
@@ -451,7 +451,7 @@ attrs:
 coords:
   time:
     dims: [time]
-    dtype: datetime64[s]
+    dtype: datetime64[ns]
     attrs:
       long_name: Time
       standard_name: time

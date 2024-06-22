@@ -52,7 +52,7 @@ coords:
     name: NA
     data_converters:
       - classname: tsdat.transform.CreateTimeGrid
-        interval: 1H
+        interval: 1h
 
 
 data_vars: 

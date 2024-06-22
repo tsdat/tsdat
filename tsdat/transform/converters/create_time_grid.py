@@ -18,7 +18,7 @@ from ._create_bounds import _create_bounds
 class CreateTimeGrid(DataConverter):
     interval: str
     """The frequency of time points. This is passed to pd.timedelta_range as the 'freq'
-    argument. E.g., '30s', '5min', '10min', '1H', etc."""
+    argument. E.g., '30s', '5min', '10min', '1h', etc."""
 
     def convert(
         self,
