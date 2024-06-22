@@ -21,7 +21,9 @@ class CSVWriter(FileWriter):
 
     class Parameters(BaseModel, extra=Extra.forbid):
         dim_order: Optional[List[str]] = None
-        to_csv_kwargs: Dict[str, Any] = {}
+        to_csv_kwargs: Dict[str, Any] = Field(
+            default_factory=lambda: dict(date_format="%Y-%m-%d %H:%M:%S %Z")
+        )
 
     parameters: Parameters = Field(default_factory=Parameters)
     file_extension: str = "csv"
