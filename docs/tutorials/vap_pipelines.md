@@ -469,7 +469,7 @@ helpful for users who don't need complex analysis.
         coords:
           time:
             dims: [time]
-            dtype: datetime64[ms]
+            dtype: datetime64[ns]
             attrs:
               units: Seconds since 1970-01-01 00:00:00 UTC
               long_name: Time

@@ -8,17 +8,17 @@ attrs:
 coords:
   time:
     dims: [time]
-    dtype: datetime64[s]
+    dtype: datetime64[ns]
     attrs:
       units: Seconds since 1970-01-01 00:00:00
   time_30min:
     dims: [time_30min]
-    dtype: datetime64[s]
+    dtype: datetime64[ns]
     attrs:
       units: Seconds since 1970-01-01 00:00:00
   time_60min:
     dims: [time_60min]
-    dtype: datetime64[s]
+    dtype: datetime64[ns]
     attrs:
       units: Seconds since 1970-01-01 00:00:00
 
@@ -32,17 +32,17 @@ coords:
 data_vars:
   time_bound:
     dims: [time, bound]
-    dtype: datetime64[s]
+    dtype: datetime64[ns]
     attrs:
       units: Seconds since 1970-01-01 00:00:00
   time_30min_bound:
     dims: [time_30min, bound]
-    dtype: datetime64[s]
+    dtype: datetime64[ns]
     attrs:
       units: Seconds since 1970-01-01 00:00:00
   time_60min_bound:
     dims: [time_60min, bound]
-    dtype: datetime64[s]
+    dtype: datetime64[ns]
     attrs:
       units: Seconds since 1970-01-01 00:00:00
   temperature_5min:
