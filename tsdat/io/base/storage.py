@@ -14,7 +14,6 @@ from typing import (
 import xarray as xr
 from pydantic import BaseSettings, Field
 
-from .data_handler import DataHandler
 from ...tstring import Template
 from ...utils import (
     ParameterizedClass,
@@ -22,6 +21,7 @@ from ...utils import (
     get_fields_from_dataset,
     get_fields_from_datastream,
 )
+from .data_handler import DataHandler
 
 
 class Storage(ParameterizedClass, ABC):
@@ -63,7 +63,7 @@ class Storage(ParameterizedClass, ABC):
         Defaults to ``ancillary/{location_id}/{datastream}``."""
 
         ancillary_filename_template: str = (
-            "{datastream}.{date_time}.{title}.{extension}"
+            "{datastream}.{yyyy}{mm}{dd}.{HH}{MM}{SS}.{title}.{extension}"
         )
         """Template string to use for ancillary filenames.
         

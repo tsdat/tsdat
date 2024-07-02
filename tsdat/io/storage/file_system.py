@@ -1,4 +1,5 @@
 import logging
+import re
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -53,7 +54,9 @@ class FileSystem(Storage):
         Defaults to ``data/{location_id}/{datastream}``.
         """
 
-        data_filename_template: str = "{datastream}.{date_time}.{extension}"
+        data_filename_template: str = (
+            "{datastream}.{yyyy}{mm}{dd}.{HH}{MM}{SS}.{extension}"
+        )
         """Template string to use for data filenames.
         
         Allows substitution of the following parameters using curly braces '{}':
@@ -114,6 +117,7 @@ class FileSystem(Storage):
             allow_missing=True,
             fill="*",
         )
+        filepath_glob = re.sub(r"\*+", "*", filepath_glob)
         matches = self._get_matching_files(filepath_glob)
         last_modified = None
         for file in matches:
@@ -144,6 +148,7 @@ class FileSystem(Storage):
             allow_missing=True,
             fill="*",
         )
+        filepath_glob = re.sub(r"\*+", "*", filepath_glob)
         matches = self._get_matching_files(filepath_glob)
         results: list[datetime] = []
         for file in matches:
@@ -245,6 +250,7 @@ class FileSystem(Storage):
         filepath_glob = self.data_filepath_template.substitute(
             substitutions, allow_missing=True, fill="*"
         )
+        filepath_glob = re.sub(r"\*+", "*", filepath_glob)
         matches = self._get_matching_files(filepath_glob)
         return self._filter_between_dates(matches, start, end)
 
@@ -269,6 +275,7 @@ class FileSystem(Storage):
 
         valid_filepaths: List[Path] = []
         for filepath in filepaths:
+            # TODO: use better regex
             file_date_str = get_file_datetime_str(filepath)
             if start_date_str <= file_date_str <= end_date_str:
                 valid_filepaths.append(filepath)
@@ -306,10 +313,13 @@ class FileSystem(Storage):
             start, end = time_range
             if start.year == end.year:
                 sub["year"] = start.strftime("%Y")  # yyyy
+                sub["yyyy"] = start.strftime("%Y")
                 if start.month == end.month:
                     sub["month"] = start.strftime("%m")  # mm
+                    sub["mm"] = start.strftime("%m")
                     if start.day == end.day:
                         sub["day"] = start.strftime("%d")  # dd
+                        sub["dd"] = start.strftime("%d")
 
         if extra is not None:
             sub.update(extra)
