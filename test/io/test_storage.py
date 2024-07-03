@@ -166,7 +166,7 @@ def test_fetch_returns_empty(
     expected_dataset = xr.Dataset()  # empty
     dataset = storage.fetch_data(
         start=datetime.fromisoformat("2022-04-10 00:00:00"),
-        end=datetime.fromisoformat("2022-04-10 23:00:00"),
+        end=datetime.fromisoformat("2022-04-11 00:00:00"),
         datastream="sgp.testing-storage.a0",
         metadata_kwargs=dict(location_id="sgp"),
     )
