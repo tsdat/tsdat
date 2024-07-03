@@ -13,7 +13,7 @@ from tsdat.config.variables import (
     Variable,
     VariableAttributes,
 )
-from tsdat.testing import get_pydantic_error_message, get_pydantic_warning_message
+from tsdat.testing import get_pydantic_error_message
 from tsdat.utils import model_to_dict
 
 
@@ -340,7 +340,7 @@ def test_dataset_definition_from_yaml():
         "coords": {
             "time": {
                 "name": "time",
-                "dtype": "datetime64[s]",
+                "dtype": "datetime64[ns]",
                 "dims": ["time"],
                 "attrs": {
                     "units": "Seconds since 1970-01-01 00:00:00",
