@@ -1,8 +1,48 @@
-from typing import Dict
+from typing import Callable, Dict
 
 import pytest
 
-from tsdat.tstring import Template
+from tsdat.tstring import Template, TemplateChunk
+
+
+@pytest.mark.parametrize(
+    ("expected", "template", "value", "allow_missing"),
+    (
+        ("", "", None, True),
+        ("", "", None, False),
+        ("a", "a", "a", True),
+        ("a", "a", lambda: "a", True),
+        ("a", "{b}", "a", True),
+        ("a", "[{b}]", "a", True),
+        ("", "[-{b}]", None, False),
+        ("[{b}]", "[{b}]", None, True),
+    ),
+)
+def test_chunk_substitutions(
+    expected: str,
+    template: str,
+    value: str | Callable[[], str] | None,
+    allow_missing: bool,
+):
+    assert TemplateChunk(template).sub(value, allow_missing) == expected
+
+
+@pytest.mark.parametrize(
+    ("error", "template", "value", "allow_missing"),
+    (
+        (ValueError, "{a}", None, False),
+        (ValueError, "{a", None, False),
+        (ValueError, "[a}]", None, False),
+    ),
+)
+def test_chunk_failures(
+    error: Exception,
+    template: str,
+    value: str | Callable[[], str] | None,
+    allow_missing: bool,
+):
+    with pytest.raises(error):
+        TemplateChunk(template).sub(value, allow_missing=allow_missing)
 
 
 @pytest.mark.parametrize(
@@ -22,7 +62,7 @@ from tsdat.tstring import Template
         ("d.e-gf[-{d}]", "{a}.{b}[-g{c}][-{d}]", dict(a="d", b="e", c="f"), True),
     ),
 )
-def test_substitutions(
+def test_template_substitutions(
     expected: str, template: str, mapping: Dict[str, str], allow_missing: bool
 ):
     assert Template(template).substitute(mapping, allow_missing) == expected

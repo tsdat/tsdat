@@ -166,12 +166,11 @@ class Storage(ParameterizedClass, ABC):
     def get_ancillary_filepath(
         self,
         title: str,
+        root_dir: Path,
         extension: str = "png",
         dataset: Union[xr.Dataset, None] = None,
         datastream: Union[str, None] = None,
         start: Union[datetime, None] = None,
-        root_dir: Union[Path, None] = None,
-        mkdirs: bool = True,
         **kwargs: str,
     ) -> Path:
         """Returns the filepath for the given datastream and title of an ancillary file
@@ -241,13 +240,8 @@ class Storage(ParameterizedClass, ABC):
             / self.parameters.ancillary_filename_template
         )
         ancillary_path = Path(filepath_template.substitute(substitutions))
-
-        if root_dir is not None:
-            ancillary_path = root_dir / ancillary_path
-
-        if mkdirs:
-            ancillary_path.parent.mkdir(exist_ok=True, parents=True)
-
+        ancillary_path = root_dir / ancillary_path
+        ancillary_path.parent.mkdir(exist_ok=True, parents=True)
         return ancillary_path
 
     @abstractmethod
