@@ -7,10 +7,11 @@ OUTPUT_DATASTREAM = "output_ds"
 InputKey = str
 VarName = str
 
+
 DATASTREAM_TEMPLATE = Template(
     "{location_id}.{dataset_name}[-{qualifier}][-{temporal}].{data_level}"
 )
 
 FILENAME_TEMPLATE = Template(
-    "{datastream}.{start_date}.{start_time}[.{title}].{extension}"
+    "{datastream}.{yyyy}{mm}{dd}.{HH}{MM}{SS}[.{title}].{extension}"
 )

@@ -1,8 +1,48 @@
-from typing import Dict
+from typing import Callable, Dict
 
 import pytest
 
-from tsdat.tstring import Template
+from tsdat.tstring import Template, TemplateChunk
+
+
+@pytest.mark.parametrize(
+    ("expected", "template", "value", "allow_missing"),
+    (
+        ("", "", None, True),
+        ("", "", None, False),
+        ("a", "a", "a", True),
+        ("a", "a", lambda: "a", True),
+        ("a", "{b}", "a", True),
+        ("a", "[{b}]", "a", True),
+        ("", "[-{b}]", None, False),
+        ("[{b}]", "[{b}]", None, True),
+    ),
+)
+def test_chunk_substitutions(
+    expected: str,
+    template: str,
+    value: str | Callable[[], str] | None,
+    allow_missing: bool,
+):
+    assert TemplateChunk(template).sub(value, allow_missing) == expected
+
+
+@pytest.mark.parametrize(
+    ("error", "template", "value", "allow_missing"),
+    (
+        (ValueError, "{a}", None, False),
+        (ValueError, "{a", None, False),
+        (ValueError, "[a}]", None, False),
+    ),
+)
+def test_chunk_failures(
+    error: Exception,
+    template: str,
+    value: str | Callable[[], str] | None,
+    allow_missing: bool,
+):
+    with pytest.raises(error):
+        TemplateChunk(template).sub(value, allow_missing=allow_missing)
 
 
 @pytest.mark.parametrize(
@@ -13,16 +53,16 @@ from tsdat.tstring import Template
         ("a", "{b}", dict(b="a"), True),
         ("a", "[{b}]", dict(b="a"), True),
         ("", "[-{b}]", None, False),
-        ("", "[{b}]", dict(), True),
+        ("[{b}]", "[{b}]", dict(), True),
         ("ab", "{a}[{b}]", dict(a="a", b="b"), True),
         ("a.b", "{a}[.{b}]", dict(a="a", b="b"), True),
         ("defg", "{a}{b}{c}g", dict(a="d", b="e", c="f"), True),
         ("defg", "{a}{b}{c}g", dict(a=lambda: "d", b=lambda: "e", c=lambda: "f"), True),
         ("d.e-gf", "{a}.{b}[-g{c}]", dict(a="d", b="e", c="f"), True),
-        ("d.e-gf", "{a}.{b}[-g{c}][-{d}]", dict(a="d", b="e", c="f"), True),
+        ("d.e-gf[-{d}]", "{a}.{b}[-g{c}][-{d}]", dict(a="d", b="e", c="f"), True),
     ),
 )
-def test_substitutions(
+def test_template_substitutions(
     expected: str, template: str, mapping: Dict[str, str], allow_missing: bool
 ):
     assert Template(template).substitute(mapping, allow_missing) == expected
@@ -49,8 +89,8 @@ def test_fill():
     template = Template("{a}.{b}[.{c}]")
 
     # Fill should fill in any values that are missing
-    result = template.substitute(dict(a="x"), allow_missing=True, fill="y")
-    assert result == "x.y.y"
+    result = template.substitute(dict(a="x"), allow_missing=True, fill="*")
+    assert result == "x.**"
 
     # Fill is only done if allow_missing is True
     with pytest.raises(ValueError):
@@ -187,3 +227,16 @@ def test_div(
 def test_div_error():
     with pytest.raises(ValueError):
         _ = Template("{a}") / "{"  # not balanced
+
+
+@pytest.mark.parametrize(
+    ("template", "variables"),
+    (
+        ("{a}.{b}.{c}", ("a", "b", "c")),
+        ("{a}.{b}[{c}]", ("a", "b", "c")),
+        ("{a}.{b}[.{c}]", ("a", "b", "c")),
+        ("{a}1.{b}2[.{c}3]", ("a", "b", "c")),
+    ),
+)
+def test_variables(template: str, variables: list[str]):
+    assert Template(template).variables == variables

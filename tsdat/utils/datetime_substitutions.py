@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Union
+from typing import Callable, Dict, Union
 
 import numpy as np
 import pandas as pd
@@ -7,27 +7,31 @@ import pandas as pd
 
 def datetime_substitutions(
     time: Union[datetime, np.datetime64, None],
-) -> Dict[str, str]:
-    substitutions: Dict[str, str] = {}
+) -> Dict[str, Callable[[], str]]:
+    substitutions: Dict[str, Callable[[], str]] = {}
     if time is not None:
         t = pd.to_datetime(time)
         substitutions.update(
-            year=t.strftime("%Y"),
-            month=t.strftime("%m"),
-            day=t.strftime("%d"),
-            hour=t.strftime("%H"),
-            minute=t.strftime("%M"),
-            second=t.strftime("%S"),
-            yyyy=t.strftime("%Y"),
-            mm=t.strftime("%m"),
-            dd=t.strftime("%d"),
-            HH=t.strftime("%H"),
-            MM=t.strftime("%M"),
-            SS=t.strftime("%S"),
-            date_time=t.strftime("%Y%m%d.%H%M%S"),
-            date=t.strftime("%Y%m%d"),
-            time=t.strftime("%H%M%S"),
-            start_date=t.strftime("%Y%m%d"),  # included for backwards compatibility
-            start_time=t.strftime("%H%M%S"),  # included for backwards compatibility
+            year=lambda: t.strftime("%Y"),
+            month=lambda: t.strftime("%m"),
+            day=lambda: t.strftime("%d"),
+            hour=lambda: t.strftime("%H"),
+            minute=lambda: t.strftime("%M"),
+            second=lambda: t.strftime("%S"),
+            yyyy=lambda: t.strftime("%Y"),
+            mm=lambda: t.strftime("%m"),
+            dd=lambda: t.strftime("%d"),
+            HH=lambda: t.strftime("%H"),
+            MM=lambda: t.strftime("%M"),
+            SS=lambda: t.strftime("%S"),
+            date_time=lambda: t.strftime("%Y%m%d.%H%M%S"),
+            date=lambda: t.strftime("%Y%m%d"),
+            time=lambda: t.strftime("%H%M%S"),
+            start_date=lambda: t.strftime(
+                "%Y%m%d"
+            ),  # included for backwards compatibility
+            start_time=lambda: t.strftime(
+                "%H%M%S"
+            ),  # included for backwards compatibility
         )
     return substitutions
