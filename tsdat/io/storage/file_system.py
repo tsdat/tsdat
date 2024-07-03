@@ -1,8 +1,9 @@
 import logging
+import re
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Union
+from typing import Any, Callable, Dict, Iterable, List, Union
 
 import xarray as xr
 from pydantic import Field, validator
@@ -10,8 +11,6 @@ from pydantic import Field, validator
 from tsdat.tstring import Template
 
 from ...utils import (
-    get_fields_from_dataset,
-    get_fields_from_datastream,
     get_file_datetime_str,
 )
 from ..base import Storage
@@ -53,7 +52,9 @@ class FileSystem(Storage):
         Defaults to ``data/{location_id}/{datastream}``.
         """
 
-        data_filename_template: str = "{datastream}.{date_time}.{extension}"
+        data_filename_template: str = (
+            "{datastream}.{yyyy}{mm}{dd}.{HH}{MM}{SS}.{extension}"
+        )
         """Template string to use for data filenames.
         
         Allows substitution of the following parameters using curly braces '{}':
@@ -92,14 +93,6 @@ class FileSystem(Storage):
             / self.parameters.data_filename_template
         )
 
-    @property
-    def ancillary_filepath_template(self) -> Template:
-        return Template(
-            self.parameters.storage_root
-            / self.parameters.data_storage_path
-            / self.parameters.ancillary_filename_template
-        )
-
     def last_modified(self, datastream: str) -> Union[datetime, None]:
         """Find the last modified time for any data in that datastream.
 
@@ -114,6 +107,7 @@ class FileSystem(Storage):
             allow_missing=True,
             fill="*",
         )
+        filepath_glob = re.sub(r"\*+", "*", filepath_glob)
         matches = self._get_matching_files(filepath_glob)
         last_modified = None
         for file in matches:
@@ -144,6 +138,7 @@ class FileSystem(Storage):
             allow_missing=True,
             fill="*",
         )
+        filepath_glob = re.sub(r"\*+", "*", filepath_glob)
         matches = self._get_matching_files(filepath_glob)
         results: list[datetime] = []
         for file in matches:
@@ -245,6 +240,7 @@ class FileSystem(Storage):
         filepath_glob = self.data_filepath_template.substitute(
             substitutions, allow_missing=True, fill="*"
         )
+        filepath_glob = re.sub(r"\*+", "*", filepath_glob)
         matches = self._get_matching_files(filepath_glob)
         return self._filter_between_dates(matches, start, end)
 
@@ -269,6 +265,7 @@ class FileSystem(Storage):
 
         valid_filepaths: List[Path] = []
         for filepath in filepaths:
+            # TODO: use better regex
             file_date_str = get_file_datetime_str(filepath)
             if start_date_str <= file_date_str <= end_date_str:
                 valid_filepaths.append(filepath)
@@ -286,38 +283,25 @@ class FileSystem(Storage):
     def _get_substitutions(
         self,
         datastream: str | None = None,
+        start: datetime | None = None,
         time_range: tuple[datetime, datetime] | None = None,
         dataset: xr.Dataset | None = None,
-        extra: dict[str, str] | None = None,
-    ) -> Dict[str, str]:
-        """Gets substitutions for file extension and datastream components."""
-        extension = self.handler.extension or self.handler.writer.file_extension
-
-        sub = dict(ext=extension, extension=extension)
-
-        if datastream is not None:
-            sub.update(
-                datastream=datastream,
-                **get_fields_from_datastream(datastream),
-            )
-
-        # Get substitutions for year/month/day
-        if time_range is not None:
-            start, end = time_range
-            if start.year == end.year:
-                sub["year"] = start.strftime("%Y")  # yyyy
-                if start.month == end.month:
-                    sub["month"] = start.strftime("%m")  # mm
-                    if start.day == end.day:
-                        sub["day"] = start.strftime("%d")  # dd
-
-        if extra is not None:
-            sub.update(extra)
-
-        if dataset is not None:
-            sub.update(get_fields_from_dataset(dataset))
-
-        return sub
+        extra: Dict[str, str] | None = None,
+        extension: str | None = None,
+        title: str | None = None,
+    ) -> Dict[str, Callable[[], str] | str]:
+        extension = extension or (
+            self.handler.extension or self.handler.writer.file_extension
+        )
+        return super()._get_substitutions(
+            datastream=datastream,
+            start=start,
+            time_range=time_range,
+            dataset=dataset,
+            extra=extra,
+            extension=extension,
+            title=title,
+        )
 
 
 # TODO:

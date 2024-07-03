@@ -1,8 +1,10 @@
 from typing import Optional
+
 import xarray as xr
 
 from tsdat.const import FILENAME_TEMPLATE
-from .get_start_date_and_time_str import get_start_date_and_time_str
+
+from .get_fields_from_dataset import get_fields_from_dataset
 
 
 def get_filename(
@@ -30,13 +32,6 @@ def get_filename(
         str: The filename constructed from provided parameters.
 
     ---------------------------------------------------------------------------------"""
-    extension = extension.lstrip(".")
-
-    start_date, start_time = get_start_date_and_time_str(dataset)
-    return FILENAME_TEMPLATE.substitute(
-        dataset.attrs,  # type: ignore
-        extension=extension,
-        title=title,
-        start_date=start_date,
-        start_time=start_time,
-    )
+    substitutions = dict(extension=extension.lstrip("."), title=title)
+    substitutions.update(get_fields_from_dataset(dataset))
+    return FILENAME_TEMPLATE.substitute(substitutions)

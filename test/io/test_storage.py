@@ -161,7 +161,7 @@ def test_fetch_returns_empty(
     storage: FileSystem | FileSystemS3 | ZarrLocalStorage = request.getfixturevalue(
         storage_fixture
     )
-    storage.parameters.data_storage_path /= "{year}/{month}/{day}"
+    storage.parameters.data_storage_path /= "{yyyy}/{mm}/{dd}"
 
     expected_dataset = xr.Dataset()  # empty
     dataset = storage.fetch_data(
