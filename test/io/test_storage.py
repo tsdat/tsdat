@@ -161,12 +161,12 @@ def test_fetch_returns_empty(
     storage: FileSystem | FileSystemS3 | ZarrLocalStorage = request.getfixturevalue(
         storage_fixture
     )
-    storage.parameters.data_storage_path /= "{year}/{month}/{day}"
+    storage.parameters.data_storage_path /= "{yyyy}/{mm}/{dd}"
 
     expected_dataset = xr.Dataset()  # empty
     dataset = storage.fetch_data(
         start=datetime.fromisoformat("2022-04-10 00:00:00"),
-        end=datetime.fromisoformat("2022-04-11 00:00:00"),
+        end=datetime.fromisoformat("2022-04-10 23:00:00"),
         datastream="sgp.testing-storage.a0",
         metadata_kwargs=dict(location_id="sgp"),
     )

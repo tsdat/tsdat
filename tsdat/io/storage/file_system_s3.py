@@ -158,7 +158,9 @@ class FileSystemS3(FileSystem):
     ) -> List[datetime]:
         """Returns the data datetimes of all files modified after the specified time."""
         filepath_glob = self.data_filepath_template.substitute(
-            self._get_substitutions(datastream=datastream),
+            self._get_substitutions(
+                datastream=datastream,
+            ),
             allow_missing=True,
             fill=".*",
         )
@@ -211,7 +213,11 @@ class FileSystemS3(FileSystem):
     def save_data(self, dataset: xr.Dataset, **kwargs: Any):
         filepath = Path(
             self.data_filepath_template.substitute(
-                self._get_substitutions(dataset=dataset),
+                self._get_substitutions(
+                    dataset=dataset,
+                    extension=self.handler.extension
+                    or self.handler.writer.file_extension,
+                ),
                 allow_missing=False,
             )
         )
@@ -238,14 +244,10 @@ class FileSystemS3(FileSystem):
         **kwargs: Any,
     ) -> List[Path]:
         substitutions = self._get_substitutions(
-            datastream=datastream,
-            time_range=(start, end),
-            extra=metadata_kwargs,
+            datastream=datastream, time_range=(start, end), extra=metadata_kwargs
         )
         filepath_glob = self.data_filepath_template.substitute(
-            substitutions,
-            allow_missing=True,
-            fill=".*",
+            substitutions, allow_missing=True, fill=".*"
         )
         matches = self._get_matching_s3_objects(filepath_glob)
         paths = [Path(obj.key) for obj in matches]

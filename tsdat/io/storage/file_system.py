@@ -3,7 +3,7 @@ import re
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Union
+from typing import Any, Callable, Dict, Iterable, List, Union
 
 import xarray as xr
 from pydantic import Field, validator
@@ -11,8 +11,6 @@ from pydantic import Field, validator
 from tsdat.tstring import Template
 
 from ...utils import (
-    get_fields_from_dataset,
-    get_fields_from_datastream,
     get_file_datetime_str,
 )
 from ..base import Storage
@@ -93,14 +91,6 @@ class FileSystem(Storage):
             self.parameters.storage_root
             / self.parameters.data_storage_path
             / self.parameters.data_filename_template
-        )
-
-    @property
-    def ancillary_filepath_template(self) -> Template:
-        return Template(
-            self.parameters.storage_root
-            / self.parameters.data_storage_path
-            / self.parameters.ancillary_filename_template
         )
 
     def last_modified(self, datastream: str) -> Union[datetime, None]:
@@ -293,41 +283,25 @@ class FileSystem(Storage):
     def _get_substitutions(
         self,
         datastream: str | None = None,
+        start: datetime | None = None,
         time_range: tuple[datetime, datetime] | None = None,
         dataset: xr.Dataset | None = None,
-        extra: dict[str, str] | None = None,
-    ) -> Dict[str, str]:
-        """Gets substitutions for file extension and datastream components."""
-        extension = self.handler.extension or self.handler.writer.file_extension
-
-        sub = dict(ext=extension, extension=extension)
-
-        if datastream is not None:
-            sub.update(
-                datastream=datastream,
-                **get_fields_from_datastream(datastream),
-            )
-
-        # Get substitutions for year/month/day
-        if time_range is not None:
-            start, end = time_range
-            if start.year == end.year:
-                sub["year"] = start.strftime("%Y")  # yyyy
-                sub["yyyy"] = start.strftime("%Y")
-                if start.month == end.month:
-                    sub["month"] = start.strftime("%m")  # mm
-                    sub["mm"] = start.strftime("%m")
-                    if start.day == end.day:
-                        sub["day"] = start.strftime("%d")  # dd
-                        sub["dd"] = start.strftime("%d")
-
-        if extra is not None:
-            sub.update(extra)
-
-        if dataset is not None:
-            sub.update(get_fields_from_dataset(dataset))
-
-        return sub
+        extra: Dict[str, str] | None = None,
+        extension: str | None = None,
+        title: str | None = None,
+    ) -> Dict[str, Callable[[], str] | str]:
+        extension = extension or (
+            self.handler.extension or self.handler.writer.file_extension
+        )
+        return super()._get_substitutions(
+            datastream=datastream,
+            start=start,
+            time_range=time_range,
+            dataset=dataset,
+            extra=extra,
+            extension=extension,
+            title=title,
+        )
 
 
 # TODO:

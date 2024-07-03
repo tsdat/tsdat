@@ -33,6 +33,9 @@ class TemplateChunk:
         self.is_required = self._is_required(chunk)
         self.regex = self._generate_regex(chunk)
 
+    def __repr__(self) -> str:
+        return f"TemplateChunk({self.str})"
+
     @staticmethod
     def _get_variable_name(chunk: str) -> str | None:
         if "{" in chunk:

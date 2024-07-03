@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
+    Callable,
     Dict,
     Generator,
     List,
@@ -227,25 +228,20 @@ class Storage(ParameterizedClass, ABC):
         Returns:
             Path: The path to the ancillary file.
         """
+        substitutions = self._get_substitutions(
+            title=title,
+            dataset=dataset,
+            datastream=datastream,
+            start=start,
+            extension=extension,
+            extra=kwargs,
+        )
+        filepath_template = (
+            Template(self.parameters.ancillary_storage_path)
+            / self.parameters.ancillary_filename_template
+        )
+        ancillary_path = Path(filepath_template.substitute(substitutions))
 
-        # Override with provided substitutions and keywords, if provided
-        substitutions = {}
-        if dataset is not None:
-            substitutions.update(get_fields_from_dataset(dataset))
-        if datastream is not None:
-            substitutions.update(
-                datastream=datastream, **get_fields_from_datastream(datastream)
-            )
-        if start is not None:
-            substitutions.update(datetime_substitutions(start))
-        substitutions.update(extension=extension, ext=extension, title=title, **kwargs)
-
-        # Resolve substitutions to get ancillary filepath
-        dir_template = Template(self.parameters.ancillary_storage_path)
-        file_template = Template(self.parameters.ancillary_filename_template)
-        dirpath = dir_template.substitute(substitutions)
-        filename = file_template.substitute(substitutions)
-        ancillary_path = Path(dirpath) / filename
         if root_dir is not None:
             ancillary_path = root_dir / ancillary_path
 
@@ -322,3 +318,52 @@ class Storage(ParameterizedClass, ABC):
                 self.save_ancillary_file(path, target_path=target)
 
         tmp_dir.cleanup()
+
+    def _get_substitutions(
+        self,
+        datastream: str | None = None,
+        start: datetime | None = None,
+        time_range: tuple[datetime, datetime] | None = None,
+        dataset: xr.Dataset | None = None,
+        extra: dict[str, str] | None = None,
+        extension: str | None = None,
+        title: str | None = None,
+    ) -> Dict[str, Callable[[], str] | str]:
+        """Gets substitutions for file extension and datastream components."""
+        sub: dict[str, Callable[[], str] | str] = {}
+
+        if extension is not None:
+            sub.update(ext=extension, extension=extension)
+
+        if start:
+            sub.update(datetime_substitutions(start))
+
+        # Get substitutions for year/month/day
+        if time_range is not None:
+            start, end = time_range
+            if start.year == end.year:
+                sub["year"] = start.strftime("%Y")  # yyyy
+                sub["yyyy"] = start.strftime("%Y")
+                if start.month == end.month:
+                    sub["month"] = start.strftime("%m")  # mm
+                    sub["mm"] = start.strftime("%m")
+                    if start.day == end.day:
+                        sub["day"] = start.strftime("%d")  # dd
+                        sub["dd"] = start.strftime("%d")
+
+        if dataset is not None:
+            sub.update(get_fields_from_dataset(dataset))
+
+        if extra is not None:
+            sub.update(extra)
+
+        if datastream is not None:
+            sub.update(
+                datastream=datastream,
+                **get_fields_from_datastream(datastream),
+            )
+
+        if title is not None:
+            sub.update(title=title)
+
+        return sub
