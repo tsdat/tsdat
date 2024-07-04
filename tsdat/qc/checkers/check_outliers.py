@@ -1,5 +1,5 @@
-import xarray as xr
 import numpy as np
+import xarray as xr
 from numpy.typing import NDArray
 from pydantic import BaseModel, Extra
 
@@ -21,11 +21,11 @@ class CheckOutliers(QualityChecker):
 
     parameters: Parameters = Parameters()
 
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
         n_std = self.parameters.n_std
 
         std_dev = dataset[variable_name].std(dim="time", ddof=1)
-        mean = dataset[variable_name].std(dim="time")
+        mean = dataset[variable_name].mean(dim="time")
         mask = dataset[variable_name] > mean + std_dev * n_std
 
         return mask.data
