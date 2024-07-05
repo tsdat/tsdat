@@ -15,18 +15,18 @@
     // 
     // Formatting, linting, code analysis, and testing settings
     // 
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+        },
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
     "editor.formatOnSave": true,
     "yaml.format.printWidth": 88,
     "yaml.format.proseWrap": "always",
-    "black-formatter.args": [
-        "--preview"
-    ],
-    "python.formatting.provider": "black",
-    "python.linting.enabled": true,
-    "python.linting.lintOnSave": true,
-    "python.linting.mypyEnabled": true,
-    "python.linting.flake8Enabled": false,
-    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.typeCheckingMode": "basic",
     "python.testing.pytestEnabled": true,
     "python.testing.pytestArgs": [
         "-vv"
@@ -44,15 +44,12 @@
     },
     "editor.rulers": [
         88,
-        {
-            "column": 120,
-            "color": "#ffffff5e"
-        },
+        120,
     ],
     // 
     // Settings for helpful utilities
     // 
-    "autoDocstring.customTemplatePath": ".vscode/docstring.mustache",
+    "autoDocstring.docstringFormat": "google",
     "errorLens.statusBarIconsEnabled": true,
     "todo-tree.general.tags": [
         "BUG",
