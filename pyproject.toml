@@ -51,14 +51,15 @@ dev = [
   "mkdocstrings[python]",
   "moto[s3,sts]==4.0.1",
   "mypy",
+  "pandas-stubs",
   "pytest",
   "ruff",
   "types-PyYAML",
 ]
 io = [
-  "zarr",
+  "h5netcdf",
   "pyarrow",
-  "h5netcdf"
+  "zarr",
 ]
 ocean = ["mhkit"]
 
