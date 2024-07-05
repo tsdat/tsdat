@@ -1,65 +1,65 @@
 [build-system]
-requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.0", "setuptools_scm[toml]>=6.2"]
 
 [project]
-name = "tsdat"
-dynamic = ["version"]
 authors = [
   { name="tsdat", email="tsdat@pnnl.gov" },
 ]
-description = "A data processing framework used to convert time series data into standardized format."
-readme = "README.md"
-requires-python = ">=3.8"
-keywords = ["data", "pipeline"]
-license = {file = "LICENSE.md"}
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering",
     "Intended Audience :: Science/Research",
 ]
-
 dependencies = [    
-  "xarray[io]",
-  "pandas[hdf5, parquet]",
-  "netCDF4 <=1.7.0",
-  "h5netcdf",
-  "pyarrow",
-  "cftime",
-  "xarray",
   "act-atmos >=1.1.3,!=1.3.1,!=1.3.3",
+  "cftime",
+  "dunamai==1.9.0",
+  "jsonpointer==2.2",
+  "netCDF4 <=1.7.0",
+  "numpy >=1.2",
+  "pandas >=1.2",
+  "pint",
   "pydantic >=1.10.0, <2.0.0",
   "pyyaml >=5.4",
-  "numpy >= 1.2",
-  "pandas >= 1.2",
-  "jsonpointer==2.2",
-  "dunamai==1.9.0",
-  "zarr",
-  "typer >=0.4",
   "rich",
-  "types-PyYAML",
-  "boto3",
-  "boto3-stubs[essential]",
-  "mhkit",
+  "typer >=0.4",
+  "xarray",
 ]
+description = "A data processing framework used to convert time series data into standardized format."
+dynamic = ["version"]
+keywords = ["data", "pipeline"]
+license = {file = "LICENSE.md"}
+name = "tsdat"
+readme = "README.md"
+requires-python = ">=3.10"
+
 
 [project.optional-dependencies]
+aws = ["boto3"]
+complete = ["tsdat[aws,io,ocean]"]
 dev = [
-  "pytest",
-  "coverage",
-  "build",
   "black",
-  "ruff",
-  "isort",
-  "moto[s3,sts]==4.0.1"
-]
-docs = [
+  "boto3-stubs[essential]",
+  "build",
+  "coverage",
+  "mkdocs-gen-files",
+  "mkdocs-literate-nav",
   "mkdocs-material",
   "mkdocstrings[python]",
-  "mkdocs-literate-nav",
-  "mkdocs-gen-files",
+  "moto[s3,sts]==4.0.1",
+  "mypy",
+  "pytest",
+  "ruff",
+  "types-PyYAML",
 ]
+io = [
+  "zarr",
+  "pyarrow",
+  "h5netcdf"
+]
+ocean = ["mhkit"]
 
 [project.scripts]
 tsdat = "tsdat.main:app"
@@ -79,6 +79,6 @@ version = {attr = "tsdat._version.__version__"}
 
 [tool.pytest.ini_options]
 # To run all non-adi-dependent tests: `pytest -m "not requres_adi"`
-markers = "requires_adi: mark test as requiring arm data integrator (adi) python/c libraries"
 addopts = "-x"
+markers = "requires_adi: mark test as requiring arm data integrator (adi) python/c libraries"
 testpaths = "test"
