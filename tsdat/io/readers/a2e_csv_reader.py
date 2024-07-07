@@ -1,29 +1,13 @@
 import re
 from pathlib import Path
-from typing import Any, Dict
 
 import pandas as pd
 import xarray as xr
-from pydantic import BaseModel, Extra
 
 from ..base import DataReader
 
 
 class A2eCSVReader(DataReader):
-    """---------------------------------------------------------------------------------
-    Uses pandas and xarray functions to read a csv file and extract its contents into an
-    xarray Dataset object. Two parameters acre supported: `read_csv_kwargs` and
-    `from_dataframe_kwargs`, whose contents are passed as keyword arguments to
-    `pandas.read_csv()` and `xarray.Dataset.from_dataframe()` respectively.
-
-    ---------------------------------------------------------------------------------"""
-
-    class Parameters(BaseModel, extra=Extra.forbid):
-        read_csv_kwargs: Dict[str, Any] = {}
-        from_dataframe_kwargs: Dict[str, Any] = {}
-
-    parameters: Parameters = Parameters()
-
     @staticmethod
     def get_dims_from_filename(input_key: str) -> list[str]:
         """Parses the input key / filename for the expected dimensions contained in the
@@ -35,15 +19,14 @@ class A2eCSVReader(DataReader):
         - buoy.z07.a0.20221117.001000.metocean.time.depth.2d.a2e.csv
         """
         parts = input_key.split(".")
-        # assert re.match(r"^\dd$", parts[-3]), f"{input_key} does not end in <1/2/3..>d.a2e.csv"
         n_dims = int(parts[-3][:-1])
         dims = parts[-3 - n_dims : -3]
         return dims
 
     @staticmethod
     def parse_attributes(text: str) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
-        global_attributes: dict[str, Any] = {}
-        variable_attributes: dict[str, dict[str, Any]] = {}
+        global_attributes: dict[str, str] = {}
+        variable_attributes: dict[str, dict[str, str]] = {}
 
         metadata_pattern = re.compile(r"^(\w+)=(.+)$", re.MULTILINE)
         variable_pattern = re.compile(r"^(\w+):(\w+)=(.+)$", re.MULTILINE)
