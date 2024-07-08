@@ -6,6 +6,7 @@ from .assign_data import assign_data as assign_data
 from .datetime_substitutions import datetime_substitutions as datetime_substitutions
 from .decode_cf import decode_cf as decode_cf
 from .generate_schema import generate_schema as generate_schema
+from .get_dataset_dim_groups import get_dataset_dim_groups as get_dataset_dim_groups
 from .get_datastream import get_datastream as get_datastream
 from .get_fields_from_dataset import get_fields_from_dataset as get_fields_from_dataset
 from .get_fields_from_datastream import (

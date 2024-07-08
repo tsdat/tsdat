@@ -6,6 +6,10 @@ import xarray as xr
 
 from ..base import DataReader
 
+GLOBAL_ATTRS = dict[str, str]
+VAR_ATTRS = dict[str, dict[str, str]]
+DTYPES = dict[str, str]
+
 
 class A2eCSVReader(DataReader):
     @staticmethod
@@ -24,33 +28,38 @@ class A2eCSVReader(DataReader):
         return dims
 
     @staticmethod
-    def parse_attributes(text: str) -> tuple[dict[str, str], dict[str, dict[str, str]]]:
+    def parse_metadata(text: str) -> tuple[GLOBAL_ATTRS, VAR_ATTRS, DTYPES]:
         global_attributes: dict[str, str] = {}
         variable_attributes: dict[str, dict[str, str]] = {}
+        dtypes: dict[str, str] = {}
 
-        metadata_pattern = re.compile(r"^(\w+)=(.+)$", re.MULTILINE)
-        variable_pattern = re.compile(r"^(\w+):(\w+)=(.+)$", re.MULTILINE)
+        metadata_pattern = re.compile(r"^([\w\s]+)=(.+)$", re.MULTILINE)
+        variable_pattern = re.compile(r"^([\w\s]+):(\w+)=(.+)$", re.MULTILINE)
 
         for att_name, att_value in re.findall(metadata_pattern, text):
             global_attributes[att_name] = att_value.strip('"')
 
         for var_name, att_name, att_value in re.findall(variable_pattern, text):
-            if var_name not in variable_attributes:
+            att_value = att_value.strip('"')
+            if att_name == "dtype":
+                dtypes[var_name] = att_value
+            elif var_name not in variable_attributes:
                 variable_attributes[var_name] = {}
-            variable_attributes[var_name][att_name] = att_value.strip('"')
+                variable_attributes[var_name][att_name] = att_value
 
-        return global_attributes, variable_attributes
+        return global_attributes, variable_attributes, dtypes
 
     @staticmethod
-    def parse_data(input_key: str, header_line: int, dims: list[str]) -> xr.Dataset:
+    def parse_data(
+        input_key: str, header_line: int, dims: list[str], dtypes: dict[str, str]
+    ) -> xr.Dataset:
         df = pd.read_csv(
             input_key,
             header=header_line,
             parse_dates=True,
             date_format="%Y-%m-%d %H:%M:%S.%f",
+            dtype=dtypes,
         )
-        if "time" in dims:
-            df["time"] = pd.to_datetime(df["time"])
         df = df.set_index(dims)
         ds = xr.Dataset.from_dataframe(df)
         return ds
@@ -62,8 +71,10 @@ class A2eCSVReader(DataReader):
         header_line_idx = int(lines[0].split("=")[1])  # first line is like header=148
 
         metadata_text = "\n".join(lines[1:header_line_idx])
-        global_attrs, var_attrs = self.parse_attributes(metadata_text)
-        ds = self.parse_data(input_key, header_line=header_line_idx, dims=dims)
+        global_attrs, var_attrs, dtypes = self.parse_metadata(metadata_text)
+        ds = self.parse_data(
+            input_key, header_line=header_line_idx, dims=dims, dtypes=dtypes
+        )
 
         ds.attrs = global_attrs
         for var_name, attrs in var_attrs.items():
