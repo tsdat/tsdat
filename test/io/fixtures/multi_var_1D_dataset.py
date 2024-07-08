@@ -13,6 +13,7 @@ def multi_var_1D_dataset() -> xr.Dataset:
             )
         },
         data_vars={
+            "scalar": 10,
             "first": (
                 "time",
                 [59, 60, 61],
