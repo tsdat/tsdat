@@ -4,8 +4,7 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
-from tsdat.io.readers import A2eCSVReader
-from tsdat.io.writers import A2eCSVWriter
+from tsdat.io.handlers import A2eCSVHandler
 from tsdat.testing import assert_close
 from tsdat.utils import get_dataset_dim_groups
 
@@ -42,20 +41,20 @@ from tsdat.utils import get_dataset_dim_groups
     ],
 )
 def test_writer_get_filepath(expected: Path, base_filepath: Path, dims: tuple[str]):
-    assert A2eCSVWriter.get_filepath(base_filepath, dims) == expected
+    assert A2eCSVHandler().writer.get_filepath(base_filepath, dims) == expected
 
 
 def test_1D_dataset_roundtrip(multi_var_1D_dataset: xr.Dataset):
     tmp_dir = tempfile.TemporaryDirectory()
     tmp_file = Path(tmp_dir.name) / "test_file.csv"
 
-    writer = A2eCSVWriter()  # type: ignore
-    writer.write(multi_var_1D_dataset, tmp_file)
+    handler = A2eCSVHandler()
 
-    filepath = writer.get_filepath(tmp_file, ("time",))
+    handler.writer.write(multi_var_1D_dataset, tmp_file)
 
-    reader = A2eCSVReader()
-    dataset = reader.read(filepath.as_posix())
+    filepath = handler.writer.get_filepath(tmp_file, ("time",))
+
+    dataset = handler.reader.read(filepath.as_posix())
 
     expected = multi_var_1D_dataset.copy(deep=True)
     expected.attrs["number"] = str(expected.attrs["number"])  # Note: writer does not
@@ -68,16 +67,16 @@ def test_2D_dataset_roundtrip(sample_2D_dataset: xr.Dataset):
     tmp_dir = tempfile.TemporaryDirectory()
     tmp_file = Path(tmp_dir.name) / "test.csv"
 
-    writer = A2eCSVWriter()  # type: ignore
-    writer.write(sample_2D_dataset, tmp_file)
+    handler = A2eCSVHandler()
+
+    handler.writer.write(sample_2D_dataset, tmp_file)
 
     dim_groups = get_dataset_dim_groups(sample_2D_dataset)
     assert len(dim_groups) == 3
 
-    reader = A2eCSVReader()
     for dims, vars in dim_groups.items():
-        filepath = writer.get_filepath(tmp_file, dims)
-        dataset = reader.read(filepath.as_posix())
+        filepath = handler.writer.get_filepath(tmp_file, dims)
+        dataset = handler.reader.read(filepath.as_posix())
 
         expected = sample_2D_dataset[vars].copy(deep=True)
         for var in [var for var in vars if "_FillValue" in expected[var].attrs]:
