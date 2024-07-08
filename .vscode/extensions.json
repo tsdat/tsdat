@@ -1,12 +1,14 @@
 {
     "recommendations": [
+        "Boto3typed.boto3-ide",
+        "charliermarsh.ruff",
+        "eamodio.gitlens",
+        "Gruntfuggly.todo-tree",
+        "ms-python.mypy-type-checker",
         "ms-python.python",
         "ms-python.vscode-pylance",
         "njpwerner.autodocstring",
-        "eamodio.gitlens",
-        "Gruntfuggly.todo-tree",
-        "usernamehw.errorlens",
         "redhat.vscode-yaml",
-        "Boto3typed.boto3-ide"
+        "usernamehw.errorlens",
     ]
 }

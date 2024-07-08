@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "Python: Current File",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "justMyCode": false,
@@ -14,7 +14,7 @@
         },
         {
             "name": "Debug Tests",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "purpose": [
                 "debug-test"
