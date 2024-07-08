@@ -93,7 +93,7 @@ class A2eCSVWriter(FileWriter):
 
         dim_groups = get_dataset_dim_groups(dataset)
         if tuple() in dim_groups.keys():  # dimensionless --> dimensioned by time
-            dim_groups[("time",)].extend(dim_groups[tuple()])
+            dim_groups[("time",)].extend(dim_groups.pop(tuple()))
 
         dataset_dim_groups = {dims: dataset[vars] for dims, vars in dim_groups.items()}
 

@@ -60,6 +60,7 @@ def test_1D_dataset_roundtrip(multi_var_1D_dataset: xr.Dataset):
     expected.attrs["number"] = str(expected.attrs["number"])  # Note: writer does not
     expected.attrs["array"] = str(expected.attrs["array"])  # preserve the attr dtypes.
     expected["first"].attrs["number"] = str(expected["first"].attrs["number"])
+    expected["scalar"] = (("time"), [expected["scalar"].values] * expected.dims["time"])
     assert_close(dataset, expected, check_attrs=True)
 
 
