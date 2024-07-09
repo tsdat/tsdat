@@ -18,6 +18,29 @@ def _is_balanced(template: str) -> bool:
     return len(stack) == 0
 
 
+def _get_regex_for_var(var_name: str) -> str:
+    return dict(
+        year=r"(?P<year>[0-9]{4})",
+        month=r"(?P<month>[0-9]{2})",
+        day=r"(?P<day>[0-9]{2})",
+        hour=r"(?P<hour>[0-9]{2})",
+        minute=r"(?P<minute>[0-9]{2})",
+        second=r"(?P<second>[0-9]{2})",
+        yyyy=r"(?P<yyyy>[0-9]{4})",
+        mm=r"(?P<mm>[0-9]{2})",
+        dd=r"(?P<dd>[0-9]{2})",
+        HH=r"(?P<HH>[0-9]{2})",
+        MM=r"(?P<MM>[0-9]{2})",
+        SS=r"(?P<SS>[0-9]{2})",
+        date_time=r"(?P<date_time>[0-9]{8}\.[0-9]{6})",
+        date=r"(?P<date>[0-9]{8})",
+        time=r"(?P<time>[0-9]{6})",
+        start_date=r"(?P<start_date>[0-9]{8})",
+        start_time=r"(?P<start_time>[0-9]{6})",
+        datastream=r"(?P<datastream>[a-zA-Z0-9.-_]+)",
+    ).get(var_name, f"(?P<{var_name}>[a-zA-Z0-9]+)")
+
+
 class TemplateChunk:
     """Class to hold a chunk of a Template.
 
@@ -63,7 +86,7 @@ class TemplateChunk:
                 var_start = i + 1
                 var_end = chunk.index("}", var_start)
                 var_name = chunk[var_start:var_end]
-                regex_pattern += f"(?P<{var_name}>[_a-zA-Z0-9]+)"
+                regex_pattern += _get_regex_for_var(var_name)
                 i = var_end + 1
             elif char == "[":
                 regex_pattern += "(?:"
@@ -141,7 +164,7 @@ class Template:
         _template = str(template)
         if not self._is_balanced(_template):
             raise ValueError(f"Unbalanced brackets in template string: '{template}'")
-        self._template = _template
+        self.template = _template
         self.chunks = self._get_chunks(_template)
         self.regex = regex or self._generate_regex(self.chunks)
         self.variables = tuple(
@@ -149,22 +172,31 @@ class Template:
         )
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._template!r})"
+        return f"{self.__class__.__name__}({self.template!r})"
 
     def __str__(self) -> str:
-        return self._template
+        return self.template
 
     def __truediv__(self, other: Template | str) -> Template:
-        return Template(str(self) + "/" + str(other))
+        if isinstance(other, str):
+            other = Template(other)
+        new_template = f"{self.template}/{other.template}"
+        self_regex = self.regex if self.regex[-1] != "$" else self.regex[:-1]
+        other_regex = other.regex if other.regex[0] != "^" else other.regex[1:]
+        new_regex = rf"{self_regex}/{other_regex}"
+        return Template(template=new_template, regex=new_regex)
 
     def __itruediv__(self, other: Template | str) -> Template:
         result = self / other
-        self.template = result.template  # also updates regex due to setter
+        self.template = result.template
+        self.regex = result.regex
+        self.chunks = result.chunks
+        self.variables = result.variables
         return self
 
     @staticmethod
     def _get_chunks(template: str) -> tuple[TemplateChunk, ...]:
-        pattern = re.compile(r"\{[^}]*\}|\[[^\]]*\]|[^[\]{}]+")
+        pattern = re.compile(r"\{[^}]*\}|\[[^\]]*\]|[^[\]{}]+")  # splits by {} or [*{}]
         matches = pattern.findall(template)
         return tuple(TemplateChunk(match) for match in matches)
 
@@ -188,18 +220,6 @@ class Template:
     @staticmethod
     def _is_balanced(template: str) -> bool:
         return _is_balanced(template)
-
-    @property
-    def template(self) -> str:
-        return self._template
-
-    @template.setter
-    def template(self, _template: str | Path):
-        new = Template(_template)
-        self._template = new._template
-        self.chunks = new.chunks
-        self.regex = new.regex
-        self.variables = new.variables
 
     def substitute(
         self,

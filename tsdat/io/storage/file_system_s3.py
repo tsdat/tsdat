@@ -10,9 +10,7 @@ from typing import Any, Dict, List, Protocol, Union
 import xarray as xr
 from pydantic import Field, validator
 
-from ...utils import (
-    get_file_datetime_str,
-)
+from ...utils import get_file_datetime
 from .file_system import FileSystem
 
 logger = logging.getLogger(__name__)
@@ -166,7 +164,9 @@ class FileSystemS3(FileSystem):
         )
         s3_objects = self._get_matching_s3_objects(filepath_glob)
         return [
-            datetime.strptime(get_file_datetime_str(obj.key), "%Y%m%d.%H%M%S")
+            get_file_datetime(
+                Path(obj.key).name, self.parameters.data_filename_template
+            )
             for obj in s3_objects
             if (
                 obj.last_modified is not None
