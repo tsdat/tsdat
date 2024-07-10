@@ -8,10 +8,6 @@ InputKey = str
 VarName = str
 
 
-DATASTREAM_TEMPLATE = Template(
-    "{location_id}.{dataset_name}[-{qualifier}][-{temporal}].{data_level}"
-)
-
 FILENAME_TEMPLATE = Template(
     "{datastream}.{yyyy}{mm}{dd}.{HH}{MM}{SS}[.{title}].{extension}"
 )
