@@ -35,7 +35,7 @@ def sample_dataset() -> xr.Dataset:
         },
         attrs={
             "location_id": "sgp",  # used in S3 path substitution
-            "datastream": "sgp.testing-storage.a0",
+            "datastream": "sgp.testing_storage.a0",
         },
     )
     return dataset
@@ -142,7 +142,7 @@ def test_storage_saves_and_fetches_data(
     dataset = storage.fetch_data(
         start=datetime.fromisoformat("2022-04-05 00:00:00"),
         end=datetime.fromisoformat("2022-04-06 00:00:00"),
-        datastream="sgp.testing-storage.a0",
+        datastream="sgp.testing_storage.a0",
         metadata_kwargs=dict(location_id="sgp"),
     )
     assert_close(input_dataset, expected_dataset)  # storage should not modify inputs
@@ -167,7 +167,7 @@ def test_fetch_returns_empty(
     dataset = storage.fetch_data(
         start=datetime.fromisoformat("2022-04-10 00:00:00"),
         end=datetime.fromisoformat("2022-04-11 00:00:00"),
-        datastream="sgp.testing-storage.a0",
+        datastream="sgp.testing_storage.a0",
         metadata_kwargs=dict(location_id="sgp"),
     )
     assert_close(dataset, expected_dataset)
@@ -244,22 +244,22 @@ def test_filesystem_date_filter(
         (
             "file_storage",
             "sample_dataset",
-            "ancillary/sgp/sgp.testing-storage.a0.20220405.000000.ancillary.png",
+            "ancillary/sgp/sgp.testing_storage.a0.20220405.000000.ancillary.png",
         ),
         (
             "file_storage_v2",
             "sample_dataset",
-            "ancillary/2022/04/sgp.testing-storage.a0.20220405.000000.ancillary.png",
+            "ancillary/2022/04/sgp.testing_storage.a0.20220405.000000.ancillary.png",
         ),
         (
             "zarr_storage",
             "sample_dataset",
-            "ancillary/20220405.000000/sgp.testing-storage.a0.ancillary.png",
+            "ancillary/20220405.000000/sgp.testing_storage.a0.ancillary.png",
         ),
         (
             "s3_storage",
             "sample_dataset",
-            "ancillary/sgp/sgp.testing-storage.a0/sgp.testing-storage.a0.20220405.000000.ancillary.png",
+            "ancillary/sgp/sgp.testing_storage.a0/sgp.testing_storage.a0.20220405.000000.ancillary.png",
         ),
     ],
 )
