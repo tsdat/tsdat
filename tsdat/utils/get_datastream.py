@@ -1,5 +1,6 @@
-from tsdat.const import DATASTREAM_TEMPLATE
+from tsdat.tstring import TEMPLATE_REGISTRY, Template
 
 
 def get_datastream(**global_attrs: str) -> str:
-    return DATASTREAM_TEMPLATE.substitute(global_attrs)
+    datastream_template = Template(TEMPLATE_REGISTRY["datastream"])
+    return datastream_template.substitute(global_attrs)
