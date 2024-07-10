@@ -6,6 +6,7 @@ from typing import Callable, Mapping
 
 from .is_balanced import _is_balanced
 from .template_chunk import TemplateChunk
+from .template_registry import TEMPLATE_REGISTRY
 
 
 class Template:
@@ -78,7 +79,16 @@ class Template:
     def _get_chunks(template: str) -> tuple[TemplateChunk, ...]:
         pattern = re.compile(r"\{[^}]*\}|\[[^\]]*\]|[^[\]{}]+")  # splits by {} or [*{}]
         matches = pattern.findall(template)
-        return tuple(TemplateChunk(match) for match in matches)
+
+        chunks: list[TemplateChunk] = []
+        for match in matches:
+            chunk = TemplateChunk(match)
+            if chunk.var_name in TEMPLATE_REGISTRY:
+                regex = TemplateChunk._generate_regex(TEMPLATE_REGISTRY[chunk.var_name])
+                chunk.regex = f"(?P<{chunk.var_name}>{regex})"
+            chunks.append(chunk)
+
+        return tuple(chunks)
 
     @staticmethod
     def _generate_regex(chunks: tuple[TemplateChunk, ...]) -> str:

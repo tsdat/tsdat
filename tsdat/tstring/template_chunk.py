@@ -1,8 +1,8 @@
 import re
 from typing import Callable
 
-from .get_regex_for_var import _get_regex_for_var
 from .is_balanced import _is_balanced
+from .template_registry import get_regex
 
 
 class TemplateChunk:
@@ -50,7 +50,7 @@ class TemplateChunk:
                 var_start = i + 1
                 var_end = chunk.index("}", var_start)
                 var_name = chunk[var_start:var_end]
-                regex_pattern += _get_regex_for_var(var_name)
+                regex_pattern += get_regex(var_name)
                 i = var_end + 1
             elif char == "[":
                 regex_pattern += "(?:"
