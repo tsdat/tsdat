@@ -1,10 +1,9 @@
-import xarray as xr
 import numpy as np
+import xarray as xr
 from numpy.typing import NDArray
 from pydantic import BaseModel, Extra
 
 from tsdat import QualityHandler
-from mhkit.dolfyn.adv.clean import clean_fill
 
 
 class CubicSplineInterp(QualityHandler):
@@ -41,6 +40,8 @@ class CubicSplineInterp(QualityHandler):
     def run(
         self, dataset: xr.Dataset, variable_name: str, failures: NDArray[np.bool_]
     ) -> xr.Dataset:
+        from mhkit.dolfyn.adv.clean import clean_fill
+
         if failures.any():
             dataset[variable_name] = clean_fill(
                 dataset[variable_name],

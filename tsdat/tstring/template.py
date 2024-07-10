@@ -4,105 +4,9 @@ import re
 from pathlib import Path
 from typing import Callable, Mapping
 
-__all__ = ("Template",)
-
-
-def _is_balanced(template: str) -> bool:
-    stack: list[str] = []
-    for char in template:
-        if char in "{[":
-            stack.append("}" if char == "{" else "]")
-        elif char in "}]":
-            if not stack or char != stack.pop():
-                return False
-    return len(stack) == 0
-
-
-class TemplateChunk:
-    """Class to hold a chunk of a Template.
-
-    A chunk is a smaller part of a template. E.g., the template "{a}{b}{c}d" has 4
-    chunks: "{a}", "{b}", "{c}", and "d"."""
-
-    def __init__(self, chunk: str) -> None:
-        if not _is_balanced(chunk):
-            raise ValueError(f"Unbalanced brackets in chunk: '{chunk}'")
-        self.str = chunk
-        self.var_name = self._get_variable_name(chunk)
-        self.parts = self._get_parts(chunk)
-        self.is_required = self._is_required(chunk)
-        self.regex = self._generate_regex(chunk)
-
-    def __repr__(self) -> str:
-        return f"TemplateChunk({self.str})"
-
-    @staticmethod
-    def _get_variable_name(chunk: str) -> str | None:
-        if "{" in chunk:
-            start, stop = chunk.index("{"), chunk.index("}")
-            return chunk[start + 1 : stop]
-        return None
-
-    @staticmethod
-    def _get_parts(chunk: str) -> tuple[str, ...]:
-        return tuple(re.split(r"[{}\[\]]", chunk))
-
-    @staticmethod
-    def _is_required(chunk: str) -> bool | None:
-        if "{" in chunk:
-            return "[" not in chunk
-        return None
-
-    @staticmethod
-    def _generate_regex(chunk: str) -> str:
-        regex_pattern = ""
-        i = 0
-        while i < len(chunk):
-            char = chunk[i]
-            if char == "{":
-                var_start = i + 1
-                var_end = chunk.index("}", var_start)
-                var_name = chunk[var_start:var_end]
-                regex_pattern += f"(?P<{var_name}>[_a-zA-Z0-9]+)"
-                i = var_end + 1
-            elif char == "[":
-                regex_pattern += "(?:"
-                i += 1
-            elif char == "]":
-                regex_pattern += ")?"
-                i += 1
-            else:
-                regex_pattern += re.escape(char)
-                i += 1
-        return regex_pattern
-
-    def sub(
-        self,
-        value: str | (Callable[[], str]) | None,
-        allow_missing: bool = False,
-        fill: str | None = None,
-    ) -> str:
-        def remove_square_brackets(s: str) -> str:
-            return s if self.is_required else s[1:-1]
-
-        if callable(value):
-            value = value()
-
-        result = ""
-        if self.var_name is None:
-            result = self.str
-        elif value is not None:
-            result = self.str.replace(f"{{{self.var_name}}}", value)
-            result = remove_square_brackets(result)
-        elif allow_missing and fill:
-            result = fill
-        elif allow_missing:
-            result = self.str
-        elif self.is_required:
-            raise ValueError(
-                f"Could not make substitution for {self.var_name} in {self}"
-            )
-        return result
+from .is_balanced import _is_balanced
+from .template_chunk import TemplateChunk
+from .template_registry import TEMPLATE_REGISTRY
 
 
 class Template:
@@ -141,7 +45,7 @@ class Template:
         _template = str(template)
         if not self._is_balanced(_template):
             raise ValueError(f"Unbalanced brackets in template string: '{template}'")
-        self._template = _template
+        self.template = _template
         self.chunks = self._get_chunks(_template)
         self.regex = regex or self._generate_regex(self.chunks)
         self.variables = tuple(
@@ -149,24 +53,61 @@ class Template:
         )
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._template!r})"
+        return f"{self.__class__.__name__}({self.template!r})"
 
     def __str__(self) -> str:
-        return self._template
+        return self.template
 
     def __truediv__(self, other: Template | str) -> Template:
-        return Template(str(self) + "/" + str(other))
+        if isinstance(other, str):
+            other = Template(other)
+        return Template(template=f"{self.template}/{other.template}")
 
     def __itruediv__(self, other: Template | str) -> Template:
         result = self / other
-        self.template = result.template  # also updates regex due to setter
+        self.template = result.template
+        self.regex = result.regex
+        self.chunks = result.chunks
+        self.variables = result.variables
         return self
 
     @staticmethod
     def _get_chunks(template: str) -> tuple[TemplateChunk, ...]:
-        pattern = re.compile(r"\{[^}]*\}|\[[^\]]*\]|[^[\]{}]+")
+        pattern = re.compile(r"\{[^}]*\}|\[[^\]]*\]|[^[\]{}]+")  # splits by {} or [*{}]
         matches = pattern.findall(template)
-        return tuple(TemplateChunk(match) for match in matches)
+
+        # We have to prevent regex patterns from having the same name
+        seen: set[str] = set()
+
+        chunks: list[TemplateChunk] = []
+        for match in matches:
+            chunk = TemplateChunk(match)
+            if chunk.var_name in TEMPLATE_REGISTRY:
+                # Allow substitutions like {datastream} while still matching things that
+                # make up the datastream, e.g. {location_id}.{dataset_name}.{data_level}
+                sub_regex = (
+                    f"(?P<{chunk.var_name}>"
+                    if chunk.var_name is not None and chunk.var_name not in seen
+                    else "("
+                )
+                sub_template = TEMPLATE_REGISTRY[chunk.var_name]
+                for sub_match in pattern.findall(sub_template):
+                    sub_chunk = TemplateChunk(sub_match)
+                    if sub_chunk.var_name is not None and sub_chunk.var_name in seen:
+                        sub_chunk.regex = sub_chunk.regex.replace(
+                            f"?P<{sub_chunk.var_name}>", ""
+                        )
+                    elif sub_chunk.var_name is not None:
+                        seen.add(sub_chunk.var_name)
+                    sub_regex += sub_chunk.regex
+                chunk.regex = sub_regex + ")"
+                seen.add(chunk.var_name)
+            elif chunk.var_name is not None and chunk.var_name in seen:
+                chunk.regex = chunk.regex.replace(f"?P<{chunk.var_name}>", "")
+            elif chunk.var_name is not None:
+                seen.add(chunk.var_name)
+            chunks.append(chunk)
+        return tuple(chunks)
 
     @staticmethod
     def _generate_regex(chunks: tuple[TemplateChunk, ...]) -> str:
@@ -188,18 +129,6 @@ class Template:
     @staticmethod
     def _is_balanced(template: str) -> bool:
         return _is_balanced(template)
-
-    @property
-    def template(self) -> str:
-        return self._template
-
-    @template.setter
-    def template(self, _template: str | Path):
-        new = Template(_template)
-        self._template = new._template
-        self.chunks = new.chunks
-        self.regex = new.regex
-        self.variables = new.variables
 
     def substitute(
         self,

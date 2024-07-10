@@ -10,9 +10,7 @@ from pydantic import Field, validator
 
 from tsdat.tstring import Template
 
-from ...utils import (
-    get_file_datetime_str,
-)
+from ...utils import get_file_datetime
 from ..base import Storage
 from ..handlers import FileHandler, NetCDFHandler
 
@@ -145,8 +143,8 @@ class FileSystem(Storage):
             mod_timestamp = file.lstat().st_mtime
             mod_time = datetime.fromtimestamp(mod_timestamp).astimezone(timezone.utc)
             if mod_time > last_modified:
-                data_timestamp = datetime.strptime(
-                    get_file_datetime_str(file.name), "%Y%m%d.%H%M%S"
+                data_timestamp = get_file_datetime(
+                    file.name, self.parameters.data_filename_template
                 )
                 results.append(data_timestamp)
         return results
@@ -256,18 +254,15 @@ class FileSystem(Storage):
         matches = list(prefix.glob(suffix))
         return matches
 
-    @staticmethod
     def _filter_between_dates(
-        filepaths: Iterable[Path], start: datetime, end: datetime
+        self, filepaths: Iterable[Path], start: datetime, end: datetime
     ) -> List[Path]:
-        start_date_str = start.strftime("%Y%m%d.%H%M%S")
-        end_date_str = end.strftime("%Y%m%d.%H%M%S")
-
         valid_filepaths: List[Path] = []
         for filepath in filepaths:
-            # TODO: use better regex
-            file_date_str = get_file_datetime_str(filepath)
-            if start_date_str <= file_date_str <= end_date_str:
+            file_date = get_file_datetime(
+                filepath.name, self.parameters.data_filename_template
+            )
+            if start <= file_date <= end:
                 valid_filepaths.append(filepath)
         return valid_filepaths
 

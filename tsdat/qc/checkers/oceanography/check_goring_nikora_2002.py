@@ -1,7 +1,7 @@
-from pydantic import BaseModel, Extra
-from numpy.typing import NDArray
+import numpy as np
 import xarray as xr
-from mhkit.dolfyn.adv.clean import GN2002
+from numpy.typing import NDArray
+from pydantic import BaseModel, Extra
 
 from ...base import QualityChecker
 
@@ -25,5 +25,7 @@ class CheckGoringNikora2002(QualityChecker):
 
     parameters: Parameters = Parameters()
 
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[bool]:
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
+        from mhkit.dolfyn.adv.clean import GN2002
+
         return GN2002(dataset[variable_name], npt=self.parameters.n_points)
