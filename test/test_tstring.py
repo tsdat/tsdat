@@ -115,6 +115,10 @@ def test_overrides(expected: str, mapping: Dict[str, str], keywords: Dict[str, s
     ("expected", "template", "formatted"),
     (
         (dict(a="b"), "{a}", "b"),
+        (dict(a="b"), "{a}.{a}", "b.b"),
+        (dict(a="b"), "{a}{a}", "bb"),  # works because required is greedy
+        (dict(a="bb"), "{a}[{a}]", "bb"),  # edge case. to fix use better separators
+        (dict(a="b"), "{a}.[{a}]", "b.b"),  # e.g., with better separators
         (dict(a="a", b="b", c="c"), "{a}.{b}.{c}", "a.b.c"),
         (dict(a="a", b="b", c="c"), "{a}.{b}[.{c}]", "a.b.c"),
         (dict(a="a", b="b", c="c"), "{a}[.{b}].{c}", "a.b.c"),
@@ -151,6 +155,30 @@ def test_overrides(expected: str, mapping: Dict[str, str], keywords: Dict[str, s
             ),
             "{location_id}.{dataset_name}[-{qualifier}][-{temporal}].{data_level}",
             "sgp.lidar-z01-10m.a0",
+        ),
+        (
+            dict(
+                datastream="sgp.lidar-z01-10m.a0",
+                location_id="sgp",
+                dataset_name="lidar",
+                qualifier="z01",
+                temporal="10m",
+                data_level="a0",
+            ),
+            "{datastream}",
+            "sgp.lidar-z01-10m.a0",
+        ),
+        (
+            dict(
+                datastream="sgp.lidar-z01-10m.a0",
+                location_id="sgp",
+                dataset_name="lidar",
+                qualifier="z01",
+                temporal="10m",
+                data_level="a0",
+            ),
+            "{datastream}--{datastream}",
+            "sgp.lidar-z01-10m.a0--sgp.lidar-z01-10m.a0",
         ),
         (
             dict(

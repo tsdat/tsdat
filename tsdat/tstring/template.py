@@ -61,11 +61,7 @@ class Template:
     def __truediv__(self, other: Template | str) -> Template:
         if isinstance(other, str):
             other = Template(other)
-        new_template = f"{self.template}/{other.template}"
-        self_regex = self.regex if self.regex[-1] != "$" else self.regex[:-1]
-        other_regex = other.regex if other.regex[0] != "^" else other.regex[1:]
-        new_regex = rf"{self_regex}/{other_regex}"
-        return Template(template=new_template, regex=new_regex)
+        return Template(template=f"{self.template}/{other.template}")
 
     def __itruediv__(self, other: Template | str) -> Template:
         result = self / other
@@ -80,14 +76,37 @@ class Template:
         pattern = re.compile(r"\{[^}]*\}|\[[^\]]*\]|[^[\]{}]+")  # splits by {} or [*{}]
         matches = pattern.findall(template)
 
+        # We have to prevent regex patterns from having the same name
+        seen: set[str] = set()
+
         chunks: list[TemplateChunk] = []
         for match in matches:
             chunk = TemplateChunk(match)
             if chunk.var_name in TEMPLATE_REGISTRY:
-                regex = TemplateChunk._generate_regex(TEMPLATE_REGISTRY[chunk.var_name])
-                chunk.regex = f"(?P<{chunk.var_name}>{regex})"
+                # Allow substitutions like {datastream} while still matching things that
+                # make up the datastream, e.g. {location_id}.{dataset_name}.{data_level}
+                sub_regex = (
+                    f"(?P<{chunk.var_name}>"
+                    if chunk.var_name is not None and chunk.var_name not in seen
+                    else "("
+                )
+                sub_template = TEMPLATE_REGISTRY[chunk.var_name]
+                for sub_match in pattern.findall(sub_template):
+                    sub_chunk = TemplateChunk(sub_match)
+                    if sub_chunk.var_name is not None and sub_chunk.var_name in seen:
+                        sub_chunk.regex = sub_chunk.regex.replace(
+                            f"?P<{sub_chunk.var_name}>", ""
+                        )
+                    elif sub_chunk.var_name is not None:
+                        seen.add(sub_chunk.var_name)
+                    sub_regex += sub_chunk.regex
+                chunk.regex = sub_regex + ")"
+                seen.add(chunk.var_name)
+            elif chunk.var_name is not None and chunk.var_name in seen:
+                chunk.regex = chunk.regex.replace(f"?P<{chunk.var_name}>", "")
+            elif chunk.var_name is not None:
+                seen.add(chunk.var_name)
             chunks.append(chunk)
-
         return tuple(chunks)
 
     @staticmethod
