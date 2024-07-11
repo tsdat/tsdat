@@ -6,8 +6,8 @@ from pydantic import BaseModel
 from tsdat.io.retrievers import StorageRetriever
 from tsdat.utils import decode_cf
 
-from .ingest_pipeline import IngestPipeline
 from .add_inputs_attr import add_inputs_attr
+from .ingest_pipeline import IngestPipeline
 
 
 class TransformationPipeline(IngestPipeline):
@@ -74,9 +74,8 @@ class TransformationPipeline(IngestPipeline):
             self.hook_plot_dataset(dataset)
         return dataset
 
-    @staticmethod
     def hook_customize_input_datasets(
-        input_datasets: Dict[str, xr.Dataset], **kwargs: Any
+        self, input_datasets: Dict[str, xr.Dataset], **kwargs: Any
     ) -> Dict[str, xr.Dataset]:
         """-----------------------------------------------------------------------------
         Code hook to customize any input datasets prior to datastreams being combined
