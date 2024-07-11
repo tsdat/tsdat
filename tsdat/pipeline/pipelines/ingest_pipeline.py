@@ -6,8 +6,8 @@ from pydantic import PrivateAttr
 
 from tsdat.utils import decode_cf
 
-from .add_inputs_attr import add_inputs_attr
 from ..base import Pipeline
+from .add_inputs_attr import add_inputs_attr
 
 
 class IngestPipeline(Pipeline):
@@ -48,8 +48,7 @@ class IngestPipeline(Pipeline):
             self.hook_plot_dataset(dataset)
         return dataset
 
-    @staticmethod
-    def hook_customize_dataset(dataset: xr.Dataset) -> xr.Dataset:
+    def hook_customize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Code hook to customize the retrieved dataset prior to qc being applied.
 
@@ -63,8 +62,7 @@ class IngestPipeline(Pipeline):
         -----------------------------------------------------------------------------"""
         return dataset
 
-    @staticmethod
-    def hook_finalize_dataset(dataset: xr.Dataset) -> xr.Dataset:
+    def hook_finalize_dataset(self, dataset: xr.Dataset) -> xr.Dataset:
         """-----------------------------------------------------------------------------
         Code hook to finalize the dataset after qc is applied but before it is saved.
 
