@@ -1,13 +1,13 @@
 import logging
 from typing import Any, Optional
-from pydantic import validator
 
-import numpy as np
+import pandas as pd
 import xarray as xr
 
-from tsdat.config.variables.ureg import ureg, check_unit
-from ..base import DataConverter, RetrievedDataset
+from tsdat.config.variables.ureg import check_unit, ureg
+
 from ...config.dataset import DatasetConfig
+from ..base import DataConverter, RetrievedDataset
 
 logger = logging.getLogger(__name__)
 
@@ -39,41 +39,36 @@ class UnitsConverter(DataConverter):
         retrieved_dataset: RetrievedDataset,
         **kwargs: Any,
     ) -> Optional[xr.DataArray]:
+        # Can only convert number-like dtypes (not strings, datetimes, objects)
+        if not pd.api.types.is_any_real_numeric_dtype(data.data):
+            return None
+
+        # Get output units and convert udunits for pint if need be
+        output_units = dataset_config[variable_name].attrs.units
+        if output_units is None or output_units == "1":
+            return None
+        output_units = check_unit(output_units, keep_exp=True)
 
         # Get input units and convert udunits for pint if need be
         input_units = self._get_input_units(data)
+        if input_units == "1":
+            return None
         input_units = check_unit(input_units, keep_exp=True)
 
-        # Assume if no units supplied, variable is dimensionless
-        if not input_units:
-            logger.warning(
-                "Input units for variable '%s' could not be found. Assuming variable "
-                "'%s' is dimensionless.",
-                variable_name,
-                variable_name,
-            )
-
-        output_units = dataset_config[variable_name].attrs.units
-        output_units = check_unit(output_units, keep_exp=True)
-
         out_dtype = dataset_config[variable_name].dtype
-        if not output_units or output_units == "1" or input_units == output_units:
+        if input_units == output_units:
             if not output_units:
                 logger.warning(
-                    "Output units for variable %s could not be found. Please ensure"
+                    "Output units for variable '%s' could not be found. Please ensure"
                     " these are set in the dataset configuration file for the specified"
                     " variable.",
                     variable_name,
                 )
             return None
 
-        # Run pint
-        converted = (data.data * ureg(input_units)).to(output_units)
-        converted = converted.magnitude
-
-        # Set output datatype from dataset config
-        converted = converted.astype(out_dtype)
-        data_array = data.copy(data=converted)
+        # Run pint and set output data
+        converted = (data.data * ureg(input_units)).to(output_units).magnitude
+        data_array = data.copy(data=converted.astype(out_dtype))
 
         # Use original output units text
         data_array.attrs["units"] = dataset_config[variable_name].attrs.units
@@ -83,11 +78,10 @@ class UnitsConverter(DataConverter):
             input_units,
             output_units,
         )
-
         return data_array
 
     def _get_input_units(self, data: xr.DataArray) -> str:
-        units = ""
+        units = "1"
         if self.input_units:
             units = self.input_units
         elif "units" in data.attrs:
