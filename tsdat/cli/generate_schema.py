@@ -19,13 +19,14 @@ class VapRetrieverConfig(RetrieverConfig):
     class Parameters(BaseModel, extra=Extra.forbid):
         class FetchParameters(BaseModel, extra=Extra.forbid):
             time_padding: str = Field(
+                regex=r"^[\+|\-]?[0-9]+[h|m|s|ms]$",
                 description=(
                     "The time_padding parameter in the fetch_parameters section"
                     " specifies how far in time to look for data before the 'begin'"
                     " timestamp (e.g., -24h), after the 'end' timestamp (e.g., +24h),"
                     " or both (e.g., 24h).  Units of hours ('h'), minutes ('m'),"
                     " seconds ('s', default), and milliseconds ('ms') are allowed."
-                )
+                ),
             )
 
         class TransformationParameters(BaseModel, extra=Extra.forbid):
@@ -39,6 +40,7 @@ class VapRetrieverConfig(RetrieverConfig):
             dim_range: dict[str, str] = Field(
                 ...,
                 alias="range",
+                regex=r"^[0-9]+[a-zA-Z]+$",
                 description=(
                     "Defines how far (in seconds) from the first/last timestamp to "
                     "search for the previous/next measurement."
@@ -46,6 +48,7 @@ class VapRetrieverConfig(RetrieverConfig):
             )
             width: dict[str, str] = Field(
                 ...,
+                regex=r"^[0-9]+[a-zA-Z]+$",
                 description=(
                     'Defines the size of the averaging window in seconds ("600s" = 10 '
                     "min)."
