@@ -64,7 +64,7 @@ io = [
 ocean = ["mhkit"]
 
 [project.scripts]
-tsdat = "tsdat.main:app"
+tsdat = "tsdat.cli:app"
 
 [tool.setuptools.packages.find]
 include = ["tsdat"]
