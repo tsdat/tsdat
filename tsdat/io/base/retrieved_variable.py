@@ -14,10 +14,10 @@ class RetrievedVariable(BaseModel, extra=Extra.forbid):
     """Tracks the name of the input variable and the converters to apply."""
 
     name: Union[str, List[str]]
-    data_converters: List[DataConverter] = Field(default_factory=lambda: list)
+    data_converters: List[DataConverter] = Field(default_factory=list)
     source: InputKey = ""
 
-    @validator("data_converters")
+    @validator("data_converters", always=True)
     def add_units_converter(
         cls, data_converters: list[DataConverter]
     ) -> list[DataConverter]:

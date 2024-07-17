@@ -11,9 +11,11 @@ from tsdat import (
     DatasetConfig,
     DefaultRetriever,
     FileSystem,
+    RetrievedVariable,
     RetrieverConfig,
     StorageRetriever,
     StorageRetrieverInput,
+    UnitsConverter,
     assert_close,
     recursive_instantiate,
 )
@@ -76,6 +78,12 @@ def vap_transform_dataset_config() -> DatasetConfig:
 @fixture
 def dataset_config() -> DatasetConfig:
     return DatasetConfig.from_yaml(Path("test/config/yaml/dataset.yaml"))
+
+
+def test_retrieved_variable_adds_units_converter_by_default():
+    var = RetrievedVariable(name="foo")
+    assert len(var.data_converters) == 1
+    assert isinstance(var.data_converters[0], UnitsConverter)
 
 
 def test_storage_retriever_input_key():
@@ -178,7 +186,11 @@ def test_storage_retriever(
     )
 
     expected = xr.Dataset(
-        coords={"time": pd.date_range("2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left")},  # type: ignore
+        coords={
+            "time": pd.date_range(
+                "2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left"
+            )
+        },  # type: ignore
         data_vars={
             "temperature": (  # degF -> degC
                 "time",
