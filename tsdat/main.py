@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import typer
-from tsdat.utils import generate_schema
+
+from tsdat.cli import generate_schema
 
 app = typer.Typer(add_completion=False)
 
