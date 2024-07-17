@@ -1,0 +1,221 @@
+{
+    "title": "VapRetrieverConfig",
+    "description": "---------------------------------------------------------------------------------\nContains configuration parameters for the tsdat retriever class.\n\nThis class will ultimately be converted into a tsdat.io.base.Retriever subclass for\nuse in tsdat pipelines.\n\nProvides methods to support yaml parsing and validation, including the generation of\njson schema for immediate validation. This class also provides a method to\ninstantiate a tsdat.io.base.Retriever subclass from a parsed configuration file.\n\nArgs:\n    classname (str): The dotted module path to the pipeline that the specified\n        configurations should apply to. To use the built-in IngestPipeline, for\n        example, you would set 'tsdat.pipeline.pipelines.IngestPipeline' as the\n        classname.\n    readers (Dict[str, DataReaderConfig]): The DataReaders to use for reading input\n        data.\n\n---------------------------------------------------------------------------------",
+    "type": "object",
+    "properties": {
+        "classname": {
+            "title": "Classname",
+            "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
+            "type": "string"
+        },
+        "parameters": {
+            "$ref": "#/definitions/Parameters"
+        },
+        "readers": {
+            "title": "Readers",
+            "description": "A dictionary mapping regex patterns to DataReaders that should be used to read the input data. For each input given to the Retriever, the mapping will be used to determine which DataReader to use. The patterns will be searched in the order they are defined and the DataReader corresponding with the first pattern that matches the input key will be used.",
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/DataReaderConfig"
+            }
+        },
+        "coords": {
+            "title": "Coords",
+            "description": "A dictionary mapping output coordinate variable names to the retrieval rules and preprocessing actions (i.e. DataConverters) that should be applied to each retrieved coordinate variable.",
+            "default": {},
+            "type": "object",
+            "additionalProperties": {
+                "anyOf": [
+                    {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/definitions/RetrievedVariableConfig"
+                        }
+                    },
+                    {
+                        "$ref": "#/definitions/RetrievedVariableConfig"
+                    }
+                ]
+            }
+        },
+        "data_vars": {
+            "title": "Data Vars",
+            "description": "A dictionary mapping output data_variable variable names to the retrieval rules and preprocessing actions (i.e. DataConverters) that should be applied to each retrieved coordinate variable.",
+            "default": {},
+            "type": "object",
+            "additionalProperties": {
+                "anyOf": [
+                    {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/definitions/RetrievedVariableConfig"
+                        }
+                    },
+                    {
+                        "$ref": "#/definitions/RetrievedVariableConfig"
+                    }
+                ]
+            }
+        }
+    },
+    "required": [
+        "classname"
+    ],
+    "definitions": {
+        "FetchParameters": {
+            "title": "FetchParameters",
+            "type": "object",
+            "properties": {
+                "time_padding": {
+                    "title": "Time Padding",
+                    "description": "The time_padding parameter in the fetch_parameters section specifies how far in time to look for data before the 'begin' timestamp (e.g., -24h), after the 'end' timestamp (e.g., +24h), or both (e.g., 24h).  Units of hours ('h'), minutes ('m'), seconds ('s', default), and milliseconds ('ms') are allowed.",
+                    "pattern": "^[\\+|\\-]?[0-9]+[h|m|s|ms]$",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "time_padding"
+            ],
+            "additionalProperties": false
+        },
+        "TransformationParameters": {
+            "title": "TransformationParameters",
+            "type": "object",
+            "properties": {
+                "alignment": {
+                    "title": "Alignment",
+                    "description": "Defines the location of the window in respect to each output timestamp (LEFT, RIGHT, or CENTER)",
+                    "type": "object",
+                    "additionalProperties": {
+                        "enum": [
+                            "LEFT",
+                            "RIGHT",
+                            "CENTER"
+                        ],
+                        "type": "string"
+                    }
+                },
+                "range": {
+                    "title": "Range",
+                    "description": "Defines how far (in seconds) from the first/last timestamp to search for the previous/next measurement.",
+                    "pattern": "^[0-9]+[a-zA-Z]+$",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string",
+                        "pattern": "^[0-9]+[a-zA-Z]+$"
+                    }
+                },
+                "width": {
+                    "title": "Width",
+                    "description": "Defines the size of the averaging window in seconds (\"600s\" = 10 min).",
+                    "pattern": "^[0-9]+[a-zA-Z]+$",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string",
+                        "pattern": "^[0-9]+[a-zA-Z]+$"
+                    }
+                }
+            },
+            "required": [
+                "alignment",
+                "range",
+                "width"
+            ],
+            "additionalProperties": false
+        },
+        "Parameters": {
+            "title": "Parameters",
+            "type": "object",
+            "properties": {
+                "fetch_parameters": {
+                    "$ref": "#/definitions/FetchParameters"
+                },
+                "transformation_parameters": {
+                    "title": "Transformation Parameters",
+                    "description": "Transformation parameters. See https://tsdat.readthedocs.io/en/stable/tutorials/vap_pipelines/#configuration-files-vap_gps for more information.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/TransformationParameters"
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "DataReaderConfig": {
+            "title": "DataReaderConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "required": [
+                "classname"
+            ],
+            "additionalProperties": false
+        },
+        "DataConverterConfig": {
+            "title": "DataConverterConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "required": [
+                "classname"
+            ]
+        },
+        "RetrievedVariableConfig": {
+            "title": "RetrievedVariableConfig",
+            "description": "Specifies how the variable should be retrieved from the raw dataset and the\npreprocessing steps (i.e. DataConverters) that should be applied.",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "description": "The exact name or list of names of the variable in the raw dataset returned by the DataReader.",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    ]
+                },
+                "data_converters": {
+                    "title": "Data Converters",
+                    "description": "A list of DataConverters to run for this variable. Common choices include the tsdat UnitsConverter (classname: 'tsdat.io.converters.UnitsConverter') to convert the variable's data from its input units to specified output units, and the tsdat StringToDatetime converter (classname: 'tsdat.io.converters.StringToDatetime'), which takes dates/times formatted as strings and converts them into a datetime64 object that can be used throughout the rest of the pipeline. This property is optional and defaults to [].",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DataConverterConfig"
+                    }
+                }
+            },
+            "required": [
+                "name"
+            ]
+        }
+    }
+}

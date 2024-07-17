@@ -1,8 +1,18 @@
 from pathlib import Path
 from typing import Dict, Type, Union
+
 import typer
 
-from .standards_type import StandardsType
+from ...config.dataset.acdd_dataset_config import ACDDDatasetConfig
+from ...config.dataset.dataset_config import DatasetConfig
+from ...config.dataset.ioos_dataset_config import IOOSDatasetConfig
+from ...config.pipeline.pipeline_config import PipelineConfig
+from ...config.quality.quality_config import QualityConfig
+from ...config.retriever.retriever_config import RetrieverConfig
+from ...config.storage.storage_config import StorageConfig
+from ...config.utils.yaml_model import YamlModel
+from ...utils.standards_type import StandardsType
+from .vap_retriever_config import VapRetrieverConfig
 
 
 def generate_schema(
@@ -13,17 +23,6 @@ def generate_schema(
     ),
     standards: StandardsType = typer.Option(StandardsType.tsdat),
 ):
-    from tsdat import (
-        ACDDDatasetConfig,
-        DatasetConfig,
-        IOOSDatasetConfig,
-        PipelineConfig,
-        QualityConfig,
-        RetrieverConfig,
-        StorageConfig,
-        YamlModel,
-    )
-
     dir.mkdir(exist_ok=True)
 
     dataset_config_cls: Union[
@@ -39,6 +38,7 @@ def generate_schema(
 
     cls_mapping: Dict[str, Type[YamlModel]] = {
         "retriever": RetrieverConfig,
+        "vap-retriever": VapRetrieverConfig,
         "dataset": dataset_config_cls,
         "quality": QualityConfig,
         "storage": StorageConfig,

@@ -373,6 +373,7 @@
             },
             "required": [
                 "title",
+                "description",
                 "location_id",
                 "dataset_name",
                 "data_level"
