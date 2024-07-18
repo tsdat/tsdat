@@ -18,7 +18,8 @@ quality:
     /managers/0/exclude: []
 
 storage:
-  path: test/config/yaml/storage.yaml
-  overrides:
-    /parameters:
+  classname: tsdat.io.storage.FileSystem
+  parameters:
       data_storage_path: data/{datastream}
+  handler:
+    classname: tsdat.io.handlers.NetCDFHandler

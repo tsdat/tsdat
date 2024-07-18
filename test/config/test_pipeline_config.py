@@ -3,6 +3,9 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict
 
+import pytest
+
+from tsdat import ConfigError
 from tsdat.config.dataset import DatasetConfig
 from tsdat.config.pipeline import PipelineConfig
 from tsdat.config.quality import QualityConfig
@@ -41,6 +44,14 @@ def test_pipeline_config_merges_overrides():
     model_dict = model_to_dict(pipeline_model)
 
     assert model_dict == expected_dict
+
+
+def test_pipeline_config_raises_error():
+    with pytest.raises(ConfigError):
+        PipelineConfig.from_yaml(
+            Path("test/config/yaml/invalid-pipeline.yaml"),
+            overrides={"/triggers": []},
+        )
 
 
 def test_pipeline_config_can_generate_schema():

@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Optional, Pattern, Union
 
 from jsonpointer import set_pointer  # type: ignore
 from pydantic import (
-    ConfigError,
     Extra,
     Field,
     ValidationError,
@@ -16,6 +15,7 @@ from ..dataset import DatasetConfig
 from ..quality import QualityConfig
 from ..storage import StorageConfig
 from ..utils import (
+    ConfigError,
     Overrideable,
     ParameterizedConfigClass,
     matches_overridable_schema,
@@ -124,8 +124,7 @@ class PipelineConfig(ParameterizedConfigClass, extra=Extra.allow):
 
     @classmethod
     def from_yaml(cls, filepath: Path, overrides: Optional[Dict[str, Any]] = None):
-        """------------------------------------------------------------------------------------
-        Creates a python configuration object from a yaml file.
+        """Creates a python configuration object from a yaml file.
 
         Args:
             filepath (Path): The path to the yaml file
@@ -135,7 +134,6 @@ class PipelineConfig(ParameterizedConfigClass, extra=Extra.allow):
         Returns:
             YamlModel: A YamlModel subclass
 
-        ------------------------------------------------------------------------------------
         """
         config = read_yaml(filepath)
         if overrides:
@@ -150,29 +148,22 @@ class PipelineConfig(ParameterizedConfigClass, extra=Extra.allow):
 
     @classmethod
     def generate_schema(cls, output_file: Path):
-        """------------------------------------------------------------------------------------
-        Generates JSON schema from the model fields and type annotations.
+        """Generates JSON schema from the model fields and type annotations.
 
         Args:
             output_file (Path): The path to store the JSON schema.
-
-        ------------------------------------------------------------------------------------
         """
         output_file.write_text(cls.schema_json(indent=4))
 
     def instantiate_pipeline(self) -> Pipeline:
-        """------------------------------------------------------------------------------------
-        Loads the tsdat.pipeline.BasePipeline subclass specified by the classname property.
+        """Loads the tsdat.pipeline.BasePipeline subclass specified by the classname property.
 
         Properties and sub-properties of the PipelineConfig class that are subclasses of
         tsdat.config.utils.ParameterizedConfigClass (e.g, classes that define a 'classname' and
         optional 'parameters' properties) will also be instantiated in similar fashion. See
         tsdat.config.utils.recursive_instantiate for implementation details.
 
-
         Returns:
             Pipeline: An instance of a tsdat.pipeline.base.Pipeline subclass.
-
-        ------------------------------------------------------------------------------------
         """
         return recursive_instantiate(self)
