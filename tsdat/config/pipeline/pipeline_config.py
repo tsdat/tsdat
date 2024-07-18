@@ -1,29 +1,40 @@
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Pattern, Union
+
 from jsonpointer import set_pointer  # type: ignore
 from pydantic import (
+    ConfigError,
     Extra,
     Field,
-    validator,
+    ValidationError,
+    root_validator,
 )
-from pydantic.fields import ModelField
-from typing import Any, Dict, List, Pattern, Union
 
+from ...config.retriever import RetrieverConfig
+from ...pipeline.base import Pipeline
 from ..dataset import DatasetConfig
 from ..quality import QualityConfig
 from ..storage import StorageConfig
 from ..utils import (
-    ParameterizedConfigClass,
-    YamlModel,
     Overrideable,
+    ParameterizedConfigClass,
+    matches_overridable_schema,
     read_yaml,
-    matches_overrideable_schema,
     recursive_instantiate,
 )
-from ...config.retriever import RetrieverConfig
-from ...pipeline.base import Pipeline
 
 
-class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
+def get_resolved_cfg_path(
+    linked_path: str | Path, pipeline_cfg_path: str | Path | None
+) -> Path:
+    if pipeline_cfg_path is not None and (
+        str(linked_path).startswith("../") or str(linked_path).startswith("./")
+    ):
+        return (Path(pipeline_cfg_path).parent / linked_path).resolve()
+    return Path(linked_path)
+
+
+class PipelineConfig(ParameterizedConfigClass, extra=Extra.allow):
     """---------------------------------------------------------------------------------
     Contains configuration parameters for tsdat pipelines.
 
@@ -87,26 +98,67 @@ class PipelineConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
         " data produced by this pipeline."
     )
 
-    @validator("retriever", "dataset", "quality", "storage", pre=True)
-    def merge_overrideable_yaml(
-        cls, v: Dict[str, Any], values: Dict[str, Any], field: ModelField
-    ):
+    cfg_filepath: Optional[Path] = None
+    """The path to the yaml config file used to instantiate this class. Set via the
+    'from_yaml()' classmethod"""
+
+    @root_validator(pre=True)
+    def merge_overridable_yaml(cls, values: Dict[str, Any]):
         object_field_mapping = {
             "retriever": RetrieverConfig,
             "dataset": DatasetConfig,
             "quality": QualityConfig,
             "storage": StorageConfig,
         }
-        config_cls = object_field_mapping[field.name]
+        for field, config_cls in object_field_mapping.items():
+            v = values[field]
+            if matches_overridable_schema(v):
+                cfg_path = get_resolved_cfg_path(v["path"], values.get("cfg_filepath"))
+                defaults = read_yaml(cfg_path)
+                overrides = v.get("overrides", {})
+                for pointer, new_value in overrides.items():
+                    set_pointer(defaults, pointer, new_value)
+                v = defaults
+            values[field] = config_cls(**v)
+        return values
 
-        if matches_overrideable_schema(v):
-            defaults = read_yaml(Path(v["path"]))
-            overrides = v.get("overrides", {})
+    @classmethod
+    def from_yaml(cls, filepath: Path, overrides: Optional[Dict[str, Any]] = None):
+        """------------------------------------------------------------------------------------
+        Creates a python configuration object from a yaml file.
+
+        Args:
+            filepath (Path): The path to the yaml file
+            overrides (Optional[Dict[str, Any]], optional): Overrides to apply to the
+                yaml before instantiating the YamlModel object. Defaults to None.
+
+        Returns:
+            YamlModel: A YamlModel subclass
+
+        ------------------------------------------------------------------------------------
+        """
+        config = read_yaml(filepath)
+        if overrides:
             for pointer, new_value in overrides.items():
-                set_pointer(defaults, pointer, new_value)
-            v = defaults
+                set_pointer(config, pointer, new_value)
+        try:
+            return cls(cfg_filepath=filepath, **config)
+        except (ValidationError, Exception) as e:
+            raise ConfigError(
+                f"Error encountered while instantiating {filepath}"
+            ) from e
 
-        return config_cls(**v)
+    @classmethod
+    def generate_schema(cls, output_file: Path):
+        """------------------------------------------------------------------------------------
+        Generates JSON schema from the model fields and type annotations.
+
+        Args:
+            output_file (Path): The path to store the JSON schema.
+
+        ------------------------------------------------------------------------------------
+        """
+        output_file.write_text(cls.schema_json(indent=4))
 
     def instantiate_pipeline(self) -> Pipeline:
         """------------------------------------------------------------------------------------

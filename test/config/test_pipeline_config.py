@@ -32,6 +32,7 @@ def test_pipeline_config_merges_overrides():
         "dataset": model_to_dict(dataset),
         "quality": model_to_dict(quality),
         "storage": model_to_dict(storage),
+        "cfg_filepath": Path("test/config/yaml/pipeline.yaml"),
     }
     expected_dict["storage"]["parameters"]["data_storage_path"] = "data/{datastream}"
 
