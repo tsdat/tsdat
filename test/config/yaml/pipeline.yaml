@@ -4,10 +4,10 @@ triggers:
   - '.*\.csv'
 
 retriever:
-  path: test/config/yaml/retriever.yaml
+  path: ./retriever.yaml
 
 dataset:
-  path: test/config/yaml/dataset.yaml
+  path: ../yaml/dataset.yaml
   overrides:
     /attrs/location_id: sgp
     /data_vars/first/attrs/new_attribute: please add this attribute
@@ -18,7 +18,8 @@ quality:
     /managers/0/exclude: []
 
 storage:
-  path: test/config/yaml/storage.yaml
-  overrides:
-    /parameters:
+  classname: tsdat.io.storage.FileSystem
+  parameters:
       data_storage_path: data/{datastream}
+  handler:
+    classname: tsdat.io.handlers.NetCDFHandler

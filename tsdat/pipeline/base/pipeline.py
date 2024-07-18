@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 from getpass import getuser
-from typing import Any, Iterable, List, Pattern, cast
+from pathlib import Path
+from typing import Any, Iterable, List, Optional, Pattern, cast
 
 import numpy as np
 import xarray as xr
@@ -36,6 +37,9 @@ class Pipeline(ParameterizedClass, ABC):
 
     storage: Storage
     """Stores the dataset so it can be retrieved later."""
+
+    cfg_filepath: Optional[Path] = None
+    """The pipeline.yaml file containing the parameters used to instantiate this object"""
 
     @abstractmethod
     def run(self, inputs: List[str], **kwargs: Any) -> Any:

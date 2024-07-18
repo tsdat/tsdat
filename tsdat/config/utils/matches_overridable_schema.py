@@ -4,5 +4,5 @@ from typing import (
 )
 
 
-def matches_overrideable_schema(model_dict: Dict[str, Any]):
+def matches_overridable_schema(model_dict: Dict[str, Any]):
     return "path" in model_dict

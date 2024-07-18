@@ -1,0 +1,7 @@
+classname: test.pipeline.examples.Ingest
+
+triggers:
+  - '.*\.csv'
+
+retriever:
+  path: ./retriever.yaml
