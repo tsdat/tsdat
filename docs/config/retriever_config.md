@@ -97,3 +97,48 @@ def convert(
         xr.DataArray: The converted DataArray for the specified variable.
     """
 ```
+
+## Coords
+
+The coords section in the retriever.yaml file specifies the coordinate variables that are used to read and interpret raw input data. This section defines the dimensions and attributes of the coordinates, such as time or spatial coordinates, which are essential for accurately mapping the data within the dataset. The configuration ensures that the data is properly aligned and can be processed effectively by the tsdat framework
+
+```yaml
+coords:
+  # Specify the coords that should be retrieved from any inputs
+  time:  # Coordinate variable for time
+    # Mapping of regex pattern (matching input key/file) to input name & converter(s) to
+    # run. The default is .*, which matches everything. Put the most specific patterns
+    # first because searching happens top -> down and stops at the first match.
+    .*:  # Regex pattern to match all input keys/files
+      # The name of the input variable as returned by the selected reader. If using a
+      # built-in DataReader like the CSVReader or NetCDFReader, then will be exactly the
+      # same as the name of the variable in the input file.
+      name: Timestamp (end of interval)  # Name of the input variable in the raw data
+
+      # Optionally specify converters to run. The one below converts string values into
+      # datetime64 objects. It requests two arguments: format and timezone. Format is
+      # the string time format of the input data (see strftime.org for more info), and
+      # timezone is the timezone of the input measurement.
+      data_converters:  # List of converters to apply to the input data
+        - classname: tsdat.io.converters.StringToDatetime  # Converter class to use
+          format: "%Y-%m-%d %H:%M:%S"  # Format of the time string in the input data
+          timezone: UTC  # Timezone of the input data
+```
+
+## Data_vars
+
+Data_vars are used to specify the data variables that should be retrieved from the input data sources. Similar to the coords section, data_vars define how to read and preprocess variables from the raw input data, including the variable name, its source in the input data, and any data converters to be applied. Each data_var entry typically includes information on how to handle the data, such as unit conversions or other preprocessing steps, and uses regex patterns to match input sources.
+
+```yaml
+data_vars:
+  example_var:  # Data variable name to be used in the processed dataset
+    .*:  # Regex pattern to match all input keys/files
+      name: Example  # Name of the input variable in the raw data
+
+      # Optionally specify converters to run. The one below converts units of the input
+      # data. It requests the input_units argument, which specifies the units of the
+      # input measurement.
+      data_converters:  # List of converters to apply to the input data
+        - classname: tsdat.io.converters.UnitsConverter  # Converter class to use
+          input_units: km  # Units of the input data to be converted
+```
