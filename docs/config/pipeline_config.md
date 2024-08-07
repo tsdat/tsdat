@@ -109,3 +109,75 @@ data_vars:
       units: deg
       comment: This is a brand new variable called 'wind_dir'
 ```
+
+## Adding a new pipeline
+
+### Creating a Repository from the Pipeline Template
+
+1. Use the Template:
+    - Go to the [tsdat pipeline-template](https://github.com/tsdat/pipeline-template)repository on GitHub.
+    - Click the "Use this template" button to create a new repository in your GitHub account based on this template.
+    - If you need an older version, select "Include all branches" and set your desired branch as the default.
+2. Clone the Repository:
+    - Click the "Code" button on your new repository page to copy the repository URL.
+    - Open a terminal and run:
+
+      ```bash
+      git clone <your-repository-url>
+      ```
+
+    - Navigate to the cloned repository:
+
+      ```bash
+      cd <your-repository-name>
+      ```
+
+### Setting Up Your Anaconda Environment
+
+1. Open Terminal:
+    - On Linux or Mac, open a regular terminal.
+    - On Windows, open an Anaconda prompt or a WSL terminal if using Windows Subsystem for Linux.
+2. Create and Activate Environment:
+    - Run the following commands:
+
+      ```bash
+      conda env create --file=conda-environment.yaml
+      conda activate tsdat-pipelines
+      ```
+
+3. Verify Environment:
+    - Run tests to ensure the environment is set up correctly:
+
+      ```bash
+      pytest
+      ```
+
+    - If you encounter a pyproj warning, run:
+
+      ```bash
+      conda remove --force pyproj
+      pip install pyproj
+      ```
+
+### Adding a New Pipeline
+
+1. Generate New Pipeline Folder:
+    - From the top-level repository folder, run:
+
+      ```bash
+      make cookies
+      ```
+
+      or
+
+      ```bash
+      cookiecutter templates/ingest -o ingest/
+      ```
+
+    - This command uses cookiecutter to generate a new pipeline folder inside the pipelines/ directory.
+2. Follow Prompts:
+    - Answer the prompts to customize your new pipeline. These prompts will guide you through setting up various aspects of the pipeline, such as naming and configuration.
+3. Review and Customize:
+    - Once cookiecutter completes, a new pipeline folder will appear inside pipelines/.
+    - Open the README.md file in the new pipeline folder for further instructions on configuring, running, testing, and debugging your pipeline.
+    - Customize the pipeline by updating configuration files, setting up input/output paths, and defining necessary data transformations or quality control measures.
