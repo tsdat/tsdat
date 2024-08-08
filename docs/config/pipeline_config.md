@@ -110,74 +110,59 @@ data_vars:
       comment: This is a brand new variable called 'wind_dir'
 ```
 
-## Adding a new pipeline
+## Adding a New Pipeline
 
-### Creating a Repository from the Pipeline Template
+### Creating a New `pipeline.yaml` File
 
-1. Use the Template:
-    - Go to the [tsdat pipeline-template](https://github.com/tsdat/pipeline-template)repository on GitHub.
-    - Click the "Use this template" button to create a new repository in your GitHub account based on this template.
-    - If you need an older version, select "Include all branches" and set your desired branch as the default.
-2. Clone the Repository:
-    - Click the "Code" button on your new repository page to copy the repository URL.
-    - Open a terminal and run:
+When working with an existing ingest, you might need to create a new `pipeline.yaml` file to accommodate different configurations. For example, you may want to set up pipelines for different sites, apply different metadata, or handle other specific processing needs. Adding a new `pipeline.yaml` file allows you to maintain organization and flexibility within your project.
 
-      ```bash
-      git clone <your-repository-url>
-      ```
+#### Reasons for Adding a New `pipeline.yaml` File
 
-    - Navigate to the cloned repository:
+- **Different Site Configurations:** If you're processing data from multiple sites, each site may have unique settings or parameters. Creating separate `pipeline.yaml` files for each site ensures that these configurations are handled properly.
+- **Varying Metadata:** Different datasets might require distinct metadata configurations. Separate `pipeline.yaml` files can help manage these variations efficiently.
+- **Specialized Processing:** You might need different processing steps or quality control measures for different datasets. Multiple `pipeline.yaml` files allow you to customize these processes without disrupting the overall pipeline structure.
 
-      ```bash
-      cd <your-repository-name>
-      ```
+#### Suggested Naming Conventions
 
-### Setting Up Your Anaconda Environment
+To keep your project organized, consider adopting a clear and consistent naming convention for your `pipeline.yaml` files. Here are some suggestions:
 
-1. Open Terminal:
-    - On Linux or Mac, open a regular terminal.
-    - On Windows, open an Anaconda prompt or a WSL terminal if using Windows Subsystem for Linux.
-2. Create and Activate Environment:
-    - Run the following commands:
+- **Site-Specific Pipelines:**
+  - `pipeline_sgp.yaml` for the Southern Great Plains site.
+  - `pipeline_nsa.yaml` for the North Slope of Alaska site.
 
-      ```bash
-      conda env create --file=conda-environment.yaml
-      conda activate tsdat-pipelines
-      ```
+- **Metadata Variations:**
+  - `pipeline_metadata_v1.yaml` for the first version of metadata.
+  - `pipeline_metadata_alt.yaml` for an alternative metadata configuration.
 
-3. Verify Environment:
-    - Run tests to ensure the environment is set up correctly:
+- **Specialized Processing:**
+  - `pipeline_qc.yaml` for a pipeline focused on quality control.
+  - `pipeline_transform.yaml` for pipelines that require specific data transformations.
 
-      ```bash
-      pytest
-      ```
+#### Example: Adding a New `pipeline.yaml` File
 
-    - If you encounter a pyproj warning, run:
+Let's walk through an example of how to add a new `pipeline.yaml` file:
 
-      ```bash
-      conda remove --force pyproj
-      pip install pyproj
-      ```
+1. **Duplicate an Existing `pipeline.yaml` File:**
 
-### Adding a New Pipeline
+   Navigate to the `pipelines/` directory in your repository.
 
-1. Generate New Pipeline Folder:
-    - From the top-level repository folder, run:
+   Copy an existing `pipeline.yaml` file that is closest to what you need:
 
-      ```bash
-      make cookies
-      ```
+   ```bash
+   cp pipelines/pipeline_sgp.yaml pipelines/pipeline_nsa.yaml
 
-      or
+2. **Customize the New pipeline.yaml File:**
 
-      ```bash
-      cookiecutter templates/ingest -o ingest/
-      ```
+    Open the newly created pipeline_nsa.yaml file in your text editor.
 
-    - This command uses cookiecutter to generate a new pipeline folder inside the pipelines/ directory.
-2. Follow Prompts:
-    - Answer the prompts to customize your new pipeline. These prompts will guide you through setting up various aspects of the pipeline, such as naming and configuration.
-3. Review and Customize:
-    - Once cookiecutter completes, a new pipeline folder will appear inside pipelines/.
-    - Open the README.md file in the new pipeline folder for further instructions on configuring, running, testing, and debugging your pipeline.
-    - Customize the pipeline by updating configuration files, setting up input/output paths, and defining necessary data transformations or quality control measures.
+    Update the configurations, such as site name, paths, metadata, and any specific processing steps required for this pipeline.
+
+3. **Integrate the New Pipeline:**
+
+    Ensure that your project references the new pipeline.yaml file correctly.
+
+    Update any scripts or configurations that need to utilize the new pipeline.
+
+4. **Test the New Pipeline:**
+
+    Run tests to verify that the new pipeline functions as expected. This might include running the pipeline on sample data and checking the output against expected results.

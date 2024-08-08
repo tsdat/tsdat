@@ -98,9 +98,9 @@ def convert(
     """
 ```
 
-## Coords
+## Coordinates
 
-The coords section in the retriever.yaml file specifies the coordinate variables that are used to read and interpret raw input data. This section defines the dimensions and attributes of the coordinates, such as time or spatial coordinates, which are essential for accurately mapping the data within the dataset. The configuration ensures that the data is properly aligned and can be processed effectively by the tsdat framework
+The coordinates section in the `retriever.yaml` file specifies the coordinate variables that are used to read and interpret raw input data. This section defines the dimensions and attributes of the coordinates, such as time or spatial coordinates, which are essential for accurately mapping the data within the dataset. The configuration ensures that the data is properly aligned and can be processed effectively by the tsdat framework
 
 ```yaml
 coords:
@@ -125,9 +125,9 @@ coords:
           timezone: UTC  # Timezone of the input data
 ```
 
-## Data_vars
+## Data Variables
 
-Data_vars are used to specify the data variables that should be retrieved from the input data sources. Similar to the coords section, data_vars define how to read and preprocess variables from the raw input data, including the variable name, its source in the input data, and any data converters to be applied. Each data_var entry typically includes information on how to handle the data, such as unit conversions or other preprocessing steps, and uses regex patterns to match input sources.
+`Data_vars` are used to specify the data variables that should be retrieved from the input data sources. Similar to the coords section, `data_vars` define how to read and preprocess variables from the raw input data, including the variable name, its source in the input data, and any data converters to be applied. Each `data_var` entry typically includes information on how to handle the data, such as unit conversions or other preprocessing steps, and uses regex patterns to match input sources.
 
 ```yaml
 data_vars:

@@ -21,7 +21,7 @@ the configuration should be tweaked according to the specifics of your dataset. 
 
 ## Sample Configuration of Dataset.yaml
 
-This sample configuration illustrates the structure of a dataset.yaml file used in TSDAT, outlining essential components such as metadata attributes, coordinate definitions, and data variable specifications. It serves as a template for defining time-series datasets, divided into three main sections: 'attrs', 'coords', and 'data_vars'. Annotations throughout the sample explain each section's purpose and field meanings, facilitating easy adaptation to specific data requirements.
+This sample configuration illustrates the structure of a `dataset.yaml` file used in Tsdat, outlining essential components such as metadata attributes, coordinate definitions, and data variable specifications. It serves as a template for defining time-series datasets, divided into three main sections: 'attrs', 'coords', and 'data_vars'. Annotations throughout the sample explain each section's purpose and field meanings, facilitating easy adaptation to specific data requirements.
 
 ```yaml
 # The 'attrs' section defines metadata attributes for the dataset
