@@ -32,6 +32,7 @@ def get_filename(
         str: The filename constructed from provided parameters.
 
     ---------------------------------------------------------------------------------"""
-    substitutions = dict(extension=extension.lstrip("."), title=title)
+    substitutions: dict[str, str] = dict()
     substitutions.update(get_fields_from_dataset(dataset))
+    substitutions.update(extension=extension.lstrip("."), title=title)
     return FILENAME_TEMPLATE.substitute(substitutions)
