@@ -61,7 +61,10 @@ io = [
   "pyarrow",
   "zarr",
 ]
-ocean = ["mhkit"]
+ocean = [
+  "mhkit",
+  "matplotlib!=3.9.1.post1",  # mhkit doesn't like this version string
+]
 
 [project.scripts]
 tsdat = "tsdat.cli:app"
