@@ -127,14 +127,17 @@ When working with an existing ingest, you might need to create a new `pipeline.y
 To keep your project organized, consider adopting a clear and consistent naming convention for your `pipeline.yaml` files. Here are some suggestions:
 
 - **Site-Specific Pipelines:**
+
   - `pipeline_sgp.yaml` for the Southern Great Plains site.
   - `pipeline_nsa.yaml` for the North Slope of Alaska site.
 
 - **Metadata Variations:**
+
   - `pipeline_metadata_v1.yaml` for the first version of metadata.
   - `pipeline_metadata_alt.yaml` for an alternative metadata configuration.
 
 - **Specialized Processing:**
+
   - `pipeline_qc.yaml` for a pipeline focused on quality control.
   - `pipeline_transform.yaml` for pipelines that require specific data transformations.
 
@@ -144,12 +147,13 @@ Let's walk through an example of how to add a new `pipeline.yaml` file:
 
 1. **Duplicate an Existing `pipeline.yaml` File:**
 
-   Navigate to the `pipelines/` directory in your repository.
+    Navigate to the `pipelines/` directory in your repository.
 
-   Copy an existing `pipeline.yaml` file that is closest to what you need:
+    Copy an existing `pipeline.yaml` file that is closest to what you need:
 
-   ```bash
-   cp pipelines/pipeline_sgp.yaml pipelines/pipeline_nsa.yaml
+    ```bash
+    cp pipelines/pipeline_sgp.yaml pipelines/pipeline_nsa.yaml
+    ```
 
 2. **Customize the New pipeline.yaml File:**
 
