@@ -126,20 +126,20 @@ When working with an existing ingest, you might need to create a new `pipeline.y
 
 To keep your project organized, consider adopting a clear and consistent naming convention for your `pipeline.yaml` files. Here are some suggestions:
 
-- **Site-Specific Pipelines:**
+Site-Specific Pipelines:
 
-  - `pipeline_sgp.yaml` for the Southern Great Plains site.
-  - `pipeline_nsa.yaml` for the North Slope of Alaska site.
+- `pipeline_sgp.yaml` for the Southern Great Plains site.
+- `pipeline_nsa.yaml` for the North Slope of Alaska site.
 
-- **Metadata Variations:**
+Metadata Variations:
 
-  - `pipeline_metadata_v1.yaml` for the first version of metadata.
-  - `pipeline_metadata_alt.yaml` for an alternative metadata configuration.
+- `pipeline_metadata_v1.yaml` for the first version of metadata.
+- `pipeline_metadata_alt.yaml` for an alternative metadata configuration.
 
-- **Specialized Processing:**
+Specialized Processing:
 
-  - `pipeline_qc.yaml` for a pipeline focused on quality control.
-  - `pipeline_transform.yaml` for pipelines that require specific data transformations.
+- `pipeline_qc.yaml` for a pipeline focused on quality control.
+- `pipeline_transform.yaml` for pipelines that require specific data transformations.
 
 #### Example: Adding a New `pipeline.yaml` File
 
