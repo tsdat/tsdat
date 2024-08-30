@@ -36,6 +36,7 @@ nav:
       - Ingest Pipeline Customization: tutorials/pipeline_customization.md
       - Value Added Product (VAP) Pipeline Tutorial: tutorials/vap_pipelines.md
       - Deploying to AWS: tutorials/aws_template.md
+      - Installing Docker in WSL: tutorials/setup_wsl_docker.md
   - Developer Guide:
       - Customizing Tsdat: config/configuring_tsdat.md
       - Dataset Config: config/dataset_config.md
