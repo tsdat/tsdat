@@ -1,7 +1,7 @@
 # Setting up WSL and VSCode for Windows Users
 
-This tutorial goes over installing WSL Version 1 (and in our case, we'll be installing Ubuntu) and setting up a WSL
-environment in VSCode.
+This tutorial goes over installing WSL (and in our case, we'll be installing Ubuntu) 
+and setting up a WSL environment in VSCode.
 
 Start by installing [VSCode](https://code.visualstudio.com/). It's a good idea to familiarize yourself with the VScode
 interface. Installing Ubuntu in WSL is a more involved process:
@@ -34,6 +34,11 @@ find the wifi address in Windows.
 ```
 
 You may need to restart WSL by opening Windows Powershell and running `wsl --shutdown`.
+
+Once your internet connection is working, update Ubuntu:
+```bash
+sudo apt update && sudo apt upgrade
+```
 
 7. Another issue that may pop up is WSL's ability to access the Windows screen to display plots. If you get such an 
 error, "Ubuntu can't acess the display...", open ".bashrc" from a WSL terminal:

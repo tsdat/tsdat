@@ -47,7 +47,7 @@ Make sure that you have two repositories in your GitHub organization/account cre
 * **<https://github.com/tsdat/aws-template>**
 
 If you are using an existing `pipeline-template` repository, make sure that the `requirements.txt` file specifies a
-`tsdat` version of at least `tsdat==0.7.1`. The AWS build will not work with earlier versions of `tsdat`.
+`tsdat` version of at least `tsdat==0.7.1`, preferably `tsdat>=0.8.5`. The AWS build will not work with earlier versions of `tsdat`.
 
 Clone these repos to the same parent folder on your computer.
 
@@ -57,7 +57,7 @@ Clone these repos to the same parent folder on your computer.
     converting all the file line endings to `CRLF`. If your files have `CRLF` line endings, it will cause the AWS
     pipeline to crash.
 
-### Install docker
+### Install Docker
 
 We use a Docker container with VSCode to make setting up your development environment a snap.  We assume users have a
 basic familiarity with Docker containers. If you are new to Docker, there are many free online tutorials to get you
@@ -72,7 +72,7 @@ started.
 
     === "Windows Users"
 
-        * [Install Docker on wsl2](https://github.com/clansing/docs/blob/main/windows-docker-wsl2.md)
+        * [Install Docker on WSL](setup_wsl_docker.md)
         * [Install Docker Desktop](https://docs.docker.com/desktop/install/windows-install/)
 
     === "Mac Users"
@@ -116,13 +116,25 @@ Then from the VSCode terminal, run:
 1. In our testing we found that just `docker compose up -d` works fine on our team's Windows, Linux, and intel MacOS
 systems, but the `--platform` argument was needed for M1/M2 MacBooks. Milage may vary.
 
+2. If you hit an error, run
+    ```shell
+    docker stop tsdat-cdk
+    docker rm tsdat-cdk
+    ```
+
 ### Attach to the container
 
-1. Type the key combination:  ++ctrl+shift+p++ to bring up the VSCode command palette.
+1. Type the key combination: ++ctrl+shift+p++ to bring up the VSCode command palette.
 1. Then from the input box type: "Dev-Containers:  Attach to Running Container..." and select it
 1. Then choose the  tsdat-cdk  container.
 
 This will start up a new VSCode window that is running from inside your tsdat-cdk container.
+
+1. If a new VSCode window does not appear with a terminal showing "root@tsdat-cdk" (it might open in Windows and not a docker container, saying docker is not installed), then close VSCode, open a windows prompt and run "wsl --shutdown". Reopen VSCode and follow the previous two steps. In the very bottom left corner of the VSCode window should be a blue box with the text "Container tsdat-cdk (tsdat-cdk)".
+
+2. If the new VSCode window that pops up still isn't in the docker container, hit "ctrl shift P" and "Reopen folder in WSL". When VSCode warns you that docker is not installed in WSL, click "Install". It will install some updates and then tell you that docker is already installed, click "Ignore". Now close VSCode and run "wsl --shutdown". Try again and it should open in the docker container.
+
+3. If the new VSCode windows that pops up tells you that tsdat/cdk no longer exists, go into settings and search for "Execute in WSL" to find the Dev-Containers option that says "Always Execute in WSL". Check that box and reload the window.
 
 ### Open the VSCode workspace
 
@@ -153,7 +165,9 @@ directory structure like so:
 
 The top part of the `aws-template/pipelines_config.yml` contains settings related to the AWS-GitHub integration, where
 data should be pulled from & placed, and which AWS account should be used. Open this file and fill out the configuration
-options, using your own values as needed. This section only needs to be filled out once.
+options, using your own values as needed. This section only needs to be filled out once
+and pushed to Github once completed. AWS will use the commit saved in Github to build
+the pipelines.
 
 ```yaml title="aws-template/pipelines_config.yml"
 
@@ -202,6 +216,14 @@ aws configure --profile tsdat
 # Default output format [None]: 
 ```
 
+FYI: If you've already set up AWS CLI in Windows, installing in WSL will link to the configuration files located in the Windows location. Your credentials will also be linked to the ".aws" folder that should now be showing in your VSCode Explorer tab. You can also manually create a symbolic link using
+```
+sudo ln -s /mnt/c/Users/<username>/.aws .aws
+```
+
+If you want to use a different profile name than "tsdat", edit the profile name in the 
+AWS config and credentials files, as well as in "aws-template/Dockerfile", line 31.
+
 Your `~/.aws/config` file should now look like this:
 
 ```txt title="~/.aws/config"
@@ -213,8 +235,7 @@ region = us-west-2
 
 !!! warning
 
-    You will need to do this step ^^BEFORE^^ you deploy your stack and any time the credentials expire (usually after
-    about 12 hours).
+    You will need to do this step ^^BEFORE^^ you deploy your stack and any time the credentials expire (usually after about 12 hours).
 
 If you entered your access keys in the last step then you are good to go, otherwise open your `~/.aws/credentials` file
 and update your credentials. (1)
@@ -235,6 +256,16 @@ Your credentials file should look like this (with real values instead of the `XX
 aws_access_key_id=XXXXXXX
 aws_secret_access_key=XXXXXX
 aws_session_token=XXXXXX
+```
+
+Your profile should show up if you run
+```bash
+aws configure list
+```
+
+If it doesn't, run
+```bash
+export AWS_PROFILE=<profile_name>
 ```
 
 ### Bootstrap AWS resources
@@ -270,7 +301,7 @@ Most deployments will not need to change anything in the stack, but advanced use
 
 !!! note
 
-    You will need to commit and push all of your changes for this to work correctly.
+    Again, you will need to commit and push all of your changes to Github for this to work correctly.
 
 ```shell
 cd aws-template
@@ -357,18 +388,17 @@ The steps to deploy an existing pipeline at a new site, or to deploy an entirely
         * **Monthly**
 
 3. Go to the [CodePipeline UI in AWS](https://us-west-2.console.aws.amazon.com/codesuite/codepipeline/pipelines) and
-    find the CodePipeline for this project, then click 'release change'.
+    find the CodePipeline for this project, then click 'Release Change'.
 
 </div>
 
-### Updating an ingest or vap
+### Updating an ingest or VAP
 
-Changes to the deployed branch(es) in the `pipeline-template` repo will be released automatically via the CodePipeline
-build process in AWS, which was set up to watch for branch changes during the `./deploy_stack.sh main` step.
+Changes to the deployed branch(es) in the `pipeline-template` repo will be released automatically via the CodePipeline build process in AWS, which was set up to watch for branch changes during the `./deploy_stack.sh main` step.
 
-The AWS CodePipeline build (created during the `./deploy_stack.sh main` step) will automatically watch for changes to
-your `pipeline-template` code in the `main` branch (or whatever branch you specified). This means that any time you push
-changes to that branch, CodePipeline will automatically update and re-deploy any modified ingests or VAPs.
+The AWS CodePipeline build (created during the `./deploy_stack.sh main` step) will automatically watch for changes to your `pipeline-template` code in the `main` branch (or whatever branch you specified). This means that any time you push changes to that branch, CodePipeline will automatically update and re-deploy any modified ingests or VAPs.
+
+Changes to the `aws-template` repo are not automatically released, so you'll have to do so manually by clicking "Release Change" in CodePipeline. If you're ever unsure if changes went through, even though CodePipeline automatically released a change, do it manually anyway.
 
 !!! success
 
@@ -377,6 +407,7 @@ changes to that branch, CodePipeline will automatically update and re-deploy any
 ## Viewing Resources in AWS
 
 You can use the AWS UI to view the resources that were created during the build.
+When checking the pipeline on AWS, make sure you're set to the correct region in the online UI.
 
 <div class="grid cards" markdown>
 
