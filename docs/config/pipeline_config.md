@@ -109,3 +109,64 @@ data_vars:
       units: deg
       comment: This is a brand new variable called 'wind_dir'
 ```
+
+## Adding a New Pipeline
+
+### Creating a New `pipeline.yaml` File
+
+When working with an existing ingest, you might need to create a new `pipeline.yaml` file to accommodate different configurations. For example, you may want to set up pipelines for different sites, apply different metadata, or handle other specific processing needs. Adding a new `pipeline.yaml` file allows you to maintain organization and flexibility within your project.
+
+#### Reasons for Adding a New `pipeline.yaml` File
+
+- **Different Site Configurations:** If you're processing data from multiple sites, each site may have unique settings or parameters. Creating separate `pipeline.yaml` files for each site ensures that these configurations are handled properly.
+- **Varying Metadata:** Different datasets might require distinct metadata configurations. Separate `pipeline.yaml` files can help manage these variations efficiently.
+- **Specialized Processing:** You might need different processing steps or quality control measures for different datasets. Multiple `pipeline.yaml` files allow you to customize these processes without disrupting the overall pipeline structure.
+
+#### Suggested Naming Conventions
+
+To keep your project organized, consider adopting a clear and consistent naming convention for your `pipeline.yaml` files. Here are some suggestions:
+
+Site-Specific Pipelines:
+
+- `pipeline_sgp.yaml` for the Southern Great Plains site.
+- `pipeline_nsa.yaml` for the North Slope of Alaska site.
+
+Metadata Variations:
+
+- `pipeline_metadata_v1.yaml` for the first version of metadata.
+- `pipeline_metadata_alt.yaml` for an alternative metadata configuration.
+
+Specialized Processing:
+
+- `pipeline_qc.yaml` for a pipeline focused on quality control.
+- `pipeline_transform.yaml` for pipelines that require specific data transformations.
+
+#### Example: Adding a New `pipeline.yaml` File
+
+Let's walk through an example of how to add a new `pipeline.yaml` file:
+
+1. **Duplicate an Existing `pipeline.yaml` File:**
+
+    Navigate to the `pipelines/` directory in your repository.
+
+    Copy an existing `pipeline.yaml` file that is closest to what you need:
+
+    ```bash
+    cp pipelines/pipeline_sgp.yaml pipelines/pipeline_nsa.yaml
+    ```
+
+2. **Customize the New pipeline.yaml File:**
+
+    Open the newly created pipeline_nsa.yaml file in your text editor.
+
+    Update the configurations, such as site name, paths, metadata, and any specific processing steps required for this pipeline.
+
+3. **Integrate the New Pipeline:**
+
+    Ensure that your project references the new pipeline.yaml file correctly.
+
+    Update any scripts or configurations that need to utilize the new pipeline.
+
+4. **Test the New Pipeline:**
+
+    Run tests to verify that the new pipeline functions as expected. This might include running the pipeline on sample data and checking the output against expected results.

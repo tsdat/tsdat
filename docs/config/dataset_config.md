@@ -18,3 +18,37 @@ the configuration should be tweaked according to the specifics of your dataset. 
     Tsdat templates come complete with a VS Code IDE configuration that will provide inline documentation and
     auto-completions for your yaml configuration files. Consult the [tutorials](./pipeline_config.md) section for more
     information on editing your pipeline in VS Code.
+
+## Sample Configuration of Dataset.yaml
+
+This sample configuration illustrates the structure of a `dataset.yaml` file used in Tsdat, outlining essential components such as metadata attributes, coordinate definitions, and data variable specifications. It serves as a template for defining time-series datasets, divided into three main sections: 'attrs', 'coords', and 'data_vars'. Annotations throughout the sample explain each section's purpose and field meanings, facilitating easy adaptation to specific data requirements.
+
+```yaml
+# The 'attrs' section defines metadata attributes for the dataset
+attrs:
+  title: test  # The title of the dataset
+  description: test_description  # A brief description of the dataset
+  location_id: test_location  # Identifier for the location of the data
+  dataset_name: test  # Name of the dataset
+  data_level: a1  # Data processing level (e.g., raw, quality controlled, etc.)
+  # qualifier:  # Optional: Additional qualifier for the dataset
+  # temporal:  # Optional: Temporal information about the dataset
+  # institution:  # Optional: Institution responsible for the dataset
+
+# The 'coords' section defines the coordinate variables
+coords:
+  time:  # Time coordinate
+    dims: [time]  # Dimension of the time coordinate
+    dtype: datetime64[s]  # Data type for time (datetime with second precision)
+    attrs:
+      units: Seconds since 1970-01-01 00:00:00  # Units for the time coordinate
+
+# The 'data_vars' section defines the data variables in the dataset
+data_vars:
+  example_var:  # Name of the example variable
+    dims: [time]  # Dimension of the variable (using the time coordinate)
+    dtype: float  # Data type of the variable
+    attrs:
+      long_name: Example Variable  # Full descriptive name of the variable
+      units: km  # Units of measurement for the variable
+```
