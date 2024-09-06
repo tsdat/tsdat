@@ -5,8 +5,11 @@
 ### `KeyError ['time']`
 
 Time is typically the first variable tsdat looks for, so if it can't load your dataset or if the time coordinate is not
-input correctly, this error will pop up. The failure load a dataset typically results from incorrect file extensions,
-regex patterns, or file path location.
+input correctly, this error will pop up. If you have double-checked that the input file exists, then the most likely
+cause of this error is in the `retriever.yaml` configuration file for the pipeline:
+
+* double check the regex pattern in the `readers:` section to ensure that it matches the input filepath.
+* double check the name of the `time` variable in the input file matches the `name:` field for the `time` coordinate.
 
 ### `Can't find module "pipeline"`
 
@@ -25,9 +28,10 @@ to run the test `CheckMonotonic` on all "COORDS", and one of my coordinate varia
 
 If a timestamp isn't sequentially increasing, this check will fail the entire pipeline and tell you in the error message
 which timestamps have failed (which timestamps are earlier in time than the previous timestamp). This is typically due
-to a datalogger writing error. The only built-in fix for this in the pipeline is to change the handler from
+to a data logger writing error. The only built-in fix for this in the pipeline is to change the handler from
 `FailPipeline` to `RemoveFailedValues`, which will drop the suspect timestamps and leave a gap. Otherwise the timestamps
-will need to be fixed manually, assuming the missing timestamps are recoverable.
+will need to be fixed manually (e.g., in the `hook_customize_dataset(...)` function), assuming the missing timestamps
+are recoverable.
 
 ## Warnings
 
