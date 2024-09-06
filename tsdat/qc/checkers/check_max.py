@@ -1,31 +1,21 @@
 from abc import ABC
+from typing import Union
+
 import numpy as np
 import xarray as xr
-from typing import Union
 from numpy.typing import NDArray
 
 from .threshold_checker import ThresholdChecker
 
 
 class CheckMax(ThresholdChecker, ABC):
-    """---------------------------------------------------------------------------------
-    Checks for values larger than a specified threshold.
+    """Checks for values larger than a specified threshold.
 
     The value of the threshold is specified by an attribute on each data variable, and
     the attribute to search for is specified as a property of this base class.
 
     If the specified attribute does not exist on the variable being checked then no
-    failures will be reported.
-
-    Args:
-        attribute_name (str): The name of the attribute containing the maximum
-            threshold. If the attribute ends in '_range' then it is assumed to be a
-            list, and the first value from the list will be used as the minimum
-            threshold.
-        allow_equal (bool): True if values equal to the threshold should pass the check,
-            False otherwise.
-
-    ---------------------------------------------------------------------------------"""
+    failures will be reported."""
 
     def run(
         self,

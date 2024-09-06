@@ -1,29 +1,18 @@
 from pydantic import Field
-from ..utils import ParameterizedConfigClass, YamlModel
 
+from ..utils import ParameterizedConfigClass, YamlModel
 from .data_handler_config import DataHandlerConfig
 
 
 class StorageConfig(ParameterizedConfigClass, YamlModel):
-    """---------------------------------------------------------------------------------
-    Contains configuration parameters for the data storage API used in tsdat pipelines.
+    """Contains configuration parameters for the data storage API used in tsdat pipelines.
 
     This class will ultimately be converted into a tsdat.io.base.Storage subclass for
     use in tsdat pipelines.
 
     Provides methods to support yaml parsing and validation, including the generation of
     json schema for immediate validation. This class also provides a method to
-    instantiate a tsdat.io.base.Storage subclass from a parsed configuration file.
-
-    Args:
-        classname (str): The dotted module path to the storage class that the specified
-            configurations should apply to. To use the built-in FileSystem storage
-            class, for example, you would set 'tsdat.io.storage.FileSystem' as the
-            classname.
-        handler (DataHandlerConfig): Config class that should be used for data I/O
-            within the storage area.
-
-    ---------------------------------------------------------------------------------"""
+    instantiate a tsdat.io.base.Storage subclass from a parsed configuration file."""
 
     handler: DataHandlerConfig = Field(
         DataHandlerConfig(classname="tsdat.io.handlers.NetCDFHandler", parameters={}),
@@ -37,3 +26,4 @@ class StorageConfig(ParameterizedConfigClass, YamlModel):
         " Storage classes may not support certain DataHandlers (e.g., Storage classes"
         " targeted at Databases may not support file-based DataHandlers).",
     )
+    """Config class that should be used for data I/O within the storage area."""

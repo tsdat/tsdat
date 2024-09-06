@@ -8,27 +8,25 @@ from .quality_handler import QualityHandler
 
 
 class QualityManager(BaseModel, extra=Extra.forbid):
-    """---------------------------------------------------------------------------------
-    Groups a QualityChecker and one or more QualityHandlers together.
-
-    Args:
-        name (str): The name of the quality manager.
-        checker (QualityChecker): The quality check that should be run.
-        handlers (QualityHandler): One or more QualityHandlers that should be run given
-            the results of the checker.
-        apply_to (List[str]): A list of variables that the check should run for. Accepts
-            keywords of 'COORDS' or 'DATA_VARS', or any number of specific variables that
-            should be run.
-        exclude (List[str]): A list of variables that the check should exclude. Accepts
-            the same keywords as apply_to.
-
-    ---------------------------------------------------------------------------------"""
+    """Groups a QualityChecker and one or more QualityHandlers together."""
 
     name: str
+    """The name of the quality manager."""
+
     checker: QualityChecker
+    """The quality check that should be run."""
+
     handlers: List[QualityHandler]
+    """One or more QualityHandlers that should be run given the results of the
+    checker."""
+
     apply_to: List[str]
+    """A list of variables that the check should run for. Accepts keywords of 'COORDS'
+    or 'DATA_VARS', or any number of specific variables that should be run."""
+
     exclude: List[str] = []
+    """A list of variables that the check should exclude. Accepts the same keywords as
+    apply_to."""
 
     def run(self, dataset: xr.Dataset) -> xr.Dataset:
         """-----------------------------------------------------------------------------

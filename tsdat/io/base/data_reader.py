@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import (
     Dict,
-    Pattern,
     Union,
 )
 
@@ -13,15 +12,7 @@ from ...utils import (
 
 
 class DataReader(ParameterizedClass, ABC):
-    """---------------------------------------------------------------------------------
-    Base class for reading data from an input source.
-
-    Args:
-        regex (Pattern[str]): The regex pattern associated with the DataReader. If
-        calling the DataReader from a tsdat pipeline, this pattern will be checked
-        against each possible input key before the read() method is called.
-
-    ---------------------------------------------------------------------------------"""
+    """Base class for reading data from an input source."""
 
     @abstractmethod
     def read(

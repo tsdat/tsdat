@@ -7,21 +7,12 @@ from ...base import QualityChecker
 
 
 class CheckGoringNikora2002(QualityChecker):
-    """----------------------------------------------------------------------------
-    The Goring & Nikora 2002 'despiking' method, with Wahl2003 correction.
-    Returns a logical vector that is true where spikes are identified.
-
-    Args:
-        variable_name (str): array (1D or 3D) to clean.
-        n_points (int) : The number of points over which to perform the method.
-
-    Returns:
-        mask [np.ndarray]: Logical vector with spikes labeled as 'True'
-
-    ----------------------------------------------------------------------------"""
+    """The Goring & Nikora 2002 'despiking' method, with Wahl2003 correction.
+    Returns a logical vector that is true where spikes are identified."""
 
     class Parameters(BaseModel, extra=Extra.forbid):
         n_points: int = 5000
+        """The number of points over which to perform the method."""
 
     parameters: Parameters = Parameters()
 

@@ -9,31 +9,24 @@ from typing import (
 
 import xarray as xr
 
-from .retrieved_variable import RetrievedVariable
 from ...config.dataset import DatasetConfig
 from ...utils import (
     ParameterizedClass,
 )
+from .retrieved_variable import RetrievedVariable
 
 
 class Retriever(ParameterizedClass, ABC):
-    """---------------------------------------------------------------------------------
-    Base class for retrieving data used as input to tsdat pipelines.
-
-    Args:
-        readers (Dict[str, DataReader]): The mapping of readers that should be used to
-            retrieve data given input_keys and optional keyword arguments provided by
-            subclasses of Retriever.
-
-    ---------------------------------------------------------------------------------"""
+    """Base class for retrieving data used as input to tsdat pipelines."""
 
     readers: Optional[Dict[Pattern, Any]]  # type: ignore
-    """Mapping of readers that should be used to read data given input keys."""
+    """The mapping of readers that should be used to retrieve data given input_keys and
+    optional keyword arguments provided by subclasses of Retriever."""
 
     coords: Dict[str, Dict[Pattern, RetrievedVariable]]  # type: ignore
     """A dictionary mapping output coordinate names to the retrieval rules and
-    preprocessing actions (e.g., DataConverters) that should be applied to each retrieved
-    coordinate variable."""
+    preprocessing actions (e.g., DataConverters) that should be applied to each
+    retrieved coordinate variable."""
 
     data_vars: Dict[str, Dict[Pattern, RetrievedVariable]]  # type: ignore
     """A dictionary mapping output data variable names to the retrieval rules and

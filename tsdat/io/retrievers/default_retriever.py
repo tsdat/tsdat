@@ -1,6 +1,4 @@
 import logging
-import xarray as xr
-from pydantic import BaseModel, Extra
 from typing import (
     Any,
     Dict,
@@ -9,39 +7,28 @@ from typing import (
     cast,
 )
 
-from .input_key_retrieval_rules import InputKeyRetrievalRules
-from ._reindex_dataset_coords import _reindex_dataset_coords
-from ._rename_variables import _rename_variables
-from ._run_data_converters import _run_data_converters
+import xarray as xr
+from pydantic import BaseModel, Extra
+
 from ...config.dataset import DatasetConfig
 from ..base import (
     DataReader,
     Retriever,
 )
+from ._reindex_dataset_coords import _reindex_dataset_coords
+from ._rename_variables import _rename_variables
+from ._run_data_converters import _run_data_converters
+from .input_key_retrieval_rules import InputKeyRetrievalRules
 
 logger = logging.getLogger(__name__)
 
 
 class DefaultRetriever(Retriever):
-    """------------------------------------------------------------------------------------
-    Default API for retrieving data from one or more input sources.
+    """Default API for retrieving data from one or more input sources.
 
     Reads data from one or more inputs, renames coordinates and data variables according
     to retrieval and dataset configurations, and applies registered DataConverters to
-    retrieved data.
-
-    Args:
-        readers (Dict[Pattern[str], DataReader]): A mapping of patterns to DataReaders
-            that the retriever uses to determine which DataReader to use for reading any
-            given input key.
-        coords (Dict[str, Dict[Pattern[str], VariableRetriever]]): A dictionary mapping
-            output coordinate variable names to rules for how they should be retrieved.
-        data_vars (Dict[str, Dict[Pattern[str], VariableRetriever]]): A dictionary
-            mapping output data variable names to rules for how they should be
-            retrieved.
-
-    ------------------------------------------------------------------------------------
-    """
+    retrieved data."""
 
     class Parameters(BaseModel, extra=Extra.forbid):
         merge_kwargs: Dict[str, Any] = {}
@@ -56,8 +43,8 @@ class DefaultRetriever(Retriever):
     parameters: Parameters = Parameters()
 
     readers: Dict[Pattern, DataReader]  # type: ignore
-    """A dictionary of DataReaders that should be used to read data provided an input
-    key."""
+    """A mapping of patterns to DataReaders that the retriever uses to determine which
+    DataReader to use for reading any given input key."""
 
     def retrieve(
         self, input_keys: List[str], dataset_config: DatasetConfig, **kwargs: Any

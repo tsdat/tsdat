@@ -21,16 +21,7 @@ class FileSystem(Storage):
     """Handles data storage and retrieval for file-based data formats.
 
     Formats that write to directories (such as zarr) are not supported by the FileSystem
-    storage class.
-
-    Args:
-        parameters (Parameters): File-system specific parameters, such as the root path
-            to where files should be saved, or additional keyword arguments to specific
-            functions used by the storage API. See the FileSystemStorage.Parameters
-            class for more details.
-        handler (FileHandler): The FileHandler class that should be used to handle data
-            I/O within the storage API.
-    """
+    storage class."""
 
     class Parameters(Storage.Parameters):
         data_storage_path: Path = Path("data/{location_id}/{datastream}")
@@ -80,8 +71,14 @@ class FileSystem(Storage):
                 storage_root.mkdir(parents=True, exist_ok=True)
             return storage_root
 
-    parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
+    parameters: Parameters = Field(default_factory=Parameters, help="Some help text?")  # type: ignore
+    """File-system specific parameters, such as the root path to where files should be
+    saved, or additional keyword arguments to specific functions used by the storage
+    API. See the FileSystemStorage.Parameters class for more details."""
+
     handler: FileHandler = Field(default_factory=NetCDFHandler)  # type: ignore
+    """The FileHandler class that should be used to handle data I/O within the storage
+    API."""
 
     @property
     def data_filepath_template(self) -> Template:

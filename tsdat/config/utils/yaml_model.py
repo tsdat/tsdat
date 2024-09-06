@@ -10,6 +10,7 @@ from pydantic import (
     BaseModel,
     ValidationError,
 )
+from typing_extensions import Self
 
 from .config_error import ConfigError
 from .read_yaml import read_yaml
@@ -17,7 +18,9 @@ from .read_yaml import read_yaml
 
 class YamlModel(BaseModel):
     @classmethod
-    def from_yaml(cls, filepath: Path, overrides: Optional[Dict[str, Any]] = None):
+    def from_yaml(
+        cls, filepath: Path, overrides: Optional[Dict[str, Any]] = None
+    ) -> Self:
         """------------------------------------------------------------------------------------
         Creates a python configuration object from a yaml file.
 

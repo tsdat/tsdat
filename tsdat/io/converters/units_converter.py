@@ -13,19 +13,13 @@ logger = logging.getLogger(__name__)
 
 
 class UnitsConverter(DataConverter):
-    """---------------------------------------------------------------------------------
-    Converts the units of a retrieved variable to specified output units.
+    """Converts the units of a retrieved variable to specified output units.
 
     If the 'input_units' property is set then that string is used to determine the input
     input units, otherwise the converter will attempt to look up and use the 'units'
     attribute on the specified variable in the dataset provided to the `convert` method.
     If the input units cannot be set then a warning is issued and the original dataset
-    is returned. The output units are specified by the output dataset configuration.
-
-    Args:
-        input_units (Optional[str]): The units that the retrieved data comes in.
-
-    ---------------------------------------------------------------------------------"""
+    is returned. The output units are specified by the output dataset configuration."""
 
     # IDEA: Validate the literal value of the input units string according to pint
     input_units: Optional[str] = None

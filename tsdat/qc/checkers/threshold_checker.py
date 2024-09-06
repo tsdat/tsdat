@@ -1,23 +1,13 @@
 from abc import ABC
-import xarray as xr
 from typing import Union
+
+import xarray as xr
 
 from ..base import QualityChecker
 
 
 class ThresholdChecker(QualityChecker, ABC):
-    """---------------------------------------------------------------------------------
-    Base class for checks that use a variable attribute to specify a threshold.
-
-    Args:
-        attribute_name (str): The name of the attribute containing the maximum
-            threshold. If the attribute ends in '_range' then it is assumed to be a
-            list, and the first value from the list will be used as the minimum
-            threshold.
-        allow_equal (bool): True if values equal to the threshold should pass the check,
-            False otherwise.
-
-    ---------------------------------------------------------------------------------"""
+    """Base class for checks that use a variable attribute to specify a threshold."""
 
     allow_equal: bool = True
     """True if values equal to the threshold should pass, False otherwise."""

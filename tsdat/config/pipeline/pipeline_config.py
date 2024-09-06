@@ -8,6 +8,7 @@ from pydantic import (
     ValidationError,
     root_validator,
 )
+from typing_extensions import Self
 
 from ...config.retriever import RetrieverConfig
 from ...pipeline.base import Pipeline
@@ -35,8 +36,7 @@ def get_resolved_cfg_path(
 
 
 class PipelineConfig(ParameterizedConfigClass, extra=Extra.allow):
-    """---------------------------------------------------------------------------------
-    Contains configuration parameters for tsdat pipelines.
+    """Contains configuration parameters for tsdat pipelines.
 
     This class is ultimately converted into a tsdat.pipeline.base.Pipeline subclass that
     will be used to process data.
@@ -44,29 +44,7 @@ class PipelineConfig(ParameterizedConfigClass, extra=Extra.allow):
     Provides methods to support yaml parsing and validation, including the generation of
     json schema for immediate validation. This class also provides a method to
     instantiate a tsdat.pipeline.base.Pipeline subclass from a parsed configuration
-    file.
-
-    Args:
-        classname (str): The dotted module path to the pipeline that the specified
-            configurations should apply to. To use the built-in IngestPipeline, for
-            example, you would set 'tsdat.pipeline.pipelines.IngestPipeline' as the
-            classname.
-        triggers (List[Pattern[str]]): A list of regex patterns that should trigger this
-            pipeline when matched with an input key.
-        retriever (Union[Overrideable[RetrieverConfig], RetrieverConfig]): Either the
-            path to the retriever configuration yaml file and any overrides that should
-            be applied, or the retriever configurations themselves.
-        dataset (Union[Overrideable[DatasetConfig], DatasetConfig]): Either the path to
-            the dataset configuration yaml file and any overrides that should be
-            applied, or the dataset configurations themselves.
-        quality (Union[Overrideable[QualityConfig], QualityConfig]): Either the path to
-            the quality configuration yaml file and any overrides that should be
-            applied, or the quality configurations themselves.
-        storage (Union[Overrideable[StorageConfig], StorageConfig]): Either the path to
-            the storage configuration yaml file and any overrides that should be
-            applied, or the storage configurations themselves.
-
-    ---------------------------------------------------------------------------------"""
+    file."""
 
     # IDEA: Add a root validator to ensure that properties from the quality config align
     # with dataset config properties -- e.g., includes / excludes are real variables,
@@ -78,6 +56,8 @@ class PipelineConfig(ParameterizedConfigClass, extra=Extra.allow):
         " to match the desired input keys without any false positive matches (this is"
         " more important in repositories with many pipelines)."
     )
+    """A list of regex patterns that should trigger this pipeline when matched with an
+    input key."""
 
     # Overrideable is used to trick pydantic into letting us generate json schema for
     # these objects, but during construction these are converted into the actual
@@ -85,18 +65,29 @@ class PipelineConfig(ParameterizedConfigClass, extra=Extra.allow):
     retriever: Union[Overrideable[RetrieverConfig], RetrieverConfig] = Field(
         description="Specify the retrieval configurations that the pipeline should use."
     )
+    """Either the path to the retriever configuration yaml file and any overrides that
+    should be applied, or the retriever configurations themselves."""
+
     dataset: Union[Overrideable[DatasetConfig], DatasetConfig] = Field(
         description="Specify the dataset configurations that describe the structure and"
         " metadata of the dataset produced by this pipeline.",
     )
+    """Either the path to the dataset configuration yaml file and any overrides that
+    should be applied, or the dataset configurations themselves."""
+
     quality: Union[Overrideable[QualityConfig], QualityConfig] = Field(
         description="Specify the quality checks and controls that should be applied to"
         " the dataset as part of this pipeline."
     )
+    """Either the path to the quality configuration yaml file and any overrides that
+    should be applied, or the quality configurations themselves."""
+
     storage: Union[Overrideable[StorageConfig], StorageConfig] = Field(
         description="Specify the Storage configurations that should be used to save"
         " data produced by this pipeline."
     )
+    """Either the path to the storage configuration yaml file and any overrides that
+    should be applied, or the storage configurations themselves."""
 
     cfg_filepath: Optional[Path] = None
     """The path to the yaml config file used to instantiate this class. Set via the
@@ -123,7 +114,9 @@ class PipelineConfig(ParameterizedConfigClass, extra=Extra.allow):
         return values
 
     @classmethod
-    def from_yaml(cls, filepath: Path, overrides: Optional[Dict[str, Any]] = None):
+    def from_yaml(
+        cls, filepath: Path, overrides: Optional[Dict[str, Any]] = None
+    ) -> Self:
         """Creates a python configuration object from a yaml file.
 
         Args:

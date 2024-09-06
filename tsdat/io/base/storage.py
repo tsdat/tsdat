@@ -26,18 +26,8 @@ from .data_handler import DataHandler
 
 
 class Storage(ParameterizedClass, ABC):
-    """---------------------------------------------------------------------------------
-    Abstract base class for the tsdat Storage API. Subclasses of Storage are used in
-    pipelines to persist data and ancillary files (e.g., plots).
-
-    Args:
-        parameters (Any): Configuration parameters for the Storage API. The specific
-            parameters that are allowed will be defined by subclasses of this base
-            class.
-        handler (DataHandler): The DataHandler responsible for handling both read and
-            write operations needed by the storage API.
-
-    ---------------------------------------------------------------------------------"""
+    """Abstract base class for the tsdat Storage API. Subclasses of Storage are used in
+    pipelines to persist data and ancillary files (e.g., plots)."""
 
     class Parameters(BaseSettings):
         storage_root: Path = Field(Path("storage/root"), env="TSDAT_STORAGE_ROOT")
@@ -217,8 +207,6 @@ class Storage(ParameterizedClass, ABC):
             root_dir (Path | None, optional): The root directory. If using a temporary
                 (uploadable) directory, it is recommended to use that as the root_dir.
                 Defaults to None.
-            mkdirs (bool, optional): True if directories should be created, False
-                otherwise. Defaults to True.
             **kwargs (str): Extra kwargs to use as substitutions for the ancillary
                 storage path or filename templates, which may require more parameters
                 than those already specified as arguments here. Defaults to

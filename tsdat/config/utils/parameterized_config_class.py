@@ -3,7 +3,6 @@ from typing import (
     Dict,
 )
 
-from jsonpointer import set_pointer  # type: ignore
 from pydantic import (
     BaseModel,
     Extra,
@@ -24,6 +23,10 @@ class ParameterizedConfigClass(BaseModel, extra=Extra.forbid):
             " classname would be `foo.bar.Baz`."
         ),
     )
+    """The dotted module path to the pipeline that the specified configurations should
+    apply to. To use the built-in IngestPipeline, for example, you would set
+    'tsdat.pipeline.pipelines.IngestPipeline' as the classname."""
+
     parameters: Dict[str, Any] = Field(
         {},
         description=(

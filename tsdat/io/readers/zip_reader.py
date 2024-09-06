@@ -22,7 +22,7 @@ class ZipReader(ArchiveReader):
     readers:
       .*:
         zip:
-          file_pattern: .*\.zip
+          file_pattern: .*zip
           classname: tsdat.io.readers.ZipReader
           parameters:
             # Parameters to specify how the ZipReader should read/unpack the archive.
@@ -40,7 +40,7 @@ class ZipReader(ArchiveReader):
             # The readers section tells the ZipReaders which DataReaders should be
             # used to read the unpacked files.
             readers:
-              .*\.csv:
+              .*csv:
                 classname: tsdat.io.readers.CSVReader
                 parameters:  # Parameters specific to tsdat.io.readers.CsvReader
                     read_csv_kwargs:
@@ -48,7 +48,7 @@ class ZipReader(ArchiveReader):
 
             # Pattern(s) used to exclude certain files in the archive from being handled.
             # This parameter is optional, and the default value is shown below:
-            exclude: ['.*\_\_MACOSX/.*', '.*\.DS_Store']
+            exclude: ['.*__MACOSX/.*', '.*DS_Store']
     ```
 
     """
@@ -62,23 +62,16 @@ class ZipReader(ArchiveReader):
     parameters: Parameters = Parameters()
 
     def read(self, input_key: str) -> Dict[str, xr.Dataset]:
-        """------------------------------------------------------------------------------------
-        Extracts the file into memory and uses registered `DataReaders` to read each relevant
+        """Extracts the file into memory and uses registered `DataReaders` to read each relevant
         extracted file into its own xarray Dataset object. Returns a mapping like
         {filename: xr.Dataset}.
 
         Args:
             input_key (Union[str, BytesIO]): The file to read in. Can be provided as a filepath or
-            a bytes-like object. It is used to open the zip file.
-            name (str, optional): A label used to help trace the origin of the data read-in.
-            It is used in the key in the returned dictionary. Must be provided if the `file`
-            argument is not string-like. If `file` is a string and `name` is not specified then
-            the label will be set by `file`. Defaults to None.
+                a bytes-like object. It is used to open the zip file.
 
         Returns:
             Dict[str, xr.Dataset]: A mapping of {label: xr.Dataset}.
-
-        ------------------------------------------------------------------------------------
         """
         output: Dict[str, xr.Dataset] = {}
 

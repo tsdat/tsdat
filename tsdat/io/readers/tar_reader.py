@@ -1,8 +1,7 @@
-from typing import Optional
 import re
 import tarfile
 from io import BytesIO
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import xarray as xr
 from pydantic import BaseModel, Extra
@@ -23,7 +22,7 @@ class TarReader(ArchiveReader):
     readers:
       .*:
         tar:
-          file_pattern: .*\.tar
+          file_pattern: .*tar
           classname: tsdat.io.readers.TarReader
           parameters:
             # Parameters to specify how the TarReader should read/unpack the archive.
@@ -42,7 +41,7 @@ class TarReader(ArchiveReader):
             # The readers section tells the TarReader which DataReaders should be
             # used to handle the unpacked files.
             readers:
-              .*\.csv:
+              .*csv:
                 classname: tsdat.io.readers.CSVReader
                 parameters:  # Parameters specific to tsdat.io.readers.CSVReader
                   read_csv_kwargs:
@@ -50,7 +49,7 @@ class TarReader(ArchiveReader):
 
             # Pattern(s) used to exclude certain files in the archive from being handled.
             # This parameter is optional, and the default value is shown below:
-            exclude: ['.*\_\_MACOSX/.*', '.*\.DS_Store']
+            exclude: ['.*__MACOSX/.*', '.*DS_Store']
     ```
 
     """

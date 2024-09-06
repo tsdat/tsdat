@@ -18,18 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 class DatasetConfig(YamlModel, extra=Extra.forbid):
-    """---------------------------------------------------------------------------------
-    Defines the structure and metadata of the dataset produced by a tsdat pipeline.
+    """Defines the structure and metadata of the dataset produced by a tsdat pipeline.
 
     Also provides methods to support yaml parsing and validation, including generation
-    of json schema.
-
-    Args:
-        attrs (GlobalAttributes): Attributes that pertain to the dataset as a whole.
-        coords (Dict[str, Coordinate]): The dataset's coordinate variables.
-        data_vars (Dict[str, Variable]): The dataset's data variables.
-
-    ---------------------------------------------------------------------------------"""
+    of json schema."""
 
     # NOTE: it's not currently possible to define a data model for Coordinates as a dict
     # *and* enforce in the schema that it contains certain variables (e.g., time). This
@@ -42,6 +34,8 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
             " attributes that are specific to individual variables."
         )
     )
+    """Attributes that pertain to the dataset as a whole."""
+
     coords: Dict[str, Coordinate] = Field(
         description=(
             "This section defines the coordinate variables that the rest of the data"
@@ -55,14 +49,17 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
             " <name> is the name of the coord (e.g., 'time')."
         ),
     )
+    """The dataset's coordinate variables."""
+
     data_vars: Dict[str, Variable] = Field(
         description=(
             "This section defines the data variables that the output dataset will"
             " contain. Variable data can either be retrieved from an input data source,"
-            " defined statically via the 'data' property, or initalized to missing and"
+            " defined statically via the 'data' property, or initialized to missing and"
             " set dynamically via user code in a tsdat pipeline."
         ),
     )
+    """The dataset's data variables."""
 
     @validator("coords")
     def time_in_coords(cls, coords: Dict[str, Coordinate]) -> Dict[str, Coordinate]:

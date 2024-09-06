@@ -15,10 +15,10 @@ from ...utils import ParameterizedClass, model_to_dict
 
 
 class Pipeline(ParameterizedClass, ABC):
-    """------------------------------------------------------------------------------------
+    """---
     Base class for tsdat data pipelines.
 
-    ------------------------------------------------------------------------------------
+    ---
     """
 
     settings: Any = None
@@ -48,7 +48,7 @@ class Pipeline(ParameterizedClass, ABC):
 
         Args:
             inputs (List[str]): A list of input keys that the pipeline's Retriever class
-            can use to load data into the pipeline.
+                can use to load data into the pipeline.
 
         Returns:
             xr.Dataset: The processed dataset.

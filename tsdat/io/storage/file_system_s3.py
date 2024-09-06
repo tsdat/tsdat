@@ -22,16 +22,7 @@ class S3Object(Protocol):
 
 
 class FileSystemS3(FileSystem):
-    """Handles data storage and retrieval for file-based data in an AWS S3 bucket.
-
-    Args:
-        parameters (Parameters): File-system and AWS-specific parameters, such as the
-            path to where files should be saved or additional keyword arguments to
-            specific functions used by the storage API. See the FileSystemS3.Parameters
-            class for more details.
-        handler (FileHandler): The FileHandler class that should be used to handle data
-            I/O within the storage API.
-    """
+    """Handles data storage and retrieval for file-based data in an AWS S3 bucket."""
 
     class Parameters(FileSystem.Parameters):  # type: ignore
         """Additional parameters for S3 storage.
@@ -61,6 +52,9 @@ class FileSystemS3(FileSystem):
             return storage_root  # HACK: Don't run parent validator to create storage root file
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
+    """ File-system and AWS-specific parameters, such as the path to where files should
+    be saved or additional keyword arguments to specific functions used by the storage
+    API. See the FileSystemS3.Parameters class for more details."""
 
     @validator("parameters")
     def _check_authentication(cls, parameters: Parameters):

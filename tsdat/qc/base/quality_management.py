@@ -7,19 +7,14 @@ from .quality_manager import QualityManager
 
 
 class QualityManagement(BaseModel, extra=Extra.forbid):
-    """---------------------------------------------------------------------------------
-    Main class for orchestrating the dispatch of QualityCheckers and QualityHandlers.
-
-    Args:
-        managers (List[QualityManager]): The list of QualityManagers that should be run.
-
-    ---------------------------------------------------------------------------------"""
+    """Main class for orchestrating the dispatch of QualityCheckers and
+    QualityHandlers."""
 
     managers: List[QualityManager]
+    """The list of QualityManagers that should be run."""
 
     def manage(self, dataset: xr.Dataset) -> xr.Dataset:
-        """-----------------------------------------------------------------------------
-        Runs the registered QualityManagers on the dataset.
+        """Runs the registered QualityManagers on the dataset.
 
         Args:
             dataset (xr.Dataset): The dataset to apply quality checks and controls to.
@@ -27,7 +22,7 @@ class QualityManagement(BaseModel, extra=Extra.forbid):
         Returns:
             xr.Dataset: The quality-checked dataset.
 
-        -----------------------------------------------------------------------------"""
+        """
         for manager in self.managers:
             dataset = manager.run(dataset)
         return dataset

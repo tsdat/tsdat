@@ -1,46 +1,30 @@
 import logging
 from typing import Any, Dict, Optional
 
-import act  # type: ignore
 import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
 from pydantic import validator
 
-from ..base import DataConverter, RetrievedDataset
 from ...config.dataset import DatasetConfig
+from ..base import DataConverter, RetrievedDataset
 
 logger = logging.getLogger(__name__)
 
 
 class StringToDatetime(DataConverter):
-    """------------------------------------------------------------------------------------
-    Converts date strings into datetime64 data.
+    """Converts date strings into datetime64 data.
 
     Allows parameters to specify the  string format of the input data, as well as the
     timezone the input data are reported in. If the input timezone is not UTC, the data
-    are converted to UTC time.
-
-    Args:
-        format (Optional[str]): The format of the string data. See strftime.org for more
-            information on what components can be used. If None (the default), then
-            pandas will try to interpret the format and convert it automatically. This
-            can be unsafe but is not explicitly prohibited, so a warning is issued if
-            format is not set explicitly.
-        timezone (Optional[str]): The timezone of the input data. If not specified it is
-            assumed to be UTC.
-        to_datetime_kwargs (Dict[str, Any]): A set of keyword arguments passed to the
-            pandas.to_datetime() function as keyword arguments. Note that 'format' is
-            already included as a keyword argument. Defaults to {}.
-
-    ------------------------------------------------------------------------------------
-    """
+    are converted to UTC time."""
 
     format: Optional[str] = None
     """The date format the string is using (e.g., '%Y-%m-%d %H:%M:%S' for date strings
     such as '2022-04-13 23:59:00'), or None (the default) to have pandas guess the
-    format automatically."""
+    format automatically. See strftime.org for more information on what formats can be
+    used."""
 
     timezone: Optional[str] = None
     """The timezone of the data to convert. If provided, this converter will apply the
@@ -48,8 +32,9 @@ class StringToDatetime(DataConverter):
     of the output data is assumed to always be UTC."""
 
     to_datetime_kwargs: Dict[str, Any] = {}
-    """Any parameters set here will be passed to `pd.to_datetime` as keyword
-    arguments."""
+    """A set of keyword arguments passed to the pandas.to_datetime() function as
+    keyword arguments. Note that 'format' is already included as a keyword argument.
+    Defaults to {}."""
 
     @validator("format")
     def warn_if_no_format_set(cls, format: Optional[str]) -> Optional[str]:

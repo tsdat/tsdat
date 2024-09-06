@@ -1,25 +1,20 @@
 from abc import ABC
+from typing import Any, Union
+
 import numpy as np
 import xarray as xr
-from pydantic import BaseModel, Extra
-from typing import Any, Union
 from numpy.typing import NDArray
+from pydantic import BaseModel, Extra
 
 from .threshold_checker import ThresholdChecker
 
 
 class CheckDelta(ThresholdChecker, ABC):
-    """---------------------------------------------------------------------------------
-    Checks for deltas between consecutive values larger than a specified threshold.
+    """Checks for deltas between consecutive values larger than a specified threshold.
 
     Checks the difference between consecutive values and reports a failure if the
     difference is less than the threshold specified by the value in the attribute
-    provided to this check.
-
-    Args:
-        attribute_name (str): The name of the attribute containing the threshold to use.
-
-    ---------------------------------------------------------------------------------"""
+    provided to this check."""
 
     class Parameters(BaseModel, extra=Extra.forbid):
         dim: str = "time"

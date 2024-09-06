@@ -12,24 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 class ZarrLocalStorage(FileSystem):
-    """---------------------------------------------------------------------------------
-    Handles data storage and retrieval for zarr archives on a local filesystem.
+    """Handles data storage and retrieval for zarr archives on a local filesystem.
 
     Zarr is a special format that writes chunked data to a number of files underneath
     a given directory. This distribution of data into chunks and distinct files makes
     zarr an extremely well-suited format for quickly storing and retrieving large
-    quantities of data.
-
-    Args:
-        parameters (Parameters): File-system specific parameters, such as the root path
-            to where the Zarr archives should be saved, or additional keyword arguments
-            to specific functions used by the storage API. See the Parameters class for
-            more details.
-
-        handler (ZarrHandler): The ZarrHandler class that should be used to handle data
-            I/O within the storage API.
-
-    ---------------------------------------------------------------------------------"""
+    quantities of data."""
 
     class Parameters(FileSystem.Parameters):
         data_storage_path: Path = Path("data/{location_id}")
@@ -60,7 +48,13 @@ class ZarrLocalStorage(FileSystem):
         """
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
+    """File-system specific parameters, such as the root path to where the Z arr
+    archives should be saved, or additional keyword arguments to specific functions used
+    by the storage API. See the Parameters class for more details."""
+
     handler: ZarrHandler = Field(default_factory=ZarrHandler)
+    """The ZarrHandler class that should be used to handle data I/O within the storage
+    API."""
 
     def last_modified(self, datastream: str) -> datetime | None:
         logger.warning("ZarrLocalStorage does not support last_modified()")

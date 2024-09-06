@@ -12,16 +12,10 @@ from .data_writer import DataWriter
 
 
 class FileWriter(DataWriter, ABC):
-    """---------------------------------------------------------------------------------
-    Base class for file-based DataWriters.
-
-    Args:
-        file_extension (str): The file extension that the FileHandler should be used
-            for, e.g., ".nc", ".csv", ...
-
-    ---------------------------------------------------------------------------------"""
+    """Base class for file-based DataWriters."""
 
     file_extension: str
+    """The file extension that the FileHandler should be used for, e.g., ".nc", ".csv", ..."""
 
     @validator("file_extension")
     def no_leading_dot(cls, v: str) -> str:

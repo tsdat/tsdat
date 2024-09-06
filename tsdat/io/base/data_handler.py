@@ -6,13 +6,13 @@ from typing import (
 from pydantic import Field, validator
 from pydantic.fields import ModelField
 
+from ...utils import ParameterizedClass
 from .data_reader import DataReader
 from .data_writer import DataWriter
-from ...utils import ParameterizedClass
 
 
 class DataHandler(ParameterizedClass):
-    """---------------------------------------------------------------------------------
+    """
     Groups a DataReader subclass and a DataWriter subclass together.
 
     This provides a unified approach to data I/O. DataHandlers are typically expected
@@ -20,16 +20,15 @@ class DataHandler(ParameterizedClass):
 
         `handler.read(handler.write(dataset))) == dataset`
 
-    Args:
-        reader (DataReader): The DataReader subclass responsible for reading input data.
-        writer (FileWriter): The FileWriter subclass responsible for writing output
-        data.
-
-    ---------------------------------------------------------------------------------"""
+    """
 
     parameters: Dict[str, Any] = Field(default_factory=dict)
+
     reader: DataReader
+    """The DataReader subclass responsible for reading input data."""
+
     writer: DataWriter
+    """The FileWriter subclass responsible for writing output data."""
 
     @validator("reader", "writer", pre=True, check_fields=False, always=True)
     def patch_parameters(cls, v: DataReader, values: Dict[str, Any], field: ModelField):
