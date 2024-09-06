@@ -47,6 +47,7 @@ nav:
       - Pipeline Code Hooks: config/hook_functions.md
       - Transformation Pipelines: config/transform_config.md
       - Pydantic and Parameters: config/pydantic.md
+      - Common Errors: config/errors.md
   - API Reference: API/
   - Contributing: collaboration.md
   - Extras: extras/
