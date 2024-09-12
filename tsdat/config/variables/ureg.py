@@ -8,6 +8,12 @@ ureg.define("@alias degree_Fahrenheit = degree_F")
 ureg.define("@alias degree_Celsius = degree_C")
 ureg.define("@alias degree_Rankine = degree_R")
 ureg.define("@alias kelvin = Kelvin")
+# Salinity
+ureg.define("psu = []")
+# Parts per
+ureg.define("ppm = 1e-6")
+ureg.define("ppb = 1e-9")
+ureg.define("ppt = 1e-12")
 # Percent
 ureg.define("@alias percent = %")
 # Other
