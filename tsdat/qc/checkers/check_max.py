@@ -22,7 +22,10 @@ class CheckMax(ThresholdChecker, ABC):
         dataset: xr.Dataset,
         variable_name: str,
     ) -> Union[NDArray[np.bool_], None]:
-        var_data = dataset[variable_name]
+
+        var_data = dataset[variable_name].where(
+            dataset[variable_name] != dataset[variable_name]._FillValue
+        )
         failures: NDArray[np.bool_] = np.zeros_like(var_data, dtype=np.bool_)  # type: ignore
 
         max_value = self._get_threshold(dataset, variable_name, min_=False)
