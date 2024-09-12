@@ -58,6 +58,15 @@ class RecordQualityResults(QualityHandler):
         variable_name: str,
         failures: NDArray[np.bool_],
     ) -> xr.Dataset:
+
+        # Remove old QC variables from list in case variable name has changed
+        anc_var = getattr(dataset[variable_name], "ancillary_variables", None)
+        if isinstance(anc_var, str) and ("qc" in anc_var):
+            dataset[variable_name].attrs.pop("ancillary_variables")
+        elif isinstance(anc_var, list):
+            new_anc_var = [var for var in anc_var if "qc" not in var]
+            dataset[variable_name].attrs["ancillary_variables"] = new_anc_var
+
         dataset.qcfilter.add_test(
             variable_name,
             index=failures if failures.any() else None,
@@ -65,6 +74,7 @@ class RecordQualityResults(QualityHandler):
             test_meaning=self.parameters.meaning,
             test_assessment=self.parameters.assessment,
         )
+
         return dataset
 
     @staticmethod
