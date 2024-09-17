@@ -40,7 +40,6 @@ def sample_dataset() -> xr.Dataset:
                     "fail_std": 5,
                     "warn_std": 1,
                     "_FillValue": -9999,
-                    "ancillary_variables": "qc_monotonic_variable",
                 },
             ),
             "other_var": (

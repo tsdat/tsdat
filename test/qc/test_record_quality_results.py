@@ -41,6 +41,11 @@ def test_record_quality_results(
     handler = RecordQualityResults(
         parameters={"assessment": "Indeterminate", "meaning": "bar"}  # type: ignore
     )
+    # Manually add "ancillary_variables" attr - emulate changing variable name in VAP
+    dataset["monotonic_var"].attrs["ancillary_variables"] = [
+        "qc_monotonic_var",
+        "monotonic_variable",
+    ]
     dataset = handler.run(dataset, "monotonic_var", test_2_failed)
 
     caplog.set_level(logging.WARNING)

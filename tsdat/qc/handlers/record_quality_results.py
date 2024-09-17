@@ -61,11 +61,9 @@ class RecordQualityResults(QualityHandler):
 
         # Remove old QC variables from list in case variable name has changed
         anc_var = getattr(dataset[variable_name], "ancillary_variables", None)
-        if isinstance(anc_var, str) and ("qc" in anc_var):
+        # act-atmos's qcfilter can't handle multiple ancillary_variables
+        if anc_var is not None:
             dataset[variable_name].attrs.pop("ancillary_variables")
-        elif isinstance(anc_var, list):
-            new_anc_var = [var for var in anc_var if "qc" not in var]
-            dataset[variable_name].attrs["ancillary_variables"] = new_anc_var
 
         dataset.qcfilter.add_test(
             variable_name,
