@@ -8,4 +8,4 @@ class CheckValidStd(CheckStd):
 
     ---------------------------------------------------------------------------------"""
 
-    attribute_name: str = "valid_n_std"
+    attribute_name: str = "valid_std"

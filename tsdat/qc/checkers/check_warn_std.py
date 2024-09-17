@@ -8,4 +8,4 @@ class CheckWarnStd(CheckStd):
 
     ---------------------------------------------------------------------------------"""
 
-    attribute_name: str = "warn_n_std"
+    attribute_name: str = "warn_std"

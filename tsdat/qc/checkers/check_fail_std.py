@@ -8,4 +8,4 @@ class CheckFailStd(CheckStd):
 
     ---------------------------------------------------------------------------------"""
 
-    attribute_name: str = "fail_n_std"
+    attribute_name: str = "fail_std"
