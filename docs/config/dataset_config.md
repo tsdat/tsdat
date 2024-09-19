@@ -52,3 +52,9 @@ data_vars:
       long_name: Example Variable  # Full descriptive name of the variable
       units: km  # Units of measurement for the variable
 ```
+
+## Units
+
+Units are an important (and required) metadata attribute on coordinates and data variables. Tsdat strongly recommends
+using units pulled from the [UDUNITS2](https://ncics.org/portfolio/other-resources/udunits2/) database. If the units are
+not known or if a particular variable is unitless, then `units: "1"` may be used.
