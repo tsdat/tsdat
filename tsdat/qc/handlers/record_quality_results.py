@@ -58,6 +58,13 @@ class RecordQualityResults(QualityHandler):
         variable_name: str,
         failures: NDArray[np.bool_],
     ) -> xr.Dataset:
+
+        # Remove old QC variables from list in case variable name has changed
+        anc_var = getattr(dataset[variable_name], "ancillary_variables", None)
+        # act-atmos's qcfilter can't handle multiple ancillary_variables
+        if anc_var is not None:
+            dataset[variable_name].attrs.pop("ancillary_variables")
+
         dataset.qcfilter.add_test(
             variable_name,
             index=failures if failures.any() else None,
@@ -65,6 +72,7 @@ class RecordQualityResults(QualityHandler):
             test_meaning=self.parameters.meaning,
             test_assessment=self.parameters.assessment,
         )
+
         return dataset
 
     @staticmethod

@@ -10,6 +10,7 @@ from tsdat.qc.checkers import (
     CheckFailMin,
     CheckFailRangeMax,
     CheckFailRangeMin,
+    CheckFailStd,
     CheckMissing,
     CheckMonotonic,
     CheckValidDelta,
@@ -17,11 +18,13 @@ from tsdat.qc.checkers import (
     CheckValidMin,
     CheckValidRangeMax,
     CheckValidRangeMin,
+    CheckValidStd,
     CheckWarnDelta,
     CheckWarnMax,
     CheckWarnMin,
     CheckWarnRangeMax,
     CheckWarnRangeMin,
+    CheckWarnStd,
 )
 
 
@@ -34,6 +37,7 @@ from tsdat.qc.checkers import (
         (CheckFailMin, {}, "monotonic_var", [True, False, False, False]),
         (CheckFailRangeMax, {"allow_equal": False}, "monotonic_var", [False, False, True, True]),
         (CheckFailRangeMin, {}, "monotonic_var", [True, False, False, False]),
+        (CheckFailStd, {}, "monotonic_var", [False, False, False, False]),
         (CheckMissing, {}, "missing_var", [True, True, False, False]),
         (CheckMissing, {}, "string_var", [False, True, True, False]),
         (CheckMissing, {}, "time", [False, False, False, False]),
@@ -52,11 +56,14 @@ from tsdat.qc.checkers import (
         (CheckValidMin, {}, "monotonic_var", [True, False, False, False]),
         (CheckValidRangeMax, {"allow_equal": False}, "monotonic_var", [False, False, True, True]),
         (CheckValidRangeMin, {}, "monotonic_var", [True, False, False, False]),
+        (CheckValidStd, {}, "string_var", None),
+        (CheckValidStd, {}, "monotonic_var", [False, False, False, False]),
         (CheckWarnDelta, {}, "monotonic_var", [False, False, False, True]),
         (CheckWarnMax, {"allow_equal": False}, "monotonic_var", [False, False, True, True]),
         (CheckWarnMin, {}, "monotonic_var", [True, False, False, False]),
         (CheckWarnRangeMax, {"allow_equal": False}, "monotonic_var", [False, False, True, True]),
         (CheckWarnRangeMin, {}, "monotonic_var", [True, False, False, False]),
+        (CheckWarnStd, {}, "monotonic_var", [False, False, False, True]),
     ],
 )
 def test_checkers(

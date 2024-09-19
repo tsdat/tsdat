@@ -8,8 +8,9 @@ from numpy.typing import NDArray
 from .threshold_checker import ThresholdChecker
 
 
-class CheckMax(ThresholdChecker, ABC):
-    """Checks for values larger than a specified threshold.
+class CheckStd(ThresholdChecker, ABC):
+    """Checks data for elements greater than a specified number of standard deviations
+    away from the mean.
 
     The value of the threshold is specified by an attribute on each data variable, and
     the attribute to search for is specified as a property of this base class.
@@ -30,13 +31,12 @@ class CheckMax(ThresholdChecker, ABC):
             )
         failures: NDArray[np.bool_] = np.zeros_like(var_data, dtype=np.bool_)  # type: ignore
 
-        max_value = self._get_threshold(dataset, variable_name, min_=False)
-        if max_value is None:
+        threshold = self._get_threshold(dataset, variable_name, True)
+        if threshold is None:
             return None
 
-        if self.allow_equal:
-            failures = np.greater(var_data.data, max_value)
-        else:
-            failures = np.greater_equal(var_data.data, max_value)
+        std_dev = var_data.std(dim="time", ddof=1)
+        mean = var_data.mean(dim="time")
+        failures = (var_data > mean + std_dev * threshold).values
 
         return failures
