@@ -719,7 +719,7 @@ class WaveCheckFactor(QualityChecker):
     """Checks for where the wave factor is nan or negative and returns a mask where bad values are labeled as
     True. This function runs on a variable-by-variable basis."""
 
-    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool8]:
+    def run(self, dataset: xr.Dataset, variable_name: str) -> NDArray[np.bool_]:
 
         if "frequency" in dataset[variable_name].dims:
             check_factor = dataset["wave_check_factor"]
