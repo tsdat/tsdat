@@ -126,6 +126,9 @@ class StorageRetriever(Retriever):
                     retrieved_data.coords[name] = data
 
         for name, var_def in retrieval_selections.data_vars.items():
+            if not retrieved_data.data_vars[name].size:
+                retrieved_data.data_vars.pop(name)
+                continue
             for converter in var_def.data_converters:
                 var_data = retrieved_data.data_vars[name]
                 data = converter.convert(

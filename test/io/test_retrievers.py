@@ -238,7 +238,6 @@ def test_storage_retriever_2D(
             ),
             "humidity": ("time", [0, 10, 20]),
             "pressure": ("height", [15, 10, 5]),
-            "dummy": ("dim_0", []),
         },
         attrs={"datastream": "humboldt.buoy.b1"},
     )
