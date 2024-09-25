@@ -3,6 +3,13 @@ from pint import UnitRegistry
 
 ureg = UnitRegistry(autoconvert_offset_to_baseunit=True)
 
+# Latitude/Longitude
+ureg.define("@alias degree = degree_north")
+ureg.define("@alias degree = degree_N")
+ureg.define("@alias degree = degN")
+ureg.define("@alias degree = degree_east")
+ureg.define("@alias degree = degree_E")
+ureg.define("@alias degree = degE")
 # Temperature
 ureg.define("@alias degree_Fahrenheit = degree_F")
 ureg.define("@alias degree_Celsius = degree_C")
