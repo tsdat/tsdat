@@ -72,5 +72,10 @@ class Variable(BaseModel, extra=Extra.forbid):
             or ("datetime" in dtype)
         ):
             return attrs
-        attrs.fill_value = np.array([-9999.0], dtype=dtype)[0]  # type: ignore
+        # int8 and uint8, uint16, uint32
+        elif ("int8" in dtype) or ("uint" in dtype):
+            fill_value = np.iinfo(dtype).min
+        else:
+            fill_value = -9999
+        attrs.fill_value = np.array([fill_value], dtype=dtype)[0]  # type: ignore
         return attrs
