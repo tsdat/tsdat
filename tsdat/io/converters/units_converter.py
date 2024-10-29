@@ -44,7 +44,12 @@ class UnitsConverter(DataConverter):
             return None
 
         input_units = self._get_input_units(data, variable_name)
-        if (not input_units) or (input_units == output_units):
+        if (
+            (not input_units)
+            or (input_units == "1")
+            or (output_units == "1")
+            or (input_units == output_units)
+        ):
             data_array = data.copy().astype(dataset_config[variable_name].dtype)
             data_array.attrs["units"] = dataset_config[variable_name].attrs.units
             return data_array
@@ -68,13 +73,15 @@ class UnitsConverter(DataConverter):
         )
         return data_array
 
-    def _get_input_units(self, data: xr.DataArray | None, variable_name: str) -> str | None:
+    def _get_input_units(
+        self, data: xr.DataArray | None, variable_name: str
+    ) -> str | None:
         input_units = None
         if self.input_units:
             input_units = self.input_units.strip()
         elif data is not None and "units" in data.attrs:
             input_units = data.attrs["units"].strip()
-        
+
         if input_units is None or not input_units:
             return None
 
@@ -86,10 +93,10 @@ class UnitsConverter(DataConverter):
                 " are set in the retrieval configuration file for the specified"
                 " variable.",
                 variable_name,
+                input_units,
             )
             return None
         return input_units
-
 
     def _get_output_units(self, var_config: Variable) -> str | None:
         # Get output units and convert udunits for pint if need be
