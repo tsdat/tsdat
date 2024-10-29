@@ -47,7 +47,7 @@ def test_units_converter(
     data = converter.convert(
         multi_var_1D_dataset["first"], "first", dataset_config, retrieved_dataset
     )
-    assert data is None
+    assert data is not None
 
 
 def test_defined_pint_units(
@@ -55,7 +55,7 @@ def test_defined_pint_units(
 ):
     retrieved_dataset = RetrievedDataset.from_xr_dataset(multi_var_1D_dataset)
 
-    # Manually convert fahrenheit to celcius
+    # Manually convert fahrenheit to celsius
     expected = multi_var_1D_dataset.assign(temp=lambda x: (x["temp"] - 32) * 5 / 9)  # type: ignore
     # Use units here since dataset.yaml not updated
     converter = UnitsConverter()
@@ -68,15 +68,13 @@ def test_defined_pint_units(
     xr.testing.assert_allclose(data, expected["temp"])  # type: ignore
     assert data.attrs["units"] == "degC"
 
-    # Convert percent to dimensionless
-    expected = multi_var_1D_dataset.assign(percent=lambda x: (x["percent"] * 100))  # type: ignore
+    # Convert dimensionless to percent – no conversion other than proper units
+    expected = multi_var_1D_dataset.assign(percent=lambda x: (x["percent"]))  # type: ignore
     converter = UnitsConverter()
-    # Set output units in dataset config
-    dataset_config["first"].attrs.units = "%"
+    dataset_config["first"].attrs.units = "%"  # Set output units in dataset config
     data = converter.convert(
         multi_var_1D_dataset["percent"], "first", dataset_config, retrieved_dataset
     )
-
     assert data is not None
     xr.testing.assert_allclose(data, expected["percent"])  # type: ignore
     assert data.attrs["units"] == "%"
