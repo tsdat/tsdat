@@ -1,17 +1,16 @@
 from typing import Any, Optional
+import numpy as np
 import xarray as xr
 
+from ._create_bounds import _create_bounds
 from ._base_transform import _base_transform
 from ..base import DataConverter, RetrievedDataset
 from ...config.dataset import DatasetConfig
 from ...io.retrievers import StorageRetriever
 
 
-class NearestNeighbor(DataConverter):
-    """Maps data onto the specified coordinate grid using nearest-neighbor."""
-
+class BinAverage(DataConverter):
     coord: str = "time"
-    """The coordinate axis this converter should be applied on. Defaults to 'time'."""
 
     def convert(
         self,
@@ -53,32 +52,26 @@ class NearestNeighbor(DataConverter):
             [self.coord] if hasattr(self, "coord") else output_coord_names
         )
         for coord_name in transform_coords:
-            range = trans_params["range"].get(coord_name)
+            width = trans_params["width"].get(coord_name)
+            align = trans_params["alignment"].get(coord_name, "CENTER")
 
-            # Won't need __trim_dataset after this function
-            # I don't know how to copy libtrans's use of the range parameter here,
-            # as the range parameter is equivalent to the interpolated timegrid resolution
-            # Maybe that's fine...
-
-            # Create an empty DataArray with the shape we want to achieve
-            target_coord = retrieved_dataset.coords[coord_name]
-            coord_index = dataset_config[variable_name].dims.index(coord_name)
-            current_coord_name = tuple(data.coords.keys())[coord_index]
-            new_coords = {
-                k: v.data if k != current_coord_name else target_coord.data
-                for k, v in output_coord_data.items()
-            }
-            tmp_data = xr.DataArray(coords=new_coords, dims=tuple(new_coords))
-            # Do nearest neighbor algorithm
-            trans_output_ds = trans_input_ds.reindex_like(
-                other=tmp_data,
-                method="nearest",
-                # tolerance=range,
+            # Groupby_bins allows us to define the width and aligment based on timegrid
+            # creates bounds based on alignment and width
+            bounds = _create_bounds(
+                output_coord_data[coord_name],
+                alignment=align,  # type: ignore
+                width=width,
             )
+            temp = trans_input_ds.groupby_bins(
+                coord_name,
+                bins=bounds,
+                labels=output_coord_data[coord_name].values,
+            )
+            # Mean should be a custom function to handle QC? Or just mask out completely
+            trans_output_ds = temp.mean()
 
         # Update the retrieved dataset object with the transformed data variable and
         # associated qc variable outputs.
-        # BUG QC vars aren't carried through to output dataset
         retrieved_dataset.data_vars[variable_name] = trans_output_ds[variable_name]
         retrieved_dataset.data_vars[f"qc_{variable_name}"] = trans_output_ds[
             f"qc_{variable_name}"

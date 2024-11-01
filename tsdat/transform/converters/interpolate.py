@@ -1,6 +1,5 @@
-from ._base_transformer import _baseTransformer
+from ._adi_base_transformer import _ADIBaseTransformer
 
 
-class Interpolate(_baseTransformer):
+class Interpolate(_ADIBaseTransformer):
     transformation_type: str = "TRANS_INTERPOLATE"
-    method: str = "linear"

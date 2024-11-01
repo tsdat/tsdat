@@ -1,5 +1,4 @@
 from ._adi_base_transformer import _ADIBaseTransformer
-from ._base_transformer import _baseTransformer
 from .automatic import Automatic
 from .bin_average import BinAverage
 from .create_time_grid import CreateTimeGrid

@@ -6,11 +6,15 @@
 #  IDEA: "@data_converter()" decorator so DataConverters can be defined as functions in
 #  user code. Arguments to data_converter can be parameters to the class.
 
+from .bin_average import BinAverage
+from .interpolate import Interpolate
 from .nearest_neighbor import NearestNeighbor
 from .string_to_datetime import StringToDatetime
 from .units_converter import UnitsConverter
 
 __all__ = [
+    "BinAverage",
+    "Interpolate",
     "NearestNeighbor",
     "StringToDatetime",
     "UnitsConverter",
