@@ -74,8 +74,6 @@ class NearestNeighbor(DataConverter):
             [self.coord] if hasattr(self, "coord") else output_coord_names
         )
         for coord_name in transform_coords:
-            rng = trans_params["range"].get(coord_name, None)
-
             # Create an empty DataArray with the shape we want to achieve
             target_coord = retrieved_dataset.coords[coord_name]
             coord_index = dataset_config[variable_name].dims.index(coord_name)
@@ -87,13 +85,14 @@ class NearestNeighbor(DataConverter):
             tmp_data = xr.DataArray(coords=new_coords, dims=tuple(new_coords))
 
             # Get index tolerance from coordinate
+            rng = trans_params["range"].get(coord_name, None)
             tolerance = self._get_tolerance(data[current_coord_name], rng)
 
             # Do nearest neighbor algorithm
             trans_output_ds = trans_input_ds.reindex_like(
                 other=tmp_data,
                 method="nearest",
-                tolerance=tolerance,
+                tolerance=tolerance,  # type: ignore
             )
 
         # Update the retrieved dataset object with the transformed data variable and
