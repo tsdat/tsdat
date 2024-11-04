@@ -73,8 +73,7 @@ class Pipeline(ParameterizedClass, ABC):
         output_vars = (
             list(self.dataset_config.coords)
             + list(self.dataset_config.data_vars)
-            # BUG QC variables aren't carried through
-            # + ["qc_" + v for v in self.dataset_config.data_vars]
+            + [v for v in dataset.data_vars if "qc_" in v]
         )
         retrieved_variables = cast(List[str], list(dataset.variables))
         vars_to_drop = [ret for ret in retrieved_variables if ret not in output_vars]
@@ -85,6 +84,10 @@ class Pipeline(ParameterizedClass, ABC):
         dataset = self._add_dataset_variables(dataset, vars_to_add)
         dataset = self._add_dataset_attrs(dataset, output_vars)
         # TODO: reorder dataset coords / data vars to match the order in the config file
+
+        # BUG: can't carry through old QC variables
+        dataset = self._force_drop_qc(dataset)
+
         return dataset
 
     def _add_dataset_variables(
@@ -108,8 +111,14 @@ class Pipeline(ParameterizedClass, ABC):
 
     def _add_dataset_dtypes(self, dataset: xr.Dataset) -> xr.Dataset:
         for name in dataset.data_vars:
+            if ("qc" in name) and not hasattr(self.dataset_config, name):
+                continue
             dtype = self.dataset_config[name].dtype  # type: ignore
             dataset[name] = dataset[name].astype(dtype)
+            # Add QC variables (should be added in transform converter)
+            if f"qc_{name}" in dataset:
+                # Assuming missing values have a bit of 1
+                dataset[f"qc_{name}"] = dataset[f"qc_{name}"].fillna(1).astype(np.int32)
         return dataset
 
     def _add_dataset_attrs(
@@ -121,10 +130,25 @@ class Pipeline(ParameterizedClass, ABC):
         dataset.attrs.update(**global_attrs)
 
         for name in output_vars:
-            var_attrs = model_to_dict(self.dataset_config[name].attrs)
-            dataset[name].attrs.update(var_attrs)
+            if ("qc" in name) and not hasattr(self.dataset_config, name):
+                # Change non-list flags to list
+                for a in dataset[name].attrs:
+                    attr = dataset[name].attrs[a]
+                    if not (
+                        isinstance(attr, list) or isinstance(attr, np.ndarray)
+                    ) and ("flag" in a):
+                        dataset[name].attrs[a] = [attr]
+            else:
+                var_attrs = model_to_dict(self.dataset_config[name].attrs)
+                dataset[name].attrs.update(var_attrs)
 
         history = f"Created by {getuser()} at {datetime.now().isoformat()} using tsdat v{get_version()}"
         dataset.attrs["history"] = history
 
+        return dataset
+
+    def _force_drop_qc(self, dataset: xr.Dataset) -> xr.Dataset:
+        """Drop QC variables since act-atmos isn't smart enough to see repeated tests"""
+        qc_vars = [v for v in dataset.data_vars if "qc_" in v]
+        dataset = dataset.drop_vars(qc_vars)
         return dataset

@@ -100,7 +100,6 @@ class NearestNeighbor(DataConverter):
 
         # Update the retrieved dataset object with the transformed data variable and
         # associated qc variable outputs.
-        # BUG QC vars aren't carried through to output dataset - also noted at issue point
         retrieved_dataset.data_vars[variable_name] = trans_output_ds[variable_name]
         if f"qc_{variable_name}" in trans_output_ds:
             retrieved_dataset.data_vars[f"qc_{variable_name}"] = trans_output_ds[
