@@ -55,9 +55,7 @@ class NearestNeighbor(DataConverter):
             data,
             variable_name,
             dataset_config,
-            retriever,
             input_dataset,
-            input_key,
         )
 
         output_coord_names = dataset_config[variable_name].dims
@@ -67,7 +65,12 @@ class NearestNeighbor(DataConverter):
         # input-key specific and local configurations, if provided.
         # IDEA: Also pull in "local" configurations, e.g., parameters on 'self'
         # IDEA: Support coord-dependent local config, e.g., {time: 300s, height: 5m}
-        trans_params = retriever.parameters.trans_params.select_parameters(input_key)
+        if retriever.parameters is not None:
+            trans_params = retriever.parameters.trans_params.select_parameters(
+                input_key
+            )
+        else:
+            trans_params = {"range": {}}
 
         # Fetch coordinate(s) to transform across
         transform_coords = (
@@ -99,8 +102,9 @@ class NearestNeighbor(DataConverter):
         # associated qc variable outputs.
         # BUG QC vars aren't carried through to output dataset - also noted at issue point
         retrieved_dataset.data_vars[variable_name] = trans_output_ds[variable_name]
-        retrieved_dataset.data_vars[f"qc_{variable_name}"] = trans_output_ds[
-            f"qc_{variable_name}"
-        ]
+        if f"qc_{variable_name}" in trans_output_ds:
+            retrieved_dataset.data_vars[f"qc_{variable_name}"] = trans_output_ds[
+                f"qc_{variable_name}"
+            ]
 
         return None

@@ -2,23 +2,16 @@ from typing import List, Optional
 import xarray as xr
 
 from ...config.dataset import DatasetConfig  # pragma: no cover
-from ...io.retrievers import StorageRetriever  # pragma: no cover
 
 
 def _base_transform(
     data: xr.DataArray,
     variable_name: str,
     dataset_config: "DatasetConfig",
-    retriever: Optional["StorageRetriever"] = None,
     input_dataset: Optional[xr.Dataset] = None,
-    input_key: Optional[str] = None,
 ) -> xr.Dataset:
 
-    assert retriever is not None
-    assert retriever.parameters is not None
-    assert retriever.parameters.trans_params is not None
     assert input_dataset is not None
-    assert input_key is not None
 
     output_coord_names = dataset_config[variable_name].dims
     input_coord_names = list(data.dims)  # type: ignore
@@ -38,22 +31,20 @@ def _base_transform(
         if coord_bound is not None:
             coord_bound.name = f"{output_coord_names[i]}_bounds"
             input_bounds_vars.append(coord_bound)
-    input_qc = input_dataset.get(
-        f"qc_{data.name}",
-        xr.full_like(data, 0).astype(int),  # type: ignore
-    )
+    input_qc = input_dataset.get(f"qc_{data.name}", None)
     # Rename QC variable name if it changed in the retriever
-    input_qc.name = f"qc_{variable_name}"
-    if hasattr(data, "ancillary_variables"):
-        anc_vars = data.attrs["ancillary_variables"]
-        if f"qc_{data.name}" in anc_vars:
-            if isinstance(anc_vars, list):
-                anc_vars.remove(f"qc_{data.name}")
-                # Needs to be first for act-atmos qc code to work properly
-                anc_vars.insert(0, f"qc_{variable_name}")
-            else:
-                anc_vars = f"qc_{variable_name}"
-        data.attrs["ancillary_variables"] = anc_vars
+    if input_qc is not None:
+        input_qc.name = f"qc_{variable_name}"
+        if hasattr(data, "ancillary_variables"):
+            anc_vars = data.attrs["ancillary_variables"]
+            if f"qc_{data.name}" in anc_vars:
+                if isinstance(anc_vars, list):
+                    anc_vars.remove(f"qc_{data.name}")
+                    # Needs to be first for act-atmos qc code to work properly
+                    anc_vars.insert(0, f"qc_{variable_name}")
+                else:
+                    anc_vars = f"qc_{variable_name}"
+            data.attrs["ancillary_variables"] = anc_vars
     # Set dataarray
     data.name = variable_name
     trans_input_ds = xr.Dataset(
@@ -77,8 +68,9 @@ def _base_transform(
 
     # Does adi_py drop the quality controlled values?? Yes it does...
     # Apply QC variable mask
-    trans_input_ds[variable_name] = trans_input_ds[variable_name].where(
-        ~trans_input_ds[input_qc.name].astype(bool)
-    )
+    if input_qc is not None:
+        trans_input_ds[variable_name] = trans_input_ds[variable_name].where(
+            ~trans_input_ds[input_qc.name].astype(bool)
+        )
 
     return trans_input_ds

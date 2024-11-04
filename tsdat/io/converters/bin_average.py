@@ -69,9 +69,7 @@ class BinAverage(DataConverter):
             data,
             variable_name,
             dataset_config,
-            retriever,
             input_dataset,
-            input_key,
         )
 
         output_coord_names = dataset_config[variable_name].dims
@@ -110,8 +108,9 @@ class BinAverage(DataConverter):
         # Update the retrieved dataset object with the transformed data variable and
         # associated qc variable outputs.
         retrieved_dataset.data_vars[variable_name] = trans_output_ds[variable_name]
-        retrieved_dataset.data_vars[f"qc_{variable_name}"] = trans_output_ds[
-            f"qc_{variable_name}"
-        ]
+        if f"qc_{variable_name}" in trans_output_ds:
+            retrieved_dataset.data_vars[f"qc_{variable_name}"] = trans_output_ds[
+                f"qc_{variable_name}"
+            ]
 
         return None
