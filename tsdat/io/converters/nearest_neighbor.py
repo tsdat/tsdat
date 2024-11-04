@@ -1,4 +1,5 @@
 from typing import Any, Optional
+import numpy as np
 import xarray as xr
 
 from ._base_transform import _base_transform
@@ -12,6 +13,26 @@ class NearestNeighbor(DataConverter):
 
     coord: str = "time"
     """The coordinate axis this converter should be applied on. Defaults to 'time'."""
+
+    def _get_tolerance(self, coordinate, rng):
+        if rng is None:
+            return None
+
+        coord_vals = coordinate.data
+        # TODO: handle for non-time units
+
+        units = ""
+        for i, s in enumerate(rng):
+            if s.isalpha():
+                units = rng[i:]
+                rng = rng[:i]
+        _rng = float(rng)
+
+        if np.issubdtype(coordinate.dtype, np.datetime64):  # type: ignore
+            coord_vals = np.array([np.datetime64(val) for val in coord_vals])
+            _rng = np.timedelta64(int(_rng), units or "s")
+
+        return _rng
 
     def convert(
         self,
@@ -53,12 +74,7 @@ class NearestNeighbor(DataConverter):
             [self.coord] if hasattr(self, "coord") else output_coord_names
         )
         for coord_name in transform_coords:
-            range = trans_params["range"].get(coord_name)
-
-            # Won't need __trim_dataset after this function
-            # I don't know how to copy libtrans's use of the range parameter here,
-            # as the range parameter is equivalent to the interpolated timegrid resolution
-            # Maybe that's fine...
+            rng = trans_params["range"].get(coord_name, None)
 
             # Create an empty DataArray with the shape we want to achieve
             target_coord = retrieved_dataset.coords[coord_name]
@@ -69,16 +85,20 @@ class NearestNeighbor(DataConverter):
                 for k, v in output_coord_data.items()
             }
             tmp_data = xr.DataArray(coords=new_coords, dims=tuple(new_coords))
+
+            # Get index tolerance from coordinate
+            tolerance = self._get_tolerance(data[current_coord_name], rng)
+
             # Do nearest neighbor algorithm
             trans_output_ds = trans_input_ds.reindex_like(
                 other=tmp_data,
                 method="nearest",
-                # tolerance=range,
+                tolerance=tolerance,
             )
 
         # Update the retrieved dataset object with the transformed data variable and
         # associated qc variable outputs.
-        # BUG QC vars aren't carried through to output dataset
+        # BUG QC vars aren't carried through to output dataset - also noted at issue point
         retrieved_dataset.data_vars[variable_name] = trans_output_ds[variable_name]
         retrieved_dataset.data_vars[f"qc_{variable_name}"] = trans_output_ds[
             f"qc_{variable_name}"

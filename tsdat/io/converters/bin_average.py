@@ -1,8 +1,7 @@
-from typing import Any, Optional
+from typing import Any, Optional, Literal
 import numpy as np
 import xarray as xr
 
-from ._create_bounds import _create_bounds
 from ._base_transform import _base_transform
 from ..base import DataConverter, RetrievedDataset
 from ...config.dataset import DatasetConfig
@@ -10,7 +9,44 @@ from ...io.retrievers import StorageRetriever
 
 
 class BinAverage(DataConverter):
+    """Saves data into the specified coordinate grid using bin-averaging."""
+
     coord: str = "time"
+    """The coordinate axis this converter should be applied on. Defaults to 'time'."""
+
+    def _create_bounds(
+        self,
+        coordinate: xr.DataArray,
+        alignment: Literal["LEFT", "RIGHT", "CENTER"],
+        width: str,
+    ) -> np.ndarray:
+        """Creates coordinate bounds with the specified alignment and bound width."""
+        coord_vals = coordinate.data
+        # TODO: handle for units
+
+        units = ""
+        for i, s in enumerate(width):
+            if s.isalpha():
+                units = width[i:]
+                width = width[:i]
+        _width = float(width)
+
+        if np.issubdtype(coordinate.dtype, np.datetime64):  # type: ignore
+            coord_vals = np.array([np.datetime64(val) for val in coord_vals])
+            _width = np.timedelta64(int(_width), units or "s")
+
+        if alignment == "LEFT":
+            begin = coord_vals
+            end = coord_vals + _width
+        elif alignment == "CENTER":
+            begin = coord_vals - _width / 2
+            end = coord_vals + _width / 2
+        elif alignment == "RIGHT":
+            begin = coord_vals - _width
+            end = coord_vals
+
+        out = np.append(begin, end[-1])
+        return out
 
     def convert(
         self,
@@ -57,7 +93,7 @@ class BinAverage(DataConverter):
 
             # Groupby_bins allows us to define the width and aligment based on timegrid
             # creates bounds based on alignment and width
-            bounds = _create_bounds(
+            bounds = self._create_bounds(
                 output_coord_data[coord_name],
                 alignment=align,  # type: ignore
                 width=width,
@@ -69,6 +105,7 @@ class BinAverage(DataConverter):
             )
             # Mean should be a custom function to handle QC? Or just mask out completely
             trans_output_ds = temp.mean()
+            trans_output_ds = trans_output_ds.rename({coord_name + "_bins": coord_name})
 
         # Update the retrieved dataset object with the transformed data variable and
         # associated qc variable outputs.

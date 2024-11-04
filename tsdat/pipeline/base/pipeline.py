@@ -70,8 +70,11 @@ class Pipeline(ParameterizedClass, ABC):
             DatasetConfig.
 
         -----------------------------------------------------------------------------"""
-        output_vars = list(self.dataset_config.coords) + list(
-            self.dataset_config.data_vars
+        output_vars = (
+            list(self.dataset_config.coords)
+            + list(self.dataset_config.data_vars)
+            # BUG QC variables aren't carried through
+            # + ["qc_" + v for v in self.dataset_config.data_vars]
         )
         retrieved_variables = cast(List[str], list(dataset.variables))
         vars_to_drop = [ret for ret in retrieved_variables if ret not in output_vars]
