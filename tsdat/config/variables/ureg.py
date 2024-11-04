@@ -1,4 +1,5 @@
 import re
+
 from pint import UnitRegistry
 
 ureg = UnitRegistry(autoconvert_offset_to_baseunit=True)
@@ -10,19 +11,27 @@ ureg.define("@alias degree = degN")
 ureg.define("@alias degree = degree_east")
 ureg.define("@alias degree = degree_E")
 ureg.define("@alias degree = degE")
+
+# Power
+ureg.define("kVAR = kilovolt * ampere * imaginary")
+
 # Temperature
 ureg.define("@alias degree_Fahrenheit = degree_F")
 ureg.define("@alias degree_Celsius = degree_C")
 ureg.define("@alias degree_Rankine = degree_R")
 ureg.define("@alias kelvin = Kelvin")
+
 # Salinity
 ureg.define("psu = []")
+
 # Parts per
 ureg.define("ppm = 1e-6")
 ureg.define("ppb = 1e-9")
 ureg.define("ppt = 1e-12")
+
 # Percent
 ureg.define("@alias percent = %")
+
 # Other
 ureg.define("fraction = []")
 ureg.define("unitless = []")
