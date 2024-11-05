@@ -58,12 +58,6 @@ class FileSystem(Storage):
         At a minimum the template must include ``{date_time}``.
         """
 
-        merge_fetched_data_kwargs: Dict[str, Any] = dict()
-        """Keyword arguments passed to xr.merge.
-        
-        Note that this will only be called if the DataReader returns a dictionary of
-        xr.Datasets for a single input key."""
-
         @validator("storage_root", allow_reuse=True)
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
             if not storage_root.is_dir():
@@ -212,14 +206,18 @@ class FileSystem(Storage):
         data_files = self._find_data(
             start, end, datastream, metadata_kwargs=metadata_kwargs
         )
-        datasets = self._open_data_files(*data_files)
-        dataset = xr.merge(datasets, **self.parameters.merge_fetched_data_kwargs)  # type: ignore
-        if not dataset:
+        datasets = self._open_data_files(*sorted(data_files))
+        dataset = xr.Dataset()
+        if len(datasets) == 0:
             logger.warning(
                 "No data found for %s in range %s - %s", datastream, start, end
             )
-            return dataset  # empty
-        return dataset.sel(time=slice(start, end))
+        elif len(datasets) == 1:
+            dataset = datasets[0].sel(time=slice(start, end))
+        else:
+            dataset = xr.concat(datasets, dim="time")  # type: ignore
+            dataset = dataset.sel(time=slice(start, end))
+        return dataset
 
     def _find_data(
         self,
