@@ -13,7 +13,8 @@ ureg.define("@alias degree = degree_E")
 ureg.define("@alias degree = degE")
 
 # Power
-ureg.define("kVAR = kilovolt * ampere * imaginary")
+ureg.define("var = volt * ampere * imaginary")
+ureg.define("@alias var = VAR")
 
 # Temperature
 ureg.define("@alias degree_Fahrenheit = degree_F")
