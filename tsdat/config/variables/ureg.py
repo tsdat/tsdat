@@ -1,4 +1,5 @@
 import re
+
 from pint import UnitRegistry
 
 ureg = UnitRegistry(autoconvert_offset_to_baseunit=True)
@@ -29,6 +30,11 @@ ureg.define("unitless = []")
 
 
 def check_unit(unit_str: str, keep_exp: bool) -> str:
+    unit_str = unit_str.strip()
+
+    if not unit_str or unit_str == "1":
+        return unit_str
+    
     # Not recognized by pint, but we want it to be valid
     if unit_str.lower().startswith("seconds since"):
         return unit_str
@@ -46,5 +52,8 @@ def check_unit(unit_str: str, keep_exp: bool) -> str:
     # Remove exponent if not used
     if not keep_exp and not carrot_flag:
         unit_str = unit_str.replace("^", "")
+
+    if not unit_str:
+        return "1"
 
     return unit_str
