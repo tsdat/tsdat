@@ -82,10 +82,7 @@ class StorageRetriever(Retriever):
 
         input_data = self.__fetch_inputs(storage_input_keys, storage)
 
-        if input_data_hook is not None:
-            modded_input_data = input_data_hook(input_data)
-            if modded_input_data is not None:
-                input_data = modded_input_data
+        input_data = input_data_hook(input_data)  # type:ignore
 
         # Perform coord/variable retrieval
         retrieved_data, retrieval_selections = perform_data_retrieval(
