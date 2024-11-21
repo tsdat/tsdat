@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Literal
 import numpy as np
 import xarray as xr
 
@@ -8,31 +8,45 @@ from ...config.dataset import DatasetConfig
 from ...io.retrievers import StorageRetriever
 
 
-class NearestNeighbor(DataConverter):
-    """Maps data onto the specified coordinate grid using nearest-neighbor."""
+class BinAverage(DataConverter):
+    """Saves data into the specified coordinate grid using bin-averaging."""
 
     coord: str = "time"
     """The coordinate axis this converter should be applied on. Defaults to 'time'."""
 
-    def _get_tolerance(self, coordinate, rng):
-        if rng is None:
-            return None
-
+    def _create_bounds(
+        self,
+        coordinate: xr.DataArray,
+        alignment: Literal["LEFT", "RIGHT", "CENTER"],
+        width: str,
+    ) -> np.ndarray:
+        """Creates coordinate bounds with the specified alignment and bound width."""
         coord_vals = coordinate.data
-        # TODO: handle for non-time units
+        # TODO: handle for units
 
         units = ""
-        for i, s in enumerate(rng):
+        for i, s in enumerate(width):
             if s.isalpha():
-                units = rng[i:]
-                rng = rng[:i]
-        _rng = float(rng)
+                units = width[i:]
+                width = width[:i]
+        _width = float(width)
 
         if np.issubdtype(coordinate.dtype, np.datetime64):  # type: ignore
             coord_vals = np.array([np.datetime64(val) for val in coord_vals])
-            _rng = np.timedelta64(int(_rng), units or "s")
+            _width = np.timedelta64(int(_width), units or "s")
 
-        return _rng
+        if alignment == "LEFT":
+            begin = coord_vals
+            end = coord_vals + _width
+        elif alignment == "CENTER":
+            begin = coord_vals - _width / 2
+            end = coord_vals + _width / 2
+        elif alignment == "RIGHT":
+            begin = coord_vals - _width
+            end = coord_vals
+
+        out = np.append(begin, end[-1])
+        return out
 
     def convert(
         self,
@@ -65,38 +79,31 @@ class NearestNeighbor(DataConverter):
         # input-key specific and local configurations, if provided.
         # IDEA: Also pull in "local" configurations, e.g., parameters on 'self'
         # IDEA: Support coord-dependent local config, e.g., {time: 300s, height: 5m}
-        if retriever.parameters is not None:
-            trans_params = retriever.parameters.trans_params.select_parameters(
-                input_key
-            )
-        else:
-            trans_params = {"range": {}}
+        trans_params = retriever.parameters.trans_params.select_parameters(input_key)
 
         # Fetch coordinate(s) to transform across
         transform_coords = (
             [self.coord] if hasattr(self, "coord") else output_coord_names
         )
         for coord_name in transform_coords:
-            # Create an empty DataArray with the shape we want to achieve
-            target_coord = retrieved_dataset.coords[coord_name]
-            coord_index = dataset_config[variable_name].dims.index(coord_name)
-            current_coord_name = tuple(data.coords.keys())[coord_index]
-            new_coords = {
-                k: v.data if k != current_coord_name else target_coord.data
-                for k, v in output_coord_data.items()
-            }
-            tmp_data = xr.DataArray(coords=new_coords, dims=tuple(new_coords))
+            width = trans_params["width"].get(coord_name)
+            align = trans_params["alignment"].get(coord_name, "CENTER")
 
-            # Get index tolerance from coordinate
-            rng = trans_params["range"].get(coord_name, None)
-            tolerance = self._get_tolerance(data[current_coord_name], rng)
-
-            # Do nearest neighbor algorithm
-            trans_output_ds = trans_input_ds.reindex_like(
-                other=tmp_data,
-                method="nearest",
-                tolerance=tolerance,  # type: ignore
+            # Groupby_bins allows us to define the width and aligment based on timegrid
+            # creates bounds based on alignment and width
+            bounds = self._create_bounds(
+                output_coord_data[coord_name],
+                alignment=align,  # type: ignore
+                width=width,
             )
+            temp = trans_input_ds.groupby_bins(
+                coord_name,
+                bins=bounds,
+                labels=output_coord_data[coord_name].values,
+            )
+            # Mean should be a custom function to handle QC? Or just mask out completely
+            trans_output_ds = temp.mean()
+            trans_output_ds = trans_output_ds.rename({coord_name + "_bins": coord_name})
 
         # Update the retrieved dataset object with the transformed data variable and
         # associated qc variable outputs.
