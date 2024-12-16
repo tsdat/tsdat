@@ -18,9 +18,9 @@ class A2eCSVReader(DataReader):
         file. This is possible because A2e CSV filenames follow a standardized format,
         e.g.:
 
-        - buoy.z07.a0.20221117.001000.metocean.time.1d.a2e.csv
-        - buoy.z07.a0.20221117.001000.metocean.depth.1d.a2e.csv
-        - buoy.z07.a0.20221117.001000.metocean.time.depth.2d.a2e.csv
+        - buoy.z07.a0.20221117.001000.metocean.time.1d.wdh.csv
+        - buoy.z07.a0.20221117.001000.metocean.depth.1d.wdh.csv
+        - buoy.z07.a0.20221117.001000.metocean.time.depth.2d.wdh.csv
         """
         parts = input_key.split(".")
         n_dims = int(parts[-3][:-1])
