@@ -75,8 +75,6 @@ class FileSystemS3(FileSystem):
     @validator("parameters")
     def _ensure_bucket_exists(cls, parameters: Parameters):
         # Throws an error if the bucket doesn't exist
-        import botocore.exceptions
-
         session = FileSystemS3._get_session(
             region=parameters.region, timehash=FileSystemS3._get_timehash()
         )
