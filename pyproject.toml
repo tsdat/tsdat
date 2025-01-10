@@ -18,7 +18,7 @@ dependencies = [
   "dunamai==1.9.0",
   "jsonpointer==2.2",
   "netCDF4",
-  "numpy >=1.2,<2.0.0",
+  "numpy >=1.2",
   "pandas >=1.2",
   "pint",
   "pydantic >=1.10.0, <2.0.0",
@@ -38,7 +38,7 @@ requires-python = ">=3.10"
 
 [project.optional-dependencies]
 aws = ["boto3"]
-complete = ["tsdat[aws,io,ocean]"]
+complete = ["tsdat[aws,io,ocean,transform]"]
 dev = [
   "tsdat[complete]",
   "black",
@@ -64,6 +64,9 @@ io = [
 ocean = [
   "mhkit",
   "matplotlib!=3.9.1.post1",  # mhkit doesn't like this version string
+]
+transform = [
+  "numpy<2.0.0",  # adi_py (conda lib) is not compatible with numpy v2
 ]
 
 [project.scripts]
