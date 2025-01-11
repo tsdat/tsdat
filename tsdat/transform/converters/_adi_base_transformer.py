@@ -78,11 +78,24 @@ class _ADIBaseTransformer(DataConverter):
             if coord_bound is not None:
                 coord_bound.name = f"{output_coord_names[i]}_bounds"
                 input_bounds_vars.append(coord_bound)
-        input_qc = input_dataset.get(
-            f"qc_{data.name}",
-            xr.full_like(data, 0).astype(int),  # type: ignore
-        )
-        input_qc.name = f"qc_{variable_name}"
+        input_qc = input_dataset.get(f"qc_{data.name}", None)
+        # Rename QC variable name if it changed in the retriever
+        if input_qc is not None:
+            input_qc.name = f"qc_{variable_name}"
+            if hasattr(data, "ancillary_variables"):
+                anc_vars = data.attrs["ancillary_variables"]
+                if f"qc_{data.name}" in anc_vars:
+                    if isinstance(anc_vars, list):
+                        anc_vars.remove(f"qc_{data.name}")
+                        # Needs to be first for act-atmos qc code to work properly
+                        anc_vars.insert(0, f"qc_{variable_name}")
+                    else:
+                        anc_vars = f"qc_{variable_name}"
+                data.attrs["ancillary_variables"] = anc_vars
+        else:
+            input_qc = xr.full_like(data, 0).astype(int)
+            input_qc.name = f"qc_{variable_name}"
+        # Set dataarray
         data.name = variable_name
         trans_input_ds = xr.Dataset(
             coords=data.coords,  # type: ignore
