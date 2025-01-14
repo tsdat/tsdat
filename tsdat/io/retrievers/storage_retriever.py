@@ -1,7 +1,4 @@
 from datetime import timedelta
-import pandas as pd
-import xarray as xr
-from pydantic import BaseModel, Field
 from typing import (
     Any,
     Callable,
@@ -10,16 +7,20 @@ from typing import (
     Optional,
 )
 
-from .global_arm_transform_params import GlobalARMTransformParams
-from .global_fetch_params import GlobalFetchParams
-from .storage_retriever_input import StorageRetrieverInput
-from .perform_data_retrieval import perform_data_retrieval
+import pandas as pd
+import xarray as xr
+from pydantic import BaseModel, Field
+
 from ...config.dataset import DatasetConfig
+from ...const import InputKey
 from ..base import (
     Retriever,
     Storage,
 )
-from ...const import InputKey
+from .global_arm_transform_params import GlobalARMTransformParams
+from .global_fetch_params import GlobalFetchParams
+from .perform_data_retrieval import perform_data_retrieval
+from .storage_retriever_input import StorageRetrieverInput
 
 
 class StorageRetriever(Retriever):
@@ -82,7 +83,8 @@ class StorageRetriever(Retriever):
 
         input_data = self.__fetch_inputs(storage_input_keys, storage)
 
-        input_data = input_data_hook(input_data)  # type:ignore
+        if input_data_hook is not None:
+            input_data = input_data_hook(input_data)  # type:ignore
 
         # Perform coord/variable retrieval
         retrieved_data, retrieval_selections = perform_data_retrieval(
