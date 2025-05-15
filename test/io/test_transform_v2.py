@@ -142,25 +142,28 @@ def test_storage_retriever_transformations(
     #     ).values,
     #     np.array([-9999, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, -9999]),
     # )
-    _ = np.array([1])
 
-    # t30min = ds["temperature_30min"]
-    # # assert "TRANS_BIN_AVERAGE" in t30min.attrs.get("cell_transform", "")
-    # np.testing.assert_equal(
-    #     t30min.sel(  # type: ignore
-    #         time_30min=slice("2022-04-13 13:30:00", "2022-04-13 15:30:00")
-    #     ).values,
-    #     np.array([-9999, 0, 1.2, 4.5, -9999]),
-    # )
+    t30min = ds["temperature_30min"]
+    # assert "TRANS_BIN_AVERAGE" in t30min.attrs.get("cell_transform", "")
+    np.testing.assert_equal(
+        t30min.sel(  # type: ignore
+            time_30min=slice("2022-04-13 13:30:00", "2022-04-13 15:30:00")
+        )
+        .fillna(-9999)
+        .values,
+        np.array([-9999, 0, 1.2, 4.5, -9999]),
+    )
 
-    # t60min = ds["temperature_60min"]
-    # # assert "TRANS_BIN_AVERAGE" in t60min.attrs.get("cell_transform", "")
-    # np.testing.assert_equal(
-    #     t60min.sel(  # type: ignore
-    #         time_60min=slice("2022-04-13 12:00:00", "2022-04-13 15:00:00")
-    #     ).values,
-    #     np.array([-9999, 0, 8 / 3, -9999]),
-    # )
+    t60min = ds["temperature_60min"]
+    # assert "TRANS_BIN_AVERAGE" in t60min.attrs.get("cell_transform", "")
+    np.testing.assert_equal(
+        t60min.sel(  # type: ignore
+            time_60min=slice("2022-04-13 12:00:00", "2022-04-13 15:00:00")
+        )
+        .fillna(-9999)
+        .values,
+        np.array([-9999, 0, 8 / 3, -9999]),
+    )
 
     # humidity = ds["humidity"]
     # # assert "TRANS_SUBSAMPLE" in humidity.attrs.get("cell_transform", "")
