@@ -1,0 +1,62 @@
+classname: tsdat.io.retrievers.StorageRetriever
+parameters:
+  transformation_parameters:
+    alignment:
+      time: CENTER
+      time_30min: RIGHT
+      time_60min: LEFT
+    range:
+      time: 900s
+      time_30min: 0s
+      time_60min: 0s
+    width:
+      time: 300s
+      time_30min: 1800s
+      time_60min: 3600s
+
+coords:
+    
+  time:
+    name: time  # TODO: Need to make sure these are not N/A anymore. That was probably always a bad idea
+    data_converters:
+      - classname: tsdat.transform.CreateTimeGrid
+        interval: 5min
+
+  time_30min:
+    name: time
+    data_converters:
+      - classname: tsdat.transform.CreateTimeGrid
+        interval: 30min
+
+  time_60min:
+    name: time
+    data_converters:
+      - classname: tsdat.transform.CreateTimeGrid
+        interval: 1h
+
+
+data_vars: 
+  # temperature_5min:
+  #   name: temp
+  #   data_converters:
+  #     - classname: tsdat.transform.Interpolate
+  #       coord: time
+
+  temperature_30min:
+    name: temp
+    data_converters:
+      - classname: tsdat.transform_v2.BinAverage
+        coord: time_30min
+
+  temperature_60min:
+    name: temp
+    data_converters:
+      - classname: tsdat.transform_v2.BinAverage
+        coord: time_60min
+
+  humidity:
+    name: rh
+    data_converters:
+      - classname: tsdat.transform.NearestNeighbor
+        coord: time
+        # range: 0s  # don't try to use data points outside of time bounds
