@@ -102,8 +102,4 @@ def calculate_bin_average(
                     goodfrac
                 )
 
-    # TODO: Goodfraction should fill nans with 0
-    # TODO: qc should fill nans with 129 (QC_BAD + QC_OUTSIDE_RANGE)
-    # TODO: std shouldn't fill nans
-
     return output_dataset

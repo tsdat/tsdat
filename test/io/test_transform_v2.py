@@ -99,7 +99,7 @@ def create_input_dataset(filepath: str | Path) -> xr.Dataset:
     return input_dataset
 
 
-def test_storage_retriever_transformations(
+def test_transform_v2(
     storage_retriever_v2_transform: StorageRetriever,
     vap_transform_dataset_config: DatasetConfig,
 ):

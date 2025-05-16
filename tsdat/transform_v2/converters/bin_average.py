@@ -82,45 +82,67 @@ class BinAverage(DataConverter):
         assert retrieved_coord is not None
         # TODO: Need to assert the coord is not NA (something we used to do)
 
-        # Limit the input dataset to just the selected variable (and its ancillary qc
-        # and metrics variables, if present). Also include the coordinate bounds if
-        # available as well.
-        input_var_name = retrieved_var.name  # TODO: this is a str | list[str] type. We
-        input_coord_name = retrieved_coord.name  # TODO: need to get the actual name.
+        # Get the list of associated variable names (qc, bounds, metrics). These
+        # correspond with entries in the output structure and the retrieved_dataset
+        # object (if the user has retrieved those variables).
+        output_bounds_name = f"{self.coord}_bounds"
+        output_qc_name = f"qc_{variable_name}"
+        output_std_name = f"{variable_name}_std"
+        output_goodfrac_name = f"{variable_name}_goodfraction"
+
+        # Like above, but for the input dataset. We preferentially pull from the
+        # retrieved dataset, but if the variable exists in the input we just assume that
+        # the user forgot about it, and pull it in here.
+        # TODO: is this a good idea? without it, a bunch of qc variables will not be
+        # retrieved, but with it there is no way to say you don't want to retrieve those.
+        input_var_name = retrieved_var.name
+        input_coord_name = retrieved_coord.name
+        # TODO: input_var and input_coord types are str | list[str] type. want str only.
         input_bounds = f"{input_coord_name}_bounds"
         input_qc_name = f"qc_{input_var_name}"
         input_std_name = f"{input_var_name}_std"
         input_goodfrac_name = f"{input_var_name}_goodfraction"
 
-        input_var_list = [
-            input_bounds,
-            input_var_name,
-            input_qc_name,
-            input_std_name,
-            input_goodfrac_name,
-        ]
-        input_var_list = [v for v in input_var_list if v in input_dataset]
-        filtered_input_dataset = input_dataset[input_var_list]
-
-        # Get the corresponding output variable names and rename things in our copy of
-        # the input dataset to match the output dataset structure
-        output_bounds = f"{self.coord}_bounds"
-        output_qc_name = f"qc_{variable_name}"
-        output_std_name = f"{variable_name}_std"
-        output_goodfrac_name = f"{variable_name}_goodfraction"
-
-        variable_mapping = {
-            input_var_name: variable_name,
-            input_coord_name: self.coord,
-            input_bounds: output_bounds,
+        input_to_output_variables = {
+            input_bounds: output_bounds_name,
             input_qc_name: output_qc_name,
             input_std_name: output_std_name,
             input_goodfrac_name: output_goodfrac_name,
         }
-        variable_mapping = {
-            k: v for k, v in variable_mapping.items() if k in input_dataset
-        }
-        filtered_input_dataset = filtered_input_dataset.rename(variable_mapping)
+
+        # The above approach works when there is only 1 transformation converter applied
+        # but it breaks if there are multiple applied in series. This is because the
+        # results of the transformation are saved to the *retrieved* dataset dictionary,
+        # *not* the input_dataset. To address this, we start with the provided DataArray
+        # from the retrieved dataset and add onto it the ancillary variables from the
+        # retrieved dataset dictionary, so long as the shapes match. We also ensure that
+        # this xr.Dataset has the variable names of the output dataset.
+
+        # Build the actual input dataset for the transformation. We primarily pull from
+        # the retrieved dataset, but can also pull from the input_dataset if a variable
+        # is missing that should have been retrieved.
+        # TODO: Maybe there should be a warning? Should the retriever be updated to add
+        # QC retrievals and these other things? Pulling from input_dataset should be a
+        # last-resort.
+        dataset = data.to_dataset(name=variable_name)
+        for input_var_name, output_var_name in input_to_output_variables.items():
+            if output_var_name in retrieved_dataset.data_vars:
+                ret_data = retrieved_dataset.data_vars[output_var_name]
+                dataset[output_var_name] = ret_data
+            elif input_var_name in input_dataset.data_vars:
+                in_data = input_dataset[input_var_name]
+                dataset[output_var_name] = in_data
+            else:
+                # The ancillary data simply does not exist, which is fine.
+                continue
+        try:
+            # Try to ensure the coordinate is named as it is in the output dataset. This
+            # is not always the case since 'data' can still have the original coordinate
+            # name and dimensions. Xarray raises a ValueError if the input name isn't in
+            # the dataset, which probably means that we already have the correct name.
+            dataset = dataset.rename({input_coord_name: self.coord})
+        except ValueError:
+            pass
 
         # Get the transformation parameters. This is a dictionary that has 3 keys:
         # 'alignment', 'range', and 'width'. For each entry of those there is another
@@ -143,36 +165,17 @@ class BinAverage(DataConverter):
             alignment=t_align.lower(),
         )
 
-        # Create the bounds used for the transform. Note that this may be different from
-        # the actual coordinate bounds in the output dataset. When I wrote the code for
-        # the bin average transform, I intended for the bounds to be used to select
-        # which input points are used for each output point, allowing for overlap. I
-        # think this is probably what should be used for the output bounds too, so there
-        # is some trace of what happened here in the output dataset, **BUT**, there is a
-        # problem. Sometimes you want to handle different bin widths for different
-        # variables in the same dataset -- how do you deal with the coordinate bounds in
-        # that case? I don't see a good solution, so we just leave it as is – these
-        # bounds are temporary.
-        # labels, bounds = create_bounds(
-        #     start=...,
-        #     stop=...,
-        #     interval=...,
-        #     width=t_width,
-        #     alignment=t_align.lower(),
-        # )
-
         # ############################################################################ #
         # Do the actual transformation and extract the information we want to keep from
         # the resulting xarray dataset
 
         # Do the transformation
         avg_ds = calculate_bin_average(
-            input_dataset=filtered_input_dataset,
+            input_dataset=dataset,
             coord_name=self.coord,
             coord_labels=labels,
             coord_bounds=bounds,
         )
-        # TODO: Input variables need to be renamed to match the correct outputs, especially
 
         # The output dataset dictionary. Assigning or updating values in this dictionary
         # persists in the results outside of this DataConverter. The keys/variable names
