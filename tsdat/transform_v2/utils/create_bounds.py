@@ -114,7 +114,7 @@ def _create_bounds(
 
 def create_bounds_from_labels(
     labels: np.ndarray,  # Can be datetime or float
-    width: float | str | None = None,  # Can be datetime or float or None
+    width: float | str | None = None,  # Can be str or float or None
     alignment: Literal["left", "right", "center"] | float = "left",  # Literal or 0 to 1
 ) -> np.ndarray:
     if isinstance(alignment, str):

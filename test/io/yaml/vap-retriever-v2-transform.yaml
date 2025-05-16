@@ -36,11 +36,11 @@ coords:
 
 
 data_vars: 
-  # temperature_5min:
-  #   name: temp
-  #   data_converters:
-  #     - classname: tsdat.transform.Interpolate
-  #       coord: time
+  temperature_5min:
+    name: temp
+    data_converters:
+      - classname: tsdat.transform_v2.LinearInterpolate
+        coord: time
 
   temperature_30min:
     name: temp
