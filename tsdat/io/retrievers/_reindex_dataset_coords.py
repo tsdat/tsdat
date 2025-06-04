@@ -32,7 +32,7 @@ def _reindex_dataset_coords(
         xr.Dataset: The reindexed dataset.
 
     -----------------------------------------------------------------------------"""
-    for axis, coord_name in enumerate(input_config.coords):
+    for axis, coord_name in enumerate(input_config.coord_rules):
         expected_dim = dataset_config[coord_name].dims[0]
         actual_dims = dataset[coord_name].dims
         if (ndims := len(actual_dims)) > 1:
