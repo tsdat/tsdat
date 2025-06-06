@@ -3,11 +3,11 @@ from typing import TYPE_CHECKING, Any, Optional
 import xarray as xr
 
 from ...io.base import DataConverter, RetrievedDataset
+from ...utils.replace_qc_attr import replace_qc_attr
 from ..bin_average.calculate_bin_average import calculate_bin_average
 from ..utils.create_bounds import create_bounds_from_labels
 from ..utils.is_metric_var import is_metric_var
 from ..utils.is_qc_var import is_qc_var
-from ..utils.replace_qc_attr import replace_qc_attr
 
 # Prevent any chance of runtime circular imports for typing-only imports
 if TYPE_CHECKING:  # pragma: no cover

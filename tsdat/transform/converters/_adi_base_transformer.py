@@ -4,6 +4,7 @@ import numpy as np
 import xarray as xr
 
 from ...io.base import DataConverter, RetrievedDataset
+from ...utils.replace_qc_attr import replace_qc_attr
 
 # Prevent any chance of runtime circular imports for typing-only imports
 if TYPE_CHECKING:  # pragma: no cover
@@ -82,16 +83,9 @@ class _ADIBaseTransformer(DataConverter):
         # Rename QC variable name if it changed in the retriever
         if input_qc is not None:
             input_qc.name = f"qc_{variable_name}"
-            if hasattr(data, "ancillary_variables"):
-                anc_vars = data.attrs["ancillary_variables"]
-                if f"qc_{data.name}" in anc_vars:
-                    if isinstance(anc_vars, list):
-                        anc_vars.remove(f"qc_{data.name}")
-                        # Needs to be first for act-atmos qc code to work properly
-                        anc_vars.insert(0, f"qc_{variable_name}")
-                    else:
-                        anc_vars = f"qc_{variable_name}"
-                data.attrs["ancillary_variables"] = anc_vars
+            data = replace_qc_attr(
+                data, data.name, variable_name, f"qc_{variable_name}"
+            )
         else:
             input_qc = xr.full_like(data, 0).astype(int)
             input_qc.name = f"qc_{variable_name}"
