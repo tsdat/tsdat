@@ -4,6 +4,7 @@ import numpy as np
 import xarray as xr
 
 from ...io.base import DataConverter, RetrievedDataset
+from ...utils.replace_qc_attr import replace_qc_attr
 
 # Prevent any chance of runtime circular imports for typing-only imports
 if TYPE_CHECKING:  # pragma: no cover
@@ -78,11 +79,17 @@ class _ADIBaseTransformer(DataConverter):
             if coord_bound is not None:
                 coord_bound.name = f"{output_coord_names[i]}_bounds"
                 input_bounds_vars.append(coord_bound)
-        input_qc = input_dataset.get(
-            f"qc_{data.name}",
-            xr.full_like(data, 0).astype(int),  # type: ignore
-        )
-        input_qc.name = f"qc_{variable_name}"
+        input_qc = input_dataset.get(f"qc_{data.name}", None)
+        # Rename QC variable name if it changed in the retriever
+        if input_qc is not None:
+            input_qc.name = f"qc_{variable_name}"
+            data = replace_qc_attr(
+                data, data.name, variable_name, f"qc_{variable_name}"
+            )
+        else:
+            input_qc = xr.full_like(data, 0).astype(int)
+            input_qc.name = f"qc_{variable_name}"
+        # Set dataarray
         data.name = variable_name
         trans_input_ds = xr.Dataset(
             coords=data.coords,  # type: ignore

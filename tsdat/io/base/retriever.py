@@ -55,3 +55,17 @@ class Retriever(ParameterizedClass, ABC):
 
         -----------------------------------------------------------------------------"""
         ...
+
+    def match_coord(self, var_name: str, input_key: str) -> RetrievedVariable | None:
+        mapping = self.coords[var_name]
+        for pattern, ret_var in mapping.items():
+            if pattern.match(input_key):
+                return ret_var
+        return None
+
+    def match_data_var(self, var_name: str, input_key: str) -> RetrievedVariable | None:
+        mapping = self.data_vars[var_name]
+        for pattern, ret_var in mapping.items():
+            if pattern.match(input_key):
+                return ret_var
+        return None

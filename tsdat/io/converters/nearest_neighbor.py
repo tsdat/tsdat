@@ -1,6 +1,4 @@
 from typing import Any, Optional
-
-import act  # type: ignore
 import xarray as xr
 
 from ..base import DataConverter, RetrievedDataset
