@@ -49,7 +49,7 @@ dev = [
   "mkdocs-literate-nav",
   "mkdocs-material",
   "mkdocstrings[python]",
-  "moto[s3,sts]==4.0.1",
+  "moto[s3,sts]>5.1",
   "mypy",
   "pandas-stubs",
   "pytest",

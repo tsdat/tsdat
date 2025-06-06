@@ -100,8 +100,8 @@ def aws_credentials():
 
 @fixture
 def s3_storage(aws_credentials: Any):
-    s3, sts = moto.mock_s3(), moto.mock_sts()  # type: ignore
-    s3.start(), sts.start()  # type: ignore
+    s3 = moto.mock_aws()  # type: ignore
+    s3.start()  # type: ignore
     storage_root = Path("test/storage_root")
     storage = FileSystemS3(
         parameters=FileSystemS3.Parameters(
@@ -116,7 +116,7 @@ def s3_storage(aws_credentials: Any):
         yield storage
     finally:
         storage._bucket.objects.filter(Prefix=str(storage_root)).delete()
-        s3.stop(), sts.stop()  # type: ignore
+        s3.stop()  # type: ignore
 
 
 @pytest.mark.parametrize(
