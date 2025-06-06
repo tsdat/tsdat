@@ -89,6 +89,15 @@ def create_input_dataset(filepath: str | Path) -> xr.Dataset:
                 [59, 60, 61, 62, 63, 64],
                 {"comment": "test case with no units attr"},
             ),
+            "qc_rh": (
+                "time",
+                [0, 0, 0, 0, 0, 0],
+                {
+                    "flag_values": "1",
+                    "flag_assessments": "Bad",
+                    "flag_meanings": "Value_equal_to_missing_value",
+                },
+            ),
         },
         attrs={"datastream": "test.trans_inputs.a1"},
     )
@@ -127,21 +136,12 @@ def test_transform_v2(
         "temperature_60min",
         "humidity",
     ]:
-        assert var in ds.data_vars, (
-            f"{var} is expected to be in dataset. Found: {list(ds)}"
-        )
-        assert f"qc_{var}" in ds.data_vars, (
-            f"qc_{var} is expected to be in dataset. Found: {list(ds)}"
-        )
-
-    # t5min = ds["temperature_5min"]
-    # assert "TRANS_INTERPOLATE" in t5min.attrs.get("cell_transform", "")
-    # np.testing.assert_equal(
-    #     t5min.sel(  # type: ignore
-    #         time=slice("2022-04-13 13:50:00", "2022-04-13 15:00:00")
-    #     ).values,
-    #     np.array([-9999, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, -9999]),
-    # )
+        assert (
+            var in ds.data_vars
+        ), f"{var} is expected to be in dataset. Found: {list(ds)}"
+        assert (
+            f"qc_{var}" in ds.data_vars
+        ), f"qc_{var} is expected to be in dataset. Found: {list(ds)}"
 
     t30min = ds["temperature_30min"]
     # assert "TRANS_BIN_AVERAGE" in t30min.attrs.get("cell_transform", "")
@@ -155,7 +155,6 @@ def test_transform_v2(
     )
 
     t60min = ds["temperature_60min"]
-    # assert "TRANS_BIN_AVERAGE" in t60min.attrs.get("cell_transform", "")
     np.testing.assert_equal(
         t60min.sel(  # type: ignore
             time_60min=slice("2022-04-13 12:00:00", "2022-04-13 15:00:00")
@@ -165,35 +164,36 @@ def test_transform_v2(
         np.array([-9999, 0, 8 / 3, -9999]),
     )
 
-    # humidity = ds["humidity"]
-    # # assert "TRANS_SUBSAMPLE" in humidity.attrs.get("cell_transform", "")
-    # np.testing.assert_equal(
-    #     humidity.sel(  # type: ignore
-    #         time=slice("2022-04-13 13:40:00", "2022-04-13 15:10:00")
-    #     ).values,
-    #     np.array(
-    #         [
-    #             -9999,
-    #             59,
-    #             59,
-    #             59,
-    #             59,
-    #             59,
-    #             60,
-    #             60,
-    #             61,
-    #             61,
-    #             62,
-    #             62,
-    #             63,
-    #             63,
-    #             64,
-    #             64,
-    #             64,
-    #             64,
-    #             -9999,
-    #         ]
-    #     ),
-    # )
+    humidity = ds["humidity"]
+    np.testing.assert_equal(
+        humidity.sel(  # type: ignore
+            time=slice("2022-04-13 13:40:00", "2022-04-13 15:10:00")
+        )
+        .fillna(-9999)
+        .values,
+        np.array(
+            [
+                -9999,
+                59,
+                59,
+                59,
+                59,
+                60,
+                60,
+                61,
+                61,
+                62,
+                62,
+                63,
+                63,
+                64,
+                64,
+                64,
+                64,
+                64,
+                -9999,
+            ]
+        ),
+    )
 
     os.remove(input_path)

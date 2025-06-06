@@ -57,6 +57,6 @@ data_vars:
   humidity:
     name: rh
     data_converters:
-      - classname: tsdat.transform.NearestNeighbor
+      - classname: tsdat.transform_v2.NearestNeighbor
         coord: time
         # range: 0s  # don't try to use data points outside of time bounds
