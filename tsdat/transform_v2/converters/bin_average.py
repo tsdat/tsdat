@@ -191,8 +191,8 @@ class BinAverage(DataConverter):
         # Only assign the qc variable to the output dataset structure if requested.
         if self.keep_qc:
             output[output_qc_name] = avg_ds[output_qc_name]
-            output = replace_qc_attr(
-                output, retrieved_var.name, variable_name, output_qc_name
+            output[variable_name] = replace_qc_attr(
+                output[variable_name], retrieved_var.name, variable_name, output_qc_name
             )
 
         # Only assign metrics variables to the output dataset structure if requested.
