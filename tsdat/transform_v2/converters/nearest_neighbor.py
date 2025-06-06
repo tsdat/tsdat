@@ -3,8 +3,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import xarray as xr
 
 from ...io.base import DataConverter, RetrievedDataset
-from ..interpolate.calculate_linear_interpolation import interpolate
-from ..utils.create_bounds import create_bounds_from_labels
+from ..nearest_neighbor.calculate_nearest_neighbor import nearest_neighbor
 from ..utils.is_metric_var import is_metric_var
 from ..utils.is_qc_var import is_qc_var
 from ..utils.replace_qc_attr import replace_qc_attr
@@ -15,8 +14,8 @@ if TYPE_CHECKING:  # pragma: no cover
     from ...io.retrievers import StorageRetriever  # pragma: no cover
 
 
-class LinearInterpolate(DataConverter):
-    """Saves data into the specified coordinate grid using linear interpolation."""
+class NearestNeighbor(DataConverter):
+    """Saves data into the specified coordinate grid using nearest neighbor."""
 
     # TODO: Implement "ALL" -- default to iterating over all the variable's coords
     coord: str = "time"
@@ -149,28 +148,18 @@ class LinearInterpolate(DataConverter):
         trans_params = retriever.parameters.trans_params.select_parameters(input_key)
         t_range = trans_params["range"][self.coord]
         assert t_range is not None
-
-        # Get the output coordinate labels and generate the 'bounds' corresponding with
-        # those labels. I say 'bounds' in quotes because these are really more related
-        # to the transform logic than they are necessarily to the real coord bounds, as
-        # described in the next comment block below.
         labels = retrieved_dataset.coords[self.coord].values
-        bounds = create_bounds_from_labels(
-            labels=labels,
-            width=t_range + t_range,  # range is the half-width
-            alignment="center",
-        )
 
         # ############################################################################ #
         # Do the actual transformation and extract the information we want to keep from
         # the resulting xarray dataset
 
         # Do the transformation
-        interp_ds = interpolate(
+        out_ds = nearest_neighbor(
             input_dataset=dataset,
             coord_name=self.coord,
             coord_labels=labels,
-            coord_bounds=bounds,
+            coord_range=t_range,
         )
 
         # The output dataset dictionary. Assigning or updating values in this dictionary
@@ -178,21 +167,21 @@ class LinearInterpolate(DataConverter):
         # used here are the same as those in the output dataset.
         output = retrieved_dataset.data_vars
 
-        # Assign the averaged variable to the output dataset structure
-        output[variable_name] = interp_ds[variable_name]
+        # Assign the new variable to the output dataset structure
+        output[variable_name] = out_ds[variable_name]
 
         # Only assign the qc variable to the output dataset structure if requested.
         if self.keep_qc:
-            output[output_qc_name] = interp_ds[output_qc_name]
+            output[output_qc_name] = out_ds[output_qc_name]
             output = replace_qc_attr(
                 output, retrieved_var.name, variable_name, output_qc_name
             )
         # Only assign metrics variables to the output dataset structure if requested.
         if self.keep_metrics:
-            if output_std_name in interp_ds:
-                output[output_std_name] = interp_ds[output_std_name]
-            if output_goodfrac_name in interp_ds:
-                output[output_goodfrac_name] = interp_ds[output_goodfrac_name]
+            if output_std_name in out_ds:
+                output[output_std_name] = out_ds[output_std_name]
+            if output_goodfrac_name in out_ds:
+                output[output_goodfrac_name] = out_ds[output_goodfrac_name]
 
         # Because we are updating the output dataset structure manually, we don't need
         # (or want) to return an xarray DataArray. If we did, then the code that runs

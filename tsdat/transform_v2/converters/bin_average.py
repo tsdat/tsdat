@@ -7,6 +7,7 @@ from ..bin_average.calculate_bin_average import calculate_bin_average
 from ..utils.create_bounds import create_bounds_from_labels
 from ..utils.is_metric_var import is_metric_var
 from ..utils.is_qc_var import is_qc_var
+from ..utils.replace_qc_attr import replace_qc_attr
 
 # Prevent any chance of runtime circular imports for typing-only imports
 if TYPE_CHECKING:  # pragma: no cover
@@ -142,7 +143,9 @@ class BinAverage(DataConverter):
             # the dataset, which probably means that we already have the correct name.
             dataset = dataset.rename({input_coord_name: self.coord})
         except ValueError:
-            pass
+            coord_index = dataset_config[variable_name].dims.index(self.coord)
+            current_coord_name = tuple(data.coords.keys())[coord_index]
+            dataset = dataset.rename({current_coord_name: self.coord})
 
         # Get the transformation parameters. This is a dictionary that has 3 keys:
         # 'alignment', 'range', and 'width'. For each entry of those there is another
@@ -188,6 +191,9 @@ class BinAverage(DataConverter):
         # Only assign the qc variable to the output dataset structure if requested.
         if self.keep_qc:
             output[output_qc_name] = avg_ds[output_qc_name]
+            output = replace_qc_attr(
+                output, retrieved_var.name, variable_name, output_qc_name
+            )
 
         # Only assign metrics variables to the output dataset structure if requested.
         if self.keep_metrics:

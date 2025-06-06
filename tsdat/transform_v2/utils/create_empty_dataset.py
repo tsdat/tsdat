@@ -48,7 +48,7 @@ def empty_dataset_like(
                 attrs=in_coord_data_array.attrs,
             )
         else:
-            new_dataset[in_coord_name] = in_coord_data_array
+            new_dataset = new_dataset.assign_coords({coord_name: in_coord_data_array})
 
     # Add bounds variables
     for new_coord_name in new_dataset.coords:
