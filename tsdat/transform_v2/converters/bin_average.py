@@ -90,7 +90,7 @@ class BinAverage(DataConverter):
             input_dataset,
             input_key,
         )
-        if not dataset:
+        if dataset is None:
             return None
 
         # Get the transformation parameters. This is a dictionary that has 3 keys:
@@ -100,8 +100,18 @@ class BinAverage(DataConverter):
         trans_params = retriever.parameters.trans_params.select_parameters(input_key)
         t_align = trans_params["alignment"][self.coord]
         t_width = trans_params["width"][self.coord]
-        assert t_align is not None
-        assert t_width is not None
+        if t_align is None:
+            raise ValueError(
+                f"{self.__repr_name__} requires a 'alignment' parameter for the coordinate"
+                f" '{self.coord}' and variable {variable_name}, but it was not provided"
+                " in the transformation parameters."
+            )
+        if t_width is None:
+            raise ValueError(
+                f"{self.__repr_name__} requires a 'width' parameter for the coordinate"
+                f" '{self.coord}' and variable {variable_name}, but it was not provided"
+                " in the transformation parameters."
+            )
 
         # Get the output coordinate labels and generate the 'bounds' corresponding with
         # those labels. I say 'bounds' in quotes because these are really more related

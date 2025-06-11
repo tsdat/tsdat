@@ -54,11 +54,18 @@ def create_input_dataset(
     if variable_name.endswith("_bounds") or is_qc_var(data) or is_metric_var(data):
         return None
 
-    assert retriever is not None
-    assert retriever.parameters is not None
-    assert retriever.parameters.trans_params is not None
-    assert input_dataset is not None
-    assert input_key is not None
+    if retriever is None:
+        raise ValueError("No retriever provided to transform DataConverter.")
+    if retriever.parameters is None:
+        raise ValueError("No retriever parameters provided to transform DataConverter.")
+    if retriever.parameters.trans_params is None:
+        raise ValueError(
+            "No retriever transformation parameters provided to transform DataConverter."
+        )
+    if input_dataset is None:
+        raise IOError("No input dataset provided to transform DataConverter.")
+    if input_key is None:
+        raise FileNotFoundError("No input key provided to transform DataConverter.")
 
     # ############################################################################ #
     # Get parameters and start building up the pieces we need to perform the
@@ -69,8 +76,14 @@ def create_input_dataset(
     # because later on in the pipeline things are renamed, so we need to undo whatever
     retrieved_var = retriever.match_data_var(variable_name, input_key)
     retrieved_coord = retriever.match_coord(coord_name, input_key)
-    assert retrieved_var is not None
-    assert retrieved_coord is not None
+    if retrieved_var is None:
+        raise ValueError(
+            f"Variable '{variable_name}' not found in the retrieved dataset for input key '{input_key}'."
+        )
+    if retrieved_coord is None:
+        raise ValueError(
+            f"Coordinate '{coord_name}' not found in the retrieved dataset for input key '{input_key}'."
+        )
     # TODO: Need to assert the coord is not NA (something we used to do)
 
     # Get the list of associated variable names (qc, bounds, metrics). These

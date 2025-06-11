@@ -90,15 +90,21 @@ class LinearInterpolate(DataConverter):
             input_dataset,
             input_key,
         )
-        if not dataset:
+        if dataset is None:
             return None
+
         # Get the transformation parameters. This is a dictionary that has 3 keys:
         # 'alignment', 'range', and 'width'. For each entry of those there is another
         # dictionary for each coordinate to transform with the corresponding value,
         # which will be either a string or a number.
         trans_params = retriever.parameters.trans_params.select_parameters(input_key)
         t_range = trans_params["range"][self.coord]
-        assert t_range is not None
+        if t_range is None:
+            raise ValueError(
+                f"{self.__repr_name__} requires a 'range' parameter for the coordinate"
+                f" '{self.coord}' and variable {variable_name}, but it was not provided"
+                " in the transformation parameters."
+            )
 
         # Get the output coordinate labels and generate the 'bounds' corresponding with
         # those labels. I say 'bounds' in quotes because these are really more related

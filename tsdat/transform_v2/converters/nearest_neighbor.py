@@ -88,7 +88,7 @@ class NearestNeighbor(DataConverter):
             input_dataset,
             input_key,
         )
-        if not dataset:
+        if dataset is None:
             return None
 
         # Get the transformation parameters. This is a dictionary that has 3 keys:
@@ -97,7 +97,12 @@ class NearestNeighbor(DataConverter):
         # which will be either a string or a number.
         trans_params = retriever.parameters.trans_params.select_parameters(input_key)  # type: ignore
         t_range = trans_params["range"][self.coord]
-        assert t_range is not None
+        if t_range is None:
+            raise ValueError(
+                f"{self.__repr_name__} requires a 'range' parameter for the coordinate"
+                f" '{self.coord}' and variable {variable_name}, but it was not provided"
+                " in the transformation parameters."
+            )
         labels = retrieved_dataset.coords[self.coord].values
 
         # ############################################################################ #
