@@ -13,7 +13,8 @@ def create_bounds(
     width: float | str | None = None,
     alignment: Literal["left", "right", "center"] | float = "left",
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Creates a 2D array of start and end times between the start and stop times.
+    """
+    Creates a 2D array of start and end times between the start and stop bounds.
     Returns both the 1D coordinate labels and the 2D array of coordinate bounds.
 
     Args:

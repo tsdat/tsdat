@@ -27,6 +27,19 @@ def interpolate(
     coord_labels: np.ndarray,
     coord_bounds: np.ndarray,
 ) -> xr.Dataset:
+    """
+    Perform a linear interpolation on the input dataset based on the specified coordinate.
+    This function creates an empty dataset with the desired coordinate labels and bounds,
+    and then performs linear interpolation for each variable in the input dataset.
+    Args:
+        input_dataset (xr.Dataset): The input xarray Dataset to be transformed.
+        coord_name (str): The name of the coordinate variable to use for interpolation.
+        coord_labels (np.ndarray): The new coordinate labels to align the dataset with.
+        coord_bounds (np.ndarray): The bounds for the new coordinate variable.
+    Returns:
+        xr.Dataset: The transformed xarray Dataset with interpolated values.
+    """
+
     input_data_variables = get_input_variables_for_transform(input_dataset, coord_name)
 
     output_dataset = empty_dataset_like(

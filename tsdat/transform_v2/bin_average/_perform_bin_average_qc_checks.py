@@ -11,6 +11,23 @@ def perform_bin_average_qc_checks(
     GOODFRAC_IND_MIN: float = 0.15,
     GOODFRAC_BAD_MIN: float = 0.05,
 ) -> np.ndarray:
+    """
+    Perform quality control checks on the results of a bin average transformation.
+    Args:
+        good_mask (np.ndarray): A boolean mask indicating good data points.
+        ind_mask (np.ndarray): A boolean mask indicating indeterminate data points.
+        bad_mask (np.ndarray): A boolean mask indicating bad data points.
+        weights (np.ndarray): The weights used in the bin average transformation.
+        std_dev (np.ndarray): The standard deviation of the data points in the bin.
+        axis (int): The axis along which the bin average was performed.
+        GOODFRAC_IND_MIN (float): Minimum fraction of good and indeterminate points for
+            the QC_INDETERMINATE_GOODFRAC check.
+        GOODFRAC_BAD_MIN (float): Minimum fraction of good and indeterminate points for
+            the QC_BAD_GOODFRAC check.
+    Returns:
+        np.ndarray: An array of quality control flags for each bin.
+    """
+    # The QC flags are defined as follows:
     # X 1       "QC_BAD:  Transformation could not finish, value set to missing_value.",
     # X 2       "QC_INDETERMINATE:  Some, or all, of the input values used to create this output value had a QC assessment of Indeterminate.",
     #   4       "QC_INTERPOLATE:  Indicates a non-standard interpolation using points other than the two that bracket the target index was applied.",

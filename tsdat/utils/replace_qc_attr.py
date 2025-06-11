@@ -1,6 +1,15 @@
 def replace_qc_attr(data, old_name, variable_name, output_qc_name):
-    """If variable name changed, must replace ancillary_variable attribute for
-    act-atmos qc to work."""
+    """
+    If variable name changed, must replace ancillary_variable attribute for act-atmos
+    quality control to work.
+    Args:
+        data (xarray.DataArray or xarray.Dataset): The data object containing the variable.
+        old_name (str): The original name of the variable.
+        variable_name (str): The new name of the variable.
+        output_qc_name (str): The new QC variable name to be used in ancillary_variables.
+    Returns:
+        xarray.DataArray or xarray.Dataset: The modified data object with updated ancillary_variables.
+    """
 
     if hasattr(data, "ancillary_variables"):
         ancillary_vars = data.attrs["ancillary_variables"]

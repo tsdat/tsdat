@@ -21,7 +21,25 @@ def create_input_dataset(
     input_dataset: Optional[xr.Dataset] = None,
     input_key: Optional[str] = None,
 ) -> Optional[xr.Dataset]:
-    # ############################################################################ #
+    """
+    This function prepares the input dataset for a transformation by ensuring
+    that the necessary coordinate and ancillary variables are present. It retrieves
+    the required variables from the retrieved dataset and input dataset, and renames
+    the coordinate if necessary. If the variable cannot be transformed, it returns
+    None.
+    Args:
+        data (xr.DataArray): The data array to be transformed.
+        variable_name (str): The name of the variable being transformed.
+        coord_name (str): The name of the coordinate variable.
+        dataset_config (DatasetConfig): The dataset configuration object.
+        retrieved_dataset (RetrievedDataset): The dataset containing retrieved variables.
+        retriever (Optional[StorageRetriever]): The storage retriever object, if available.
+        input_dataset (Optional[xr.Dataset]): The input dataset to pull variables from.
+        input_key (Optional[str]): The key for the input dataset, if applicable.
+    Returns:
+        Optional[xr.Dataset]: The input dataset for the transformation, or None if
+        the variable cannot be transformed.
+    """
 
     # The variable being transformed has to have the coordinate in its dimensions.
     # If it doesn't, then we can do nothing here so we just skip.

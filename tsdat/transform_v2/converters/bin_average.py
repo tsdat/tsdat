@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Optional
 import xarray as xr
+
 from ...io.base import DataConverter, RetrievedDataset
 from ...utils.replace_qc_attr import replace_qc_attr
 from ..bin_average.calculate_bin_average import calculate_bin_average
@@ -13,7 +14,22 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class BinAverage(DataConverter):
-    """Saves data into the specified coordinate grid using bin-averaging."""
+    """
+    Saves data into the specified coordinate grid using bin-averaging.
+    This converter is used to reindex a variable onto a new coordinate grid using bin
+    averaging. It is particularly useful for aligning datasets with different time
+    coordinates or other coordinate variables.
+    The coordinate axis this converter should be applied on can be specified using the
+    `coord` parameter. The default is 'time', but it can be set to any coordinate
+    variable present in the dataset.
+    The converter will preserve the original variable's data, and if requested, it will
+    also keep the quality control (QC) checks and transformation metrics as new data
+    variables in the output dataset.
+    Attributes:
+        coord (str): The coordinate axis this converter should be applied on. Defaults to 'time'.
+        keep_metrics (bool): If true, then transform metrics will be preserved in the output dataset.
+        keep_qc (bool): If true, then transform qc checks will be preserved in the output dataset.
+    """
 
     # TODO: Implement "ALL" -- default to iterating over all the variable's coords
     coord: str = "time"
@@ -38,10 +54,22 @@ class BinAverage(DataConverter):
         input_key: Optional[str] = None,
         **kwargs: Any,
     ) -> Optional[xr.DataArray]:
-        # ############################################################################ #
-        # Perform sanity checks on the arguments provided. There should probably be a
-        # better way to do these things than in each converter, but I don't have time to
-        # figure that out now.
+        """
+        Convert the provided data using bin-averaging.
+        Args:
+            data (xr.DataArray): The data array to be transformed.
+            variable_name (str): The name of the variable to be transformed.
+            dataset_config (DatasetConfig): The configuration for the dataset.
+            retrieved_dataset (RetrievedDataset): The dataset that has been retrieved.
+            retriever (Optional[StorageRetriever]): The retriever used to access the data.
+            input_dataset (Optional[xr.Dataset]): An optional input dataset to use for the
+                transformation.
+            input_key (Optional[str]): An optional key for the input dataset.
+            **kwargs: Additional keyword arguments.
+        Returns:
+            Optional[xr.DataArray]: The transformed data array, or None if no transformation
+            is performed.
+        """
 
         # Coordinate variables can't be the subject of a bin average transformation. The
         # user probably made a mistake in the config file.

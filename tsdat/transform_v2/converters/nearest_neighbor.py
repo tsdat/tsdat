@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Optional
 import xarray as xr
+
 from ...io.base import DataConverter, RetrievedDataset
 from ...utils.replace_qc_attr import replace_qc_attr
 from ..nearest_neighbor.calculate_nearest_neighbor import nearest_neighbor
@@ -13,7 +14,22 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 class NearestNeighbor(DataConverter):
-    """Saves data into the specified coordinate grid using nearest neighbor."""
+    """
+    Saves data into the specified coordinate grid using nearest neighbor.
+    This converter is used to reindex a variable onto a new coordinate grid using the
+    nearest neighbor method. It is particularly useful for aligning datasets with
+    different time coordinates or other coordinate variables.
+    The coordinate axis this converter should be applied on can be specified using the
+    `coord` parameter. The default is 'time', but it can be set to any coordinate
+    variable present in the dataset.
+    The converter will preserve the original variable's data, and if requested, it will
+    also keep the quality control (QC) checks and transformation metrics as new data
+    variables in the output dataset.
+    Attributes:
+        coord (str): The coordinate axis this converter should be applied on. Defaults to 'time'.
+        keep_metrics (bool): If true, then transform metrics will be preserved in the output dataset.
+        keep_qc (bool): If true, then transform qc checks will be preserved in the output dataset.
+    """
 
     # TODO: Implement "ALL" -- default to iterating over all the variable's coords
     coord: str = "time"
@@ -38,10 +54,20 @@ class NearestNeighbor(DataConverter):
         input_key: Optional[str] = None,
         **kwargs: Any,
     ) -> Optional[xr.DataArray]:
-        # ############################################################################ #
-        # Perform sanity checks on the arguments provided. There should probably be a
-        # better way to do these things than in each converter, but I don't have time to
-        # figure that out now.
+        """
+        Convert the provided data using the nearest neighbor method.
+        Args:
+            data (xr.DataArray): The data array to be transformed.
+            variable_name (str): The name of the variable being transformed.
+            dataset_config (DatasetConfig): The dataset configuration object.
+            retrieved_dataset (RetrievedDataset): The dataset containing retrieved variables.
+            retriever (Optional[StorageRetriever]): The storage retriever object, if available.
+            input_dataset (Optional[xr.Dataset]): The input dataset to pull variables from.
+            input_key (Optional[str]): The key for the input dataset, if applicable.
+        Returns:
+            Optional[xr.DataArray]: The transformed data array, or None if the variable
+            cannot be transformed.
+        """
 
         # Coordinate variables can't be the subject of an interpolation transformation.
         # The user probably made a mistake in the config file.

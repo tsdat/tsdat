@@ -3,6 +3,17 @@ import xarray as xr
 
 
 def add_empty_transform_qc_var(dataset: xr.Dataset, input_var_name: str) -> str:
+    """
+    Add an empty quality control variable to the dataset for a transformed variable.
+    The quality control variable is initialized with zeros and has the same shape
+    as the input variable.
+    Args:
+        dataset (xr.Dataset): The dataset to which the quality control variable will be added.
+        input_var_name (str): The name of the input variable for which the quality control
+                              variable is being created.
+    Returns:
+        str: The name of the newly created quality control variable.
+    """
     qc_var_name = f"qc_{input_var_name}"
     input_long_name = dataset[input_var_name].attrs.get("long_name", input_var_name)
     dataset[qc_var_name] = xr.full_like(
