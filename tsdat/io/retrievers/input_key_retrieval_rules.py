@@ -20,17 +20,17 @@ class InputKeyRetrievalRules:
         data_var_rules: Dict[VarName, Dict[Pattern[Any], RetrievedVariable]],
     ):
         self.input_key = input_key
-        self.coords: Dict[VarName, RetrievedVariable] = {}
-        self.data_vars: Dict[VarName, RetrievedVariable] = {}
+        self.coord_rules: Dict[VarName, RetrievedVariable] = {}
+        self.data_var_rules: Dict[VarName, RetrievedVariable] = {}
 
         for name, retriever_dict in coord_rules.items():
             for pattern, variable_retriever in retriever_dict.items():
                 if pattern.match(input_key):
-                    self.coords[name] = variable_retriever
-                break
+                    self.coord_rules[name] = variable_retriever
+                    break
 
         for name, retriever_dict in data_var_rules.items():
             for pattern, variable_retriever in retriever_dict.items():
                 if pattern.match(input_key):
-                    self.data_vars[name] = variable_retriever
-                break
+                    self.data_var_rules[name] = variable_retriever
+                    break

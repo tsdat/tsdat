@@ -28,7 +28,7 @@ def _run_data_converters(
     ------------------------------------------------------------------------------------
     """
     retrieved_dataset = RetrievedDataset.from_xr_dataset(dataset)
-    for coord_name, coord_config in input_config.coords.items():
+    for coord_name, coord_config in input_config.coord_rules.items():
         for converter in coord_config.data_converters:
             data_array = retrieved_dataset.coords[coord_name]
             data = converter.convert(
@@ -37,7 +37,7 @@ def _run_data_converters(
             if data is not None:
                 retrieved_dataset.coords[coord_name] = data
                 dataset = assign_data(dataset, data.data, coord_name)
-    for var_name, var_config in input_config.data_vars.items():
+    for var_name, var_config in input_config.data_var_rules.items():
         for converter in var_config.data_converters:
             data_array = retrieved_dataset.data_vars[var_name]
             data = converter.convert(

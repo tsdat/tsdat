@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 from typing import (
     Any,
     Dict,
@@ -54,8 +55,8 @@ class DefaultRetriever(Retriever):
         for key, dataset in raw_mapping.items():
             input_config = InputKeyRetrievalRules(
                 input_key=key,
-                coord_rules=self.coords,  # type: ignore
-                data_var_rules=self.data_vars,  # type: ignore
+                coord_rules=deepcopy(self.coords),  # type: ignore
+                data_var_rules=deepcopy(self.data_vars),  # type: ignore
             )
             dataset = _rename_variables(dataset, input_config)
             dataset = _reindex_dataset_coords(dataset, dataset_config, input_config)
