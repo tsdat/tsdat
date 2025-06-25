@@ -177,6 +177,19 @@ def test_create_input_dataset_errors(
             input_key=None,
         )
 
+    kwargs.update({"variable_name": "humidity_bounds"})
+    assert utils.create_input_dataset.create_input_dataset(**kwargs) is None
+    kwargs.update({"variable_name": "humidity", "coord_name": "time_bounds"})
+    assert (
+        utils.create_input_dataset.create_input_dataset(
+            **kwargs,
+            retriever=storage_retriever_v2_transform,
+            input_dataset=_dataset,
+            input_key=input_path,
+        )
+        is None
+    )
+
 
 def test_transform_v2(
     storage_retriever_v2_transform: StorageRetriever,

@@ -41,17 +41,17 @@ def create_input_dataset(
         the variable cannot be transformed.
     """
 
-    # The variable being transformed has to have the coordinate in its dimensions.
-    # If it doesn't, then we can do nothing here so we just skip.
-    if coord_name not in dataset_config[variable_name].dims:
-        return None
-
     # Some variables can't be transformed here - specifically bounds variables, qc
     # variables, and transformation metrics variables.
     # TODO: Actually transformation metrics might need to be handled here. Perhaps
     # a linear interpolation of those (no need to handle QC). It could be triggered
     # by transforming the variable that the metrics are associated with (?)
     if variable_name.endswith("_bounds") or is_qc_var(data) or is_metric_var(data):
+        return None
+
+    # The variable being transformed has to have the coordinate in its dimensions.
+    # If it doesn't, then we can do nothing here so we just skip.
+    if coord_name not in dataset_config[variable_name].dims:
         return None
 
     if retriever is None:
