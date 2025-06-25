@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import xarray as xr
+import pytest
 from pytest import fixture
 
 from tsdat.transform_v2 import utils
@@ -144,6 +145,37 @@ def test_create_bounds():
     np.testing.assert_equal(time_bounds, cd_time_bounds)
     np.testing.assert_equal(height_labels, cd_height_labels)
     np.testing.assert_equal(height_bounds, cd_height_bounds)
+
+
+def test_create_input_dataset_errors(
+    storage_retriever_v2_transform: StorageRetriever,
+    vap_transform_dataset_config: DatasetConfig,
+):
+    input_path = "test/io/data/retriever-store/data/test.trans_inputs.a1/test.trans_inputs.a1.20220413.140000.nc"
+    _dataset = create_input_dataset(input_path)
+    # Various None assertions for test coverage
+    kwargs = {
+        "data": _dataset["rh"],
+        "variable_name": "humidity",
+        "coord_name": "time",
+        "dataset_config": vap_transform_dataset_config,
+        "retrieved_dataset": _dataset,
+    }
+    with pytest.raises(AssertionError):
+        utils.create_input_dataset.create_input_dataset(**kwargs, retriever=None)
+    with pytest.raises(IOError):
+        utils.create_input_dataset.create_input_dataset(
+            **kwargs,
+            retriever=storage_retriever_v2_transform,
+            input_dataset=None,
+        )
+    with pytest.raises(FileNotFoundError):
+        utils.create_input_dataset.create_input_dataset(
+            **kwargs,
+            retriever=storage_retriever_v2_transform,
+            input_dataset=_dataset,
+            input_key=None,
+        )
 
 
 def test_transform_v2(
