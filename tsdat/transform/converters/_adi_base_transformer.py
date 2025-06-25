@@ -37,11 +37,20 @@ class _ADIBaseTransformer(DataConverter):
             )
         data = data.copy()  # prevent object metadata changes accidentally propagating
 
-        assert retriever is not None
-        assert retriever.parameters is not None
-        assert retriever.parameters.trans_params is not None
-        assert input_dataset is not None
-        assert input_key is not None
+        if retriever is None:
+            raise AssertionError("No retriever provided to transform DataConverter.")
+        if retriever.parameters is None:
+            raise AssertionError(
+                "No retriever parameters provided to transform DataConverter."
+            )
+        if retriever.parameters.trans_params is None:
+            raise AssertionError(
+                "No retriever transformation parameters provided to transform DataConverter."
+            )
+        if input_dataset is None:
+            raise IOError("No input dataset provided to transform DataConverter.")
+        if input_key is None:
+            raise FileNotFoundError("No input key provided to transform DataConverter.")
 
         output_coord_names = dataset_config[variable_name].dims
         input_coord_names = list(data.dims)  # type: ignore

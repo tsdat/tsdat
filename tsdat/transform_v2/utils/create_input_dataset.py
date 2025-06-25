@@ -55,11 +55,13 @@ def create_input_dataset(
         return None
 
     if retriever is None:
-        raise ValueError("No retriever provided to transform DataConverter.")
+        raise AssertionError("No retriever provided to transform DataConverter.")
     if retriever.parameters is None:
-        raise ValueError("No retriever parameters provided to transform DataConverter.")
+        raise AssertionError(
+            "No retriever parameters provided to transform DataConverter."
+        )
     if retriever.parameters.trans_params is None:
-        raise ValueError(
+        raise AssertionError(
             "No retriever transformation parameters provided to transform DataConverter."
         )
     if input_dataset is None:

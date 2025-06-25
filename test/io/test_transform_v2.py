@@ -6,6 +6,7 @@ import pandas as pd
 import xarray as xr
 from pytest import fixture
 
+from tsdat.transform_v2 import utils
 from tsdat import (
     DatasetConfig,
     FileSystem,
@@ -87,7 +88,10 @@ def create_input_dataset(filepath: str | Path) -> xr.Dataset:
             "rh": (
                 "time",
                 [59, 60, 61, 62, 63, 64],
-                {"comment": "test case with no units attr"},
+                {
+                    "comment": "test case with no units attr",
+                    "ancillary_variables": "rel_humidity",
+                },
             ),
             "qc_rh": (
                 "time",
@@ -106,6 +110,40 @@ def create_input_dataset(filepath: str | Path) -> xr.Dataset:
     input_dataset.to_netcdf(path)  # type: ignore
 
     return input_dataset
+
+
+def test_create_bounds():
+    time_labels, time_bounds = utils.create_bounds.create_bounds(
+        start="2023-06-01",
+        stop="2023-06-01 01:00:00",
+        interval="30min",
+        alignment="center",
+    )
+
+    height_labels, height_bounds = utils.create_bounds.create_bounds(
+        start=0.0,
+        stop=1.0,
+        interval=0.25,
+        alignment="left",
+    )
+
+    cd_time_labels = np.array(
+        ["2023-06-01 00:00:00", "2023-06-01 00:30:00"], dtype="datetime64[ns]"
+    )
+    cd_height_labels = [0, 0.25, 0.5, 0.75]
+    cd_time_bounds = np.array(
+        [
+            ["2023-05-31 23:45:00", "2023-06-01 00:15:00"],
+            ["2023-06-01 00:15:00", "2023-06-01 00:45:00"],
+        ],
+        dtype="datetime64[ns]",
+    )
+    cd_height_bounds = [[0, 0.25], [0.25, 0.5], [0.5, 0.75], [0.75, 1.0]]
+
+    np.testing.assert_equal(time_labels, cd_time_labels)
+    np.testing.assert_equal(time_bounds, cd_time_bounds)
+    np.testing.assert_equal(height_labels, cd_height_labels)
+    np.testing.assert_equal(height_bounds, cd_height_bounds)
 
 
 def test_transform_v2(

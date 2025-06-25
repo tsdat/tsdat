@@ -77,7 +77,8 @@ class StorageRetriever(Retriever):
 
         ------------------------------------------------------------------------------------
         """
-        assert storage is not None, "Missing required 'storage' parameter."
+        if storage is None:
+            raise AssertionError("Missing required 'storage' parameter.")
 
         storage_input_keys = [StorageRetrieverInput(key) for key in input_keys]
 
