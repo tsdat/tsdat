@@ -5,6 +5,7 @@ import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
 from pydantic import BaseModel, Extra, root_validator, validator
+import act
 
 from ..base import QualityHandler
 
@@ -59,12 +60,6 @@ class RecordQualityResults(QualityHandler):
         failures: NDArray[np.bool_],
     ) -> xr.Dataset:
 
-        # Remove old QC variables from list in case variable name has changed
-        anc_var = getattr(dataset[variable_name], "ancillary_variables", None)
-        # act-atmos's qcfilter can't handle multiple ancillary_variables
-        if anc_var is not None:
-            dataset[variable_name].attrs.pop("ancillary_variables")
-
         dataset.qcfilter.add_test(
             variable_name,
             index=failures if failures.any() else None,
@@ -80,7 +75,7 @@ class RecordQualityResults(QualityHandler):
         if (qc_var := dataset.get(f"qc_{variable_name}")) is None:
             return 1
         masks = qc_var.attrs.get("flag_masks")
-        if not isinstance(masks, list):
+        if not (isinstance(masks, list) or isinstance(masks, np.ndarray)):
             raise ValueError(
                 f"QC Variable {qc_var.name} is not standardized. Expected 'flag_masks'"
                 f" attribute to be like [1, 2, ...], but found '{masks}'"

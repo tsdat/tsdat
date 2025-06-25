@@ -19,6 +19,7 @@ from tsdat import (
     assert_close,
     recursive_instantiate,
 )
+from tsdat.transform.converters import _ADIBaseTransformer
 
 # Coords used in sample input data
 time_3pt = pd.date_range("2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left")  # type: ignore
@@ -310,6 +311,32 @@ def test_storage_retriever_transformations(
     path = Path(
         "test/io/data/retriever-store/data/test.trans_inputs.a1/test.trans_inputs.a1.20220413.140000.nc"
     )
+
+    # Various None assertions for test coverage
+    ADI_transform = _ADIBaseTransformer(transformation_type="TRANS_AUTO")
+    kwargs = {
+        "data": input_dataset["rh"],
+        "variable_name": "humidity",
+        "coord_name": "time",
+        "dataset_config": vap_transform_dataset_config,
+        "retrieved_dataset": input_dataset,
+    }
+    with pytest.raises(AssertionError):
+        ADI_transform.convert(**kwargs, retriever=None)
+    with pytest.raises(IOError):
+        ADI_transform.convert(
+            **kwargs,
+            retriever=storage_retriever_transform,
+            input_dataset=None,
+        )
+    with pytest.raises(FileNotFoundError):
+        ADI_transform.convert(
+            **kwargs,
+            retriever=storage_retriever_transform,
+            input_dataset=input_dataset,
+            input_key=None,
+        )
+
     path.parent.mkdir(parents=True, exist_ok=True)
     input_dataset.to_netcdf(path)  # type: ignore
     inputs = [

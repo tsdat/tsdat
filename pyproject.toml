@@ -18,7 +18,7 @@ dependencies = [
   "dunamai==1.9.0",
   "jsonpointer==2.2",
   "netCDF4",
-  "numpy >=1.2",
+  "numpy <2.0",
   "pandas >=1.2",
   "pint",
   "pydantic >=1.10.0, <2.0.0",
