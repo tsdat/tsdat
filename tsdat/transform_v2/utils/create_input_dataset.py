@@ -82,11 +82,11 @@ def create_input_dataset(
         raise ValueError(
             f"Variable '{variable_name}' not found in the retrieved dataset for input key '{input_key}'."
         )
+    # TODO This fails transforms that rely on coordinates that come from other files
     if retrieved_coord is None:
         raise ValueError(
             f"Coordinate '{coord_name}' not found in the retrieved dataset for input key '{input_key}'."
         )
-    # TODO: Need to assert the coord is not NA (something we used to do)
 
     # Get the list of associated variable names (qc, bounds, metrics). These
     # correspond with entries in the output structure and the retrieved_dataset
