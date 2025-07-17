@@ -58,20 +58,20 @@ def create_input_dataset(filepath: str | Path) -> xr.Dataset:
             )
         },
         data_vars={
-            "time_bounds": (
-                ("timestamp", "bound"),
-                (
-                    [
-                        pd.to_datetime(["2022-04-13 13:55:00", "2022-04-13 14:05:00"]),
-                        pd.to_datetime(["2022-04-13 14:05:00", "2022-04-13 14:15:00"]),
-                        pd.to_datetime(["2022-04-13 14:15:00", "2022-04-13 14:25:00"]),
-                        pd.to_datetime(["2022-04-13 14:25:00", "2022-04-13 14:35:00"]),
-                        pd.to_datetime(["2022-04-13 14:35:00", "2022-04-13 14:45:00"]),
-                        pd.to_datetime(["2022-04-13 14:45:00", "2022-04-13 14:55:00"]),
-                    ]
-                ),
-                {"comment": "bounds for time variable"},
-            ),
+            # "time_bounds": (
+            #     ("timestamp", "bound"),
+            #     (
+            #         [
+            #             pd.to_datetime(["2022-04-13 13:55:00", "2022-04-13 14:05:00"]),
+            #             pd.to_datetime(["2022-04-13 14:05:00", "2022-04-13 14:15:00"]),
+            #             pd.to_datetime(["2022-04-13 14:15:00", "2022-04-13 14:25:00"]),
+            #             pd.to_datetime(["2022-04-13 14:25:00", "2022-04-13 14:35:00"]),
+            #             pd.to_datetime(["2022-04-13 14:35:00", "2022-04-13 14:45:00"]),
+            #             pd.to_datetime(["2022-04-13 14:45:00", "2022-04-13 14:55:00"]),
+            #         ]
+            #     ),
+            #     {"comment": "bounds for time variable"},
+            # ),
             "temp": (
                 "time",
                 [0.0, 1.0, 2.0, -9999.0, 4.0, 5.0],
@@ -202,11 +202,11 @@ def test_transform_v2(
         )
     )
 
-    input_path = "test/io/data/retriever-store/data/test.trans_inputs.a1/test.trans_inputs_no_bounds.a1.20220413.140000.nc"
+    input_path = "test/io/data/retriever-store/data/test.trans_inputs.a1/test.trans_inputs.a1.20220413.140000.nc"
     _ = create_input_dataset(input_path)
 
     inputs = [
-        "--datastream test.trans_inputs_no_bounds.a1 --start 20220413.000000 --end 20220414.000000",
+        "--datastream test.trans_inputs.a1 --start 20220413.000000 --end 20220414.000000",
     ]
 
     ds = storage_retriever_v2_transform.retrieve(

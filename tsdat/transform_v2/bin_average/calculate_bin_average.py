@@ -37,13 +37,6 @@ def calculate_bin_average(
         input_dataset = input_dataset.copy()
         input_dataset.clean.cleanup()  # basically required for act QC functions to work
 
-    # TODO: should warn if the bounds if not present and create center-aligned bounds.
-    input_coord_bounds = input_dataset[f"{coord_name}_bounds"].values
-
-    input_indices, overlap_ratios, _ = get_bound_overlaps(
-        input_coord_bounds, coord_bounds
-    )
-
     input_data_variables = get_input_variables_for_transform(input_dataset, coord_name)
 
     output_dataset = empty_dataset_like(
@@ -54,6 +47,13 @@ def calculate_bin_average(
         add_transform_qc=True,
         add_metric_vars=add_metrics,
     )
+    # TODO: should warn if the bounds if not present and create center-aligned bounds.
+    input_coord_bounds = input_dataset[f"{coord_name}_bounds"].values
+
+    input_indices, overlap_ratios, _ = get_bound_overlaps(
+        input_coord_bounds, coord_bounds
+    )
+
     for var_name, data_array in input_data_variables.items():
         axis = data_array.dims.index(coord_name)
         data_values = data_array.values
@@ -98,8 +98,8 @@ def calculate_bin_average(
                     weights=weights,
                     axis=axis,
                 )
-                output_dataset[f"{var_name}_goodfraction"][{coord_name: output_idx}] = (
-                    goodfrac
-                )
+                output_dataset[f"{var_name}_goodfraction"][
+                    {coord_name: output_idx}
+                ] = goodfrac
 
     return output_dataset
