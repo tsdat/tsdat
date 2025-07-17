@@ -105,7 +105,7 @@ def interpolate(
                 output_dataset[qc_var_name][{coord_name: output_idx}] = 128 + 1
                 continue
 
-            # damn, this whole approach actually doesn't work for 2D data
+            # this whole approach actually doesn't work for 2D data
             # valid_input_idxs = []
             # valid_input_distances = []
             # for i in range(len(input_idxs)):

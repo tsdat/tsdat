@@ -202,11 +202,11 @@ def test_transform_v2(
         )
     )
 
-    input_path = "test/io/data/retriever-store/data/test.trans_inputs.a1/test.trans_inputs.a1.20220413.140000.nc"
+    input_path = "test/io/data/retriever-store/data/test.trans_inputs.a1/test.trans_inputs_no_bounds.a1.20220413.140000.nc"
     _ = create_input_dataset(input_path)
 
     inputs = [
-        "--datastream test.trans_inputs.a1 --start 20220413.000000 --end 20220414.000000",
+        "--datastream test.trans_inputs_no_bounds.a1 --start 20220413.000000 --end 20220414.000000",
     ]
 
     ds = storage_retriever_v2_transform.retrieve(
