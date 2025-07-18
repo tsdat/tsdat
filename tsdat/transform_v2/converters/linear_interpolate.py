@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Any, Optional
+
 import xarray as xr
 
 from ...io.base import DataConverter, RetrievedDataset
@@ -108,8 +109,7 @@ class LinearInterpolate(DataConverter):
 
         # Get the output coordinate labels and generate the 'bounds' corresponding with
         # those labels. I say 'bounds' in quotes because these are really more related
-        # to the transform logic than they are necessarily to the real coord bounds, as
-        # described in the next comment block below.
+        # to the transform logic than they are necessarily to the real coord bounds.
         labels = retrieved_dataset.coords[self.coord].values
         bounds = create_bounds_from_labels(
             labels=labels,

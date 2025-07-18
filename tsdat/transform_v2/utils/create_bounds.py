@@ -161,7 +161,13 @@ def _create_bounds_from_labels(
     # If width is not provided, then we can generate it using the differences between
     # the provided labels. In this case it will be an array, as opposed to a scalar.
     if width is None:
-        width = np.diff(labels, prepend=0)
+        # With the diff method there will be one less element in the width than the
+        # labels. For other uses you would normally prepend '0', but doing so here would
+        # result in the first bounds entry having 0 width, which is not what we want. So
+        # instead we duplicate the first value and add it back to the front.
+        # diff value instead.
+        width = np.diff(labels)
+        width = np.append(width[0], width)
 
     start_values = labels - (alignment * width)
     end_values = start_values + width

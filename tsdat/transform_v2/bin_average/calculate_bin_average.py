@@ -1,6 +1,7 @@
 import numpy as np
 import xarray as xr
 
+from ..utils.create_bounds import create_bounds_from_labels
 from ..utils.create_empty_dataset import empty_dataset_like
 from ..utils.get_bound_overlaps import get_bound_overlaps
 from ..utils.get_filtered_data import get_filtered_data
@@ -48,7 +49,12 @@ def calculate_bin_average(
         add_metric_vars=add_metrics,
     )
     # TODO: should warn if the bounds if not present and create center-aligned bounds.
-    input_coord_bounds = input_dataset[f"{coord_name}_bounds"].values
+    if f"{coord_name}_bounds" in input_dataset:
+        input_coord_bounds = input_dataset[f"{coord_name}_bounds"].values
+    else:
+        input_coord_bounds = create_bounds_from_labels(
+            input_dataset[coord_name].values, alignment="center"
+        )
 
     input_indices, overlap_ratios, _ = get_bound_overlaps(
         input_coord_bounds, coord_bounds
@@ -98,8 +104,8 @@ def calculate_bin_average(
                     weights=weights,
                     axis=axis,
                 )
-                output_dataset[f"{var_name}_goodfraction"][
-                    {coord_name: output_idx}
-                ] = goodfrac
+                output_dataset[f"{var_name}_goodfraction"][{coord_name: output_idx}] = (
+                    goodfrac
+                )
 
     return output_dataset
