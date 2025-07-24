@@ -1,6 +1,7 @@
 import numpy as np
 import xarray as xr
 
+from ..utils.create_bounds import create_bounds_from_labels
 from ..utils.create_empty_dataset import empty_dataset_like
 from ..utils.get_bound_overlaps import get_bound_overlaps
 from ..utils.get_filtered_data import get_filtered_data
@@ -51,9 +52,15 @@ def interpolate(
         add_metric_vars=False,
     )
 
+    if f"{coord_name}_bounds" in input_dataset:
+        input_coord_bounds = input_dataset[f"{coord_name}_bounds"].values
+    else:  # Infer the bounds from the coordinate values if needed
+        input_coord_bounds = create_bounds_from_labels(
+            input_dataset[coord_name].values, alignment="center"
+        )
+
     # Calculate the time values we will interpolate from/onto using the midpoints of the
     # bound variables. For time-like coords we convert to seconds from the start time.
-    input_coord_bounds = input_dataset[f"{coord_name}_bounds"].values
     if np.issubdtype(input_coord_bounds.dtype, np.datetime64):
         start_time = input_coord_bounds[0, 0]
         input_coord_bounds = to_seconds_vec(input_coord_bounds - start_time)
@@ -105,7 +112,7 @@ def interpolate(
                 output_dataset[qc_var_name][{coord_name: output_idx}] = 128 + 1
                 continue
 
-            # damn, this whole approach actually doesn't work for 2D data
+            # this whole approach actually doesn't work for 2D data
             # valid_input_idxs = []
             # valid_input_distances = []
             # for i in range(len(input_idxs)):

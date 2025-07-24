@@ -3,11 +3,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import xarray as xr
 import pytest
+import xarray as xr
 from pytest import fixture
 
-from tsdat.transform_v2 import utils
 from tsdat import (
     DatasetConfig,
     FileSystem,
@@ -15,11 +14,17 @@ from tsdat import (
     StorageRetriever,
     recursive_instantiate,
 )
+from tsdat.transform_v2 import utils
 
-# Coords used in sample input data
+# #################################################################################### #
+#                           Coords used in sample input data
+
+# time_3pt is 3 timestamps which are each 8 hours apart
+# time_10pt is not as clean. 10 timestamps, each 2hrs 24min apart
 time_3pt = pd.date_range("2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left")  # type: ignore
 time_10pt = pd.date_range("2022-04-05", "2022-04-06", periods=10 + 1, inclusive="left")  # type: ignore
 
+# height_3pt more standard, height_4pt more weird
 height_3pt = [0.0, 5.0, 10.0]
 height_4pt = [1.0, 4.0, 11.0, 17.0]
 
@@ -58,20 +63,20 @@ def create_input_dataset(filepath: str | Path) -> xr.Dataset:
             )
         },
         data_vars={
-            "time_bounds": (
-                ("timestamp", "bound"),
-                (
-                    [
-                        pd.to_datetime(["2022-04-13 13:55:00", "2022-04-13 14:05:00"]),
-                        pd.to_datetime(["2022-04-13 14:05:00", "2022-04-13 14:15:00"]),
-                        pd.to_datetime(["2022-04-13 14:15:00", "2022-04-13 14:25:00"]),
-                        pd.to_datetime(["2022-04-13 14:25:00", "2022-04-13 14:35:00"]),
-                        pd.to_datetime(["2022-04-13 14:35:00", "2022-04-13 14:45:00"]),
-                        pd.to_datetime(["2022-04-13 14:45:00", "2022-04-13 14:55:00"]),
-                    ]
-                ),
-                {"comment": "bounds for time variable"},
-            ),
+            # "time_bounds": (
+            #     ("timestamp", "bound"),
+            #     (
+            #         [
+            #             pd.to_datetime(["2022-04-13 13:55:00", "2022-04-13 14:05:00"]),
+            #             pd.to_datetime(["2022-04-13 14:05:00", "2022-04-13 14:15:00"]),
+            #             pd.to_datetime(["2022-04-13 14:15:00", "2022-04-13 14:25:00"]),
+            #             pd.to_datetime(["2022-04-13 14:25:00", "2022-04-13 14:35:00"]),
+            #             pd.to_datetime(["2022-04-13 14:35:00", "2022-04-13 14:45:00"]),
+            #             pd.to_datetime(["2022-04-13 14:45:00", "2022-04-13 14:55:00"]),
+            #         ]
+            #     ),
+            #     {"comment": "bounds for time variable"},
+            # ),
             "temp": (
                 "time",
                 [0.0, 1.0, 2.0, -9999.0, 4.0, 5.0],
@@ -147,6 +152,26 @@ def test_create_bounds():
     np.testing.assert_equal(height_bounds, cd_height_bounds)
 
 
+def test_create_bounds_from_labels():
+    h_bounds = utils.create_bounds.create_bounds_from_labels(
+        np.array(height_3pt), alignment="center"
+    )
+    h_expected = np.array([[-2.5, 2.5], [2.5, 7.5], [7.5, 12.5]])
+    np.testing.assert_equal(h_bounds, h_expected)
+
+    h_bounds_left = utils.create_bounds.create_bounds_from_labels(
+        np.array(height_3pt), alignment="left"
+    )
+    h_expected_left = np.array([[0, 5], [5, 10], [10, 15]])
+    np.testing.assert_equal(h_bounds_left, h_expected_left)
+
+    h_bounds_right = utils.create_bounds.create_bounds_from_labels(
+        np.array(height_3pt), alignment="right"
+    )
+    h_expected_right = np.array([[-5, 0], [0, 5], [5, 10]])
+    np.testing.assert_equal(h_bounds_right, h_expected_right)
+
+
 def test_create_input_dataset_errors(
     storage_retriever_v2_transform: StorageRetriever,
     vap_transform_dataset_config: DatasetConfig,
@@ -219,12 +244,12 @@ def test_transform_v2(
         "temperature_60min",
         "humidity",
     ]:
-        assert (
-            var in ds.data_vars
-        ), f"{var} is expected to be in dataset. Found: {list(ds)}"
-        assert (
-            f"qc_{var}" in ds.data_vars
-        ), f"qc_{var} is expected to be in dataset. Found: {list(ds)}"
+        assert var in ds.data_vars, (
+            f"{var} is expected to be in dataset. Found: {list(ds)}"
+        )
+        assert f"qc_{var}" in ds.data_vars, (
+            f"qc_{var} is expected to be in dataset. Found: {list(ds)}"
+        )
 
     t30min = ds["temperature_30min"]
     # assert "TRANS_BIN_AVERAGE" in t30min.attrs.get("cell_transform", "")

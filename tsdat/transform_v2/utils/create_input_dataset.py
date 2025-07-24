@@ -141,7 +141,7 @@ def create_input_dataset(
         dataset = dataset.rename({input_coord_name: coord_name})  # type: ignore
     except ValueError:
         coord_index = dataset_config[variable_name].dims.index(coord_name)
-        current_coord_name = tuple(data.coords.keys())[coord_index]
+        current_coord_name = data.dims[coord_index]
         dataset = dataset.rename({current_coord_name: coord_name})
 
     return dataset
