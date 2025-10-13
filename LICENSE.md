@@ -1,6 +1,6 @@
 **Time Series Data Utilities**
 
-Copyright © 2021, Battelle Memorial Institute
+Copyright © 2025, Battelle Memorial Institute
 
 Licensed under a Simplified BSD 2-Clause License; 
 you may not use this software except in compliance with the License as specified below.

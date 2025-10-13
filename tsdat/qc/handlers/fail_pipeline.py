@@ -8,6 +8,9 @@ from pydantic import BaseModel, Extra
 from .data_quality_error import DataQualityError
 from ..base import QualityHandler
 
+# Don't print numpy datatypes around values
+np.set_printoptions(legacy="1.25")
+
 
 class FailPipeline(QualityHandler):
     """------------------------------------------------------------------------------------
