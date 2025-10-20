@@ -62,7 +62,7 @@ io = [
   "zarr",
 ]
 ocean = [
-  "mhkit[dolfyn] >=1.0.0",
+  "mhkit[dolfyn] >=1.0.1",
   "matplotlib !=3.9.1.post1",  # mhkit doesn't like this version string
 ]
 transform = [
