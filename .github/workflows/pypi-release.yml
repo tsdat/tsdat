@@ -14,6 +14,8 @@ jobs:
   build-n-publish:
     name: Build and release 🐍 📦
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
 
     steps:
       - uses: actions/checkout@v4
@@ -32,8 +34,6 @@ jobs:
         if: github.repository_owner == 'tsdat'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository-url: https://test.pypi.org/legacy/
 
       - name: Upload to PyPI (tagged release only)
@@ -41,6 +41,3 @@ jobs:
           github.repository_owner == 'tsdat' && github.event_name == 'release' &&
           github.event.action == 'published'
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
