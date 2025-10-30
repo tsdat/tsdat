@@ -153,7 +153,12 @@ class StorageRetriever(Retriever):
         # Double check that dataset is trimmed to start and end time
         # Need to do this if adi_py is not used and more than one
         # files are pulled in.
-        retrieved_dataset = self.__trim_dataset(retrieved_dataset, storage_input_keys)
+        if "time" in retrieved_dataset.coords:
+            retrieved_dataset = self.__trim_dataset(
+                retrieved_dataset, storage_input_keys
+            )
+        else:
+            raise AssertionError("Retrieved dataset is missing 'time' coordinate.")
 
         # Fix the dtype encoding
         for var_name, var_data in retrieved_dataset.data_vars.items():

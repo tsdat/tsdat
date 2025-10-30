@@ -109,15 +109,14 @@ class _ADIBaseTransformer(DataConverter):
             },
         ).rename(coord_rename_map)
         # NAs must be filled in order for the transformation to work successfully
-        trans_input_ds[variable_name].fillna(
-            trans_input_ds[variable_name].attrs.get(
+        fill_value = trans_input_ds[variable_name].attrs.get(
+            "_FillValue",
+            trans_input_ds[variable_name].encoding.get(
                 "_FillValue",
-                trans_input_ds[variable_name].encoding.get(
-                    "_FillValue",
-                    -9999,
-                ),
-            )
+                -9999,
+            ),
         )
+        trans_input_ds[variable_name].fillna(fill_value)
 
         # Build the structure of the output dataset. This must contain correct
         # coordinates and bound(s) variables and should have placeholder variables for
@@ -140,8 +139,8 @@ class _ADIBaseTransformer(DataConverter):
         trans_output_ds[variable_name] = xr.DataArray(
             coords=output_coord_data,
             dims=output_coord_names,
-            attrs={"missing_value": -9999, "_FillValue": -9999, **data.attrs},
-        ).fillna(-9999)
+            attrs={"missing_value": fill_value, "_FillValue": fill_value, **data.attrs},
+        ).fillna(fill_value)
 
         # Add empty qc variable to the dataset
         trans_output_ds[f"qc_{variable_name}"] = (
