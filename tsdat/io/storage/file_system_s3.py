@@ -258,7 +258,7 @@ class FileSystemS3(FileSystem):
                 )
                 data = self.handler.reader.read(tmp_filepath)
                 if isinstance(data, dict):
-                    data = xr.merge(data.values())  # type: ignore
+                    data = xr.merge(data.values(), join="outer", compat="no_conflicts")  # type: ignore
                 data = data.load()  # type: ignore
                 dataset_list.append(data)
         return dataset_list

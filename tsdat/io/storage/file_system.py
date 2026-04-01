@@ -26,9 +26,9 @@ class FileSystem(Storage):
     class Parameters(Storage.Parameters):
         data_storage_path: Path = Path("data/{location_id}/{datastream}")
         """The directory structure under storage_root where ancillary files are saved.
-        
+
         Allows substitution of the following parameters using curly braces '{}':
-        
+
         * ``storage_root``: the value from the ``storage_root`` parameter.
         * ``datastream``: the ``datastream`` as defined in the dataset config file.
         * ``location_id``: the ``location_id`` as defined in the dataset config file.
@@ -45,16 +45,16 @@ class FileSystem(Storage):
             "{datastream}.{yyyy}{mm}{dd}.{HH}{MM}{SS}.{extension}"
         )
         """Template string to use for data filenames.
-        
+
         Allows substitution of the following parameters using curly braces '{}':
-        
+
         * ``ext``: the file extension from the storage data handler
         * ``datastream`` from the dataset's global attributes
         * ``location_id`` from the dataset's global attributes
         * ``data_level`` from the dataset's global attributes
         * ``date_time``: the first timestamp in the file formatted as "YYYYMMDD.hhmmss"
         * Any other global attribute that has a string or integer data type.
-        
+
         At a minimum the template must include ``{date_time}``.
         """
 
@@ -215,7 +215,13 @@ class FileSystem(Storage):
         elif len(datasets) == 1:
             dataset = datasets[0].sel(time=slice(start, end))
         else:
-            dataset = xr.concat(datasets, dim="time")  # type: ignore
+            dataset = xr.concat(
+                datasets,
+                dim="time",
+                data_vars="all",
+                coords="different",
+                compat="equals",
+            )
             dataset = dataset.sel(time=slice(start, end))
         return dataset
 
@@ -266,7 +272,7 @@ class FileSystem(Storage):
         for filepath in filepaths:
             data = self.handler.reader.read(filepath.as_posix())
             if isinstance(data, dict):
-                data = xr.merge(data.values())  # type: ignore
+                data = xr.merge(data.values(), join="outer", compat="no_conflicts")  # type: ignore
             dataset_list.append(data)
         return dataset_list
 

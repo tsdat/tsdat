@@ -60,7 +60,7 @@ class UnitsConverter(DataConverter):
             converted = (data.data * ureg(input_units)).to(output_units).magnitude
             data_array = data.copy(data=converted.astype(out_dtype))
         except AttributeError:
-            print(f"the what??? {data=}, {ureg(input_units)=}, {output_units=}")
+            print(f"{data=}, {ureg(input_units)=}, {output_units=}")
             raise
 
         # Use original output units text

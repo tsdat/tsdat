@@ -32,7 +32,7 @@ class DefaultRetriever(Retriever):
     retrieved data."""
 
     class Parameters(BaseModel, extra=Extra.forbid):
-        merge_kwargs: Dict[str, Any] = {}
+        merge_kwargs: Dict[str, Any] = {"join": "outer", "compat": "no_conflicts"}
         """Keyword arguments passed to xr.merge(). This is only relevant if multiple
         input keys are provided simultaneously, or if any registered DataReader objects
         could return a dataset mapping instead of a single dataset."""
