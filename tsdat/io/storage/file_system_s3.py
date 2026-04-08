@@ -74,17 +74,12 @@ class FileSystemS3(FileSystem):
 
     @validator("parameters")
     def _ensure_bucket_exists(cls, parameters: Parameters):
-        import botocore.exceptions
-
+        # Throws an error if the bucket doesn't exist
         session = FileSystemS3._get_session(
             region=parameters.region, timehash=FileSystemS3._get_timehash()
         )
         s3 = session.resource("s3", region_name=parameters.region)  # type: ignore
-        try:
-            s3.meta.client.head_bucket(Bucket=parameters.bucket)
-        except botocore.exceptions.ClientError:
-            logger.warning("Creating bucket '%s'.", parameters.bucket)
-            s3.create_bucket(Bucket=parameters.bucket)
+        s3.meta.client.head_bucket(Bucket=parameters.bucket)
         return parameters
 
     @property
