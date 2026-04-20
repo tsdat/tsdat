@@ -19,17 +19,17 @@ class A2eCSVWriter(FileWriter):
         """Returns the new filepath given the dimensions for the file. E.g., adds the
         ".time.1d.a2e" part of the the filename like so:
 
-        - buoy.z07.a0.20221117.001000.metocean.time.1d.a2e.csv
-        - buoy.z07.a0.20221117.001000.metocean.depth.1d.a2e.csv
-        - buoy.z07.a0.20221117.001000.metocean.time.depth.2d.a2e.csv
+        - buoy.z07.a0.20221117.001000.metocean.time.1d.wdh.csv
+        - buoy.z07.a0.20221117.001000.metocean.depth.1d.wdh.csv
+        - buoy.z07.a0.20221117.001000.metocean.time.depth.2d.wdh.csv
         """
         dims_str = ".".join(dims)
-        new_suffix = f".{dims_str}.{len(dims)}d.a2e.csv"
+        new_suffix = f".{dims_str}.{len(dims)}d.wdh.csv"
 
         filepath_str = filepath.as_posix()
 
-        if filepath_str.endswith(".a2e.csv"):
-            filepath_str = filepath_str[: -len(".a2e.csv")] + new_suffix
+        if filepath_str.endswith(".wdh.csv"):
+            filepath_str = filepath_str[: -len(".wdh.csv")] + new_suffix
         elif filepath_str.endswith(".csv"):
             filepath_str = filepath_str[: -len(".csv")] + new_suffix
         else:
