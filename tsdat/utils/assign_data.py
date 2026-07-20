@@ -35,9 +35,14 @@ def assign_data(
         tmp_name = f"__{variable_name}__"
         dataset = dataset.rename_vars({variable_name: tmp_name})
 
-        # TODO: ensure attrs are copied over too
-        dataset[variable_name] = xr.zeros_like(dataset[tmp_name], dtype=data.dtype)  # type: ignore
-        dataset[variable_name].data[:] = data[:]
+        # Ensure attrs are copied over too
+        dataset = dataset.assign_coords(
+            {
+                variable_name: xr.Variable(
+                    dataset[tmp_name].dims, data, attrs=dataset[tmp_name].attrs
+                )
+            }
+        )
         # dataset = dataset.swap_dims({tmp_name: variable_name})  # type: ignore
         dataset = dataset.drop_vars(tmp_name)
         # dataset = dataset.rename_dims(

@@ -614,8 +614,10 @@ class AdiTransformer:
         dsproc.set_sample_timevals(adi_var, 0, timevals)
 
     def _convert_time_data(self, xr_array: xr.DataArray) -> np.ndarray:
-        # astype will produce nanosecond precision, so we have to convert to seconds
-        timevals = xr_array.data.astype("float") / 1000000000
+        # Normalize to microsecond resolution first to handle any datetime64 resolution
+        # (pandas 3.0 defaults to datetime64[s] instead of datetime64[ns]).
+        # Dividing by 1e6 converts microseconds to seconds with microsecond precision.
+        timevals = xr_array.data.astype("datetime64[us]").astype("float") / 1000000
 
         # We have to truncate to 6 decimal places so it matches ADI
         timevals = np.around(timevals, 6)
