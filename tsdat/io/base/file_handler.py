@@ -9,12 +9,6 @@ from .file_writer import FileWriter
 class FileHandler(DataHandler):
     """DataHandler specifically tailored to reading and writing files of a specific type."""
 
-    reader: DataReader
-    """The DataReader subclass responsible for reading input data."""
-
-    writer: FileWriter
-    """The FileWriter subclass responsible for writing output data."""
-
     extension: str
     """The specific file extension used for data files, e.g., ".nc"."""
 

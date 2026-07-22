@@ -44,19 +44,19 @@
                 "title": {
                     "title": "Title",
                     "description": "A succinct description of the dataset. This value may be similar to a publication title and should be suitable for use as a title in plots or other references to this dataset.",
-                    "minLength": 1,
+                    "min_length": 1,
                     "type": "string"
                 },
                 "description": {
                     "title": "Description",
                     "description": "A user-friendly description of the dataset. It should provide enough context about the data for new users to quickly understand how the data can be used.",
-                    "minLength": 1,
+                    "min_length": 1,
                     "type": "string"
                 },
                 "code_url": {
                     "title": "Code Url",
                     "description": "Where the code is hosted.",
-                    "minLength": 1,
+                    "min_length": 1,
                     "maxLength": 2083,
                     "format": "uri",
                     "type": "string"
@@ -91,28 +91,28 @@
                 "location_id": {
                     "title": "Location Id",
                     "description": "A label or acronym for the location where the data were obtained from. Only alphanumeric characters and '_' are allowed.",
-                    "minLength": 1,
+                    "min_length": 1,
                     "pattern": "^[a-zA-Z0-9_]+$",
                     "type": "string"
                 },
                 "dataset_name": {
                     "title": "Dataset Name",
                     "description": "A string used to identify the data being produced. Ideally resembles a shortened lowercase version of the title. Only lowercase alphanumeric characters and '_' are allowed.",
-                    "minLength": 2,
+                    "min_length": 2,
                     "pattern": "^[a-z0-9_]+$",
                     "type": "string"
                 },
                 "qualifier": {
                     "title": "Qualifier",
                     "description": "An optional string which distinguishes these data from other datasets produced by the same instrument. Only alphanumeric characters and '_' are allowed.",
-                    "minLength": 1,
+                    "min_length": 1,
                     "pattern": "^[a-zA-Z0-9_]+$",
                     "type": "string"
                 },
                 "temporal": {
                     "title": "Temporal",
                     "description": "An optional string which describes the temporal resolution of the data (if spaced in regular intervals). This string should be formatted as a number followed by a unit of measurement, e.g., '10m' would indicate the data is sampled every ten minutes. Only lowercase alphanumeric characters are allowed.",
-                    "minLength": 2,
+                    "min_length": 2,
                     "pattern": "^[0-9]+[a-zA-Z]+$",
                     "type": "string"
                 },
@@ -120,7 +120,7 @@
                     "title": "Data Level",
                     "description": "A string used to indicate the level of processing of the output data. It should be formatted as a letter followed by a number. Typical values for this include: a1 - data is ingested (no qc), b1 - data is ingested and quality checks applied, c1 (or higher) - one or more a* or b* datastreams used to create a higher-level data product. Only lowercase alphanumeric characters are allowed.",
                     "maxLength": 3,
-                    "minLength": 2,
+                    "min_length": 2,
                     "pattern": "^[a-z0-9]+$",
                     "type": "string"
                 },

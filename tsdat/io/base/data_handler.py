@@ -1,5 +1,6 @@
 from typing import Any, Dict
-from pydantic import Field, ValidationInfo, field_validator
+from typing_extensions import Self
+from pydantic import Field, ValidationInfo, field_validator, model_validator
 
 from ...utils import ParameterizedClass
 from .data_reader import DataReader
@@ -25,13 +26,14 @@ class DataHandler(ParameterizedClass):
     writer: DataWriter
     """The FileWriter subclass responsible for writing output data."""
 
-    @field_validator("reader", "writer", mode="before")
-    @classmethod
-    def patch_parameters(cls, v: DataReader, info: ValidationInfo):
-        params = info.data.get("parameters", {}).pop(info.field_name, {})
-        for param_name, param_value in params.items():
-            if isinstance(v.parameters, dict):
-                v.parameters[param_name] = param_value
-            else:
-                setattr(v.parameters, param_name, param_value)
-        return v
+    @model_validator(mode="after")
+    def patch_parameters(self) -> Self:
+        for dataclass in ["reader", "writer"]:
+            v = getattr(self, dataclass)
+            params = self.parameters.get(dataclass, {})
+            for param_name, param_value in params.items():
+                if isinstance(v.parameters, dict):
+                    v.parameters[param_name] = param_value
+                else:
+                    setattr(v.parameters, param_name, param_value)
+        return self

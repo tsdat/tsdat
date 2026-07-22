@@ -471,7 +471,7 @@ class ACDDGlobalAttrs(GlobalAttributes):
             " used), or URIs for terms from a controlled vocabulary (see also"
             " 'keywords_vocabulary' attribute."
         ),
-        minLength=1,
+        json_schema_extra={"min_length": 1},
     )
     keywords_vocabulary: str = Field(
         description=(

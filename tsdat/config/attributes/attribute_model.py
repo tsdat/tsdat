@@ -1,8 +1,4 @@
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    model_validator,
-)
+from pydantic import BaseModel, ConfigDict, model_validator
 from typing_extensions import Self
 
 
