@@ -1,6 +1,6 @@
 import logging
 from typing import Any, Dict, Optional
-from pydantic import field_validator
+from pydantic import Field, field_validator
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -19,11 +19,16 @@ class StringToDatetime(DataConverter):
     timezone the input data are reported in. If the input timezone is not UTC, the data
     are converted to UTC time."""
 
-    format: Optional[str] = None
-    """The date format the string is using (e.g., '%Y-%m-%d %H:%M:%S' for date strings
-    such as '2022-04-13 23:59:00'), or None (the default) to have pandas guess the
-    format automatically. See strftime.org for more information on what formats can be
-    used."""
+    format: Optional[str] = Field(
+        default=None,
+        validate_default=True,
+        description=(
+            "The date format the string is using (e.g., '%Y-%m-%d %H:%M:%S' "
+            "for date strings such as '2022-04-13 23:59:00'), or None (the "
+            "default) to have pandas guess the format automatically. See "
+            "strftime.org for more information on what formats can be used."
+        ),
+    )
 
     timezone: Optional[str] = None
     """The timezone of the data to convert. If provided, this converter will apply the

@@ -27,7 +27,7 @@ class ParameterizedConfigClass(BaseModel):
     'tsdat.pipeline.pipelines.IngestPipeline' as the classname."""
 
     parameters: Dict[str, Any] = Field(
-        {},
+        default={},
         description=(
             "Optional dictionary that will be passed to the Python class specified by"
             " 'classname' when it is instantiated. If the object is a tsdat class, then"

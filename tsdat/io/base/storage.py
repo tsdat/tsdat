@@ -24,7 +24,8 @@ class Storage(ParameterizedClass, ABC):
 
     class Parameters(BaseSettings):
         storage_root: Path = Field(
-            Path("storage/root"),
+            default=Path("storage/root"),
+            validate_default=True,
             validation_alias=AliasChoices("TSDAT_STORAGE_ROOT", "storage_root"),
         )
         """The path on disk where at least ancillary files will be saved to. For

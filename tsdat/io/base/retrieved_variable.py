@@ -12,7 +12,9 @@ class RetrievedVariable(BaseModel):
     """Tracks the name of the input variable and the converters to apply."""
 
     name: Union[str, List[str]]
-    data_converters: List[DataConverter] = Field(default_factory=list)
+    data_converters: List[DataConverter] = Field(
+        default_factory=list, validate_default=True
+    )
     source: InputKey = ""
 
     @field_validator("data_converters")
