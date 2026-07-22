@@ -37,14 +37,11 @@ def test_manager_config_validates_properties():
         "exclude": "time",
     }
     expected_error_msgs = [
-        "name",
-        "Field required",
-        "checker",
-        "handlers",
-        "List should have at least 1 item",
-        "apply_to",
-        "exclude",
-        "Input should be a valid list",
+        "name: Field required",
+        "checker: Field required",
+        "handlers: List should have at least 1 item after validation, not 0",
+        "apply_to: List should have at least 1 item after validation, not 0",
+        "exclude: Input should be a valid list",
     ]
     with pytest.raises(ValidationError) as error:
         ManagerConfig(**qc_dict)

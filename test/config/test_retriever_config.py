@@ -23,7 +23,7 @@ def test_reader_config_produces_expected_dict():
 def test_reader_config_validates_required_properties():
     reader_dict: Dict[str, Any] = {"regex": []}
     expected_error_msgs = [
-        "\nclassname\n  field required",
+        "classname: Field required",
     ]
     with pytest.raises(ValidationError) as error:
         DataReaderConfig(**reader_dict)
