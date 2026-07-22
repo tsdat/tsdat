@@ -154,6 +154,31 @@ def test_split_netcdf_writer(sample_dataset_w_time: xr.Dataset):
     tmp_dir.cleanup()
 
 
+def test_split_netcdf_writer_skips_empty_intervals(sample_dataset_w_time: xr.Dataset):
+    """Test that intervals with no data are skipped and no file is written for them."""
+    # Drop the middle timestamp (21:44:00), creating a gap between 21:43 and 21:45
+    ds_with_gap = sample_dataset_w_time.sel(
+        time=sample_dataset_w_time.time != sample_dataset_w_time.time[1]
+    )
+
+    params = {"time_interval": 30, "time_unit": "s"}
+    writer = SplitNetCDFWriter(parameters=recursive_instantiate(params))
+    tmp_dir = tempfile.TemporaryDirectory()
+
+    tmp_file = Path(tmp_dir.name) / "test_writer.nc"
+    writer.write(ds_with_gap, tmp_file)  # type: ignore
+
+    filelist = sorted(os.listdir(Path(tmp_dir.name)))
+
+    # Only 2 files: 21:43 and 21:45 — the empty 21:44 interval produces no file
+    assert len(filelist) == 2
+    assert "test_writer.20220324.214300.nc" in filelist
+    assert "test_writer.20220324.214500.nc" in filelist
+    assert "test_writer.20220324.214400.nc" not in filelist
+
+    tmp_dir.cleanup()
+
+
 def test_csv_writer(sample_2D_dataset: xr.Dataset):
     expected = sample_2D_dataset.to_dataframe()
     writer = CSVWriter()
