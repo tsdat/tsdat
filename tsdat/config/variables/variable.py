@@ -20,13 +20,14 @@ class Variable(BaseModel):
     coords pydantic model upon instantiation."""
 
     data: Optional[Any] = Field(
+        default=None,
         description=(
             "If the variable is not meant to be retrieved from an input dataset and the"
             " value is known in advance, then the 'data' property should specify its"
             " value exactly as it should appear in the output dataset. This is commonly"
             " used for latitude/longitude/altitude data for datasets measured from a"
             " specific geographical location."
-        )
+        ),
     )
     dtype: StrictStr = Field(
         description=(

@@ -153,7 +153,6 @@ def test_global_attributes_allow_extra():
 
 def test_fail_if_bad_variable_attributes():
     attrs: Dict[Any, Any] = {
-        # No units attribute --> "comment" must contain 'Unknown units.'
         "long_name": 1.0,  # Not strictly a string
         "standard_name": 1.0,  # Not strictly a string
         "comment": "Normally valid",  # But units not provided, so must indicate that
@@ -166,7 +165,6 @@ def test_fail_if_bad_variable_attributes():
         # "_FillValue": "a",  # Not a float -- no longer needs to be a number
     }
     expected_error_msgs = [
-        "The 'units' attr is required if known. If the units are not known,",  # ...
         "long_name: Input should be a valid string",
         "standard_name: Input should be a valid string",
         "valid_range: Input should be a valid list",
@@ -176,6 +174,23 @@ def test_fail_if_bad_variable_attributes():
         "fail_delta: Input should be a valid number, unable to parse string as a number",
         "warn_delta: Input should be a valid number, unable to parse string as a number",
         # "_FillValue: Value is not a valid float",
+    ]
+    with pytest.raises(ValidationError) as error:
+        VariableAttributes(**attrs)
+
+    actual_msg = get_pydantic_error_message(error)
+    for expected_msg in expected_error_msgs:
+        assert expected_msg in actual_msg
+
+
+def test_fail_if_missing_units_attribute():
+    # Model validator does not run if previous validations fail, so we need to add
+    # a second test here
+    attrs: Dict[Any, Any] = {
+        # No units attribute --> "comment" must contain 'Unknown units.'
+    }
+    expected_error_msgs = [
+        "The 'units' attr is required if known. If the units are not known,",  # ...
     ]
     with pytest.raises(ValidationError) as error:
         VariableAttributes(**attrs)
@@ -216,7 +231,7 @@ def test_valid_variable_units(
 
 def test_valid_variable_attrs_adds_fillvalue():
     attrs: Dict[str, Any] = {
-        "units": 1,  # Will be cast to str
+        "units": "1",  # no longer will be cast to str
         "long_name": "Example Variable",
         "comment": "Normally valid",
         "valid_range": [0, 1000],
@@ -243,7 +258,7 @@ def test_valid_variable_attrs_adds_fillvalue():
 
 def test_variable_attrs_allow_extra():
     attrs: Dict[str, Any] = {
-        "units": 1,  # Will be cast to a string
+        "units": "1",
         "extra": "some extra text",
         "another attr": 200,
     }

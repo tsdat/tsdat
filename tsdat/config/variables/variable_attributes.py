@@ -19,7 +19,8 @@ class VariableAttributes(AttributeModel):
     (e.g., valid_*, fail_*, and warn_* properties)."""
 
     units: Optional[str] = Field(
-        default=None,
+        default="",
+        validate_default=True,
         description=(
             "A string indicating the units the data are measured in. Tsdat uses pint to"
             " handle unit conversions, so this string must be compatible with the pint"
@@ -226,7 +227,7 @@ class VariableAttributes(AttributeModel):
     @model_validator(mode="after")
     def validate_units_are_commented(self) -> Self:
         if not self.units:
-            if not self.comment or "Unknown units." not in self.comment:
+            if not self.comment or ("Unknown units" not in self.comment):
                 raise ValueError(
                     "The 'units' attr is required if known. If the units are not known,"
                     " then the 'comment' attr should include the phrase 'Unknown"
