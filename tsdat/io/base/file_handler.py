@@ -1,9 +1,5 @@
-from typing import (
-    Any,
-    Dict,
-)
-
-from pydantic import validator
+from typing import Any, Dict
+from pydantic import field_validator
 
 from .data_handler import DataHandler
 from .data_reader import DataReader
@@ -22,6 +18,7 @@ class FileHandler(DataHandler):
     extension: str
     """The specific file extension used for data files, e.g., ".nc"."""
 
-    @validator("extension", pre=True)
+    @field_validator("extension", mode="before")
+    @classmethod
     def no_leading_dot(cls, v: str, values: Dict[str, Any]) -> str:
         return v.lstrip(".")

@@ -1,7 +1,5 @@
 from abc import ABC
-from typing import (
-    Dict,
-)
+from typing import Dict
 
 from .data_reader import DataReader
 

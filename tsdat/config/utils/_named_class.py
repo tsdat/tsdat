@@ -1,6 +1,4 @@
-from typing import (
-    Protocol,
-)
+from typing import Protocol
 
 
 class _NamedClass(Protocol):

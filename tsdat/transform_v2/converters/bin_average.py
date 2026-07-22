@@ -75,7 +75,7 @@ class BinAverage(DataConverter):
         # user probably made a mistake in the config file.
         if variable_name in dataset_config.coords:
             raise ValueError(
-                f"{self.__repr_name__} cannot be used for coordinate variables."
+                f"{type(self).__name__} cannot be used for coordinate variables."
                 f" Offending coord: '{variable_name}'."
             )
 
@@ -102,13 +102,13 @@ class BinAverage(DataConverter):
         t_width = trans_params["width"][self.coord]
         if t_align is None:
             raise ValueError(
-                f"{self.__repr_name__} requires a 'alignment' parameter for the coordinate"
+                f"{type(self).__name__} requires a 'alignment' parameter for the coordinate"
                 f" '{self.coord}' and variable {variable_name}, but it was not provided"
                 " in the transformation parameters."
             )
         if t_width is None:
             raise ValueError(
-                f"{self.__repr_name__} requires a 'width' parameter for the coordinate"
+                f"{type(self).__name__} requires a 'width' parameter for the coordinate"
                 f" '{self.coord}' and variable {variable_name}, but it was not provided"
                 " in the transformation parameters."
             )

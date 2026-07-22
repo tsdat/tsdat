@@ -1,11 +1,7 @@
-from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-)
-
 import yaml
 from jsonpointer import set_pointer  # type: ignore
+from pathlib import Path
+from typing import Any, Dict
 
 
 def read_yaml(filepath: Path) -> Dict[Any, Any]:

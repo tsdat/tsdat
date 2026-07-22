@@ -4,9 +4,8 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Union
-
+from pydantic import Field, field_validator
 import xarray as xr
-from pydantic import Field, validator
 
 from tsdat.tstring import Template
 
@@ -58,14 +57,15 @@ class FileSystem(Storage):
         At a minimum the template must include ``{date_time}``.
         """
 
-        @validator("storage_root", allow_reuse=True)
+        @field_validator("storage_root")
+        @classmethod
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
             if not storage_root.is_dir():
                 logger.info("Creating storage root at: %s", storage_root.as_posix())
                 storage_root.mkdir(parents=True, exist_ok=True)
             return storage_root
 
-    parameters: Parameters = Field(default_factory=Parameters, help="Some help text?")  # type: ignore
+    parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
     """File-system specific parameters, such as the root path to where files should be
     saved, or additional keyword arguments to specific functions used by the storage
     API. See the FileSystemStorage.Parameters class for more details."""
@@ -298,10 +298,3 @@ class FileSystem(Storage):
             extension=extension,
             title=title,
         )
-
-
-# TODO:
-#  HACK: Update forward refs to get around error I couldn't replicate with simpler code
-#  "pydantic.errors.ConfigError: field "parameters" not yet prepared
-#  so type is still a ForwardRef..."
-FileSystem.update_forward_refs(Parameters=FileSystem.Parameters)

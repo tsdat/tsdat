@@ -1,10 +1,9 @@
 import copy
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional, cast
-
+from pydantic import Field
 import numpy as np
 import xarray as xr
-from pydantic import Field
 
 from .netcdf_writer import NetCDFWriter
 from ...utils import get_filename

@@ -1,8 +1,7 @@
 from typing import Any, Dict
-
+from pydantic import BaseModel, ConfigDict
 import pandas as pd
 import xarray as xr
-from pydantic import BaseModel, Extra
 
 from ..base import DataReader
 
@@ -16,7 +15,8 @@ class ParquetReader(DataReader):
 
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         read_parquet_kwargs: Dict[str, Any] = {}
         from_dataframe_kwargs: Dict[str, Any] = {}
 

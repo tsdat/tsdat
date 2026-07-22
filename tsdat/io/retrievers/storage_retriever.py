@@ -1,22 +1,13 @@
 from datetime import timedelta
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-)
-
+from typing import Any, Callable, Dict, List, Optional
+from pydantic import BaseModel, Field
 import pandas as pd
 import xarray as xr
-from pydantic import BaseModel, Field
+
 
 from ...config.dataset import DatasetConfig
 from ...const import InputKey
-from ..base import (
-    Retriever,
-    Storage,
-)
+from ..base import Retriever, Storage
 from .global_arm_transform_params import GlobalARMTransformParams
 from .global_fetch_params import GlobalFetchParams
 from .perform_data_retrieval import perform_data_retrieval
@@ -85,7 +76,7 @@ class StorageRetriever(Retriever):
         input_data = self.__fetch_inputs(storage_input_keys, storage)
 
         if input_data_hook is not None:
-            input_data = input_data_hook(input_data)  # type:ignore
+            input_data = input_data_hook(input_data)  # type: ignore
 
         # Perform coord/variable retrieval
         retrieved_data, retrieval_selections = perform_data_retrieval(

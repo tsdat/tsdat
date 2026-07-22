@@ -1,17 +1,8 @@
 import logging
 import xarray as xr
-from typing import (
-    Any,
-    Dict,
-    Pattern,
-    Tuple,
-)
+from typing import Any, Dict, Pattern, Tuple
 
-from ..base import (
-    RetrievalRuleSelections,
-    RetrievedDataset,
-    RetrievedVariable,
-)
+from ..base import RetrievalRuleSelections, RetrievedDataset, RetrievedVariable
 from ...const import InputKey, VarName
 
 logger = logging.getLogger(__name__)

@@ -1,10 +1,10 @@
 import logging
 from typing import Any, Dict, Literal, Optional
-
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra, root_validator, validator
+
 import act
 
 from ..base import QualityHandler
@@ -20,7 +20,8 @@ class RecordQualityResults(QualityHandler):
     ------------------------------------------------------------------------------------
     """
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         bit: Optional[int] = None
         """DEPRECATED
 
@@ -37,13 +38,15 @@ class RecordQualityResults(QualityHandler):
         meaning: str
         """A string that describes the test applied."""
 
-        @root_validator(pre=True)
+        @model_validator(mode="before")
+        @classmethod
         def deprecate_bit_parameter(cls, values: Dict[str, Any]) -> Dict[str, Any]:
             if "bit" in values:
                 logger.warning("The 'bit' argument is deprecated, please remove it.")
             return values
 
-        @validator("assessment", pre=True)
+        @field_validator("assessment", mode="before")
+        @classmethod
         def to_lower(cls, assessment: Any) -> str:
             if isinstance(assessment, str):
                 return assessment.lower()

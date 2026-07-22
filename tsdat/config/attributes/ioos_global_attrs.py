@@ -1,7 +1,4 @@
-from pydantic import (
-    Field,
-    HttpUrl,
-)
+from pydantic import Field, HttpUrl
 
 from .acdd_global_attrs import ACDDGlobalAttrs
 

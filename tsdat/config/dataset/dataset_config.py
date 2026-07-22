@@ -3,12 +3,13 @@ import re
 from typing import Any, Dict, Union
 
 from pydantic import (
-    Extra,
+    ConfigDict,
     Field,
-    root_validator,
-    validator,
+    ValidationInfo,
+    field_validator,
+    model_validator,
 )
-from pydantic.fields import ModelField
+from typing_extensions import Self
 
 from ..attributes import GlobalAttributes
 from ..utils import YamlModel
@@ -17,7 +18,8 @@ from ..variables import Coordinate, Variable
 logger = logging.getLogger(__name__)
 
 
-class DatasetConfig(YamlModel, extra=Extra.forbid):
+class DatasetConfig(YamlModel):
+    model_config = ConfigDict(extra='forbid')
     """Defines the structure and metadata of the dataset produced by a tsdat pipeline.
 
     Also provides methods to support yaml parsing and validation, including generation
@@ -61,26 +63,29 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
     )
     """The dataset's data variables."""
 
-    @validator("coords")
+    @field_validator("coords")
+    @classmethod
     def time_in_coords(cls, coords: Dict[str, Coordinate]) -> Dict[str, Coordinate]:
         if "time" not in coords:
             raise ValueError("Required coordinate definition 'time' is missing.")
         return coords
 
-    @validator("coords", "data_vars")
+    @field_validator("coords", "data_vars")
+    @classmethod
     def variable_names_are_legal(
-        cls, vars: Dict[str, Variable], field: ModelField
+        cls, vars: Dict[str, Variable], info: ValidationInfo
     ) -> Dict[str, Variable]:
         for name in vars.keys():
             pattern = re.compile(r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
             if not pattern.match(name):
                 raise ValueError(
-                    f"'{name}' is not a valid '{field.name}' name. It must be a value"
+                    f"'{name}' is not a valid '{info.field_name}' name. It must be a value"
                     f" matched by {pattern}."
                 )
         return vars
 
-    @validator("coords", "data_vars", pre=True)
+    @field_validator("coords", "data_vars", mode='before')
+    @classmethod
     def set_variable_name_property(
         cls, vars: Dict[str, Dict[str, Any]]
     ) -> Dict[str, Dict[str, Any]]:
@@ -88,17 +93,17 @@ class DatasetConfig(YamlModel, extra=Extra.forbid):
             vars[name]["name"] = name
         return vars
 
-    @root_validator(skip_on_failure=True)
-    def validate_variable_name_uniqueness(cls, values: Any) -> Any:
-        coord_names = set(values["coords"].keys())
-        var_names = set(values["data_vars"].keys())
+    @model_validator(mode='after')
+    def validate_variable_name_uniqueness(self) -> Self:
+        coord_names = set(self.coords.keys())
+        var_names = set(self.data_vars.keys())
 
         if duplicates := coord_names.intersection(var_names):
             raise ValueError(
                 "Variables cannot be both coords and data_vars:"
                 f" {sorted(list(duplicates))}."
             )
-        return values
+        return self
 
     def __getitem__(self, name: str) -> Union[Variable, Coordinate]:
         property: Union[Variable, Coordinate]

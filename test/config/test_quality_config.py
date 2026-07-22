@@ -26,7 +26,7 @@ def test_manager_config_produces_expected_dict():
         "exclude": [],
     }
     qc_model = ManagerConfig(**qc_dict)
-    assert qc_model.dict() == expected_dict
+    assert qc_model.model_dump() == expected_dict
 
 
 def test_manager_config_validates_properties():
@@ -37,11 +37,14 @@ def test_manager_config_validates_properties():
         "exclude": "time",
     }
     expected_error_msgs = [
-        "name\n  field required",
-        "checker -> classname\n  field required",
-        "handlers\n  ensure this value has at least 1 items",
-        "apply_to\n  ensure this value has at least 1 items",
-        "exclude\n  value is not a valid list",
+        "name",
+        "Field required",
+        "checker",
+        "handlers",
+        "List should have at least 1 item",
+        "apply_to",
+        "exclude",
+        "Input should be a valid list",
     ]
     with pytest.raises(ValidationError) as error:
         ManagerConfig(**qc_dict)
@@ -82,7 +85,7 @@ def test_quality_config_produces_expected_dict():
         ]
     }
     qc_model = QualityConfig(**qc_dict)
-    assert qc_model.dict() == expected_dict
+    assert qc_model.model_dump() == expected_dict
 
 
 def test_quality_config_manager_names_must_be_unique():
@@ -113,7 +116,7 @@ def test_quality_config_managers_are_optional():
     qc_dict: Dict[str, Any] = {"managers": []}
     expected: Dict[str, Any] = {"managers": []}
     qc_model = QualityConfig(**qc_dict)
-    assert qc_model.dict() == expected
+    assert qc_model.model_dump() == expected
 
 
 def test_quality_config_from_yaml():
@@ -137,7 +140,7 @@ def test_quality_config_from_yaml():
         ]
     }
     qc_model = QualityConfig.from_yaml(Path("test/config/yaml/quality.yaml"))
-    assert qc_model.dict() == expected_dict
+    assert qc_model.model_dump() == expected_dict
 
 
 def test_quality_config_can_generate_schema():

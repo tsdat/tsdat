@@ -1,7 +1,4 @@
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 
 def matches_overridable_schema(model_dict: Dict[str, Any]):

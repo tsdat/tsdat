@@ -1,17 +1,8 @@
-from typing import (
-    Any,
-    Dict,
-    List,
-    cast,
-)
-
 from jsonpointer import set_pointer  # type: ignore
-from pydantic import (
-    BaseModel,
-)
-from pydantic.utils import import_string
+from typing import Any, Dict, List, cast
+from pydantic import BaseModel
 
-from .parameterized_config_class import ParameterizedConfigClass
+from .parameterized_config_class import ParameterizedConfigClass, _import_string
 
 
 def recursive_instantiate(model: Any) -> Any:
@@ -45,17 +36,17 @@ def recursive_instantiate(model: Any) -> Any:
     # the model. Note: the model is instantiated last so that sub-models are only
     # processed once.
     if isinstance(model, ParameterizedConfigClass):
-        fields = model.__fields_set__ - {"classname"}  # No point checking classname
+        fields = model.model_fields_set - {"classname"}  # No point checking classname
         for field in fields:
             setattr(model, field, recursive_instantiate(getattr(model, field)))
         model = model.instantiate()
 
     # Case: BaseModel. Want to instantiate any sub-models then return the model itself.
     elif isinstance(model, BaseModel):
-        fields = model.__fields_set__
+        fields = model.model_fields_set
         if "classname" in fields:
             raise ValueError(
-                f"Model '{model.__repr_name__()}' provides a 'classname' but does not"
+                f"Model '{type(model).__name__}' provides a 'classname' but does not"
                 " extend ParametrizedConfigClass."
             )
         for field in fields:
@@ -76,7 +67,7 @@ def recursive_instantiate(model: Any) -> Any:
         }
         if "classname" in model:
             classname: str = model.pop("classname")  # type: ignore
-            _cls = import_string(classname)
+            _cls = _import_string(classname)
             return _cls(**model)
 
     return model

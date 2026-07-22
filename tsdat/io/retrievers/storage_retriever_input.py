@@ -1,9 +1,7 @@
 from datetime import datetime
 import logging
 import shlex
-from typing import (
-    Dict,
-)
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 

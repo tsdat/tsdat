@@ -1,12 +1,13 @@
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Pattern, Union
 
 from jsonpointer import set_pointer  # type: ignore
 from pydantic import (
-    Extra,
+    ConfigDict,
     Field,
     ValidationError,
-    root_validator,
+    model_validator,
 )
 from typing_extensions import Self
 
@@ -35,7 +36,8 @@ def get_resolved_cfg_path(
     return Path(linked_path)
 
 
-class PipelineConfig(ParameterizedConfigClass, extra=Extra.allow):
+class PipelineConfig(ParameterizedConfigClass):
+    model_config = ConfigDict(extra='allow')
     """Contains configuration parameters for tsdat pipelines.
 
     This class is ultimately converted into a tsdat.pipeline.base.Pipeline subclass that
@@ -93,7 +95,8 @@ class PipelineConfig(ParameterizedConfigClass, extra=Extra.allow):
     """The path to the yaml config file used to instantiate this class. Set via the
     'from_yaml()' classmethod"""
 
-    @root_validator(pre=True)
+    @model_validator(mode='before')
+    @classmethod
     def merge_overridable_yaml(cls, values: Dict[str, Any]):
         object_field_mapping = {
             "retriever": RetrieverConfig,
@@ -146,7 +149,7 @@ class PipelineConfig(ParameterizedConfigClass, extra=Extra.allow):
         Args:
             output_file (Path): The path to store the JSON schema.
         """
-        output_file.write_text(cls.schema_json(indent=4))
+        output_file.write_text(json.dumps(cls.model_json_schema(), indent=4))
 
     def instantiate_pipeline(self) -> Pipeline:
         """Loads the tsdat.pipeline.BasePipeline subclass specified by the classname property.

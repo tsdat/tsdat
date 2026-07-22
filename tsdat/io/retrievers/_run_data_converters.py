@@ -3,9 +3,7 @@ import xarray as xr
 from .input_key_retrieval_rules import InputKeyRetrievalRules
 from ...utils import assign_data
 from ...config.dataset import DatasetConfig
-from ..base import (
-    RetrievedDataset,
-)
+from ..base import RetrievedDataset
 
 
 def _run_data_converters(

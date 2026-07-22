@@ -1,12 +1,6 @@
-from typing import (
-    Any,
-    Dict,
-    Pattern,
-)
+from typing import Any, Dict, Pattern
 
-from ..base import (
-    RetrievedVariable,
-)
+from ..base import RetrievedVariable
 from ...const import InputKey, VarName
 
 

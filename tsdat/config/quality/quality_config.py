@@ -1,12 +1,13 @@
 from typing import List
 
-from pydantic import Extra, Field, validator
+from pydantic import ConfigDict, Field, field_validator
 
 from ..utils import YamlModel, find_duplicates
 from .manager_config import ManagerConfig
 
 
-class QualityConfig(YamlModel, extra=Extra.forbid):
+class QualityConfig(YamlModel):
+    model_config = ConfigDict(extra='forbid')
     """Contains quality configuration parameters for tsdat pipelines.
 
     This class will ultimately be converted into a tsdat.qc.base.QualityManagement class
@@ -23,7 +24,8 @@ class QualityConfig(YamlModel, extra=Extra.forbid):
     )
     """A list of quality checks and controls that should be applied."""
 
-    @validator("managers")
+    @field_validator("managers")
+    @classmethod
     def validate_manager_names_are_unique(
         cls, v: List[ManagerConfig]
     ) -> List[ManagerConfig]:

@@ -1,7 +1,5 @@
-from pydantic import BaseModel, validator
-from typing import (
-    Optional,
-)
+from pydantic import BaseModel, field_validator
+from typing import Optional
 
 
 class GlobalFetchParams(BaseModel):
@@ -9,7 +7,8 @@ class GlobalFetchParams(BaseModel):
     """How far in time to look ahead (+), behind (-), or both to search
     for files."""
 
-    @validator("time_padding", pre=True)
+    @field_validator("time_padding", mode="before")
+    @classmethod
     def default_to_seconds(cls, d: str) -> str:
         if not d:
             return ""

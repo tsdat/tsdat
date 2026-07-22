@@ -1,19 +1,21 @@
-from typing import Any, Dict, List, Optional
-
-import numpy as np
+from typing import Any, List, Optional
 from pydantic import (
     BaseModel,
-    Extra,
+    ConfigDict,
     Field,
     StrictStr,
-    validator,
+    ValidationInfo,
+    field_validator,
 )
+import numpy as np
 
 from .variable_attributes import VariableAttributes
 
 
-class Variable(BaseModel, extra=Extra.forbid):
-    name: str = Field("", regex=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
+class Variable(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field("", pattern=r"^[a-zA-Z0-9_\(\)\/\[\]\{\}\.]+$")
     """Should be left empty. This property will be set automatically by the data_vars or
     coords pydantic model upon instantiation."""
 
@@ -35,7 +37,6 @@ class Variable(BaseModel, extra=Extra.forbid):
         )
     )
     dims: List[StrictStr] = Field(
-        unique_items=True,
         description=(
             "A list of coordinate variable names that dimension this data variable."
             " Most commonly this will be set to ['time'], but for datasets where there"
@@ -53,21 +54,15 @@ class Variable(BaseModel, extra=Extra.forbid):
         )
     )
 
-    # TODO: Leftover code I assume? Remove?
-    # @validator("name")
-    # @classmethod
-    # def validate_name_is_ascii(cls, v: str) -> str:
-    #     if not v.isascii():
-    #         raise ValueError(f"'{v}' contains a non-ascii character.")
-    #     return v
-
-    @validator("attrs")
+    @field_validator("attrs")
+    @classmethod
     def set_default_fill_value(
-        cls, attrs: VariableAttributes, values: Dict[str, Any]
+        cls, attrs: VariableAttributes, info: ValidationInfo
     ) -> VariableAttributes:
-        dtype: str = values["dtype"]
+        dtype: str = info.data["dtype"]
         if (
-            "fill_value" in attrs.__fields_set__  # Preserve _FillValues set explicitly
+            "fill_value"
+            in attrs.model_fields_set  # Preserve _FillValues set explicitly
             or (dtype == "str")
             or ("datetime" in dtype)
         ):

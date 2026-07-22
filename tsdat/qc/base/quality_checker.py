@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import Union
-
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray

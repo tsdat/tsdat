@@ -1,6 +1,5 @@
 from abc import ABC
 from typing import Union
-
 import xarray as xr
 
 from ..base import QualityChecker

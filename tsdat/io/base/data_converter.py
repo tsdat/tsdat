@@ -1,16 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import (
-    Any,
-    Optional,
-)
-
+from typing import Any, Optional
 import xarray as xr
 
 from .retrieved_dataset import RetrievedDataset
 from ...config.dataset import DatasetConfig
-from ...utils import (
-    ParameterizedClass,
-)
+from ...utils import ParameterizedClass
 
 
 class DataConverter(ParameterizedClass, ABC):

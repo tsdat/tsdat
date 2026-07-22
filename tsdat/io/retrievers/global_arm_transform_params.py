@@ -1,12 +1,7 @@
 from collections import defaultdict
 import re
-from pydantic import BaseModel, Field, validator
-from typing import (
-    Any,
-    Dict,
-    Literal,
-    Pattern,
-)
+from pydantic import BaseModel, Field, field_validator
+from typing import Any, Dict, Literal, Pattern
 
 
 class GlobalARMTransformParams(BaseModel):
@@ -15,7 +10,8 @@ class GlobalARMTransformParams(BaseModel):
     dim_range: Dict[Pattern, Dict[str, str]] = Field(..., alias="range")  # type: ignore
     width: Dict[Pattern, Dict[str, str]]  # type: ignore
 
-    @validator("alignment", "dim_range", "width", pre=True)
+    @field_validator("alignment", "dim_range", "width", mode="before")
+    @classmethod
     def default_pattern(cls, d: Dict[Any, Any]) -> Dict[Pattern[str], Dict[str, str]]:
         if not d:
             return {}

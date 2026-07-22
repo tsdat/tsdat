@@ -6,13 +6,10 @@ from typing import (
     Optional,
     Pattern,
 )
-
 import xarray as xr
 
 from ...config.dataset import DatasetConfig
-from ...utils import (
-    ParameterizedClass,
-)
+from ...utils import ParameterizedClass
 from .retrieved_variable import RetrievedVariable
 
 

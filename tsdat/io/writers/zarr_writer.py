@@ -1,8 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional, cast
-
+from pydantic import BaseModel, ConfigDict, Field
 import xarray as xr
-from pydantic import BaseModel, Extra, Field
 
 from ..base import FileWriter
 
@@ -16,7 +15,8 @@ class ZarrWriter(FileWriter):
 
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         to_zarr_kwargs: Dict[str, Any] = {}
 
     parameters: Parameters = Field(default_factory=Parameters)

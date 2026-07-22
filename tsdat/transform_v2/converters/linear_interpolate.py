@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING, Any, Optional
-
 import xarray as xr
 
 from ...io.base import DataConverter, RetrievedDataset
@@ -76,7 +75,7 @@ class LinearInterpolate(DataConverter):
         # The user probably made a mistake in the config file.
         if variable_name in dataset_config.coords:
             raise ValueError(
-                f"{self.__repr_name__} cannot be used for coordinate variables."
+                f"{type(self).__name__} cannot be used for coordinate variables."
                 f" Offending coord: '{variable_name}'."
             )
 
@@ -102,7 +101,7 @@ class LinearInterpolate(DataConverter):
         t_range = trans_params["range"][self.coord]
         if t_range is None:
             raise ValueError(
-                f"{self.__repr_name__} requires a 'range' parameter for the coordinate"
+                f"{type(self).__name__} requires a 'range' parameter for the coordinate"
                 f" '{self.coord}' and variable {variable_name}, but it was not provided"
                 " in the transformation parameters."
             )

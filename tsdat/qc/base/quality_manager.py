@@ -1,13 +1,13 @@
 from typing import Callable, Dict, Hashable, List
-
+from pydantic import BaseModel, ConfigDict
 import xarray as xr
-from pydantic import BaseModel, Extra
 
 from .quality_checker import QualityChecker
 from .quality_handler import QualityHandler
 
 
-class QualityManager(BaseModel, extra=Extra.forbid):
+class QualityManager(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     """Groups a QualityChecker and one or more QualityHandlers together."""
 
     name: str

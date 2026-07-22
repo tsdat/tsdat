@@ -1,7 +1,7 @@
+from pydantic import BaseModel, ConfigDict
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra
 
 from tsdat import QualityHandler
 
@@ -30,7 +30,8 @@ class CubicSplineInterp(QualityHandler):
         The dataArray with nan's filled in
     ----------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         n_points: int = 12
         method: str = "cubic"
         max_gap: int = 6

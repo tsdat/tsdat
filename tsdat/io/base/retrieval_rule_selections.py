@@ -1,7 +1,4 @@
-from typing import (
-    Dict,
-    NamedTuple,
-)
+from typing import Dict, NamedTuple
 
 from .retrieved_variable import RetrievedVariable
 from ...const import VarName

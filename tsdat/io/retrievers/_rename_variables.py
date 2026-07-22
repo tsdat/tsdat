@@ -1,13 +1,9 @@
 import logging
 import xarray as xr
-from typing import (
-    Dict,
-)
+from typing import Dict
 
 from .input_key_retrieval_rules import InputKeyRetrievalRules
-from ..base import (
-    RetrievedVariable,
-)
+from ..base import RetrievedVariable
 from ...const import VarName
 
 logger = logging.getLogger(__name__)

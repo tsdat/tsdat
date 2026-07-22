@@ -1,14 +1,15 @@
 import logging
-from typing import Dict, Optional
+from typing import Optional
 
 from pydantic import (
     Field,
     HttpUrl,
     StrictStr,
-    root_validator,
-    validator,
+    ValidationInfo,
+    field_validator,
+    model_validator,
 )
-from pydantic.fields import ModelField
+from typing_extensions import Self
 
 from .attribute_model import AttributeModel
 from ..utils import get_code_version
@@ -75,7 +76,7 @@ class GlobalAttributes(AttributeModel):
     )
     location_id: str = Field(
         min_length=1,
-        regex=r"^[a-zA-Z0-9_]+$",  # alphanumeric and '_' characters
+        pattern=r"^[a-zA-Z0-9_]+$",  # alphanumeric and '_' characters
         description=(
             "A label or acronym for the location where the data were obtained"
             " from. Only alphanumeric characters and '_' are allowed."
@@ -83,7 +84,7 @@ class GlobalAttributes(AttributeModel):
     )
     dataset_name: str = Field(
         min_length=2,
-        regex=r"^[a-z0-9_]+$",  # lowercase alphanumeric and '_' characters
+        pattern=r"^[a-z0-9_]+$",  # lowercase alphanumeric and '_' characters
         description=(
             "A string used to identify the data being produced. Ideally"
             " resembles a shortened lowercase version of the title. Only lowercase"
@@ -93,7 +94,7 @@ class GlobalAttributes(AttributeModel):
     qualifier: Optional[str] = Field(
         default=None,
         min_length=1,
-        regex=r"^[a-zA-Z0-9_]+$",  # lowercase alphanumeric and '_' characters
+        pattern=r"^[a-zA-Z0-9_]+$",  # lowercase alphanumeric and '_' characters
         description=(
             "An optional string which distinguishes these data from other"
             " datasets produced by the same instrument. Only alphanumeric characters"
@@ -103,7 +104,7 @@ class GlobalAttributes(AttributeModel):
     temporal: Optional[str] = Field(
         default=None,
         min_length=2,
-        regex=r"^[0-9]+[a-zA-Z]+$",
+        pattern=r"^[0-9]+[a-zA-Z]+$",
         description=(
             "An optional string which describes the temporal resolution of the data (if"
             " spaced in regular intervals). This string should be formatted as a number"
@@ -115,7 +116,7 @@ class GlobalAttributes(AttributeModel):
     data_level: str = Field(
         min_length=2,
         max_length=3,
-        regex=r"^[a-z0-9]+$",  # lowercase alphanumeric characters
+        pattern=r"^[a-z0-9]+$",  # lowercase alphanumeric characters
         description=(
             "A string used to indicate the level of processing of the output data. It"
             " should be formatted as a letter followed by a number. Typical values for"
@@ -164,17 +165,18 @@ class GlobalAttributes(AttributeModel):
         ),
     )
 
-    @validator("history", "code_version", pre=True)
-    def warn_if_dynamic_properties_are_set(cls, v: str, field: ModelField) -> str:
+    @field_validator("history", "code_version", mode="before")
+    @classmethod
+    def warn_if_dynamic_properties_are_set(cls, v: str, info: ValidationInfo) -> str:
         if v:
             logger.warning(
-                f"The '{field.name}' attribute should not be set explicitly. The"
+                f"The '{info.field_name}' attribute should not be set explicitly. The"
                 f" current value of '{v}' will be ignored."
             )
         return ""
 
-    @root_validator(skip_on_failure=True)
-    def add_datastream_field(cls, values: Dict[str, StrictStr]) -> Dict[str, StrictStr]:
-        if not values["datastream"]:
-            values["datastream"] = get_datastream(**values)
-        return values
+    @model_validator(mode="after")
+    def add_datastream_field(self) -> Self:
+        if not self.datastream:
+            self.datastream = get_datastream(**self.model_dump())
+        return self

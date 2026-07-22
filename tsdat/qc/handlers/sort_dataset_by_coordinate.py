@@ -1,7 +1,7 @@
+from pydantic import BaseModel, ConfigDict
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra
 
 from ..base import QualityHandler
 from ...utils import record_corrections_applied
@@ -14,7 +14,8 @@ class SortDatasetByCoordinate(QualityHandler):
     ------------------------------------------------------------------------------------
     """
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         ascending: bool = True
         """Whether to sort the dataset in ascending order. Defaults to True."""
 

@@ -1,8 +1,4 @@
-from typing import (
-    Dict,
-    NamedTuple,
-)
-
+from typing import Dict, NamedTuple
 import xarray as xr
 
 from ...const import VarName

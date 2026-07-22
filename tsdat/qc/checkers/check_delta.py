@@ -1,10 +1,9 @@
 from abc import ABC
 from typing import Any, Union
-
+from pydantic import BaseModel, ConfigDict
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra
 
 from .threshold_checker import ThresholdChecker
 
@@ -16,7 +15,8 @@ class CheckDelta(ThresholdChecker, ABC):
     difference is less than the threshold specified by the value in the attribute
     provided to this check."""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         dim: str = "time"
         """The dimension on which to perform the diff."""
 

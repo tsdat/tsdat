@@ -1,7 +1,4 @@
-from pydantic import (
-    Field,
-    HttpUrl,
-)
+from pydantic import Field, HttpUrl
 
 from .global_attributes import GlobalAttributes
 
@@ -19,7 +16,7 @@ class ACDDGlobalAttrs(GlobalAttributes):
         description=(
             "A paragraph describing the dataset, analogous to an abstract for a paper."
         ),
-        minLength=1,
+        min_length=1,
     )
     Conventions: str = Field(
         description=(

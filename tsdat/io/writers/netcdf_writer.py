@@ -1,9 +1,8 @@
 import copy
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional, cast
-
+from pydantic import BaseModel, ConfigDict, Field
 import xarray as xr
-from pydantic import BaseModel, Extra, Field
 
 from ..base import FileWriter
 
@@ -20,7 +19,8 @@ class NetCDFWriter(FileWriter):
     ------------------------------------------------------------------------------------
     """
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         compression_level: int = 1
         """The level of compression to use (0-9). Set to 0 to not use compression."""
 

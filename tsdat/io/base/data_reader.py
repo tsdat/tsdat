@@ -1,14 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import (
-    Dict,
-    Union,
-)
-
+from typing import Dict, Union
 import xarray as xr
 
-from ...utils import (
-    ParameterizedClass,
-)
+from ...utils import ParameterizedClass
 
 
 class DataReader(ParameterizedClass, ABC):

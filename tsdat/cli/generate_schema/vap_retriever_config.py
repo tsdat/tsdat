@@ -4,16 +4,20 @@
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from ...config.retriever.retriever_config import RetrieverConfig
 
 
 class VapRetrieverConfig(RetrieverConfig):
-    class Parameters(BaseModel, extra=Extra.forbid):
-        class FetchParameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra='forbid')
+
+        class FetchParameters(BaseModel):
+            model_config = ConfigDict(extra='forbid')
+
             time_padding: str = Field(
-                regex=r"^[\+|\-]?[0-9]+[h|m|s|ms]$",
+                pattern=r"^[\+|\-]?[0-9]+[h|m|s|ms]$",
                 description=(
                     "The time_padding parameter in the fetch_parameters section"
                     " specifies how far in time to look for data before the 'begin'"
@@ -23,7 +27,9 @@ class VapRetrieverConfig(RetrieverConfig):
                 ),
             )
 
-        class TransformationParameters(BaseModel, extra=Extra.forbid):
+        class TransformationParameters(BaseModel):
+            model_config = ConfigDict(extra='forbid')
+
             alignment: dict[str, Literal["LEFT", "RIGHT", "CENTER"]] = Field(
                 description=(
                     "Defines the location of the window in respect to each output"
@@ -34,19 +40,19 @@ class VapRetrieverConfig(RetrieverConfig):
             dim_range: dict[str, str] = Field(
                 ...,
                 alias="range",
-                regex=r"^[0-9]+[a-zA-Z]+$",
                 description=(
                     "Defines how far (in seconds) from the first/last timestamp to "
                     "search for the previous/next measurement."
                 ),
+                json_schema_extra={"pattern": r"^[0-9]+[a-zA-Z]+$"},
             )
             width: dict[str, str] = Field(
                 ...,
-                regex=r"^[0-9]+[a-zA-Z]+$",
                 description=(
                     'Defines the size of the averaging window in seconds ("600s" = 10 '
                     "min)."
                 ),
+                json_schema_extra={"pattern": r"^[0-9]+[a-zA-Z]+$"},
             )
 
         fetch_parameters: Optional[FetchParameters] = None

@@ -3,10 +3,9 @@ from datetime import datetime
 from getpass import getuser
 from pathlib import Path
 from typing import Any, Iterable, List, Optional, Pattern, cast
-
+from pydantic import Field
 import numpy as np
 import xarray as xr
-from pydantic import Field
 
 from ...config.dataset import DatasetConfig
 from ...io.base import Retriever, Storage

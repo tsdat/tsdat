@@ -1,11 +1,10 @@
 import logging
 from typing import Any, Dict, Optional
-
+from pydantic import field_validator
 import numpy as np
 import pandas as pd
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import validator
 
 from ...config.dataset import DatasetConfig
 from ..base import DataConverter, RetrievedDataset
@@ -36,7 +35,8 @@ class StringToDatetime(DataConverter):
     keyword arguments. Note that 'format' is already included as a keyword argument.
     Defaults to {}."""
 
-    @validator("format")
+    @field_validator("format")
+    @classmethod
     def warn_if_no_format_set(cls, format: Optional[str]) -> Optional[str]:
         if not format:
             logger.warning(

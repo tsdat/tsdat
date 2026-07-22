@@ -1,10 +1,5 @@
-from typing import (
-    List,
-    Sequence,
-    Set,
-)
-
 from jsonpointer import set_pointer  # type: ignore
+from typing import List, Sequence, Set
 
 from ._named_class import _NamedClass
 

@@ -1,5 +1,4 @@
 import re
-
 from pint import UnitRegistry
 
 ureg = UnitRegistry(autoconvert_offset_to_baseunit=True)
@@ -43,7 +42,7 @@ def check_unit(unit_str: str, keep_exp: bool) -> str:
 
     if not unit_str or unit_str == "1":
         return unit_str
-    
+
     # Not recognized by pint, but we want it to be valid
     if unit_str.lower().startswith("seconds since"):
         return unit_str

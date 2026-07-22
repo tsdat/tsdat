@@ -1,14 +1,15 @@
 import re
 from typing import Dict, Optional, Pattern, Union, cast
 
-from pydantic import Extra, Field, validator
+from pydantic import ConfigDict, Field, field_validator
 
 from ..utils import ParameterizedConfigClass, YamlModel
 from .data_reader_config import DataReaderConfig
 from .retrieved_variable_config import RetrievedVariableConfig
 
 
-class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
+class RetrieverConfig(ParameterizedConfigClass, YamlModel):
+    model_config = ConfigDict(extra='allow')
     """Contains configuration parameters for the tsdat retriever class.
 
     This class will ultimately be converted into a tsdat.io.base.Retriever subclass for
@@ -45,7 +46,8 @@ class RetrieverConfig(ParameterizedConfigClass, YamlModel, extra=Extra.allow):
         " be applied to each retrieved coordinate variable.",
     )
 
-    @validator("coords", "data_vars")
+    @field_validator("coords", "data_vars")
+    @classmethod
     def coerce_to_patterned_retriever(
         cls,
         var_dict: Dict[

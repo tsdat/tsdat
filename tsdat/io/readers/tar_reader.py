@@ -2,9 +2,9 @@ import re
 import tarfile
 from io import BytesIO
 from typing import Any, Dict, List, Optional
-
+from pydantic import BaseModel, ConfigDict
 import xarray as xr
-from pydantic import BaseModel, Extra
+
 
 from ..base import ArchiveReader, DataReader
 
@@ -54,7 +54,8 @@ class TarReader(ArchiveReader):
 
     """
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         open_tar_kwargs: Dict[str, Any] = {}
         read_tar_kwargs: Dict[str, Any] = {}
         readers: Dict[str, Any] = {}

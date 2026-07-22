@@ -1,9 +1,8 @@
 from pydantic import Field
+
 from ..base import FileHandler
 from ..readers import ParquetReader
-from ..writers import (
-    ParquetWriter,
-)
+from ..writers import ParquetWriter
 
 
 class ParquetHandler(FileHandler):

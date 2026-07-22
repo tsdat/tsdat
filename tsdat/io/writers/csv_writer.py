@@ -1,10 +1,9 @@
 import logging
 from pathlib import Path
 from typing import Any, Dict, Hashable, List, Optional
-
+from pydantic import BaseModel, ConfigDict, Field
 import pandas as pd
 import xarray as xr
-from pydantic import BaseModel, Extra, Field
 
 from ..base import FileWriter
 
@@ -19,7 +18,8 @@ class CSVWriter(FileWriter):
 
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         dim_order: Optional[List[str]] = None
         to_csv_kwargs: Dict[str, Any] = Field(
             default_factory=lambda: dict(date_format="%Y-%m-%d %H:%M:%S %Z")

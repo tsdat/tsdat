@@ -1,5 +1,4 @@
 from typing import Any, Dict
-
 import xarray as xr
 
 from ..base import DataReader

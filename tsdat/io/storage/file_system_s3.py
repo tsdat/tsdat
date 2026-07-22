@@ -6,9 +6,8 @@ from functools import lru_cache
 from pathlib import Path
 from time import time
 from typing import Any, Dict, List, Protocol, Union
-
+from pydantic import AliasChoices, Field, field_validator
 import xarray as xr
-from pydantic import Field, validator
 
 from ...utils import get_file_datetime
 from .file_system import FileSystem
@@ -30,24 +29,31 @@ class FileSystemS3(FileSystem):
         Note that all settings and parameters from ``Filesystem.Parameters`` are also
         supported by ``FileSystemS3.Parameters``."""
 
-        bucket: str = Field("tsdat-storage", env="TSDAT_S3_BUCKET_NAME")
+        bucket: str = Field(
+            "tsdat-storage",
+            validation_alias=AliasChoices("TSDAT_S3_BUCKET_NAME", "bucket"),
+        )
         """The name of the S3 bucket that the storage class should use.
-        
+
         Note:
             This parameter can also be set via the ``TSDAT_S3_BUCKET_NAME`` environment
             variable.
         """
 
-        region: str = Field("us-west-2", env="AWS_DEFAULT_REGION")
+        region: str = Field(
+            "us-west-2",
+            validation_alias=AliasChoices("AWS_DEFAULT_REGION", "region"),
+        )
         """The AWS region of the storage bucket.
-        
+
         Note:
             This parameter can also be set via the ``AWS_DEFAULT_REGION`` environment
             variable.
-        
+
         Defaults to ``us-west-2``."""
 
-        @validator("storage_root")
+        @field_validator("storage_root")
+        @classmethod
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
             return storage_root  # HACK: Don't run parent validator to create storage root file
 
@@ -56,7 +62,8 @@ class FileSystemS3(FileSystem):
     be saved or additional keyword arguments to specific functions used by the storage
     API. See the FileSystemS3.Parameters class for more details."""
 
-    @validator("parameters")
+    @field_validator("parameters")
+    @classmethod
     def _check_authentication(cls, parameters: Parameters):
         import botocore.exceptions
 
@@ -72,7 +79,8 @@ class FileSystemS3(FileSystem):
             )
         return parameters
 
-    @validator("parameters")
+    @field_validator("parameters")
+    @classmethod
     def _ensure_bucket_exists(cls, parameters: Parameters):
         import botocore.exceptions
 
@@ -272,10 +280,3 @@ class FileSystemS3(FileSystem):
             return next(obj for obj in objects if obj.key == str(key))
         except StopIteration:
             return None
-
-
-# TODO:
-#  HACK: Update forward refs to get around error I couldn't replicate with simpler code
-#  "pydantic.errors.ConfigError: field "parameters" not yet prepared
-#  so type is still a ForwardRef..."
-FileSystemS3.update_forward_refs(Parameters=FileSystemS3.Parameters)

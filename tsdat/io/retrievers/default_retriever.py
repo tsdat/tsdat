@@ -1,21 +1,11 @@
 import logging
 from copy import deepcopy
-from typing import (
-    Any,
-    Dict,
-    List,
-    Pattern,
-    cast,
-)
-
+from typing import Any, Dict, List, Pattern, cast
+from pydantic import BaseModel, ConfigDict
 import xarray as xr
-from pydantic import BaseModel, Extra
 
 from ...config.dataset import DatasetConfig
-from ..base import (
-    DataReader,
-    Retriever,
-)
+from ..base import DataReader, Retriever
 from ._reindex_dataset_coords import _reindex_dataset_coords
 from ._rename_variables import _rename_variables
 from ._run_data_converters import _run_data_converters
@@ -31,7 +21,8 @@ class DefaultRetriever(Retriever):
     to retrieval and dataset configurations, and applies registered DataConverters to
     retrieved data."""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         merge_kwargs: Dict[str, Any] = {"join": "outer", "compat": "no_conflicts"}
         """Keyword arguments passed to xr.merge(). This is only relevant if multiple
         input keys are provided simultaneously, or if any registered DataReader objects
