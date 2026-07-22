@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class A2eCSVWriter(FileWriter):
-    file_extension = "csv"
+    file_extension: str = "csv"
 
     @staticmethod
     def get_filepath(filepath: Path, dims: tuple[str, ...]) -> Path:
