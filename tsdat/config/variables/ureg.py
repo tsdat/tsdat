@@ -38,9 +38,9 @@ ureg.define("unitless = []")
 
 
 def check_unit(unit_str: str, keep_exp: bool) -> str:
-    unit_str = unit_str.strip()
+    unit_str = str(unit_str).strip()
 
-    if not unit_str or unit_str == "1":
+    if not unit_str or (unit_str == "1"):
         return unit_str
 
     # Not recognized by pint, but we want it to be valid

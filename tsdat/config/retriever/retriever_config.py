@@ -1,6 +1,5 @@
 import re
 from typing import Dict, Optional, Pattern, Union, cast
-
 from pydantic import ConfigDict, Field, field_validator
 
 from ..utils import ParameterizedConfigClass, YamlModel
@@ -30,7 +29,7 @@ class RetrieverConfig(ParameterizedConfigClass, YamlModel):
     """The DataReaders to use for reading input data."""
 
     coords: Dict[
-        str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]
+        str, Union[Dict[Pattern[str], RetrievedVariableConfig], RetrievedVariableConfig]
     ] = Field(  # type: ignore
         default={},
         validate_default=True,
@@ -39,7 +38,7 @@ class RetrieverConfig(ParameterizedConfigClass, YamlModel):
         " be applied to each retrieved coordinate variable.",
     )
     data_vars: Dict[
-        str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]
+        str, Union[Dict[Pattern[str], RetrievedVariableConfig], RetrievedVariableConfig]
     ] = Field(  # type: ignore
         default={},
         validate_default=True,
@@ -53,7 +52,8 @@ class RetrieverConfig(ParameterizedConfigClass, YamlModel):
     def coerce_to_patterned_retriever(
         cls,
         var_dict: Dict[
-            str, Union[Dict[Pattern, RetrievedVariableConfig], RetrievedVariableConfig]
+            str,
+            Union[Dict[Pattern[str], RetrievedVariableConfig], RetrievedVariableConfig],
         ],
     ) -> Dict[str, Dict[Pattern[str], RetrievedVariableConfig]]:  # type: ignore
         to_return: Dict[str, Dict[Pattern[str], RetrievedVariableConfig]] = {}  # type: ignore

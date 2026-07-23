@@ -6,7 +6,7 @@ from .quality_manager import QualityManager
 
 
 class QualityManagement(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
     """Main class for orchestrating the dispatch of QualityCheckers and
     QualityHandlers."""
 

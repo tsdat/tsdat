@@ -211,7 +211,7 @@ class VariableAttributes(AttributeModel):
         ),
     )
 
-    @field_validator("units")
+    @field_validator("units", mode="before")
     @classmethod
     def validate_unit(cls, unit_str: str) -> str:
         try:

@@ -7,7 +7,7 @@ from .data_converter import DataConverter
 
 # TODO: This needs a better name
 class RetrievedVariable(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
 
     """Tracks the name of the input variable and the converters to apply."""
 

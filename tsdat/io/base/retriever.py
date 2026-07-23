@@ -1,11 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Pattern,
-)
+from typing import Any, Dict, List, Optional, Pattern
+from pydantic import Field
 import xarray as xr
 
 from ...config.dataset import DatasetConfig
@@ -16,7 +11,7 @@ from .retrieved_variable import RetrievedVariable
 class Retriever(ParameterizedClass, ABC):
     """Base class for retrieving data used as input to tsdat pipelines."""
 
-    readers: Optional[Dict[Pattern, Any]]  # type: ignore
+    readers: Optional[Dict[Pattern, Any]] = Field(default=None)  # type: ignore
     """The mapping of readers that should be used to retrieve data given input_keys and
     optional keyword arguments provided by subclasses of Retriever."""
 

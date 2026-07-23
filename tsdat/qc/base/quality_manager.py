@@ -7,7 +7,7 @@ from .quality_handler import QualityHandler
 
 
 class QualityManager(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
     """Groups a QualityChecker and one or more QualityHandlers together."""
 
     name: str

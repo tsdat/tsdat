@@ -1,5 +1,4 @@
 from typing import List
-
 from pydantic import ConfigDict, Field, field_validator
 
 from ..utils import YamlModel, find_duplicates
@@ -7,7 +6,7 @@ from .manager_config import ManagerConfig
 
 
 class QualityConfig(YamlModel):
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra="forbid")
     """Contains quality configuration parameters for tsdat pipelines.
 
     This class will ultimately be converted into a tsdat.qc.base.QualityManagement class
