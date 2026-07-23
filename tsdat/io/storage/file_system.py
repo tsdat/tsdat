@@ -110,7 +110,8 @@ class FileSystem(Storage):
     def modified_since(
         self, datastream: str, last_modified: datetime
     ) -> List[datetime]:
-        """Find the list of data dates that have been modified since the passed
+        """-----------------------------------------------------------------------------
+        Find the list of data dates that have been modified since the passed
         last modified date.
 
         Args:
@@ -121,7 +122,7 @@ class FileSystem(Storage):
         Returns:
             List[datetime]: The data dates of files that were changed since the last
                 modified date
-        """
+        -----------------------------------------------------------------------------"""
         filepath_glob = self.data_filepath_template.substitute(
             self._get_substitutions(datastream=datastream),
             allow_missing=True,
@@ -143,7 +144,8 @@ class FileSystem(Storage):
     def save_ancillary_file(
         self, filepath: Path, target_path: Union[Path, None] = None
     ):
-        """Saves an ancillary filepath to the datastream's ancillary storage area.
+        """-----------------------------------------------------------------------------
+        Saves an ancillary filepath to the datastream's ancillary storage area.
 
         NOTE: In most cases this function should not be used directly. Instead, prefer
         using the ``self.uploadable_dir(*args, **kwargs)`` method.
@@ -153,8 +155,8 @@ class FileSystem(Storage):
                 a standardized filename and should be saved under the ancillary storage
                 path.
             target_path (str): The path to where the data should be saved.
-        """
-        target_path.parent.mkdir(exist_ok=True, parents=True)
+        -----------------------------------------------------------------------------"""
+        target_path.parent.mkdir(exist_ok=True, parents=True)  # type: ignore
         saved_filepath = shutil.copy2(filepath, target_path)
         logger.info("Saved ancillary file to: %s", saved_filepath)
 
@@ -167,7 +169,6 @@ class FileSystem(Storage):
 
         Args:
             dataset (xr.Dataset): The dataset to save.
-
         -----------------------------------------------------------------------------"""
         datastream = dataset.attrs["datastream"]
         substitutions = self._get_substitutions(datastream=datastream, dataset=dataset)
@@ -201,7 +202,6 @@ class FileSystem(Storage):
         Returns:
             xr.Dataset: A dataset containing all the data in the storage area that spans
             the specified datetimes.
-
         -----------------------------------------------------------------------------"""
         data_files = self._find_data(
             start, end, datastream, metadata_kwargs=metadata_kwargs

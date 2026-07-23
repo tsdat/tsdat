@@ -4,5 +4,4 @@ from ..utils import ParameterizedConfigClass
 
 
 class DataConverterConfig(ParameterizedConfigClass):
-    model_config = ConfigDict(extra='allow')
-
+    model_config = ConfigDict(extra="allow")

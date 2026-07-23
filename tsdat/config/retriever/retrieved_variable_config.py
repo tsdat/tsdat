@@ -5,7 +5,7 @@ from .data_converter_config import DataConverterConfig
 
 
 class RetrievedVariableConfig(BaseModel):
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra="allow")
     """Specifies how the variable should be retrieved from the raw dataset and the
     preprocessing steps (i.e. DataConverters) that should be applied."""
 

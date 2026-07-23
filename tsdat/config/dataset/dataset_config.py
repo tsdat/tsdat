@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class DatasetConfig(YamlModel):
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra="forbid")
     """Defines the structure and metadata of the dataset produced by a tsdat pipeline.
 
     Also provides methods to support yaml parsing and validation, including generation
@@ -84,7 +84,7 @@ class DatasetConfig(YamlModel):
                 )
         return vars
 
-    @field_validator("coords", "data_vars", mode='before')
+    @field_validator("coords", "data_vars", mode="before")
     @classmethod
     def set_variable_name_property(
         cls, vars: Dict[str, Dict[str, Any]]
@@ -93,7 +93,7 @@ class DatasetConfig(YamlModel):
             vars[name]["name"] = name
         return vars
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_variable_name_uniqueness(self) -> Self:
         coord_names = set(self.coords.keys())
         var_names = set(self.data_vars.keys())

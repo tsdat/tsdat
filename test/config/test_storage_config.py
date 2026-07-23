@@ -4,7 +4,6 @@ from typing import Any, Dict
 from tsdat.config.storage import StorageConfig
 from tsdat.utils import model_to_dict
 
-
 # def test_writer_config_produces_expected_dict():
 #     writer_dict: Dict[str, Any] = {
 #         # "name": "My Data Writer",

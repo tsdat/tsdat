@@ -244,12 +244,12 @@ def test_transform_v2(
         "temperature_60min",
         "humidity",
     ]:
-        assert var in ds.data_vars, (
-            f"{var} is expected to be in dataset. Found: {list(ds)}"
-        )
-        assert f"qc_{var}" in ds.data_vars, (
-            f"qc_{var} is expected to be in dataset. Found: {list(ds)}"
-        )
+        assert (
+            var in ds.data_vars
+        ), f"{var} is expected to be in dataset. Found: {list(ds)}"
+        assert (
+            f"qc_{var}" in ds.data_vars
+        ), f"qc_{var} is expected to be in dataset. Found: {list(ds)}"
 
     t30min = ds["temperature_30min"]
     # assert "TRANS_BIN_AVERAGE" in t30min.attrs.get("cell_transform", "")

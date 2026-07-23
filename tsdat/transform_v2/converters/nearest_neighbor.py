@@ -6,7 +6,6 @@ from ...utils.replace_qc_attr import replace_qc_attr
 from ..nearest_neighbor.calculate_nearest_neighbor import nearest_neighbor
 from ..utils.create_input_dataset import create_input_dataset
 
-
 # Prevent any chance of runtime circular imports for typing-only imports
 if TYPE_CHECKING:  # pragma: no cover
     from ...config.dataset import DatasetConfig  # pragma: no cover

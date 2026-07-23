@@ -8,7 +8,6 @@ from ...utils import ParameterizedClass
 class DataWriter(ParameterizedClass, ABC):
     """---------------------------------------------------------------------------------
     Base class for writing data to storage area(s).
-
     ---------------------------------------------------------------------------------"""
 
     @abstractmethod
@@ -22,6 +21,5 @@ class DataWriter(ParameterizedClass, ABC):
 
         Args:
             dataset (xr.Dataset): The dataset to save.
-
         -----------------------------------------------------------------------------"""
         ...

@@ -37,7 +37,7 @@ def get_resolved_cfg_path(
 
 
 class PipelineConfig(ParameterizedConfigClass):
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra="allow")
     """Contains configuration parameters for tsdat pipelines.
 
     This class is ultimately converted into a tsdat.pipeline.base.Pipeline subclass that
@@ -95,7 +95,7 @@ class PipelineConfig(ParameterizedConfigClass):
     """The path to the yaml config file used to instantiate this class. Set via the
     'from_yaml()' classmethod"""
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def merge_overridable_yaml(cls, values: Dict[str, Any]):
         object_field_mapping = {

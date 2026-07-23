@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import Dict, Type, Union
-
 import typer
 
 from ...config.dataset.acdd_dataset_config import ACDDDatasetConfig

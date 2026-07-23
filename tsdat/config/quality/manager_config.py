@@ -6,7 +6,7 @@ from .handler_config import HandlerConfig
 
 
 class ManagerConfig(BaseModel):
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(
         description="A human-readable label that is used to identify this quality"

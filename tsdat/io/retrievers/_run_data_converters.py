@@ -11,7 +11,7 @@ def _run_data_converters(
     dataset_config: DatasetConfig,
     input_config: InputKeyRetrievalRules,
 ) -> xr.Dataset:
-    """------------------------------------------------------------------------------------
+    """---------------------------------------------------------------------------------
     Runs the declared DataConverters on the dataset's coords and data_vars.
 
     Returns the dataset after all converters have been run.
@@ -22,9 +22,8 @@ def _run_data_converters(
 
     Returns:
         xr.Dataset: The converted dataset.
+    ---------------------------------------------------------------------------------"""
 
-    ------------------------------------------------------------------------------------
-    """
     retrieved_dataset = RetrievedDataset.from_xr_dataset(dataset)
     for coord_name, coord_config in input_config.coord_rules.items():
         for converter in coord_config.data_converters:

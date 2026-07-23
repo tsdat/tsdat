@@ -12,7 +12,6 @@ class ZarrWriter(FileWriter):
 
     Advanced features such as specifying the chunk size or writing the zarr archive in
     AWS S3 will be implemented later.
-
     ---------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel):

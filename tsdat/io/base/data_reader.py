@@ -32,6 +32,5 @@ class DataReader(ParameterizedClass, ABC):
         Returns:
             Union[xr.Dataset, Dict[str, xr.Dataset]]: The raw data extracted from the
                 provided input key.
-
         -----------------------------------------------------------------------------"""
         ...

@@ -10,7 +10,7 @@ from ...utils import get_filename
 
 
 class SplitNetCDFWriter(NetCDFWriter):
-    """------------------------------------------------------------------------------------
+    """---------------------------------------------------------------------------------
     Wrapper around xarray's `Dataset.to_netcdf()` function for saving a dataset to a
     netCDF file based on a particular time interval, and is an extension of the
     `NetCDFWriter`.
@@ -19,11 +19,9 @@ class SplitNetCDFWriter(NetCDFWriter):
     "h", minute: "m", second: "s").
 
     Properties under the `to_netcdf_kwargs` parameter will be passed to
-    `Dataset.to_netcdf()` as keyword arguments. File compression is used by default to save
-    disk space. To disable compression set the `compression_level` parameter to `0`.
-
-    ------------------------------------------------------------------------------------
-    """
+    `Dataset.to_netcdf()` as keyword arguments. File compression is used by default to
+    save disk space. To disable compression set the `compression_level` parameter to 0.
+    ---------------------------------------------------------------------------------"""
 
     class Parameters(NetCDFWriter.Parameters):
         time_interval: int = 1

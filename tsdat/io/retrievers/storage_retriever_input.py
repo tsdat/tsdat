@@ -7,7 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 class StorageRetrieverInput:
-    """Returns an object representation of an input storage key.
+    """---------------------------------------------------------------------------------
+    Returns an object representation of an input storage key.
 
     Input storage keys should be formatted like:
 
@@ -15,7 +16,7 @@ class StorageRetrieverInput:
     "--datastream sgp.met.b0 --start 20230801 --end 20230901"
     "--datastream sgp.met.b0 --start 20230801 --end 20230901 --location_id sgp --data_level b0"
     ```
-    """
+    ---------------------------------------------------------------------------------"""
 
     def __init__(self, input_key: str):
         kwargs: Dict[str, str] = {}

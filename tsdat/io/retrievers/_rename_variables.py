@@ -13,7 +13,7 @@ def _rename_variables(
     dataset: xr.Dataset,
     input_config: InputKeyRetrievalRules,
 ) -> xr.Dataset:
-    """-----------------------------------------------------------------------------
+    """---------------------------------------------------------------------------------
     Renames variables in the retrieved dataset according to retrieval configurations.
 
     Args:
@@ -21,8 +21,7 @@ def _rename_variables(
 
     Returns:
         xr.Dataset: The simplified raw dataset.
-
-    -----------------------------------------------------------------------------"""
+    ---------------------------------------------------------------------------------"""
 
     def rename_vars(input_data: Dict[VarName, RetrievedVariable]):
         # Run through list of retreiver variables and organizes them into

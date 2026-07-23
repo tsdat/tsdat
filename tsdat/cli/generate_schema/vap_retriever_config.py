@@ -3,7 +3,6 @@
 # this class is located here and not in the tsdat.config.retrievers submodule.
 
 from typing import Literal, Optional
-
 from pydantic import BaseModel, ConfigDict, Field
 
 from ...config.retriever.retriever_config import RetrieverConfig
@@ -11,10 +10,10 @@ from ...config.retriever.retriever_config import RetrieverConfig
 
 class VapRetrieverConfig(RetrieverConfig):
     class Parameters(BaseModel):
-        model_config = ConfigDict(extra='forbid')
+        model_config = ConfigDict(extra="forbid")
 
         class FetchParameters(BaseModel):
-            model_config = ConfigDict(extra='forbid')
+            model_config = ConfigDict(extra="forbid")
 
             time_padding: str = Field(
                 pattern=r"^[\+|\-]?[0-9]+[h|m|s|ms]$",
@@ -28,7 +27,7 @@ class VapRetrieverConfig(RetrieverConfig):
             )
 
         class TransformationParameters(BaseModel):
-            model_config = ConfigDict(extra='forbid')
+            model_config = ConfigDict(extra="forbid")
 
             alignment: dict[str, Literal["LEFT", "RIGHT", "CENTER"]] = Field(
                 description=(

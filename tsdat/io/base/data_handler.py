@@ -1,6 +1,6 @@
 from typing import Any, Dict
 from typing_extensions import Self
-from pydantic import Field, ValidationInfo, field_validator, model_validator
+from pydantic import Field, model_validator
 
 from ...utils import ParameterizedClass
 from .data_reader import DataReader
@@ -8,15 +8,14 @@ from .data_writer import DataWriter
 
 
 class DataHandler(ParameterizedClass):
-    """
+    """---------------------------------------------------------------------------------
     Groups a DataReader subclass and a DataWriter subclass together.
 
     This provides a unified approach to data I/O. DataHandlers are typically expected
     to be able to round-trip the data, i.e. the following psuedocode is generally true:
 
         `handler.read(handler.write(dataset))) == dataset`
-
-    """
+    ---------------------------------------------------------------------------------"""
 
     parameters: Dict[str, Any] = Field(default_factory=dict)
 

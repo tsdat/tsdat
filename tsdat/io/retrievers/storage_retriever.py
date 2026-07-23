@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
 import pandas as pd
 import xarray as xr
@@ -38,7 +38,7 @@ class StorageRetriever(Retriever):
         ] = None,
         **kwargs: Any,
     ) -> xr.Dataset:
-        """------------------------------------------------------------------------------------
+        """-----------------------------------------------------------------------------
         Retrieves input data from the storage area.
 
         Note that each input_key is expected to be formatted according to the following
@@ -65,9 +65,8 @@ class StorageRetriever(Retriever):
 
         Returns:
             xr.Dataset: The retrieved dataset
+        -----------------------------------------------------------------------------"""
 
-        ------------------------------------------------------------------------------------
-        """
         if storage is None:
             raise AssertionError("Missing required 'storage' parameter.")
 
@@ -153,7 +152,7 @@ class StorageRetriever(Retriever):
 
         # Fix the dtype encoding
         for var_name, var_data in retrieved_dataset.data_vars.items():
-            output_var_cfg = dataset_config.data_vars.get(var_name)
+            output_var_cfg = dataset_config.data_vars.get(var_name)  # type: ignore
             if output_var_cfg is not None:
                 dtype = output_var_cfg.dtype
                 retrieved_dataset[var_name] = var_data.astype(dtype)
@@ -168,9 +167,7 @@ class StorageRetriever(Retriever):
         else:
             return pd.Timedelta(time_string)
 
-    # TODO: Method definition says that a lone `timedelta` is returned, but return statements return
-    #  a `tuple[int, timedelta]`. This should be corrected.
-    def _get_retrieval_padding(self, input_key: str) -> timedelta:
+    def _get_retrieval_padding(self, input_key: str) -> Tuple[int, timedelta]:
         if self.parameters is None:
             return 0, timedelta()
         elif self.parameters.fetch_params is not None:

@@ -58,7 +58,7 @@ class FileSystemS3(FileSystem):
             return storage_root  # HACK: Don't run parent validator to create storage root file
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore
-    """ File-system and AWS-specific parameters, such as the path to where files should
+    """File-system and AWS-specific parameters, such as the path to where files should
     be saved or additional keyword arguments to specific functions used by the storage
     API. See the FileSystemS3.Parameters class for more details."""
 
@@ -110,7 +110,7 @@ class FileSystemS3(FileSystem):
     @staticmethod
     @lru_cache()
     def _get_session(region: str, timehash: int = 0):
-        """------------------------------------------------------------------------------------
+        """-----------------------------------------------------------------------------
         Creates a boto3 Session or returns an active one.
 
         Borrowed approximately from https://stackoverflow.com/a/55900800/15641512.
@@ -118,13 +118,11 @@ class FileSystemS3(FileSystem):
         Args:
             region (str): The session region.
             timehash (int, optional): A time hash used to cache repeated calls to this
-                function. This should be generated using tsdat.io.storage.get_timehash().
+                function. This should be generated using tsdat.io.storage.get_timehash()
 
         Returns:
             boto3.session.Session: An active boto3 Session object.
-
-        ------------------------------------------------------------------------------------
-        """
+        -----------------------------------------------------------------------------"""
         import boto3
 
         del timehash
@@ -197,8 +195,9 @@ class FileSystemS3(FileSystem):
 
         return matches
 
-    def save_ancillary_file(self, filepath: Path, target_path: Path):  # type: ignore
-        """Saves an ancillary filepath to the datastream's ancillary storage area.
+    def save_ancillary_file(self, filepath: Path, target_path: Path):
+        """-----------------------------------------------------------------------------
+        Saves an ancillary filepath to the datastream's ancillary storage area.
 
         NOTE: In most cases this function should not be used directly. Instead, prefer
         using the ``self.uploadable_dir(*args, **kwargs)`` method.
@@ -208,7 +207,7 @@ class FileSystemS3(FileSystem):
                 a standardized filename and should be saved under the ancillary storage
                 path.
             target_path (str): The path to where the data should be saved.
-        """
+        -----------------------------------------------------------------------------"""
         self._bucket.upload_file(Filename=str(filepath), Key=target_path.as_posix())
         logger.info("Saved ancillary file to: %s", target_path.as_posix())
 
@@ -266,8 +265,8 @@ class FileSystemS3(FileSystem):
                 )
                 data = self.handler.reader.read(tmp_filepath)
                 if isinstance(data, dict):
-                    data = xr.merge(data.values(), join="outer", compat="no_conflicts")  # type: ignore
-                data = data.load()  # type: ignore
+                    data = xr.merge(data.values(), join="outer", compat="no_conflicts")
+                data = data.load()
                 dataset_list.append(data)
         return dataset_list
 

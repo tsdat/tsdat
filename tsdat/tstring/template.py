@@ -171,9 +171,11 @@ class Template:
         for chunk in self.chunks:
             results.append(
                 chunk.sub(
-                    value=mapping.get(chunk.var_name)
-                    if chunk.var_name is not None
-                    else None,
+                    value=(
+                        mapping.get(chunk.var_name)
+                        if chunk.var_name is not None
+                        else None
+                    ),
                     allow_missing=allow_missing,
                     fill=fill,
                 )

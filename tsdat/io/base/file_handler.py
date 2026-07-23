@@ -12,7 +12,7 @@ class FileHandler(DataHandler):
     extension: str
     """The specific file extension used for data files, e.g., ".nc"."""
 
-    @field_validator("extension", mode="before")
+    @field_validator("extension", mode="before")  # type: ignore
     @classmethod
     def no_leading_dot(cls, v: str, values: Dict[str, Any]) -> str:
         return v.lstrip(".")

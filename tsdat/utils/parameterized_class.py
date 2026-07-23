@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ParameterizedClass(BaseModel):
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(extra="forbid")
     """------------------------------------------------------------------------------------
     Base class for any class that accepts 'parameters' as an argument.
 

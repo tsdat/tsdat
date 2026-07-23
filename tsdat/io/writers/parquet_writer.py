@@ -14,7 +14,6 @@ class ParquetWriter(FileWriter):
     parquet file using `pd.DataFrame.to_parquet()`. Properties under the
     `to_parquet_kwargs` parameter are passed to `pd.DataFrame.to_parquet()` as keyword
     arguments.
-
     ---------------------------------------------------------------------------------"""
 
     class Parameters(BaseModel):
