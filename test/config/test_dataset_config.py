@@ -328,10 +328,6 @@ def test_coordinate_dimensioned_by_itself():
     ):
         Coordinate(**bad_coord)
 
-    # expected_error_msg = "dims: String should match pattern"
-    # actual_msg = get_pydantic_error_message(error)
-    # assert expected_error_msg in actual_msg
-
     good_coord: Dict[str, Any] = {"dims": ["my_coordinate"]}
     good_coord.update(base_coord)
     coord = Coordinate(**good_coord)
