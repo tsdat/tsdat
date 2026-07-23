@@ -231,7 +231,7 @@ def test_valid_variable_units(
 
 def test_valid_variable_attrs_adds_fillvalue():
     attrs: Dict[str, Any] = {
-        "units": 1,  # will be cast to str
+        "units": 1,  # Will be cast to str
         "long_name": "Example Variable",
         "comment": "Normally valid",
         "valid_range": [0, 1000],
@@ -258,7 +258,7 @@ def test_valid_variable_attrs_adds_fillvalue():
 
 def test_variable_attrs_allow_extra():
     attrs: Dict[str, Any] = {
-        "units": 1,
+        "units": 1,  # Will be cast to a string
         "extra": "some extra text",
         "another attr": 200,
     }
