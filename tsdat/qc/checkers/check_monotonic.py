@@ -1,8 +1,8 @@
 import logging
+from typing import Literal, Optional, Union
+from pydantic import BaseModel, ConfigDict, ValidationInfo, field_validator
 import numpy as np
 import xarray as xr
-from pydantic import BaseModel, Extra, validator
-from typing import Any, Dict, Literal, Optional, Union
 from numpy.typing import NDArray
 
 from .is_datetime_like import is_datetime_like
@@ -19,16 +19,18 @@ class CheckMonotonic(QualityChecker):
 
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         require_decreasing: bool = False
         require_increasing: bool = False
         dim: Optional[str] = None
 
-        @validator("require_increasing")
+        @field_validator("require_increasing")
+        @classmethod
         def check_monotonic_not_increasing_and_decreasing(
-            cls, inc: bool, values: Dict[str, Any]
+            cls, inc: bool, info: ValidationInfo
         ) -> bool:
-            if inc and values["require_decreasing"]:
+            if inc and info.data["require_decreasing"]:
                 raise ValueError(
                     "CheckMonotonic -> Parameters: cannot set both 'require_increasing'"
                     " and 'require_decreasing'. Please set one or both to False."

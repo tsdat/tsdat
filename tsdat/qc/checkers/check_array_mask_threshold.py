@@ -1,7 +1,7 @@
+from enum import Enum
+from pydantic import BaseModel, ConfigDict
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra
-from enum import Enum
 
 from ..base import QualityChecker
 
@@ -26,7 +26,8 @@ class CheckArrayMaskThreshold(QualityChecker):
       The maximum value of correlation to screen, in counts or %
     ----------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         correlation_threshold: int = 30
         comparitor: Comparitor = Comparitor.less_than
 

@@ -1,6 +1,4 @@
-from pydantic import (
-    Field,
-)
+from pydantic import Field
 
 from .dataset_config import DatasetConfig
 from ..attributes import IOOSGlobalAttrs

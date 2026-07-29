@@ -14,7 +14,11 @@ __all__ = [
 
 
 def get_pydantic_error_message(error: Any) -> str:
-    return error.getrepr().reprcrash.message
+    error_msg = error.value.errors(include_url=False)
+    try:
+        return [(e["loc"][0] + ": " + e["msg"]) for e in error_msg]
+    except:
+        return error_msg[0]["msg"]
 
 
 def get_pydantic_warning_message(warning: Any) -> str:

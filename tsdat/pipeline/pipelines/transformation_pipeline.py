@@ -1,7 +1,6 @@
 from typing import Any, Dict, List
-
-import xarray as xr
 from pydantic import BaseModel
+import xarray as xr
 
 from tsdat.io.retrievers import StorageRetriever
 from tsdat.utils import decode_cf
@@ -40,7 +39,7 @@ class TransformationPipeline(IngestPipeline):
         -----------------------------------------------------------------------------"""
         if len(inputs) != 2:
             raise ValueError(
-                f"'inputs' argument for {self.__repr_name__()}.run(inputs) must be a"
+                f"'inputs' argument for {type(self).__name__}.run(inputs) must be a"
                 f" two-element list of [start date, end date]. Got '{inputs}'"
             )
 

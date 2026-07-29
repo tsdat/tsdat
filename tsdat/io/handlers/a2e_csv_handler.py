@@ -2,9 +2,7 @@ from pydantic import Field
 
 from ..base import FileHandler
 from ..readers import A2eCSVReader
-from ..writers import (
-    A2eCSVWriter,
-)
+from ..writers import A2eCSVWriter
 
 
 class A2eCSVHandler(FileHandler):

@@ -1,16 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import (
-    Any,
-)
-
+from typing import Any
 import xarray as xr
+
 from ...utils import ParameterizedClass
 
 
 class DataWriter(ParameterizedClass, ABC):
     """---------------------------------------------------------------------------------
     Base class for writing data to storage area(s).
-
     ---------------------------------------------------------------------------------"""
 
     @abstractmethod
@@ -24,6 +21,5 @@ class DataWriter(ParameterizedClass, ABC):
 
         Args:
             dataset (xr.Dataset): The dataset to save.
-
         -----------------------------------------------------------------------------"""
         ...

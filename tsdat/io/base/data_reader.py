@@ -1,14 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import (
-    Dict,
-    Union,
-)
-
+from typing import Dict, Union
 import xarray as xr
 
-from ...utils import (
-    ParameterizedClass,
-)
+from ...utils import ParameterizedClass
 
 
 class DataReader(ParameterizedClass, ABC):
@@ -38,6 +32,5 @@ class DataReader(ParameterizedClass, ABC):
         Returns:
             Union[xr.Dataset, Dict[str, xr.Dataset]]: The raw data extracted from the
                 provided input key.
-
         -----------------------------------------------------------------------------"""
         ...

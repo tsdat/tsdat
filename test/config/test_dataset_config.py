@@ -36,10 +36,10 @@ def test_fail_if_non_ascii_attrs():
 def test_fail_if_missing_required_global_attributes():
     attrs: Dict[str, Any] = {}
     expected_error_msgs = [
-        "title\n  field required",
-        "location_id\n  field required",
-        "dataset_name\n  field required",
-        "data_level\n  field required",
+        "title: Field required",
+        "location_id: Field required",
+        "dataset_name: Field required",
+        "data_level: Field required",
     ]
     with pytest.raises(ValidationError) as error:
         GlobalAttributes(**attrs)
@@ -65,18 +65,18 @@ def test_fail_if_invalid_global_attributes():
         "data_level": "1234",  # Too long
     }
     expected_error_msgs = [
-        "title\n  ensure this value has at least 1 characters",
-        "description\n  ensure this value has at least 1 characters",
-        "code_url\n  invalid or missing URL scheme",
-        "Conventions\n  str type expected",
-        "doi\n  str type expected",
-        "institution\n  str type expected",
-        "references\n  str type expected",
-        "location_id\n  ensure this value has at least 1 character",
-        "dataset_name\n  ensure this value has at least 2 characters",
-        "qualifier\n  ensure this value has at least 1 character",
-        "temporal\n  string does not match regex",
-        "data_level\n  ensure this value has at most 3 characters",
+        "title: String should have at least 1 character",
+        "description: String should have at least 1 character",
+        "code_url: Input should be a valid URL, relative URL without a base",
+        "Conventions: Input should be a valid string",
+        "doi: Input should be a valid string",
+        "institution: Input should be a valid string",
+        "references: Input should be a valid string",
+        "location_id: String should have at least 1 character",
+        "dataset_name: String should have at least 2 characters",
+        "qualifier: String should have at least 1 character",
+        "temporal: String should match pattern '^[0-9]+[a-zA-Z]+$'",
+        "data_level: String should have at most 3 characters",
     ]
     with pytest.raises(ValidationError) as error:
         GlobalAttributes(**attrs)
@@ -153,7 +153,6 @@ def test_global_attributes_allow_extra():
 
 def test_fail_if_bad_variable_attributes():
     attrs: Dict[Any, Any] = {
-        # No units attribute --> "comment" must contain 'Unknown units.'
         "long_name": 1.0,  # Not strictly a string
         "standard_name": 1.0,  # Not strictly a string
         "comment": "Normally valid",  # But units not provided, so must indicate that
@@ -166,16 +165,32 @@ def test_fail_if_bad_variable_attributes():
         # "_FillValue": "a",  # Not a float -- no longer needs to be a number
     }
     expected_error_msgs = [
+        "long_name: Input should be a valid string",
+        "standard_name: Input should be a valid string",
+        "valid_range: Input should be a valid list",
+        "fail_range: Input should be a valid number, unable to parse string as a number",
+        "warn_range: List should have at most 2 items after validation, not 3",
+        "valid_delta: Input should be a valid number, unable to parse string as a number",
+        "fail_delta: Input should be a valid number, unable to parse string as a number",
+        "warn_delta: Input should be a valid number, unable to parse string as a number",
+        # "_FillValue: Value is not a valid float",
+    ]
+    with pytest.raises(ValidationError) as error:
+        VariableAttributes(**attrs)
+
+    actual_msg = get_pydantic_error_message(error)
+    for expected_msg in expected_error_msgs:
+        assert expected_msg in actual_msg
+
+
+def test_fail_if_missing_units_attribute():
+    # Model validator does not run if previous validations fail, so we need to add
+    # a second test here
+    attrs: Dict[Any, Any] = {
+        # No units attribute --> "comment" must contain 'Unknown units.'
+    }
+    expected_error_msgs = [
         "The 'units' attr is required if known. If the units are not known,",  # ...
-        "long_name\n  str type expected",
-        "standard_name\n  str type expected",
-        "valid_range\n  value is not a valid list",
-        "fail_range -> 0\n  value is not a valid float",
-        "warn_range\n  ensure this value has at most 2 items",
-        "valid_delta\n  value is not a valid float",
-        "fail_delta\n  value is not a valid float",
-        "warn_delta\n  value is not a valid float",
-        # "_FillValue\n  value is not a valid float",
     ]
     with pytest.raises(ValidationError) as error:
         VariableAttributes(**attrs)
@@ -259,9 +274,9 @@ def test_variable_attrs_allow_extra():
 def test_fail_if_missing_required_variable_properties():
     var: Dict[str, Any] = {}
     expected_error_msgs = [
-        "dtype\n  field required",
-        "dims\n  field required",
-        "attrs\n  field required",
+        "dtype: Field required",
+        "dims: Field required",
+        "attrs: Field required",
     ]
     with pytest.raises(ValidationError) as error:
         Variable(**var)
@@ -281,7 +296,9 @@ def test_fail_if_bad_variable_name():
         "no|pipe",
         "no+-*&^!@chars",
     ]
-    expected_error_msg = "name\n  string does not match regex"
+    expected_error_msg = (
+        "name: String should match pattern '^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$'"
+    )
     good_defaults: Dict[str, Any] = {
         "dtype": "int",
         "dims": ["time"],

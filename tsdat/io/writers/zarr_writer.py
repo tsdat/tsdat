@@ -1,8 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional, cast
-
+from pydantic import BaseModel, ConfigDict, Field
 import xarray as xr
-from pydantic import BaseModel, Extra, Field
 
 from ..base import FileWriter
 
@@ -13,10 +12,10 @@ class ZarrWriter(FileWriter):
 
     Advanced features such as specifying the chunk size or writing the zarr archive in
     AWS S3 will be implemented later.
-
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         to_zarr_kwargs: Dict[str, Any] = {}
 
     parameters: Parameters = Field(default_factory=Parameters)

@@ -1,8 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
+from pydantic import BaseModel, ConfigDict, Field
 import xarray as xr
-from pydantic import BaseModel, Extra, Field
 
 from ..base import FileWriter
 
@@ -15,10 +14,10 @@ class ParquetWriter(FileWriter):
     parquet file using `pd.DataFrame.to_parquet()`. Properties under the
     `to_parquet_kwargs` parameter are passed to `pd.DataFrame.to_parquet()` as keyword
     arguments.
-
     ---------------------------------------------------------------------------------"""
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         dim_order: Optional[List[str]] = None
         to_parquet_kwargs: Dict[str, Any] = {}
 

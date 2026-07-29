@@ -1,14 +1,8 @@
-import re
 import logging
-from typing import Any, Dict, List, Optional
-
+from typing import Any, List, Optional
 from pint import PintError
-from pydantic import (
-    Field,
-    StrictStr,
-    root_validator,
-    validator,
-)
+from pydantic import Field, StrictStr, field_validator, model_validator
+from typing_extensions import Self
 
 from .ureg import check_unit
 from ..attributes import AttributeModel
@@ -25,6 +19,8 @@ class VariableAttributes(AttributeModel):
     (e.g., valid_*, fail_*, and warn_* properties)."""
 
     units: Optional[str] = Field(
+        default="",
+        validate_default=True,
         description=(
             "A string indicating the units the data are measured in. Tsdat uses pint to"
             " handle unit conversions, so this string must be compatible with the pint"
@@ -35,7 +31,7 @@ class VariableAttributes(AttributeModel):
             " the property are not known, then the units attribute should be omitted"
             " and the comment attribute should include a note indicating that units are"
             " not known. Doing so provides helpful context for data users."
-        )
+        ),
     )
     long_name: Optional[StrictStr] = Field(
         default=None,
@@ -144,8 +140,8 @@ class VariableAttributes(AttributeModel):
     )
     valid_range: Optional[List[float]] = Field(
         default=None,
-        min_items=2,
-        max_items=2,
+        min_length=2,
+        max_length=2,
         description=(
             "A two-element list of [min, max] values outside of which the data should"
             " be treated as missing. If applying QC tests, then users should configure"
@@ -155,8 +151,8 @@ class VariableAttributes(AttributeModel):
     )
     fail_range: Optional[List[float]] = Field(
         default=None,
-        min_items=2,
-        max_items=2,
+        min_length=2,
+        max_length=2,
         description=(
             "A two-element list of [min, max] values outside of which the data should"
             " be teated with heavy skepticism as missing. If applying QC tests, then"
@@ -166,8 +162,8 @@ class VariableAttributes(AttributeModel):
     )
     warn_range: Optional[List[float]] = Field(
         default=None,
-        min_items=2,
-        max_items=2,
+        min_length=2,
+        max_length=2,
         description=(
             "A two-element list of [min, max] values outside of which the data should"
             " be teated with some skepticism as missing. If applying QC tests, then"
@@ -215,7 +211,8 @@ class VariableAttributes(AttributeModel):
         ),
     )
 
-    @validator("units")
+    @field_validator("units", mode="before")
+    @classmethod
     def validate_unit(cls, unit_str: str) -> str:
         try:
             # Validate with pint unit registry
@@ -227,10 +224,10 @@ class VariableAttributes(AttributeModel):
             )
         return unit_str
 
-    @root_validator
-    def validate_units_are_commented(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if not values["units"]:
-            if not values["comment"] or "Unknown units." not in values["comment"]:
+    @model_validator(mode="after")
+    def validate_units_are_commented(self) -> Self:
+        if not self.units:
+            if not self.comment or ("Unknown units" not in self.comment):
                 raise ValueError(
                     "The 'units' attr is required if known. If the units are not known,"
                     " then the 'comment' attr should include the phrase 'Unknown"
@@ -238,4 +235,4 @@ class VariableAttributes(AttributeModel):
                     " not known. Note that 'unitless' quantities (e.g., categorical"
                     " data, ratios, etc) should set the 'units' attr to '1'."
                 )
-        return values
+        return self

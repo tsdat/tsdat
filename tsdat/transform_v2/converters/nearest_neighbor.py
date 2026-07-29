@@ -6,7 +6,6 @@ from ...utils.replace_qc_attr import replace_qc_attr
 from ..nearest_neighbor.calculate_nearest_neighbor import nearest_neighbor
 from ..utils.create_input_dataset import create_input_dataset
 
-
 # Prevent any chance of runtime circular imports for typing-only imports
 if TYPE_CHECKING:  # pragma: no cover
     from ...config.dataset import DatasetConfig  # pragma: no cover
@@ -73,7 +72,7 @@ class NearestNeighbor(DataConverter):
         # The user probably made a mistake in the config file.
         if variable_name in dataset_config.coords:
             raise ValueError(
-                f"{self.__repr_name__} cannot be used for coordinate variables."
+                f"{type(self).__name__} cannot be used for coordinate variables."
                 f" Offending coord: '{variable_name}'."
             )
 
@@ -99,7 +98,7 @@ class NearestNeighbor(DataConverter):
         t_range = trans_params["range"][self.coord]
         if t_range is None:
             raise ValueError(
-                f"{self.__repr_name__} requires a 'range' parameter for the coordinate"
+                f"{type(self).__name__} requires a 'range' parameter for the coordinate"
                 f" '{self.coord}' and variable {variable_name}, but it was not provided"
                 " in the transformation parameters."
             )

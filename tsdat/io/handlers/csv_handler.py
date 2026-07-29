@@ -1,9 +1,8 @@
 from pydantic import Field
+
 from ..base import FileHandler
 from ..readers import CSVReader
-from ..writers import (
-    CSVWriter,
-)
+from ..writers import CSVWriter
 
 
 class CSVHandler(FileHandler):

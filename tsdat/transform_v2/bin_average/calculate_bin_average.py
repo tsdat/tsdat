@@ -104,8 +104,8 @@ def calculate_bin_average(
                     weights=weights,
                     axis=axis,
                 )
-                output_dataset[f"{var_name}_goodfraction"][{coord_name: output_idx}] = (
-                    goodfrac
-                )
+                output_dataset[f"{var_name}_goodfraction"][
+                    {coord_name: output_idx}
+                ] = goodfrac
 
     return output_dataset

@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING, Any, Dict, Hashable, List, Optional, Tuple
-
 import numpy as np
 import xarray as xr
 
@@ -162,7 +161,7 @@ class _ADIBaseTransformer(DataConverter):
             if np.issubdtype(coord_da.dtype, np.datetime64):  # type: ignore
                 if name_map != []:
                     raise ValueError(
-                        f"Currently {self.__repr_name__()} only supports transforming"
+                        f"Currently {type(self).__name__} only supports transforming"
                         " one datetime-like coordinate"
                     )
                 name_map.append((coord_name, "time"))

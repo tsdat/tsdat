@@ -1,6 +1,7 @@
-from pydantic import Extra
+from pydantic import ConfigDict
 
 from ..utils import ParameterizedConfigClass
 
 
-class DataConverterConfig(ParameterizedConfigClass, extra=Extra.allow): ...
+class DataConverterConfig(ParameterizedConfigClass):
+    model_config = ConfigDict(extra="allow")

@@ -1,8 +1,7 @@
 from pathlib import Path
 from typing import Any, List, Optional
-
-import xarray as xr
 from pydantic import PrivateAttr
+import xarray as xr
 
 from tsdat.utils import decode_cf
 

@@ -2,7 +2,6 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable, List
-
 from pydantic import Field
 
 from ..handlers import ZarrHandler
@@ -22,9 +21,9 @@ class ZarrLocalStorage(FileSystem):
     class Parameters(FileSystem.Parameters):
         data_storage_path: Path = Path("data/{location_id}")
         """The directory structure under storage_root where ancillary files are saved.
-        
+
         Allows substitution of the following parameters using curly braces '{}':
-        
+
         * ``storage_root``: the value from the ``storage_root`` parameter.
         * ``datastream``: the ``datastream`` as defined in the dataset config file.
         * ``location_id``: the ``location_id`` as defined in the dataset config file.
@@ -37,9 +36,9 @@ class ZarrLocalStorage(FileSystem):
 
         data_filename_template: str = "{datastream}.{extension}"
         """Template string to use for data filenames.
-        
+
         Allows substitution of the following parameters using curly braces '{}':
-        
+
         * ``ext``: the file extension from the storage data handler
         * ``datastream`` from the dataset's global attributes
         * ``location_id`` from the dataset's global attributes
@@ -88,10 +87,3 @@ class ZarrLocalStorage(FileSystem):
         prefix, suffix = Path(*path_components[:i]), str(Path(*path_components[i:]))  # type: ignore
         matches = list(prefix.glob(suffix))
         return matches
-
-
-# TODO:
-#  HACK: Update forward refs to get around error I couldn't replicate with simpler code
-#  "pydantic.errors.ConfigError: field "parameters" not yet prepared
-#  so type is still a ForwardRef..."
-ZarrLocalStorage.update_forward_refs(Parameters=ZarrLocalStorage.Parameters)

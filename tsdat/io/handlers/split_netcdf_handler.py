@@ -1,9 +1,8 @@
 from pydantic import Field
+
 from ..base import FileHandler
 from ..readers import NetCDFReader
-from ..writers import (
-    SplitNetCDFWriter,
-)
+from ..writers import SplitNetCDFWriter
 
 
 class SplitNetCDFHandler(FileHandler):

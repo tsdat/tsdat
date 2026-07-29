@@ -25,6 +25,6 @@ def model_to_dict(model: BaseModel, by_alias: bool = True) -> Dict[Any, Any]:
 
     ---------------------------------------------------------------------------------"""
     return _nested_union(
-        model.dict(exclude_unset=True, by_alias=by_alias),
-        model.dict(exclude_none=True, by_alias=by_alias),
+        model.model_dump(exclude_unset=True, by_alias=by_alias),
+        model.model_dump(exclude_none=True, by_alias=by_alias),
     )

@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray

@@ -1,12 +1,8 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import (
-    Any,
-    Optional,
-)
-
+from typing import Any, Optional
+from pydantic import field_validator
 import xarray as xr
-from pydantic import validator
 
 from .data_writer import DataWriter
 
@@ -17,7 +13,8 @@ class FileWriter(DataWriter, ABC):
     file_extension: str
     """The file extension that the FileHandler should be used for, e.g., ".nc", ".csv", ..."""
 
-    @validator("file_extension")
+    @field_validator("file_extension")
+    @classmethod
     def no_leading_dot(cls, v: str) -> str:
         return v.lstrip(".")
 

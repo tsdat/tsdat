@@ -12,7 +12,7 @@ def _reindex_dataset_coords(
     dataset_config: DatasetConfig,
     input_config: InputKeyRetrievalRules,
 ) -> xr.Dataset:
-    """-----------------------------------------------------------------------------
+    """---------------------------------------------------------------------------------
     Swaps dimensions and coordinates to match the structure of the DatasetConfig.
 
     Ensures that the retriever coordinates are set as coordinates in the dataset,
@@ -30,8 +30,8 @@ def _reindex_dataset_coords(
 
     Returns:
         xr.Dataset: The reindexed dataset.
+    ---------------------------------------------------------------------------------"""
 
-    -----------------------------------------------------------------------------"""
     for axis, coord_name in enumerate(input_config.coord_rules):
         expected_dim = dataset_config[coord_name].dims[0]
         actual_dims = dataset[coord_name].dims

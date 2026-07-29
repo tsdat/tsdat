@@ -1,23 +1,24 @@
-from typing import (
-    List,
-    Union,
-)
-
-from pydantic import BaseModel, Extra, Field, validator
+from typing import List, Union
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ...const import InputKey
 from .data_converter import DataConverter
 
 
 # TODO: This needs a better name
-class RetrievedVariable(BaseModel, extra=Extra.forbid):
+class RetrievedVariable(BaseModel):
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
     """Tracks the name of the input variable and the converters to apply."""
 
     name: Union[str, List[str]]
-    data_converters: List[DataConverter] = Field(default_factory=list)
+    data_converters: List[DataConverter] = Field(
+        default_factory=list, validate_default=True
+    )
     source: InputKey = ""
 
-    @validator("data_converters", always=True)
+    @field_validator("data_converters")
+    @classmethod
     def add_units_converter(
         cls, data_converters: list[DataConverter]
     ) -> list[DataConverter]:

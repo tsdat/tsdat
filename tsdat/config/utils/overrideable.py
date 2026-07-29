@@ -1,21 +1,14 @@
-from typing import (
-    Any,
-    Dict,
-    Generic,
-)
 from jsonpointer import set_pointer  # type: ignore
-from pydantic import (
-    Extra,
-    Field,
-    FilePath,
-)
-from pydantic.generics import GenericModel
+from typing import Any, Dict, Generic
+from pydantic import ConfigDict, Field, FilePath
 
 from .config import Config
 from .yaml_model import YamlModel
 
 
-class Overrideable(YamlModel, GenericModel, Generic[Config], extra=Extra.forbid):
+class Overrideable(YamlModel, Generic[Config]):
+    model_config = ConfigDict(extra="forbid")
+
     path: FilePath = Field(
         description=(
             "Path to the configuration file to borrow configurations from.\nNote that"

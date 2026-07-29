@@ -1,8 +1,9 @@
 from typing import Any
-from pydantic import BaseModel, Extra, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class ParameterizedClass(BaseModel, extra=Extra.forbid):
+class ParameterizedClass(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     """------------------------------------------------------------------------------------
     Base class for any class that accepts 'parameters' as an argument.
 

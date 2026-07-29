@@ -1,10 +1,9 @@
 import re
 from io import BytesIO
 from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, ConfigDict
 from zipfile import ZipFile
-
 import xarray as xr
-from pydantic import BaseModel, Extra
 
 from ..base import ArchiveReader, DataReader
 
@@ -53,7 +52,8 @@ class ZipReader(ArchiveReader):
 
     """
 
-    class Parameters(BaseModel, extra=Extra.forbid):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="forbid")
         open_zip_kwargs: Dict[str, Any] = {}
         read_zip_kwargs: Dict[str, Any] = {}
         readers: Dict[str, Any] = {}

@@ -1,15 +1,8 @@
+import json
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
-
 from jsonpointer import set_pointer  # type: ignore
-from pydantic import (
-    BaseModel,
-    ValidationError,
-)
+from typing import Any, Dict, Optional
+from pydantic import BaseModel, ValidationError
 from typing_extensions import Self
 
 from .config_error import ConfigError
@@ -55,4 +48,4 @@ class YamlModel(BaseModel):
 
         ------------------------------------------------------------------------------------
         """
-        output_file.write_text(cls.schema_json(indent=4))
+        output_file.write_text(json.dumps(cls.model_json_schema(), indent=4))

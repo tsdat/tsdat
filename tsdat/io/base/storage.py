@@ -3,17 +3,10 @@ import tempfile
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generator,
-    List,
-    Union,
-)
-
+from typing import Any, Callable, Dict, Generator, List, Union
+from pydantic import AliasChoices, Field
+from pydantic_settings import BaseSettings
 import xarray as xr
-from pydantic import BaseSettings, Field
 
 from ...tstring import Template
 from ...utils import (
@@ -30,11 +23,15 @@ class Storage(ParameterizedClass, ABC):
     pipelines to persist data and ancillary files (e.g., plots)."""
 
     class Parameters(BaseSettings):
-        storage_root: Path = Field(Path("storage/root"), env="TSDAT_STORAGE_ROOT")
+        storage_root: Path = Field(
+            default=Path("storage/root"),
+            validate_default=True,
+            validation_alias=AliasChoices("TSDAT_STORAGE_ROOT", "storage_root"),
+        )
         """The path on disk where at least ancillary files will be saved to. For
         file-based storage classes this is also the root path for data files. Defaults
         to the `storage/root` folder in the active working directory.
-        
+
         NOTE: This parameter can also be set via the ``TSDAT_STORAGE_ROOT`` environment
         variable."""
 
@@ -42,7 +39,7 @@ class Storage(ParameterizedClass, ABC):
         """The directory structure under storage_root where ancillary files are saved.
 
         Allows substitution of the following parameters using curly braces '{}':
-        
+
         * ``extension``: the file extension (e.g., 'png', 'gif').
         * ``datastream`` from the related xr.Dataset object's global attributes.
         * ``location_id`` from the related xr.Dataset object's global attributes.
@@ -57,9 +54,9 @@ class Storage(ParameterizedClass, ABC):
             "{datastream}.{yyyy}{mm}{dd}.{HH}{MM}{SS}.{title}.{extension}"
         )
         """Template string to use for ancillary filenames.
-        
+
         Allows substitution of the following parameters using curly braces '{}':
-        
+
         * ``title``: a provided label for the ancillary file or plot.
         * ``extension``: the file extension (e.g., 'png', 'gif').
         * ``datastream`` from the related xr.Dataset object's global attributes.
@@ -68,7 +65,7 @@ class Storage(ParameterizedClass, ABC):
         * ``year, month, day, hour, minute, second`` of the first timestamp in the data.
         * ``date_time``: the first timestamp in the file formatted as "YYYYMMDD.hhmmss".
         * The names of any other global attributes of the related xr.Dataset object.
-        
+
         At a minimum the template must include ``{date_time}``."""
 
     parameters: Parameters = Field(default_factory=Parameters)  # type: ignore

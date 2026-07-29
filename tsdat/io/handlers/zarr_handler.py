@@ -1,9 +1,8 @@
 from pydantic import Field
+
 from ..base import FileHandler
 from ..readers import ZarrReader
-from ..writers import (
-    ZarrWriter,
-)
+from ..writers import ZarrWriter
 
 
 class ZarrHandler(FileHandler):

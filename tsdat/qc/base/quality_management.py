@@ -1,12 +1,12 @@
 from typing import List
-
+from pydantic import BaseModel, ConfigDict
 import xarray as xr
-from pydantic import BaseModel, Extra
 
 from .quality_manager import QualityManager
 
 
-class QualityManagement(BaseModel, extra=Extra.forbid):
+class QualityManagement(BaseModel):
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
     """Main class for orchestrating the dispatch of QualityCheckers and
     QualityHandlers."""
 

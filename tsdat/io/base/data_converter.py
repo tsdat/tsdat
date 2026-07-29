@@ -1,22 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import (
-    Any,
-    Optional,
-)
-
+from typing import Any, Optional
 import xarray as xr
 
 from .retrieved_dataset import RetrievedDataset
 from ...config.dataset import DatasetConfig
-from ...utils import (
-    ParameterizedClass,
-)
+from ...utils import ParameterizedClass
 
 
 class DataConverter(ParameterizedClass, ABC):
     """---------------------------------------------------------------------------------
     Base class for running data conversions on retrieved raw data.
-
     ---------------------------------------------------------------------------------"""
 
     @abstractmethod
@@ -41,6 +34,5 @@ class DataConverter(ParameterizedClass, ABC):
         Returns:
             Optional[xr.DataArray]: The converted DataArray for the specified variable,
                 or None if the conversion was done in-place.
-
         -----------------------------------------------------------------------------"""
         ...

@@ -1,9 +1,8 @@
 from typing import List, Union
-
+from pydantic import BaseModel, ConfigDict
 import numpy as np
 import xarray as xr
 from numpy.typing import NDArray
-from pydantic import BaseModel, Extra
 
 from .data_quality_error import DataQualityError
 from ..base import QualityHandler
@@ -24,7 +23,8 @@ class FailPipeline(QualityHandler):
     ------------------------------------------------------------------------------------
     """
 
-    class Parameters(BaseModel, extra=Extra.allow):
+    class Parameters(BaseModel):
+        model_config = ConfigDict(extra="allow")
         tolerance: float = 0
         """Tolerance for the number of allowable failures as the ratio of allowable
         failures to the total number of values checked. Defaults to 0, meaning that any

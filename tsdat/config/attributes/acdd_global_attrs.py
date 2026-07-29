@@ -1,7 +1,4 @@
-from pydantic import (
-    Field,
-    HttpUrl,
-)
+from pydantic import Field, HttpUrl
 
 from .global_attributes import GlobalAttributes
 
@@ -19,7 +16,7 @@ class ACDDGlobalAttrs(GlobalAttributes):
         description=(
             "A paragraph describing the dataset, analogous to an abstract for a paper."
         ),
-        minLength=1,
+        min_length=1,
     )
     Conventions: str = Field(
         description=(
@@ -474,7 +471,7 @@ class ACDDGlobalAttrs(GlobalAttributes):
             " used), or URIs for terms from a controlled vocabulary (see also"
             " 'keywords_vocabulary' attribute."
         ),
-        minLength=1,
+        json_schema_extra={"min_length": 1},
     )
     keywords_vocabulary: str = Field(
         description=(
