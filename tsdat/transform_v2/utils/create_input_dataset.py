@@ -80,13 +80,18 @@ def create_input_dataset(
     retrieved_coord = retriever.match_coord(coord_name, input_key)
     if retrieved_var is None:
         raise ValueError(
-            f"Variable '{variable_name}' not found in the retrieved dataset for input key '{input_key}'."
+            f"Variable '{variable_name}' not found in the retrieved dataset for"
+            f" input key '{input_key}'."
         )
-    # TODO This fails transforms that rely on coordinates that come from other files
     if retrieved_coord is None:
-        raise ValueError(
-            f"Coordinate '{coord_name}' not found in the retrieved dataset for input key '{input_key}'."
-        )
+        # The coordinate may not be retrieved from this particular input file, but
+        # could already have been retrieved from a different input file (e.g., a
+        # shared 'time' coordinate).
+        if coord_name not in retrieved_dataset.coords:
+            raise ValueError(
+                f"Coordinate '{coord_name}' not found in the retrieved dataset for"
+                f" input key '{input_key}'."
+            )
 
     # Get the list of associated variable names (qc, bounds, metrics). These
     # correspond with entries in the output structure and the retrieved_dataset
@@ -102,7 +107,11 @@ def create_input_dataset(
     # TODO: is this a good idea? without it, a bunch of qc variables will not be
     # retrieved, but with it there is no way to say you don't want to retrieve those.
     input_var_name = retrieved_var.name
-    input_coord_name = retrieved_coord.name
+    # If the coordinate wasn't matched for this input_key, it was already retrieved
+    # from another input file under its output name, so use that name directly.
+    input_coord_name = (
+        retrieved_coord.name if retrieved_coord is not None else coord_name
+    )
     # TODO: input_var and input_coord types are str | list[str] type. want str only.
     input_bounds = f"{input_coord_name}_bounds"
     input_qc_name = f"qc_{input_var_name}"
