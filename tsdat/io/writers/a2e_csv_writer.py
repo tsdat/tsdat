@@ -32,7 +32,9 @@ class A2eCSVWriter(FileWriter):
         elif filepath_str.endswith(".csv"):
             filepath_str = filepath_str[: -len(".csv")] + new_suffix
         else:
-            raise ValueError  # TODO
+            raise ValueError(
+                f"A2e filepath should end in either '.a2e.csv' or '.csv'. Received {filepath_str}"
+            )
 
         return Path(filepath_str)
 
