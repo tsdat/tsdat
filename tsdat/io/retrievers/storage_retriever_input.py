@@ -46,8 +46,8 @@ class StorageRetrieverInput:
                     )
         if float(kwargs["end"]) < float(kwargs["start"]):
             raise ValueError(
-                f"'End' timestamp {kwargs["end"]} cannot occur before 'start' "
-                f"timestamp {kwargs["start"]}."
+                f"'End' timestamp {kwargs['end']} cannot occur before 'start' "
+                f"timestamp {kwargs['start']}."
             )
 
         self.input_key = input_key
