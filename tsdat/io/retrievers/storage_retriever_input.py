@@ -44,6 +44,11 @@ class StorageRetrieverInput:
                         "Bad storage retriever input key. Expected format like"
                         f" '--key1 value1 --key2 value2 ...', got '{input_key}'."
                     )
+        if float(kwargs["end"]) < float(kwargs["start"]):
+            raise ValueError(
+                f"'End' timestamp {kwargs["end"]} cannot occur before 'start' "
+                f"timestamp {kwargs["start"]}."
+            )
 
         self.input_key = input_key
         self.datastream = kwargs.pop("datastream")
