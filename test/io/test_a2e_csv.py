@@ -12,29 +12,29 @@ from tsdat.utils import get_dataset_dim_groups
 @pytest.mark.parametrize(
     "expected, base_filepath, dims",
     [
-        (Path("test.time.1d.a2e.csv"), Path("test.csv"), ["time"]),
-        (Path("test.time.depth.2d.a2e.csv"), Path("test.csv"), ["time", "depth"]),
+        (Path("test.time.1d.wdh.csv"), Path("test.csv"), ["time"]),
+        (Path("test.time.depth.2d.wdh.csv"), Path("test.csv"), ["time", "depth"]),
         (
-            Path("test.time.depth.height.3d.a2e.csv"),
+            Path("test.time.depth.height.3d.wdh.csv"),
             Path("test.csv"),
             ["time", "depth", "height"],
         ),
         (
             Path(
-                "storage/root/data/buoy.z07.a0.20221117.001000.metocean.time.1d.a2e.csv"
+                "storage/root/data/buoy.z07.a0.20221117.001000.metocean.time.1d.wdh.csv"
             ),
             Path("storage/root/data/buoy.z07.a0.20221117.001000.metocean.csv"),
             ["time"],
         ),
         (
             Path(
-                "storage/root/data/buoy.z07.a0.20221117.001000.metocean.time.depth.2d.a2e.csv"
+                "storage/root/data/buoy.z07.a0.20221117.001000.metocean.time.depth.2d.wdh.csv"
             ),
-            Path("storage/root/data/buoy.z07.a0.20221117.001000.metocean.a2e.csv"),
+            Path("storage/root/data/buoy.z07.a0.20221117.001000.metocean.wdh.csv"),
             ["time", "depth"],
         ),
         (
-            Path("buoy.z07.a0.20221117.001000.metocean.time.depth.2d.a2e.csv"),
+            Path("buoy.z07.a0.20221117.001000.metocean.time.depth.2d.wdh.csv"),
             Path("buoy.z07.a0.20221117.001000.metocean.csv"),
             ["time", "depth"],
         ),
