@@ -7,8 +7,8 @@ import mkdocs_gen_files
 nav = mkdocs_gen_files.Nav()
 
 for path in sorted(Path("tsdat").glob("**/*.py")):
-    # Exclude __init__.py, __main__.py, _version.py
-    if path.name.startswith("_"):
+    # Project templates are copied into new repositories, not importable tsdat modules.
+    if "templates" in path.parts or path.name.startswith("_"):
         continue
 
     # TODO: Not sure of the reference need for this file? But refactor changed this file up a bit,
