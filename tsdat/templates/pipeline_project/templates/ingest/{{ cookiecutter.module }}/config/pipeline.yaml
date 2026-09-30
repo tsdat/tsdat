@@ -1,0 +1,22 @@
+classname: pipelines.{{ cookiecutter.module }}.pipeline.{{ cookiecutter.classname }}
+
+triggers:
+  # DEVELOPER: Update regex patterns that should trigger this pipeline
+  - .*{{ cookiecutter.location_id }}.*\.csv
+
+retriever:
+  path: pipelines/{{ cookiecutter.module }}/config/retriever.yaml
+
+dataset:
+  path: pipelines/{{ cookiecutter.module }}/config/dataset.yaml
+
+{% if cookiecutter.use_custom_qc == "no" -%}
+quality:
+  path: shared/quality.yaml
+{% else -%}
+quality:
+  path: pipelines/{{ cookiecutter.module }}/config/quality.yaml
+{% endif -%}
+
+storage:
+  path: shared/storage.yaml

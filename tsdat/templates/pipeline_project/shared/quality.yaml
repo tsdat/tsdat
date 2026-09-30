@@ -1,0 +1,65 @@
+managers:
+  #---------------------------------------------------------------
+  - name: Fail if missing coordinates
+    checker:
+      classname: tsdat.qc.checkers.CheckMissing
+    handlers:
+      - classname: tsdat.qc.handlers.FailPipeline
+        parameters:
+          context: Coordinate variables cannot be missing.
+    apply_to: [COORDS]
+
+  - name: Fail if monotonic coordinates
+    checker:
+      classname: tsdat.qc.checkers.CheckMonotonic
+      parameters:
+        require_increasing: true
+    handlers:
+      - classname: tsdat.qc.handlers.FailPipeline
+        parameters:
+          context: Coordinate variables must be strictly increasing.
+    apply_to: [COORDS]
+
+    #---------------------------------------------------------------
+  - name: Remove missing data
+    checker:
+      classname: tsdat.qc.checkers.CheckMissing
+    handlers:
+      - classname: tsdat.qc.handlers.RemoveFailedValues
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          assessment: bad
+          meaning: Value is equal to _FillValue or NaN
+    apply_to: [DATA_VARS]
+    exclude:
+      - altitude
+      - latitude
+      - longitude
+
+  - name: Flag data below minimum valid threshold
+    checker:
+      classname: tsdat.qc.checkers.CheckValidMin
+    handlers:
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          assessment: bad
+          meaning: Value is less than the valid_min.
+    apply_to: [DATA_VARS]
+    exclude:
+      - altitude
+      - latitude
+      - longitude
+
+  - name: Flag data above maximum valid threshold
+    checker:
+      classname: tsdat.qc.checkers.CheckValidMax
+    handlers:
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          assessment: bad
+          meaning: Value is greater than the valid_max.
+    apply_to: [DATA_VARS]
+    exclude:
+      - altitude
+      - latitude
+      - longitude

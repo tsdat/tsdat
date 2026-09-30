@@ -1,0 +1,116 @@
+{
+    "title": "QualityConfig",
+    "description": "---------------------------------------------------------------------------------\nContains quality configuration parameters for tsdat pipelines.\n\nThis class will ultimately be converted into a tsdat.qc.base.QualityManagement class\nfor use in downstream tsdat pipeline code.\n\nProvides methods to support yaml parsing and validation, including the generation of\njson schema for immediate validation.\n\nArgs:\n    managers (List[ManagerConfig]): A list of quality checks and controls that\n        should be applied.\n\n---------------------------------------------------------------------------------",
+    "type": "object",
+    "properties": {
+        "managers": {
+            "title": "Managers",
+            "description": "Register a list of QualityManager(s) that should be used to detect and handle data quality issues. Each QualityManager configuration block must consists of a label, a QualityChecker, at least one QualityHandler, and a list of variables that the manager should be applied to.",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/ManagerConfig"
+            }
+        }
+    },
+    "required": [
+        "managers"
+    ],
+    "additionalProperties": false,
+    "definitions": {
+        "CheckerConfig": {
+            "title": "CheckerConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "required": [
+                "classname"
+            ],
+            "additionalProperties": false
+        },
+        "HandlerConfig": {
+            "title": "HandlerConfig",
+            "type": "object",
+            "properties": {
+                "classname": {
+                    "title": "Classname",
+                    "description": "The import path to the Python class that should be used, e.g., if your import statement looks like `from foo.bar import Baz`, then your classname would be `foo.bar.Baz`.",
+                    "type": "string"
+                },
+                "parameters": {
+                    "title": "Parameters",
+                    "description": "Optional dictionary that will be passed to the Python class specified by 'classname' when it is instantiated. If the object is a tsdat class, then the parameters will typically be made accessible under the `params` property on an instance of the class. See the documentation for individual classes for more information.",
+                    "default": {},
+                    "type": "object"
+                }
+            },
+            "required": [
+                "classname"
+            ],
+            "additionalProperties": false
+        },
+        "ManagerConfig": {
+            "title": "ManagerConfig",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "description": "A human-readable label that is used to identify this quality manager.",
+                    "type": "string"
+                },
+                "checker": {
+                    "title": "Checker",
+                    "description": "Register a class to be used to detect and flag quality issues for the quality handler(s) registered below to handle.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/CheckerConfig"
+                        }
+                    ]
+                },
+                "handlers": {
+                    "title": "Handlers",
+                    "description": "Register one or more handlers to take some action given the results of the registered checker. Each handler in this list is defined by a classname (e.g., the python import path to a QualityHandler class), and (optionally) by a parameters dictionary.",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/HandlerConfig"
+                    }
+                },
+                "apply_to": {
+                    "title": "Apply To",
+                    "description": "The variables this quality manager should be applied to. Can be \"COORDS\", \"DATA_VARS\", or any number of individual variable names.",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "exclude": {
+                    "title": "Exclude",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "name",
+                "checker",
+                "handlers",
+                "apply_to"
+            ],
+            "additionalProperties": false
+        }
+    }
+}

@@ -1,0 +1,20 @@
+classname: pipelines.example_pipeline.pipeline.ExamplePipeline
+
+triggers:
+  - .*z05.*\.csv
+
+retriever:
+  path: pipelines/example_pipeline/config/retriever.yaml
+
+dataset:
+  path: pipelines/example_pipeline/config/dataset.yaml
+  overrides:
+    /attrs/location_id: humboldt
+    /attrs/location_meaning: "Humboldt, CA"
+    /attrs/dataset_name: buoy_z05
+
+quality:
+  path: shared/quality.yaml
+
+storage:
+  path: shared/storage.yaml

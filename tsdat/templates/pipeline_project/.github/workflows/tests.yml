@@ -1,0 +1,33 @@
+name: tests
+on: [pull_request, push, workflow_dispatch]
+jobs:
+  tests:
+    name: Run Test Suite
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -el {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          channels: arm-doe,conda-forge
+          activate-environment: tsdat-pipelines
+      - run: |
+          conda activate tsdat-pipelines
+          conda install -n base conda-libmamba-solver
+          conda config --set solver libmamba
+          sed -i.bak "s/python>=3.10,<3.14/python=${{ matrix.python-version }}/" environment.yml
+          conda env update --name tsdat-pipelines --file environment.yml
+      - run: coverage run -m pytest
+      - run:
+          coverage xml --omit
+          "templates/ingest/*","pipelines/ingest_testing/*","src/netCDF4/*"
+      - uses: codecov/codecov-action@v4

@@ -1,0 +1,721 @@
+{
+    "title": "DatasetConfig",
+    "description": "Defines the structure and metadata of the dataset produced by a tsdat pipeline.\n\nAlso provides methods to support yaml parsing and validation, including generation\nof json schema.\n\nArgs:\n    attrs (GlobalAttributes): Attributes that pertain to the dataset as a whole.\n    coords (Dict[str, Coordinate]): The dataset's coordinate variables.\n    data_vars (Dict[str, Variable]): The dataset's data variables.\n\n",
+    "type": "object",
+    "properties": {
+        "attrs": {
+            "title": "Attrs",
+            "description": "Attributes that pertain to the dataset as a whole (as opposed to attributes that are specific to individual variables.",
+            "allOf": [
+                {
+                    "$ref": "#/definitions/GlobalAttributes"
+                }
+            ]
+        },
+        "coords": {
+            "title": "Coords",
+            "description": "This section defines the coordinate variables that the rest of the data are dimensioned by. Coordinate variable data can either be retrieved from an input data source or defined statically via the 'data' property. Note that tsdat requires the dataset at least be dimensioned by a 'time' variable. Most datasets will only need the 'time' coordinate variable, but multidimensional datasets (e.g., ADCP or Lidar data (time, height)) are well-supported. Note that the 'dims' attribute is still required for coordinate variables, and that this value should be [<name>], where <name> is the name of the coord (e.g., 'time').",
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/Coordinate"
+            }
+        },
+        "data_vars": {
+            "title": "Data Vars",
+            "description": "This section defines the data variables that the output dataset will contain. Variable data can either be retrieved from an input data source, defined statically via the 'data' property, or initalized to missing and set dynamically via user code in a tsdat pipeline.",
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/Variable"
+            }
+        }
+    },
+    "required": [
+        "attrs",
+        "coords",
+        "data_vars"
+    ],
+    "additionalProperties": false,
+    "definitions": {
+        "GlobalAttributes": {
+            "title": "GlobalAttributes",
+            "description": "Global attributes that will be recorded in the output dataset. These metadata are\nused to record data provenance information (e.g., location, institution, etc),\nconstruct datastream and file names (i.e., location_id, dataset_name, qualifier,\ntemporal, and data_level attributes), as well as provide metadata that is useful for\ndata users (e.g., title, description, ... ).",
+            "type": "object",
+            "properties": {
+                "title": {
+                    "title": "Title",
+                    "description": "A short phrase or sentence describing the dataset. In many discovery systems, the title will be displayed in the results list from a search, and therefore should be human readable and reasonable to display in a list of such names.",
+                    "minLength": 1,
+                    "type": "string"
+                },
+                "summary": {
+                    "title": "Summary",
+                    "description": "A paragraph describing the dataset, analogous to an abstract for a paper.",
+                    "minLength": 1,
+                    "type": "string"
+                },
+                "Conventions": {
+                    "title": "Conventions",
+                    "description": "A comma-separated list of the conventions that are followed by the dataset. For files that follow this version of ACDD, include the string 'ACDD-1.3'.",
+                    "default": "CF-1.6, ACDD-1.3, IOOS-1.2",
+                    "type": "string"
+                },
+                "featureType": {
+                    "title": "Feature Type",
+                    "description": "CF attribute for identifying the featureType.",
+                    "default": "timeSeries",
+                    "type": "string"
+                },
+                "id": {
+                    "title": "ID",
+                    "description": "An identifier for the data set, provided by and unique within its naming authority. The combination of the 'naming_authority' and the 'id' should be globally unique, but the 'id' can be globally unique by itself also. IDs can be URLs, URNs, DOIs, meaningful text strings, a local key, or any other unique string of characters. The id should not include white space characters.",
+                    "type": "string"
+                },
+                "infoUrl": {
+                    "title": "Info URL",
+                    "description": "URL for background information about this dataset.",
+                    "type": "string"
+                },
+                "naming_authority": {
+                    "title": "Naming Authority",
+                    "description": "The organization that provides the initial id (see above) for the dataset. The naming authority should be uniquely specified by this attribute. We recommend using reverse-DNS naming for the naming authority; URIs are also acceptable. Example: 'edu.ucar.unidata'.",
+                    "type": "string"
+                },
+                "history": {
+                    "title": "History",
+                    "description": "Attribute that will be recorded automatically by the pipeline. A warning will be raised if this is set in the config file.",
+                    "default": "",
+                    "type": "string"
+                },
+                "source": {
+                    "title": "Source",
+                    "description": "The method of production of the original data. If it was model-generated, source should name the model and its version. If it is observational, source should characterize it. Examples: 'temperature from CTD #1234'; 'world model v.0.1'.",
+                    "type": "string"
+                },
+                "processing_level": {
+                    "title": "Processing Level",
+                    "description": "A textual description of the processing (or quality control) level of the data.",
+                    "type": "string"
+                },
+                "comment": {
+                    "title": "Comment",
+                    "description": "Miscellaneous information about the data, not captured elsewhere.",
+                    "type": "string"
+                },
+                "acknowledgement": {
+                    "title": "Acknowledgement",
+                    "description": "A place to acknowledge various types of support for the project that produced this data.",
+                    "type": "string"
+                },
+                "license": {
+                    "title": "License",
+                    "description": "Provide the URL to a standard or specific license, enter 'Freely Distributed' or 'None', or describe any restrictions to data access and distribution in free text.",
+                    "type": "string"
+                },
+                "standard_name_vocabulary": {
+                    "title": "Standard Name Vocabulary",
+                    "description": "The name and version of the controlled vocabulary from which variable standard names are taken. Example: 'CF Standard Name Table v27'.",
+                    "default": "CF Standard Name Table v79",
+                    "type": "string"
+                },
+                "date_created": {
+                    "title": "Date Created",
+                    "description": "The date on which this version of the data was created. (Modification of values implies a new version, hence this would be assigned the date of the most recent values modification.) Metadata changes are not considered when assigning the date_created. The ISO 8601:2004 extended date format is recommended.",
+                    "type": "string"
+                },
+                "creator_name": {
+                    "title": "Creator Name",
+                    "description": "The name of the person (or other creator type specified by the creator_type attribute) principally responsible for creating this data.",
+                    "type": "string"
+                },
+                "creator_email": {
+                    "title": "Creator Email",
+                    "description": "The email address of the person (or other creator type specified by the creator_type attribute) principally responsible for creating this data.",
+                    "type": "string"
+                },
+                "creator_url": {
+                    "title": "Creator URL",
+                    "description": "The URL of the person (or other creator type specified by the creator_type attribute) principally responsible for creating this data.",
+                    "type": "string"
+                },
+                "creator_country": {
+                    "title": "Creator Country",
+                    "description": "Country of the person or organization that operates a platform or network, which collected the observation data.",
+                    "default": "USA",
+                    "type": "string"
+                },
+                "creator_state": {
+                    "title": "Creator State",
+                    "description": "State or province of the person or organization that collected the data.",
+                    "type": "string"
+                },
+                "creator_type": {
+                    "title": "Creator Type",
+                    "description": "Specifies type of creator with one of the following: 'person', 'group', 'institution', or 'position'. If this attribute is not specified, the creator is assumed to be a person.",
+                    "type": "string"
+                },
+                "creator_institution": {
+                    "title": "Creator Institution",
+                    "description": "The institution of the creator; should uniquely identify the creator's institution. This attribute's value should be specified even if it matches the value of publisher_institution, or if creator_type is institution.",
+                    "type": "string"
+                },
+                "creator_institution_url": {
+                    "title": "Creator Institution URL",
+                    "description": "URL for the institution that collected the data. For clarity, it is recommended that this field is specified even if the creator_type is institution and a creator_url is provided.",
+                    "type": "string"
+                },
+                "creator_sector": {
+                    "title": "Creator Sector",
+                    "description": "IOOS classifier (https://mmisw.org/ont/ioos/sector) that best describes the platform (network) operator's societal sector.",
+                    "default": "other",
+                    "type": "string"
+                },
+                "contributor_name": {
+                    "title": "Contributor Name(s)",
+                    "description": "The name of any individuals, projects, or institutions that contributed to the creation of this data. May be presented as free text, or in a structured format compatible with conversion to ncML (e.g., insensitive to changes in whitespace, including end-of-line characters).",
+                    "type": "string"
+                },
+                "contributor_email": {
+                    "title": "Contributor Email(s)",
+                    "description": "Email addresses of the individuals or institutions that contributed to the creation of this data. Multiple emails should be given in CSV format, and presented in the same order and number as the names in contributor_names.",
+                    "type": "string"
+                },
+                "contributor_role": {
+                    "title": "Contributor Role(s)",
+                    "description": "The role of any individuals, projects, or institutions that contributed to the creation of this data. May be presented as free text, or in a structured format compatible with conversion to ncML (e.g., insensitive to changes in whitespace, including end-of-line characters). Multiple roles should be presented in the same order and number as the names in contributor_names.",
+                    "type": "string"
+                },
+                "contributor_role_vocabulary": {
+                    "title": "Contributor Role Vocabulary",
+                    "description": "The URL of the controlled vocabulary used for the contributor_role attribute. The default is “https://vocab.nerc.ac.uk/collection/G04/current/”.",
+                    "type": "string"
+                },
+                "contributor_url": {
+                    "title": "Contributor URL(s)",
+                    "description": "The URL of the individuals or institutions that contributed to the creation of this data. Multiple URLs should be given in CSV format, and presented in the same order and number as the names in contributor_names.",
+                    "type": "string"
+                },
+                "institution": {
+                    "title": "Institution",
+                    "description": "The name of the institution principally responsible for originating this data.",
+                    "type": "string"
+                },
+                "program": {
+                    "title": "Program",
+                    "description": "The overarching program(s) of which the dataset is a part. A program consists of a set (or portfolio) of related and possibly interdependent projects that meet an overarching objective. Examples: 'GHRSST', 'NOAA CDR', 'NASA EOS', 'JPSS', 'GOES-R'.",
+                    "type": "string"
+                },
+                "project": {
+                    "title": "Project",
+                    "description": "The name of the project(s) principally responsible for originating this data. Multiple projects can be separated by commas, as described under Attribute Content Guidelines. Examples: 'PATMOS-X', 'Extended Continental Shelf Project'.",
+                    "type": "string"
+                },
+                "publisher_name": {
+                    "title": "Publisher Name",
+                    "description": "The name of the person (or other entity specified by the publisher_type attribute) responsible for publishing the data file or product to users, with its current metadata and format.",
+                    "type": "string"
+                },
+                "publisher_email": {
+                    "title": "Publisher Email",
+                    "description": "The email address of the person (or other entity specified by the publisher_type attribute) responsible for publishing the data file or product to users, with its current metadata and format.",
+                    "type": "string"
+                },
+                "publisher_url": {
+                    "title": "Publisher URL",
+                    "description": "The URL of the person (or other entity specified by the publisher_type attribute) responsible for publishing the data file or product to users, with its current metadata and format.",
+                    "type": "string"
+                },
+                "publisher_country": {
+                    "title": "Publisher Country",
+                    "description": "Country of the person or organization that distributes the data.",
+                    "default": "USA",
+                    "type": "string"
+                },
+                "publisher_state": {
+                    "title": "Publisher State",
+                    "description": "State or province of the person or organization that distributes the data.",
+                    "type": "string"
+                },
+                "publisher_type": {
+                    "title": "Publisher Type",
+                    "description": "Specifies type of publisher with one of the following: 'person', 'group', 'institution', or 'position'. If this attribute is not specified, the publisher is assumed to be a person.",
+                    "type": "string"
+                },
+                "publisher_institution": {
+                    "title": "Publisher Institution",
+                    "description": "The institution that presented the data file or equivalent product to users; should uniquely identify the institution. If publisher_type is institution, this should have the same value as publisher_name.",
+                    "type": "string"
+                },
+                "geospatial_bounds": {
+                    "title": "Geospatial Bounds",
+                    "description": "Describes the data's 2D or 3D geospatial extent in OGC's Well-Known Text (WKT) Geometry format (reference the OGC Simple Feature Access (SFA) specification). The meaning and order of values for each point's coordinates depends on the coordinate reference system (CRS). The ACDD default is 2D geometry in the EPSG:4326 coordinate reference system. The default may be overridden with geospatial_bounds_crs and geospatial_bounds_vertical_crs (see those attributes). EPSG:4326 coordinate values are latitude (decimal degrees_north) and longitude (decimal degrees_east), in that order. Longitude values in the default case are limited to the [-180, 180) range. Example: 'POLYGON ((40.26 -111.29, 41.26 -111.29, 41.26 -110.29, 40.26 -110.29, 40.26 -111.29))'.",
+                    "type": "string"
+                },
+                "geospatial_bounds_crs": {
+                    "title": "Geospatial Bounds Coordinate Reference System",
+                    "description": "The coordinate reference system (CRS) of the point coordinates in the geospatial_bounds attribute. This CRS may be 2-dimensional or 3-dimensional, but together with geospatial_bounds_vertical_crs, if that attribute is supplied, must match the dimensionality, order, and meaning of point coordinate values in the geospatial_bounds attribute. If geospatial_bounds_vertical_crs is also present then this attribute must only specify a 2D CRS. EPSG CRSs are strongly recommended. If this attribute is not specified, the CRS is assumed to be EPSG:4326. Examples: 'EPSG:4979' (the 3D WGS84 CRS), 'EPSG:4047'.",
+                    "type": "string"
+                },
+                "geospatial_bounds_vertical_crs": {
+                    "title": "Geospatial Bounds Vertical Coordinate Reference System",
+                    "description": "The vertical coordinate reference system (CRS) for the Z axis of the point coordinates in the geospatial_bounds attribute. This attribute cannot be used if the CRS in geospatial_bounds_crs is 3-dimensional; to use this attribute, geospatial_bounds_crs must exist and specify a 2D CRS. EPSG CRSs are strongly recommended. There is no default for this attribute when not specified. Examples: 'EPSG:5829' (instantaneous height above sea level), 'EPSG:5831' (instantaneous depth below sea level), or 'EPSG:5703' (NAVD88 height).",
+                    "type": "string"
+                },
+                "geospatial_lat_min": {
+                    "title": "Geospatial Latitude Min",
+                    "description": "Describes a simple lower latitude limit; may be part of a 2- or 3-dimensional bounding region. Geospatial_lat_min specifies the southernmost latitude covered by the dataset.",
+                    "type": "number"
+                },
+                "geospatial_lat_max": {
+                    "title": "Geospatial Latitude Max",
+                    "description": "Describes a simple upper latitude limit; may be part of a 2- or 3-dimensional bounding region. Geospatial_lat_max specifies the northernmost latitude covered by the dataset.",
+                    "type": "number"
+                },
+                "geospatial_lon_min": {
+                    "title": "Geospatial Longitude Min",
+                    "description": "Describes a simple longitude limit; may be part of a 2- or 3-dimensional bounding region. geospatial_lon_min specifies the westernmost longitude covered by the dataset. See also geospatial_lon_max.",
+                    "type": "number"
+                },
+                "geospatial_lon_max": {
+                    "title": "Geospatial Longitude Max",
+                    "description": "Describes a simple longitude limit; may be part of a 2- or 3-dimensional bounding region. geospatial_lon_max specifies the easternmost longitude covered by the dataset. Cases where geospatial_lon_min is greater than geospatial_lon_max indicate the bounding box extends from geospatial_lon_max, through the longitude range discontinuity meridian (either the antimeridian for -180:180 values, or Prime Meridian for 0:360 values), to geospatial_lon_min; for example, geospatial_lon_min=170 and geospatial_lon_max=-175 incorporates 15 degrees of longitude (ranges 170 to 180 and -180 to -175).",
+                    "type": "number"
+                },
+                "geospatial_vertical_min": {
+                    "title": "Geospatial Vertical Min",
+                    "description": "Describes the numerically smaller vertical limit; may be part of a 2- or 3-dimensional bounding region. See geospatial_vertical_positive and geospatial_vertical_units.",
+                    "type": "number"
+                },
+                "geospatial_vertical_max": {
+                    "title": "Geospatial Vertical Max",
+                    "description": "Describes the numerically larger vertical limit; may be part of a 2- or 3-dimensional bounding region. See geospatial_vertical_positive and geospatial_vertical_units.",
+                    "type": "number"
+                },
+                "geospatial_vertical_positive": {
+                    "title": "Geospatial Vertical Max",
+                    "description": "One of 'up' or 'down'. If up, vertical values are interpreted as 'altitude', with negative values corresponding to below the reference datum (e.g., under water). If down, vertical values are interpreted as 'depth', positive values correspond to below the reference datum. Note that if geospatial_vertical_positive is down ('depth' orientation), the geospatial_vertical_min attribute specifies the data's vertical location furthest from the earth's center, and the geospatial_vertical_max attribute specifies the location closest to the earth's center.",
+                    "type": "number"
+                },
+                "geospatial_lat_units": {
+                    "title": "Geospatial Latitude Units",
+                    "description": "Units for the latitude axis described in 'geospatial_lat_min' and 'geospatial_lat_max' attributes. These are presumed to be 'degree_north'; other options from udunits may be specified instead.",
+                    "type": "string"
+                },
+                "geospatial_lat_resolution": {
+                    "title": "Geospatial Latitude Resolution",
+                    "description": "Information about the targeted spacing of points in latitude. Recommend describing resolution as a number value followed by the units. Examples: '100 meters', '0.1 degree'.",
+                    "type": "string"
+                },
+                "geospatial_lon_units": {
+                    "title": "Geospatial Longitude Units",
+                    "description": "Units for the longitude axis described in 'geospatial_lon_min' and 'geospatial_lon_max' attributes. These are presumed to be 'degree_east'; other options from udunits may be specified instead.",
+                    "type": "string"
+                },
+                "geospatial_lon_resolution": {
+                    "title": "Geospatial Longitude Resolution",
+                    "description": "Information about the targeted spacing of points in longitude. Recommend describing resolution as a number value followed by units. Examples: '100 meters', '0.1 degree'.",
+                    "type": "string"
+                },
+                "geospatial_vertical_units": {
+                    "title": "Geospatial Vertical Units",
+                    "description": "Units for the vertical axis described in 'geospatial_vertical_min' and 'geospatial_vertical_max' attributes. The default is EPSG:4979 (height above the ellipsoid, in meters); other vertical coordinate reference systems may be specified. Note that the common oceanographic practice of using pressure for a vertical coordinate, while not strictly a depth, can be specified using the unit bar. Examples: 'EPSG:5829' (instantaneous height above sea level), 'EPSG:5831' (instantaneous depth below sea level).",
+                    "type": "string"
+                },
+                "geospatial_vertical_resolution": {
+                    "title": "Geospatial Vertical Resolution",
+                    "description": "Information about the targeted vertical spacing of points. Example: '25 meters'.",
+                    "type": "string"
+                },
+                "time_coverage_start": {
+                    "title": "Time Coverage Start",
+                    "description": "Describes the time of the first data point in the data set. Use the ISO 8601:2004 date format, preferably the extended format as recommended in the Attribute Content Guidance section.",
+                    "type": "string"
+                },
+                "time_coverage_end": {
+                    "title": "Time Coverage End",
+                    "description": "Describes the time of the last data point in the data set. Use ISO 8601:2004 date format, preferably the extended format as recommended in the Attribute Content Guidance section.",
+                    "type": "string"
+                },
+                "time_coverage_duration": {
+                    "title": "Time Coverage Duration",
+                    "description": "Describes the duration of the data set. Use ISO 8601:2004 duration format, preferably the extended format as recommended in the Attribute Content Guidance section.",
+                    "type": "string"
+                },
+                "time_coverage_resolution": {
+                    "title": "Time Coverage Resolution",
+                    "description": "Describes the targeted time period between each value in the data set. Use ISO 8601:2004 duration format, preferably the extended format as recommended in the Attribute Content Guidance section.",
+                    "type": "string"
+                },
+                "date_modified": {
+                    "title": "Date Modified",
+                    "description": "The date on which the data was last modified. Note that this applies just to the data, not the metadata. The ISO 8601:2004 extended date format is recommended.",
+                    "type": "string"
+                },
+                "date_issued": {
+                    "title": "Date Issued",
+                    "description": "The date on which this data (including all modifications) was formally issued (i.e., made available to a wider audience). Note that these apply just to the data, not the metadata. The ISO 8601:2004 extended date format is recommended.",
+                    "type": "string"
+                },
+                "date_metadata_modified": {
+                    "title": "Date Metadata Modified",
+                    "description": "The date on which the metadata was last modified. The ISO 8601:2004 extended date format is recommended.",
+                    "type": "string"
+                },
+                "product_version": {
+                    "title": "Product Version",
+                    "description": "Version identifier of the data file or product as assigned by the data creator. For example, a new algorithm or methodology could result in a new product_version.",
+                    "type": "string"
+                },
+                "keywords": {
+                    "title": "Keywords",
+                    "description": "A comma-separated list of key words and/or phrases. Keywords may be common words or phrases, terms from a controlled vocabulary (GCMD is often used), or URIs for terms from a controlled vocabulary (see also 'keywords_vocabulary' attribute).",
+                    "type": "string"
+                },
+                "keywords_vocabulary": {
+                    "title": "Keywords Vocabulary",
+                    "description": "If you are using a controlled vocabulary for the words/phrases in your 'keywords' attribute, this is the unique name or identifier of the vocabulary from which keywords are taken. If more than one keyword vocabulary is used, each may be presented with a prefix and a following comma, so that keywords may optionally be prefixed with the controlled vocabulary key. Example: 'GCMD:GCMD Keywords, CF:NetCDF COARDS Climate and Forecast Standard Names'.",
+                    "type": "string"
+                },
+                "platform": {
+                    "title": "Platform",
+                    "description": "Name of the type of platform(s) that supported the sensor data used to create this data set or product. Platforms can be of any type, including satellite, ship, station, aircraft or other. The controlled vocabulary must be indicated in the platform_vocabulary field. 'platform' should be a single string with no blank spaces.",
+                    "type": "string"
+                },
+                "platform_vocabulary": {
+                    "title": "Platform Vocabulary",
+                    "description": "Controlled vocabulary for the names used in the 'platform' attribute.",
+                    "default": "https://mmisw.org/ont/ioos/platform",
+                    "type": "string"
+                },
+                "platform_id": {
+                    "title": "Platform ID",
+                    "description": "An optional, short identifier for the platform, if the data provider prefers to define an id that differs from the dataset identifier, as specified by the id attribute. Platform_id should be a single alphanumeric string with no blank spaces.",
+                    "type": "string"
+                },
+                "platform_name": {
+                    "title": "Platform Name",
+                    "description": "A descriptive, long name for the platform used in collecting the data. The value of platform_name will be used to label the platform in downstream applications, such as IOOS’ National Products (Environmental Sensor Map, EDS, etc).",
+                    "type": "string"
+                },
+                "WMO_platform_code": {
+                    "title": "WMO Platform Code",
+                    "description": "The WMO identifier for the platform used to measure the data. This identifier can be any of the following types: 1. WMO ID for buoys (numeric, 5 digits), 2. WMO ID for gliders (numeric, 7 digits), 3. NWS ID (alphanumeric, 5 digits). When a dataset is assigned a wmo_platform_code it is thereby assigned a secondary Asset Identifier for the 'WMO' naming_authority. See https://ioos.github.io/ioos-metadata/ioos-metadata-profile-v1-2.html#rules-for-ioos-asset-identifier-generation for more details.",
+                    "type": "string"
+                },
+                "instrument": {
+                    "title": "Instrument",
+                    "description": "Name of the contributing instrument(s) or sensor(s) used to create this data set or product. Indicate controlled vocabulary used in instrument_vocabulary.",
+                    "type": "string"
+                },
+                "instrument_vocabulary": {
+                    "title": "Instrument Vocabulary",
+                    "description": "Controlled vocabulary for the names used in the 'instrument' attribute.",
+                    "type": "string"
+                },
+                "cdm_data_type": {
+                    "title": "CDM Data Type",
+                    "description": "The data type, as derived from Unidata's Common Data Model Scientific Data types and understood by THREDDS. (This is a THREDDS 'dataType', and is different from the CF NetCDF attribute 'featureType', which indicates a Discrete Sampling Geometry file in CF.).",
+                    "type": "string"
+                },
+                "metadata_link": {
+                    "title": "Metadata Link",
+                    "description": "A URL that gives the location of more complete metadata. A persistent URL is recommended for this attribute.",
+                    "type": "string"
+                },
+                "references": {
+                    "title": "References",
+                    "description": "Published or web-based references that describe the data or methods used to produce it. Recommend URIs (such as a URL or DOI) for papers or other references.",
+                    "type": "string"
+                },
+                "location_id": {
+                    "title": "Location ID",
+                    "description": "A label or acronym for the location where the data were obtained from. Only alphanumeric characters and '_' are allowed.",
+                    "minLength": 1,
+                    "pattern": "^[a-zA-Z0-9_]+$",
+                    "type": "string"
+                },
+                "dataset_name": {
+                    "title": "Dataset Name",
+                    "description": "A string used to identify the data being produced. Ideally resembles a shortened lowercase version of the title. Only lowercase alphanumeric characters and '_' are allowed.",
+                    "minLength": 3,
+                    "pattern": "^[a-z0-9_]+$",
+                    "type": "string"
+                },
+                "qualifier": {
+                    "title": "Qualifier",
+                    "description": "An optional string which distinguishes these data from other datasets produced by the same instrument. Only alphanumeric characters and '_' are allowed.",
+                    "minLength": 1,
+                    "pattern": "^[a-zA-Z0-9_]+$",
+                    "type": "string"
+                },
+                "temporal": {
+                    "title": "Temporal",
+                    "description": "An optional string which describes the temporal resolution of the data (if it spaced in regular intervals). This string should be formatted as a number followed by a unit of measurement, e.g., '10m' would indicate the data is sampled every ten minutes. Only lowercase alphanumeric characters are allowed.",
+                    "minLength": 2,
+                    "pattern": "^[0-9]+[a-zA-Z]+$",
+                    "type": "string"
+                },
+                "data_level": {
+                    "title": "Data Level",
+                    "description": "A string used to indicate the level of processing of the output data. It should be formatted as a letter followed by a number. Typical values for this include: a1 - data is ingested (no qc), b1 - data is ingested and quality checks applied, c1 (or higher) - one or more a* or b* datastreams used to create a higher-level data product. Only lowercase alphanumeric characters are allowed.",
+                    "maxLength": 3,
+                    "minLength": 2,
+                    "pattern": "^[a-z0-9]+$",
+                    "type": "string"
+                },
+                "datastream": {
+                    "title": "Datastream",
+                    "description": "Typically used as a label that uniquely identifies this data product from any other data product. For file-based storage systems, the datastream attribute is typically used to generate directory structures as f'{location_id}/{datastream}/', with files in that directory typically named as f'{datastream}.{date}.{time}.{ext}'. This attribute is AUTO-GENERATED at run-time, unless it is explicitly set in the config file, in which case the value in the config file will override the default. The default value for 'datastream' is as follows:\n f\"{location_id}.{dataset_name}{_qualifier}{_temporal}.{data_level}\", \nwhere '_qualifier' and '_temporal' are both prepended with a literal '-' character if they are provided. This gives some separation between the 'dataset_name', 'qualifier', and 'temporal' attributes and makes it possible to parse out these specific attributes given a complete datastream label.",
+                    "default": "",
+                    "type": "string"
+                },
+                "code_version": {
+                    "title": "Code Version",
+                    "description": "Attribute that will be recorded automatically by the pipeline. A warning will be raised if this is set in the config file. The code_version attribute reads the 'CODE_VERSION' environment variable or parses the git history to determine the version of the code. Semantic versioning is used by default (v'major.minor.micro'; e.g., 1.2.3).",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "title",
+                "summary",
+                "location_id",
+                "dataset_name",
+                "data_level",
+                "Conventions",
+                "featureType",
+                "id",
+                "infoURL",
+                "license",
+                "naming_authority",
+                "standard_name_vocabulary",
+                "creator_country",
+                "creator_email",
+                "creator_institution",
+                "creator_sector",
+                "creator_url",
+                "publisher_country",
+                "publisher_email",
+                "publisher_institution",
+                "publisher_url",
+                "platform",
+                "platform_name",
+                "platform_vocabulary"
+            ]
+        },
+        "VariableAttributes": {
+            "title": "VariableAttributes",
+            "description": "Attributes that will be recorded in the output dataset. These metadata are used to\nrecord information about the data properties and related fields (e.g., units,\nancillary_variables, etc), user-facing metadata (e.g., long_name, comment), as well as\nattributes related to quality checks and controls (e.g., valid_*, fail_*, and warn_*\nproperties).",
+            "type": "object",
+            "properties": {
+                "units": {
+                    "title": "Units",
+                    "description": "A string indicating the units the data are measured in. Tsdat uses pint to handle unit conversions, so this string must be compatible with the pint list of units, if provided. A complete list of compatible units can be found here: https://github.com/hgrecco/pint/blob/master/pint/default_en.txt. If the property is unitless, then the string '1' should be used. If the units of the property are not known, then the units attribute should be omitted and the comment attribute should include a note indicating that units are not known. Doing so provides helpful context for data users.",
+                    "type": "string"
+                },
+                "long_name": {
+                    "title": "Long Name",
+                    "description": "A brief label for the name of the measured property. The xarray python library automatically searches for this attribute to use as an axes label in plots, so the value should be suitable for display.",
+                    "type": "string"
+                },
+                "standard_name": {
+                    "title": "Standard Name",
+                    "description": "A string exactly matching a value in the CF Standard Name table which is used to provide a standardized way of identifying variables and measurements across heterogeneous datasets and domains. If a suitable match does not exist, then this attribute should be omitted. The full list of CF Standard Names is at: https://cfconventions.org/Data/cf-standard-names.",
+                    "type": "string"
+                },
+                "coverage_content_type": {
+                    "title": "Coverage Content Type",
+                    "description": "An ISO 19115-1 code to indicate the source of the data (image, thematicClassification, physicalMeasurement, auxiliaryInformation, qualityInformation, referenceInformation, modelResult, or coordinate).",
+                    "type": "string"
+                },
+                "cf_role": {
+                    "title": "CF Role",
+                    "description": "Allowed values are defined in Chapter 9.5 CF guidelines and consist of: timeseries_id, profile_id, and trajectory_id, depending on the featureType represented in the dataset, as specified by the featureType global attribute.",
+                    "type": "string"
+                },
+                "accuracy": {
+                    "title": "Accuracy",
+                    "description": "The sensor accuracy is the closeness of the measurements to the variable's true value. It should be given in the same units as the measured variable. If the instrument has been calibrated multiple times with different results, the most recent accuracy should be provided here (see instrument_variable:calibration_date).",
+                    "type": "string"
+                },
+                "precision": {
+                    "title": "Precision",
+                    "description": "The sensor precision is the closeness of the measurements to each other. It should be given in the same units as the measured variable. If the instrument has been calibrated multiple times with different results, the most recent precision should be provided here (see instrument_variable:calibration_date).",
+                    "type": "string"
+                },
+                "resolution": {
+                    "title": "Resolution",
+                    "description": "The sensor resolution is the smallest change it can represent in the quantity that it is measuring. It should be given in the same units as the measured variable.",
+                    "type": "string"
+                },
+                "instrument": {
+                    "title": "Instrument",
+                    "description": "Variable attribute to be specified on each geophysical variable to identify the instrument that collected the data. The value of the attribute should be set to another variable which contains the details of the instrument. There can be multiple instruments involved depending on if all the instances of the featureType in the collection come from the same instrument or not. If multiple instruments are involved, a variable should be defined for each instrument and referenced from the geophysical variable in a comma separated string.",
+                    "type": "string"
+                },
+                "make_model": {
+                    "title": "Make and Model",
+                    "description": "The make and model of the instrument.",
+                    "type": "string"
+                },
+                "calibration_date": {
+                    "title": "Calibration Date",
+                    "description": "The date the instrument was last calibrated. Value should be specified using ISO-8601 compatible strings.",
+                    "type": "string"
+                },
+                "component": {
+                    "title": "Component",
+                    "description": "The value of a component applies to the like-named field in the IOOS SOS Asset Identifier URN; it is used to identify individual, distinct components, or sub-assets (for example, two different sensor types), on a single platform. The 'component' is mapped to the Asset Identifier as follows: Asset Identifier = urn:ioos:asset_type:authority:label[:component][:discriminant][#functional_parameters]",
+                    "type": "string"
+                },
+                "discriminant": {
+                    "title": "Discriminant",
+                    "description": "The value of a discriminant applies to the like-named field in the IOOS SOS Asset Identifier URN; it ensures that in case of multiple deployments of identical sensors on the same platform (for example, measuring the same observedProperty), each sensor has a unique ID in the Identifier. The 'discriminant' is mapped to the Asset Identifier as follows: Asset Identifier = urn:ioos:asset_type:authority:label[:component][:discriminant][#functional_parameters]",
+                    "type": "string"
+                },
+                "comment": {
+                    "title": "Comment",
+                    "description": "A user-friendly description of what the variable represents, how it was measured or derived, or any other relevant information that increases the ability of users to understand and use this data. This field plays a considerable role in creating self-documenting data, so we highly recommend including this field, especially for any variables which are particularly important for your dataset. Additionally, if the units for an attribute are unknown, then this field must include the phrase: 'Unknown units.' so that users know there is some uncertainty around this property. Variables that are unitless (e.g., categorical data or ratios), should set the 'units' to '1'.",
+                    "type": "string"
+                },
+                "valid_range": {
+                    "title": "Valid Range",
+                    "description": "A two-element list of [min, max] values outside of which the data should be treated as missing. If applying QC tests, then users should configure the quality managers to flag values outside of this range as having a 'Bad' assessment and replace those values with the variable's _FillValue.",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "fail_range": {
+                    "title": "Fail Range",
+                    "description": "A two-element list of [min, max] values outside of which the data should be teated with heavy skepticism as missing. If applying QC tests, then users should configure the quality managers to flag values outside of this range as having a 'Bad' assessment.",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "warn_range": {
+                    "title": "Warn Range",
+                    "description": "A two-element list of [min, max] values outside of which the data should be teated with some skepticism as missing. If applying QC tests, then users should configure the quality managers to flag values outside of this range as having an 'Indeterminate' assessment.",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "valid_delta": {
+                    "title": "Valid Delta",
+                    "description": "The largest difference between consecutive values in the data outside of which the data should be treated as missing. If applying QC tests, then users should configure the quality managers to flag values outside of this range as having a 'Bad' assessment and replace those values with the variable's _FillValue.",
+                    "type": "number"
+                },
+                "fail_delta": {
+                    "title": "Fail Delta",
+                    "description": "The largest difference between consecutive values in the data outside of which the data should be teated with heavy skepticism as missing. If applying QC tests, then users should configure the quality managers to flag values outside of this range as having a 'Bad' assessment.",
+                    "type": "number"
+                },
+                "warn_delta": {
+                    "title": "Warn Delta",
+                    "description": "The largest difference between consecutive values in the data outside of which the data should be teated with some skepticism as missing. If applying QC tests, then users should configure the quality managers to flag values outside of this range as having an 'Indeterminate' assessment.",
+                    "type": "number"
+                },
+                "_FillValue": {
+                    "title": " Fillvalue",
+                    "description": "A value used to initialize the variable's data and indicate that the data is missing. Defaults to -9999 for numerical data. If choosing a different value, it is important to use a value that could not reasonably be mistaken for a physical value or data point."
+                }
+            }
+        },
+        "Coordinate": {
+            "title": "Coordinate",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "default": "",
+                    "pattern": "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$",
+                    "type": "string"
+                },
+                "data": {
+                    "title": "Data",
+                    "description": "If the variable is not meant to be retrieved from an input dataset and the value is known in advance, then the 'data' property should specify its value exactly as it should appear in the output dataset. This is commonly used for latitude/longitude/altitude data for datasets measured from a specific geographical location."
+                },
+                "dtype": {
+                    "title": "Dtype",
+                    "description": "The numpy dtype of the underlying data. This is passed to numpy as the 'dtype' keyword argument used to initialize an array (e.g., `numpy.array([1.0, 2.0], dtype='float')`). Commonly-used values include 'float', 'int', 'long'.",
+                    "type": "string"
+                },
+                "dims": {
+                    "title": "Dims",
+                    "description": "A list of coordinate variable names that dimension this data variable. Most commonly this will be set to ['time'], but for datasets where there are multiple dimensions (e.g., ADCP data measuring current velocities across time and several depths, it may look like ['time', 'depth']).",
+                    "uniqueItems": true,
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "attrs": {
+                    "title": "Attrs",
+                    "description": "The attrs section is where variable-specific metadata are stored. This metadata is incredibly important for data users, and we recommend including several properties for each variable in order to have the greatest impact. In particular, we recommend adding the 'units', 'long_name', and 'standard_name' attributes, if possible.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/VariableAttributes"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "dtype",
+                "dims",
+                "attrs"
+            ],
+            "additionalProperties": false
+        },
+        "Variable": {
+            "title": "Variable",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "default": "",
+                    "pattern": "^[a-zA-Z0-9_\\(\\)\\/\\[\\]\\{\\}\\.]+$",
+                    "type": "string"
+                },
+                "data": {
+                    "title": "Data",
+                    "description": "If the variable is not meant to be retrieved from an input dataset and the value is known in advance, then the 'data' property should specify its value exactly as it should appear in the output dataset. This is commonly used for latitude/longitude/altitude data for datasets measured from a specific geographical location."
+                },
+                "dtype": {
+                    "title": "Dtype",
+                    "description": "The numpy dtype of the underlying data. This is passed to numpy as the 'dtype' keyword argument used to initialize an array (e.g., `numpy.array([1.0, 2.0], dtype='float')`). Commonly-used values include 'float', 'int', 'long'.",
+                    "type": "string"
+                },
+                "dims": {
+                    "title": "Dims",
+                    "description": "A list of coordinate variable names that dimension this data variable. Most commonly this will be set to ['time'], but for datasets where there are multiple dimensions (e.g., ADCP data measuring current velocities across time and several depths, it may look like ['time', 'depth']).",
+                    "uniqueItems": true,
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "attrs": {
+                    "title": "Attrs",
+                    "description": "The attrs section is where variable-specific metadata are stored. This metadata is incredibly important for data users, and we recommend including several properties for each variable in order to have the greatest impact. In particular, we recommend adding the 'units', 'long_name', and 'standard_name' attributes, if possible.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/VariableAttributes"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "dtype",
+                "dims",
+                "attrs"
+            ],
+            "additionalProperties": false
+        }
+    }
+}

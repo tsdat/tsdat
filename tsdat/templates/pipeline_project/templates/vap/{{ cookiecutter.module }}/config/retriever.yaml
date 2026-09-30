@@ -1,0 +1,33 @@
+classname: tsdat.io.retrievers.StorageRetriever
+parameters:
+  transformation_parameters:
+    
+    # Where the point lies in the coordinate bounds (CENTER, LEFT, RIGHT)
+    alignment:
+      time: CENTER
+    
+    # How far to look for the next available data point
+    range:
+      time: 900
+    
+    # Width of the transformation (only matters for bin averaging)
+    width:
+      time: 300
+
+coords:
+  time:
+    name: time
+    data_converters:
+      - classname: tsdat.transform.CreateTimeGrid
+        interval: 5min
+
+data_vars:
+  example_var:
+    .*:
+      name: Example
+      data_converters:
+        - classname: tsdat.transform.BinAverage
+        - classname: tsdat.io.converters.UnitsConverter
+          input_units: km
+
+  # DEVELOPER: Specify the coords/data_vars that should be retrieved

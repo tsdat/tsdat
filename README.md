@@ -44,10 +44,13 @@ This repository contains the core tsdat code. We invite you to explore this, esp
 for those willing to provide feedback or make contributions to the tsdat core (we
 enthusiastically welcome issues, PRs, discussions & new ideas, etc.).
 
-> Most users should start with a [template repository](https://github.com/tsdat/template-repositories)
-to generate boilerplate code and configurations needed to create a tsdat data pipeline.
-We recommend **[this template](https://github.com/tsdat/pipeline-template)** to start
-with, as it is the most flexible and well-supported template that we offer.
+To start a new pipeline repository locally, install `tsdat` and run:
+
+```shell
+tsdat init
+```
+
+and follow the guided setup to create a working example, runner, and ingest/VAP pipeline templates.
 
 # Development Environment
 

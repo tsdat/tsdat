@@ -15,6 +15,7 @@ classifiers = [
 dependencies = [    
   "act-atmos >=1.1.3,!=1.3.1,!=1.3.3",
   "cftime",
+  "cookiecutter>=2.1",
   "dunamai==1.9.0",
   "jsonpointer==2.2",
   "netCDF4",
@@ -23,6 +24,7 @@ dependencies = [
   "pint",
   "pydantic >=2.0.0",
   "pydantic-settings >=2.0.0",
+  "python-slugify",
   "pyyaml >=5.4",
   "rich",
   "typer >=0.4",
@@ -74,10 +76,11 @@ transform = [
 tsdat = "tsdat.cli:app"
 
 [tool.setuptools.packages.find]
-include = ["tsdat"]
+include = ["tsdat", "tsdat.*"]
+namespaces = false
 
 [tool.setuptools.package-data]
-tsdat = ["py.typed"]
+tsdat = ["py.typed", "templates/pipeline_project/**/*", "templates/pipeline_project/**/.*", "templates/pipeline_project/.gitignore", "templates/pipeline_project/.vscode/**/*", "templates/pipeline_project/.vscode/.env", "templates/pipeline_project/.github/**/*"]
 
 [tool.setuptools_scm]
 local_scheme = "no-local-version"
