@@ -1,0 +1,15 @@
+__pycache__
+.pytest_cache
+*.pyc
+**storage/
+.idea/
+typings/
+.coverage
+.mypy_cache
+.DS_Store
+.idea/
+.history/
+.pytest_cache/
+htmlcov/
+typings/
+pipelines/ingest_testing

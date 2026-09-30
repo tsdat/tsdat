@@ -1,0 +1,70 @@
+{
+    // 
+    // Python environment settings
+    // 
+    "terminal.integrated.env.osx": {
+        "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"
+    },
+    "terminal.integrated.env.linux": {
+        "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"
+    },
+    "terminal.integrated.env.windows": {
+        "PYTHONPATH": "${PYTHONPATH}:${workspaceFolder}"
+    },
+    // 
+    // Formatting, linting, code analysis, and testing settings
+    // 
+    "workbench.tree.indent": 20,
+    "editor.formatOnSave": true,
+    "yaml.format.printWidth": 88,
+    "yaml.format.proseWrap": "always",
+    // 
+    // Settings for helpful utilities
+    // 
+    "autoDocstring.customTemplatePath": ".vscode/docstring.mustache",
+    "errorLens.statusBarIconsEnabled": true,
+    "todo-tree.general.tags": [
+        "BUG",
+        "HACK",
+        "FIXME",
+        "TODO",
+        "TEST",
+        "IDEA",
+        "DEVELOPER",
+        "XXX",
+        "[ ]",
+        "[x]"
+    ],
+    "yaml.schemas": {
+        ".vscode/schema/retriever-schema.json": "*retriever*.yaml",
+        ".vscode/schema/dataset-schema.json": "*dataset*.yaml",
+        ".vscode/schema/quality-schema.json": "*quality*.yaml",
+        ".vscode/schema/storage-schema.json": "*storage*.yaml",
+        ".vscode/schema/pipeline-schema.json": "*pipeline*.yaml",
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/.mypy_cache": true,
+        "**/.pytest_cache": true,
+    },
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+        },
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    }
+}

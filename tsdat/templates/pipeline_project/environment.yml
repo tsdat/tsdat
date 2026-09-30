@@ -1,0 +1,14 @@
+# Conda environment for developing tsdat pipelines
+
+name: tsdat-pipelines
+channels:
+  - arm-doe
+  - conda-forge
+dependencies:
+  - python>=3.10,<3.14  # adi_py C extensions are incompatible with the free-threading Python 3.14 build from conda-forge
+  - adi_py>=3.19.2
+  - hdf5
+  - pytables
+  - pip
+  - pip:
+      - "-r requirements-dev.txt"

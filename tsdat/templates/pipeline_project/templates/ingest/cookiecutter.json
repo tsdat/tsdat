@@ -1,0 +1,29 @@
+{
+    "ingest_name": "Name of the Ingest",
+    "ingest_location": "Location",
+    "ingest_description": "Brief description of the ingest",
+    "data_standards": [
+        "basic",
+        "ACDD",
+        "IOOS"
+    ],
+    "use_custom_data_reader": [
+        "no",
+        "yes"
+    ],
+    "use_custom_data_converter": [
+        "no",
+        "yes"
+    ],
+    "use_custom_qc": [
+        "no",
+        "yes"
+    ],
+    "module": "{{ cookiecutter.ingest_name | slugify(separator='_') }}",
+    "classname": "{{ cookiecutter.module | replace('_', ' ') | title | replace(' ', '') }}",
+    "location_id": "{{ cookiecutter.ingest_location | slugify(separator='_') }}",
+    "_copy_without_render": [
+        "*.nc",
+        "**/*.nc"
+    ]
+}

@@ -1,0 +1,45 @@
+classname: tsdat.io.retrievers.DefaultRetriever
+readers:
+  .*:
+    {% if cookiecutter.use_custom_data_reader == "no" -%}
+    classname: tsdat.io.readers.CSVReader
+    parameters:
+      read_csv_kwargs:
+        # This treats the first column (time) as a data variable, which helps for when
+        # the pandas DataFrame is converted to an xarray Dataset
+        index_col: false
+
+        # This tells pandas to look at row index 2 (0-based) for the header
+        header: 2
+    {% else -%}
+    classname: pipelines.{{ cookiecutter.module }}.readers.CustomDataReader
+    {% endif %}
+coords:
+  # DEVELOPER: Specify the coords/data_vars that should be retrieved from any inputs
+  time:
+    # Mapping of regex pattern (matching input key/file) to input name & converter(s) to
+    # run. The default is .*, which matches everything. Put the most specific patterns
+    # first because searching happens top -> down and stops at the first match.
+    .*:
+      # The name of the input variable as returned by the selected reader. If using a
+      # built-in DataReader like the CSVReader or NetCDFReader, then will be exactly the
+      # same as the name of the variable in the input file.
+      name: Timestamp (end of interval)
+
+      # Optionally specify converters to run. The one below converts string values into
+      # datetime64 objects. It requests two arguments: format and timezone. Format is
+      # the string time format of the input data (see strftime.org for more info), and
+      # timezone is the timezone of the input measurement.
+      data_converters:
+        - classname: tsdat.io.converters.StringToDatetime
+          format: "%Y-%m-%d %H:%M:%S"
+          timezone: UTC
+
+data_vars:
+  example_var:
+    .*:
+      name: Example
+      data_converters:
+        - classname: tsdat.io.converters.UnitsConverter
+          input_units: km
+        {% if cookiecutter.use_custom_data_converter == "yes" %}- classname: pipelines.{{ cookiecutter.module }}.converters.CustomDataConverter{% endif %}

@@ -1,0 +1,165 @@
+attrs:
+  title: "Wave Measurements from Buoy #130 at Morro Bay, CA"
+  description:
+    "Pacific Northwest National Laboratory (PNNL) manages this AXYS WindSentinelTM buoy
+    (Buoy #130) on behalf of the U.S. Department of Energy (DOE) that collect a
+    comprehensive set of meteorological and oceanographic (metocean) data to support
+    resource characterization for wind energy offshore. The buoy collects in-situ sea
+    surface temperature, salinity, ocean currents, and wave data as well as near-surface
+    air temperature, humidity, and horizontal wind speed and direction."
+  location_id: morro
+  dataset_name: "buoy_z06"
+  qualifier: waves
+  data_level: a1
+
+coords:
+  time:
+    dims: [time]
+    dtype: datetime64[s]
+    attrs:
+      units: Seconds since 1970-01-01 00:00:00
+
+data_vars:
+  # example_var:
+  #   dims: [time]
+  #   dtype: float
+  #   attrs:
+  #     units: m
+
+  wave_type:
+    dims: [time]
+    dtype: double
+    attrs:
+      long_name: Wave Type
+      units: "1"
+      comment:
+        "User-programmable classification of different wave types. Wave types are not
+        defined for this deployment"
+
+  num_zero_crossings:
+    dims: [time]
+    dtype: int
+    attrs:
+      long_name: Number of Zero Crossings
+      units: "1"
+      _FillValue: -9999
+
+  mean_wave_height:
+    dims: [time]
+    dtype: double
+    attrs:
+      long_name: Average Wave Height
+      comment: Wave height, average calculated from timeseries
+      units: m
+      valid_max: 10
+      _FillValue: -9999
+
+  mean_wave_period:
+    dims: [time]
+    dtype: double
+    attrs:
+      long_name: Mean Wave Period from Spectral Moments
+      comment:
+        Wave period, average calculated from the zeroth and first spectral moments
+      units: s
+      valid_max: 30
+      _FillValue: -9999
+
+  mean_wave_direction:
+    dims: [time]
+    dtype: double
+    attrs:
+      long_name: Mean Wave Direction
+      units: degrees
+      valid_max: 360
+      _FillValue: -9999
+
+  mean_wave_spread:
+    dims: [time]
+    dtype: double
+    attrs:
+      long_name: Mean Wave Spread
+      units: degrees
+      valid_max: 360
+      _FillValue: -9999
+
+  max_wave_height:
+    dims: [time]
+    dtype: double
+    attrs:
+      long_name: Maximum Wave Height
+      units: m
+      valid_max: 10
+      _FillValue: -9999
+
+  max_wave_period:
+    dims: [time]
+    dtype: double
+    attrs:
+      long_name: Maximum Wave Period
+      units: s
+      valid_max: 30
+      _FillValue: -9999
+
+  max_crest_period:
+    dims: [time]
+    dtype: double
+    attrs:
+      long_name: Max Crest Period
+      comment: Wave period between highest wave crests
+      units: s
+      valid_max: 30
+      _FillValue: -9999
+
+  peak_wave_period:
+    dims: [time]
+    dtype: double
+    attrs:
+      long_name: Peak wave period
+      comment:
+        Wave period associated with maximum energy found in wave elevation spectrum
+      units: s
+      valid_max: 30
+      _FillValue: -9999
+
+  peak_wave_direction:
+    dims: [time]
+    dtype: double
+    attrs:
+      long_name: Peak Wave Direction
+      comment: Wave direction corresponding to peak wave period
+      units: degrees
+      valid_max: 360
+      _FillValue: -9999
+
+  peak_wave_spread:
+    dims: [time]
+    dtype: double
+    attrs:
+      long_name: Peak Wave Spread
+      comment: Wave spread corresponding to peak wave period
+      units: degrees
+      valid_max: 360
+      _FillValue: -9999
+
+  significant_wave_height:
+    dims: [time]
+    dtype: double
+    attrs:
+      long_name: Significant Wave Height
+      comment: Significant wave height, calculated from the zeroth spectral moment
+      units: m
+      valid_max: 30
+      _FillValue: -9999
+
+  wave_energy_period:
+    dims: [time]
+    dtype: double
+    attrs:
+      long_name: Wave Energy Period
+      comment:
+        Wave energy period, calculated from the negative first and zeroth spectral
+        moments
+      units: s
+      valid_max: 30
+      _FillValue: -9999

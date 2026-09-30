@@ -1,0 +1,8 @@
+-r requirements.txt
+tsdat>=0.10.0
+pytest
+coverage
+mypy
+black
+isort
+notebook

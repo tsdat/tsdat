@@ -1,0 +1,30 @@
+# DEVELOPER: Add attrs and coords/variables to specify the output data structure
+
+attrs:
+  title: {{ cookiecutter.ingest_name }}
+  description: {{ cookiecutter.ingest_description }}
+  location_id: {{ cookiecutter.location_id }}
+  dataset_name: {{ cookiecutter.module }}
+  data_level: {% if cookiecutter.use_custom_qc == "no" %}a1{% else %}b1{% endif %}
+  # qualifier: 
+  # temporal: 
+  # institution: 
+
+coords:
+  time:
+    dims: [time]
+    dtype: datetime64[ns]
+    attrs:
+      long_name: Time 
+      standard_name: time
+      units: Seconds since 1970-01-01 00:00:00 UTC 
+      timezone: UTC
+
+data_vars:
+  example_var:
+    dims: [time]
+    dtype: float
+    attrs:
+      long_name:  Example Variable
+      units: km
+      comment: Example data

@@ -1,0 +1,99 @@
+# DEVELOPER: Specify the quality checks and handlers that should be applied
+managers:
+  #---------------------------------------------------------------
+  - name: Fail if missing coordinates
+    checker:
+      classname: tsdat.qc.checkers.CheckMissing
+    handlers:
+      - classname: tsdat.qc.handlers.FailPipeline
+        parameters:
+          context: Coordinate variables cannot be missing.
+    apply_to:
+      - COORDS
+
+  - name: Fail if monotonic coordinates
+    checker:
+      classname: tsdat.qc.checkers.CheckMonotonic
+      parameters:
+        require_increasing: true
+    handlers:
+      - classname: tsdat.qc.handlers.FailPipeline
+        parameters:
+          context: Coordinate variables must be strictly increasing.
+    apply_to:
+      - COORDS
+
+    #---------------------------------------------------------------
+  - name: Remove missing data
+    checker:
+      classname: tsdat.qc.checkers.CheckMissing
+    handlers:
+      - classname: tsdat.qc.handlers.RemoveFailedValues
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          bit: 1
+          assessment: bad
+          meaning: "Value is equal to _FillValue or NaN"
+    apply_to:
+      - DATA_VARS
+
+  - name: Flag data below minimum failure threshold
+    checker:
+      classname: tsdat.qc.checkers.CheckFailMin
+    handlers:
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          bit: 2
+          assessment: bad
+          meaning: "Value is less than the fail_range."
+    apply_to:
+      - DATA_VARS
+
+  - name: Flag data above maximum failure threshold
+    checker:
+      classname: tsdat.qc.checkers.CheckFailMax
+    handlers:
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          bit: 3
+          assessment: bad
+          meaning: "Value is greater than the fail_range."
+    apply_to:
+      - DATA_VARS
+
+  - name: Flag data below minimum warning threshold
+    checker:
+      classname: tsdat.qc.checkers.CheckWarnMin
+    handlers:
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          bit: 4
+          assessment: indeterminate
+          meaning: "Value is less than the warn_range."
+    apply_to:
+      - DATA_VARS
+
+  - name: Flag data above maximum warning threshold
+    checker:
+      classname: tsdat.qc.checkers.CheckWarnMax
+    handlers:
+      - classname: tsdat.qc.handlers.RecordQualityResults
+        parameters:
+          bit: 5
+          assessment: indeterminate
+          meaning: "Value is greater than the warn_range."
+    apply_to:
+      - DATA_VARS
+
+  - name: Custom Quality Check and Corrections
+    checker:
+      classname: pipelines.{{ cookiecutter.module }}.qc.CustomQualityChecker
+      parameters: {}
+    handlers:
+      - classname: pipelines.{{ cookiecutter.module }}.qc.CustomQualityHandler
+        parameters: {}
+    apply_to:
+      # keyword for coordinate variables (e.g., 'time')
+      - COORDS
+      # keyword for all other variables
+      - DATA_VARS

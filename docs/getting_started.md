@@ -8,7 +8,21 @@ To get started developing a tsdat pipeline, we suggest following the steps below
 
 ## Choose a template
 
-The recommended way to set up a tsdat pipeline is to use a GitHub repository template. You can find a list of template
+To create a standalone pipeline repository from the installed tsdat package:
+
+```bash
+pip install tsdat
+tsdat init my-pipelines
+cd my-pipelines
+pip install -r requirements-dev.txt
+tsdat create-pipeline ingest  # or: tsdat create-pipeline vap
+```
+
+`tsdat init` creates a new project directory with a working example, runner, and
+pipeline templates. Run `pytest` to check the project; see its README for an example
+ingest command. Run `tsdat create-pipeline` from the project root to add pipelines.
+
+Alternatively, you can use a GitHub repository template. You can find a list of template
 repositories for tsdat [here](https://github.com/tsdat/template-repositories).
 
 The most used and most flexible template is the [Pipeline Template](https://github.com/tsdat/pipeline-template)
@@ -26,8 +40,8 @@ specified location with the template contents.
 
 ## Configure the Template
 
-Once you have created a new repository from the template, you can clone your repository to your local desktop and start
-developing. By default, the repository template comes pre-configured to run out-of-the-box on an example dataset.
+If you created the repository through GitHub, clone it to your local desktop to start
+developing. Locally initialized repositories are ready to use after installing dependencies. By default, the repository template comes pre-configured to run out-of-the-box on an example dataset.
 
 We recommend that reading through the template's README and examining the included example before starting to configure
 the template. The template README will include end-to-end instructions on how to customize the template and create your

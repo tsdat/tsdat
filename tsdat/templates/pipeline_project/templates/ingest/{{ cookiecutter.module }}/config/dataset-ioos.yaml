@@ -1,0 +1,111 @@
+# DEVELOPER: Add attrs and coords/variables to specify the output data structure
+
+attrs:
+  title: {{ cookiecutter.ingest_name }}
+  summary: {{ cookiecutter.ingest_description }}
+  location_id: {{ cookiecutter.location_id }}
+  dataset_name: {{ cookiecutter.module }}
+  data_level: {% if cookiecutter.use_custom_qc == "no" %}a1{% else %}b1{% endif %}
+  # qualifier: 
+  # temporal: 
+  # institution: 
+
+  Conventions: CF-1.6, ACDD-1.3, IOOS-1.2
+  keywords:
+  # keywords_vocabulary:
+  featureType: timeSeries
+  id:
+  infoUrl: 
+  naming_authority:
+  # source:
+  # processing_level:
+  # comment:
+  # acknowledgement:
+  license:
+  standard_name_vocabulary: https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html
+  # date_created:
+  # creator_name: 
+  creator_email:
+  creator_url:
+  creator_country: USA
+  # creator_state:
+  # creator_type:
+  creator_institution:
+  # creator_institution_url:
+  creator_sector: other
+  # contributor_name:
+  # contributor_role:
+  # contributor_role_vocabulary: https://vocab.nerc.ac.uk/collection/G04/current/
+  # contributor_url:
+  # institution:
+  # program:
+  # project:
+  # publisher_name:
+  publisher_email:
+  publisher_url:
+  publisher_country: USA
+  # publisher_state:
+  # publisher_type:
+  publisher_institution:
+  # geospatial_bounds:
+  # geospatial_bounds_crs:
+  # geospatial_bounds_vertical_crs:
+  # geospatial_lat_min:
+  # geospatial_lat_max:
+  # geospatial_lon_min:
+  # geospatial_lon_max:
+  # geospatial_vertical_min:
+  # geospatial_vertical_max:
+  # geospatial_vertical_positive:
+  # time_coverage_start:
+  # time_coverage_end:
+  # time_coverage_duration:
+  # time_coverage_resolution:
+  # geospatial_lat_units:
+  # geospatial_lat_resolution:
+  # geospatial_lon_units:
+  # geospatial_lon_resolution:
+  # geospatial_vertical_units:
+  # geospatial_vertical_resolution:
+  # date_modified:
+  # date_issued:
+  # date_metadata_modified:
+  # product_version:
+  platform:
+  platform_vocabulary: https://mmisw.org/ont/ioos/platform
+  # platform_id:
+  platform_name:
+  # WMO_platform_code:
+  # instrument:
+  # instrument_vocabulary: GCMD Instrument Keywords #https://gcmd.earthdata.nasa.gov/KeywordViewer/
+  # cdm_data_type:
+  # metadata_link:
+  # references:
+
+coords:
+  time:
+    dims: [time]
+    dtype: datetime64[ns]
+    attrs:
+      long_name: Time 
+      standard_name: time
+      units: Seconds since 1970-01-01 00:00:00 UTC 
+      cf_role: timeseries_id
+      coverage_content_type: coordinate
+      timezone: UTC
+
+data_vars:
+  example_var:
+    dims: [time]
+    dtype: float
+    attrs:
+      long_name:  Example Variable
+      units: m
+      coverage_content_type: physicalMeasurement
+      comment: Example data
+      accuracy: 0.005
+      precision: 0.005
+      resolution: 0.001
+      instrument: measuring tape
+      make_model: the best one 
+      calibration_date: 1970-01-01 
