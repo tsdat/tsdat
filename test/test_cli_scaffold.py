@@ -34,7 +34,6 @@ def test_init_copies_project_and_refuses_existing_destination(tmp_path, monkeypa
         "pipelines/example_pipeline/test/data/expected/morro.buoy_z06-waves.a1.20201201.000000.nc",
         "templates/ingest/cookiecutter.json",
         "templates/vap/cookiecutter.json",
-        ".vscode/.env",
         ".github/workflows/tests.yml",
         ".gitignore",
     ):
