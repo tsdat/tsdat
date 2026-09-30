@@ -6,8 +6,13 @@ from typing import Annotated
 
 import typer
 
+try:
+    from importlib.resources.abc import Traversable
+except ModuleNotFoundError:  # Python 3.10
+    from importlib.abc import Traversable
 
-def _copy_tree(source: resources.abc.Traversable, destination: Path) -> None:
+
+def _copy_tree(source: Traversable, destination: Path) -> None:
     for entry in source.iterdir():
         target = destination / entry.name
         if entry.is_dir():
