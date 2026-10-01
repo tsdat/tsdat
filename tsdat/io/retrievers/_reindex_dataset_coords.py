@@ -54,7 +54,6 @@ def _reindex_dataset_coords(
             dataset = dataset.expand_dims(dim=coord_name, axis=axis)
         dim = actual_dims[0] if ndims else coord_name
         if dim != expected_dim:
-            # TODO: fix warning message that appears here
-            dataset = dataset.swap_dims({dim: expected_dim})  # type: ignore
+            dataset = dataset.swap_dims({dim: expected_dim})
 
     return dataset

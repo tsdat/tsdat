@@ -87,6 +87,15 @@ class NetCDFWriter(FileWriter):
                     }
                 )
 
+            # Datetime64 values with nanosecond resolution can't be serialized faithfully
+            # to int64 with 'seconds since ...' units, so serialize as floating point
+            # instead of letting xarray fall back with a warning.
+            if (
+                dataset[variable_name].dtype.kind == "M"
+                and "dtype" not in encoding_dict[variable_name]
+            ):
+                encoding_dict[variable_name]["dtype"] = "float64"
+
         # Handle str dtypes: https://github.com/pydata/xarray/issues/2040
         if dataset[variable_name].dtype.kind == "U":
             encoding_dict[variable_name]["dtype"] = "str"

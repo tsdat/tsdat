@@ -38,6 +38,7 @@ class CheckMonotonic(QualityChecker):
             return inc
 
     parameters: Parameters = Parameters()
+    direction: Literal["increasing", "decreasing", ""] = ""
 
     def run(
         self,
@@ -73,16 +74,13 @@ class CheckMonotonic(QualityChecker):
         else:
             zero = 0
 
-        # TODO: `direction` would be better assigned as a class var on init than within a method.
-        direction: Literal["increasing", "decreasing", ""] = ""
-
         if self.parameters.require_decreasing:
-            direction = "decreasing"
+            self.direction = "decreasing"
         elif self.parameters.require_increasing:
-            direction = "increasing"
+            self.direction = "increasing"
         else:
             diff = np.diff(variable.data, axis=axis)  # type: ignore
-            direction = (
+            self.direction = (
                 "increasing"
                 if np.sum(diff > zero) >= np.sum(diff < zero)
                 else "decreasing"
@@ -93,7 +91,9 @@ class CheckMonotonic(QualityChecker):
         if len(variable.shape) == 1:
             prev = variable.values[0]
             for i, value in enumerate(variable.values[1:]):
-                success = value < prev if direction == "decreasing" else value > prev
+                success = (
+                    value < prev if self.direction == "decreasing" else value > prev
+                )
                 if success:
                     prev = value  # only update prev on success
                 else:
@@ -102,7 +102,7 @@ class CheckMonotonic(QualityChecker):
             # 2D diff isn't as clever with failing indexes; just report all individual
             # points that fail
             diff = np.gradient(variable.data)[axis]
-            failures = diff <= zero if direction == "increasing" else diff >= zero
+            failures = diff <= zero if self.direction == "increasing" else diff >= zero
 
         return failures
 

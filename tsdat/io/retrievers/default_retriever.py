@@ -1,7 +1,7 @@
 import logging
 from copy import deepcopy
 from typing import Any, Dict, List, Pattern, cast
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 import xarray as xr
 
 from ...config.dataset import DatasetConfig
@@ -27,6 +27,14 @@ class DefaultRetriever(Retriever):
         """Keyword arguments passed to xr.merge(). This is only relevant if multiple
         input keys are provided simultaneously, or if any registered DataReader objects
         could return a dataset mapping instead of a single dataset."""
+
+        @field_validator("merge_kwargs", mode="before")
+        @classmethod
+        def _merge_with_default_kwargs(cls, v: Any) -> Any:
+            # user-provided keys override defaults instead of replacing the whole dict
+            if isinstance(v, dict):
+                return {**cls.model_fields["merge_kwargs"].default, **v}
+            return v
 
         # IDEA: option to disable retrieval of input attrs
         # retain_global_attrs: bool = True
