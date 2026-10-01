@@ -11,10 +11,10 @@ instructions for running and testing your pipeline.
 ## Running your pipeline
 
 1. Navigate to the repository root from the terminal (i.e., 2 levels up from this file)
-2. Run `runner.py` and specify the transformation pipeline that should run:
+2. Run `tsdat vap` and specify the transformation pipeline that should run:
 
         ```shell
-        python runner.py vap pipelines/{{ cookiecutter.module }}/config/pipeline.yaml -b 20230324 -e 20230325
+        tsdat vap pipelines/{{ cookiecutter.module }}/config/pipeline.yaml -b 20230324 -e 20230325
         ```
 
 
@@ -51,8 +51,8 @@ time in the future:
     **why** something was done, as opposed to *how* it was done.
 
 
-3. You can run your code locally in by running the tests or by running the `runner.py` script 
-described in the sections above.  To debug your code in VS Code, you can use the `Debug Tests` launch
+3. You can run your code locally using the tests or the `tsdat vap` command
+described above.  To debug your code in VS Code, you can use the `Debug Tests` launch
 configuration that comes included with this template.  
 
     [Click here for more help with debugging in VS Code](https://code.visualstudio.com/docs/python/debugging?msclkid=0583222dc7dc11ecbd2da2b120e82795 'Learn VS Code')

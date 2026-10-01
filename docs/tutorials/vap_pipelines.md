@@ -85,7 +85,7 @@ We'll briefly go over the `spotter` ingest pipeline so we know what we're workin
 This ingest is built so that all raw Spotter files can be run from a single command:
 
 ```shell
-python runner.py ingest path/to/raw_spotter_files/*.CSV
+tsdat ingest path/to/raw_spotter_files/*.CSV
 ```
 
 This command will automatically go through all of the downloaded CSV files and pick out the relevant ones for the
@@ -152,7 +152,7 @@ time and an "end" time to span the time region of data we want to collate. For t
 a single day at the start of Aug, 2023 using this command:
 
 ```txt
-python runner.py vap pipelines/vap_gps/config/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
+tsdat vap pipelines/vap_gps/config/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
 ```
 
 Assuming you downloaded the raw data, updated the `dataset_xxx.yaml` files, and ran the ingest pipeline given the ingest
@@ -240,8 +240,8 @@ the storage area. Note that our "begin" timestamp is similar to the timestamp in
             1. Recall that the "begin" and "end" timestamps are set via the command line for VAPs:
 
                 ```txt hl_lines="3 4"
-                python runner.py vap \
-                    pipelines/vap_gps/pipeline.yaml \
+                tsdat vap \
+                    pipelines/vap_gps/config/pipeline.yaml \
                     --begin 20230801.000000 \
                     --end 20230802.000000
                 ```
@@ -261,7 +261,7 @@ the storage area. Note that our "begin" timestamp is similar to the timestamp in
             **HANDS-ON EXAMPLE:** Open up a new terminal and run the following command, if you haven't already:
 
             ```txt
-            python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
+            tsdat vap pipelines/vap_gps/config/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
             ```
 
             When the pipeline finishes, navigate to the :material-file: *`cpr.gps.b1.20230801.000000.timeseries.png`*
@@ -271,7 +271,7 @@ the storage area. Note that our "begin" timestamp is similar to the timestamp in
             Now, set `timepadding: 0`, open a terminal and run the vap again:
 
             ```txt
-            python runner.py vap pipelines/vap_gps/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
+            tsdat vap pipelines/vap_gps/config/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
             ```
 
             Check out the same .png file again. Note the X-axis and see that half the data is missing for the day.
@@ -734,7 +734,7 @@ class WaveCheckFactor(QualityChecker):
 Finally, this pipeline can be run by:
 
 ```txt
-python runner.py vap pipelines/vap_waves_raw/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
+tsdat vap pipelines/vap_waves_raw/config/pipeline.yaml --begin 20230801.000000 --end 20230802.000000
 ```
 
 ## VAP Pipeline fetching Multiple Datastreams
@@ -903,7 +903,7 @@ files small, this pipeline is built to collate data in larger segments. The foll
 for the month of August.
 
 ```bash
-python runner.py vap pipelines/vap_wave_stats/pipeline.yaml --begin 20230801.000000 --end 20230901.000000
+tsdat vap pipelines/vap_wave_stats/config/pipeline.yaml --begin 20230801.000000 --end 20230901.000000
 ```
 
 !!! tip "Running a slew of time periods locally on a VAP"
@@ -924,11 +924,11 @@ python runner.py vap pipelines/vap_wave_stats/pipeline.yaml --begin 20230801.000
     #export DISPLAY=:0
 
     # Run pipelines
-    python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230727.000000 --end 20230801.000000
-    python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230801.000000 --end 20230901.000000
-    python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230901.000000 --end 20231001.000000
-    python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20231001.000000 --end 20231101.000000
-    python runner.py vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20231101.000000 --end 20231105.000000
+    tsdat vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230727.000000 --end 20230801.000000
+    tsdat vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230801.000000 --end 20230901.000000
+    tsdat vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20230901.000000 --end 20231001.000000
+    tsdat vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20231001.000000 --end 20231101.000000
+    tsdat vap pipelines/<pipeline_name>/config/pipeline.yaml --begin 20231101.000000 --end 20231105.000000
 
     ```
 
@@ -1016,7 +1016,7 @@ time period you want to run. (You'll also need to add a comma to the end of the 
     "name": "Debug VAP",
     "type": "python",
     "request": "launch",
-    "program": "${workspaceFolder}/runner.py",
+    "module": "tsdat",
     "console": "integratedTerminal",
     "args": [
         "vap",

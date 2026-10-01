@@ -27,7 +27,7 @@
             "name": "Debug Ingest",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}//runner.py",
+            "module": "tsdat",
             "justMyCode": false,
             "console": "integratedTerminal",
             "args": [
@@ -39,7 +39,7 @@
             "name": "Debug VAP",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}//runner.py",
+            "module": "tsdat",
             "justMyCode": false,
             "console": "integratedTerminal",
             "args": [

@@ -18,7 +18,7 @@ pip install -r requirements-dev.txt
 tsdat create-pipeline ingest  # or: tsdat create-pipeline vap
 ```
 
-`tsdat init` creates a new project directory with a working example, runner, and
+`tsdat init` creates a new project directory with a working example and
 pipeline templates. Run `pytest` to check the project; see its README for an example
 ingest command. Run `tsdat create-pipeline` from the project root to add pipelines.
 
@@ -54,12 +54,18 @@ code customizations.
 
 ## Using the template
 
-Once tsdat is installed and your template is configured, you can use it to process data on your computer using the
-`runner.py` script included in the repository. To see the full list of options offered by this script run:
+Once tsdat is installed and your template is configured, run `tsdat ingest` or `tsdat vap`
+from the pipeline repository root to process data. To see the available commands, run:
 
 ```bash
-python runner.py --help
+tsdat --help
 ```
+
+`tsdat ingest FILE...` runs each matching pipeline once per file by default. Add
+`--clump` to run each pipeline once with all files matching its triggers; add
+`--multidispatch` to allow the same file to go to multiple matching pipelines.
+Unmatched files are skipped. `tsdat vap CONFIG --begin DATE --end DATE` runs a
+transformation pipeline for a date interval.
 
 For detailed examples of how to set up and use tsdat see [pipeline customization](./tutorials/pipeline_customization.md)
 and our other tutorials.
