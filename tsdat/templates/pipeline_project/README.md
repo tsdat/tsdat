@@ -12,7 +12,7 @@ easily via the template mechanism described below.
 
 The repository is made up of the following core pieces:
 
-- **`runner.py`**: Main entry point for running a pipeline.
+- **`tsdat ingest` / `tsdat vap`**: Installed commands for running pipelines.
 
 - **`pipelines/*`**: Collection of custom data pipelines using `tsdat`.
 
@@ -149,15 +149,15 @@ VS Code that will make it much easier to get started quickly.)*
 
 ## Processing Data
 
-The `runner.py` script is used to run both ingest and VAP pipelines from the command line to 
-process datafiles.
+From the repository root, use the installed `tsdat` command to run ingest and VAP
+pipelines. Install the project's requirements and activate its environment first.
 
 ### Ingest Pipelines
 
 - The lowest level pipelines that read in raw data are our ingest pipelines.
 They are run via the following command:
     ```shell
-    python runner.py ingest <path(s) to file(s) to process>
+    tsdat ingest <path(s) to file(s) to process>
     ```
     > The pipeline(s) used to process the data will depend on the specific patterns declared
     by the `pipeline.yaml` files in each pipeline module in this repository.
@@ -165,7 +165,7 @@ They are run via the following command:
 - You can run the example pipeline that comes bundled with this repository by running:
 
     ```shell
-    python runner.py ingest pipelines/example_pipeline/test/data/input/buoy.z06.00.20201201.000000.waves.csv
+    tsdat ingest pipelines/example_pipeline/test/data/input/buoy.z06.00.20201201.000000.waves.csv
     ```
 
     If goes successfully it should output some text, ending with the line:
@@ -174,17 +174,23 @@ They are run via the following command:
     Processing completed with 1 successes, 0 failures, and 0 skipped.
     ```
 
-- The `runner.py` script can optionally take a glob pattern in addition to a filepath. E.g.,
-to process all 'csv' files in some input folder `data/to/process/` you would run:
+- Your shell can expand a glob to pass multiple paths. For example, to process all CSV
+files in `data/to/process/` run:
 
     ```shell
-    python runner.py ingest data/to/process/*.csv
+    tsdat ingest data/to/process/*.csv
     ```
+
+  By default, each matching pipeline runs once for each file. Add `--clump` to
+  run each matching pipeline once with all files matching that pipeline; it does
+  not combine unrelated inputs into a single pipeline or guarantee a single
+  output file. Use `--multidispatch` if files should be processed by multiple
+  matching pipelines. Files with no matching trigger are skipped.
 
 - The `--help` option can be used to show additional usage information:
 
     ```shell
-    python runner.py ingest --help
+    tsdat ingest --help
     ```
 
 ### VAP Pipelines
@@ -195,13 +201,13 @@ to process all 'csv' files in some input folder `data/to/process/` you would run
 pipeline.yaml configuration file to use, as well as a start and end date:
 
     ```shell
-    python runner.py vap <pipeline/<pipeline-name>/config/pipeline.yaml> --begin yyyymmdd.HHMMSS --end yyyymmdd.HHMMSS
+    tsdat vap <pipeline/<pipeline-name>/config/pipeline.yaml> --begin yyyymmdd.HHMMSS --end yyyymmdd.HHMMSS
     ```
 
 - The --help option can also be used here if you get stuck:
 
     ```shell
-    python runner.py vap --help
+    tsdat vap --help
     ```
 
 ## Adding a new pipeline
@@ -237,7 +243,7 @@ accessed on the left-hand toolbar or ctrl-shift-d.
         "name": "Debug Ingest",
         "type": "debugpy",
         "request": "launch",
-        "program": "${workspaceFolder}//runner.py",
+        "module": "tsdat",
         "justMyCode": false,
         "console": "integratedTerminal",
         "args": [
@@ -254,7 +260,7 @@ accessed on the left-hand toolbar or ctrl-shift-d.
         "name": "Debug VAP",
         "type": "debugpy",
         "request": "launch",
-        "program": "${workspaceFolder}//runner.py",
+        "module": "tsdat",
         "justMyCode": false,
         "console": "integratedTerminal",
         "args": [

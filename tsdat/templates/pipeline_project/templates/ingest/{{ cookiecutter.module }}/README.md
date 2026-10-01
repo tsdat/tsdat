@@ -22,12 +22,12 @@ the template prompt.
 1. Make sure to be at your $REPOSITORY_ROOT. (i.e., where you cloned the pipeline-template repository)
 
 
-2. Run the runner.py with your test data input file as shown below:
+2. Run `tsdat ingest` with your test data input file as shown below:
 
 ```bash
 cd $REPOSITORY_ROOT
 conda activate tsdat-pipelines # <-- you only need to do this the first time you start a terminal shell
-python runner.py ingest pipelines/{ingest-name}/test/data/input/{location}_data.csv
+tsdat ingest pipelines/{ingest-name}/test/data/input/{location}_data.csv
 ```
 
 ## Test data
@@ -72,8 +72,8 @@ time in the future:
     **why** something was done, as opposed to *how* it was done.
 
 
-3. You can run your code locally in by running the tests or by running the `runner.py` script 
-described in the sections above.  To debug your code in VS Code, you can use the `Debug Tests` launch
+3. You can run your code locally using the tests or the `tsdat ingest` command
+described above.  To debug your code in VS Code, you can use the `Debug Tests` launch
 configuration that comes included with this template.  
 
     [Click here for more help with debugging in VS Code](https://code.visualstudio.com/docs/python/debugging?msclkid=0583222dc7dc11ecbd2da2b120e82795 'Learn VS Code')
