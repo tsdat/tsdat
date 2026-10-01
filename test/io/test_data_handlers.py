@@ -149,6 +149,7 @@ def test_split_netcdf_writer(sample_dataset_w_time: xr.Dataset):
     assert filelist == [
         "test_writer.20220324.214300.nc",
         "test_writer.20220324.214400.nc",
+        "test_writer.20220324.214500.nc",
     ]
 
     tmp_dir.cleanup()
@@ -177,6 +178,54 @@ def test_split_netcdf_writer_skips_empty_intervals(sample_dataset_w_time: xr.Dat
     assert "test_writer.20220324.214400.nc" not in filelist
 
     tmp_dir.cleanup()
+
+
+def test_split_netcdf_writer_includes_singleton_and_boundary(tmp_path: Path):
+    writer = SplitNetCDFWriter(
+        parameters=SplitNetCDFWriter.Parameters(time_interval=1, time_unit="D")
+    )
+    dataset = xr.Dataset(
+        {"value": ("time", [1, 2])},
+        coords={"time": pd.to_datetime(["2022-04-05", "2022-04-06"])},
+        attrs={"datastream": "test_writer"},
+    )
+    writer.write(dataset, tmp_path / "output.nc")
+    outputs = sorted(tmp_path.glob("*.nc"))
+    assert len(outputs) == 2
+    assert [xr.open_dataset(path)["value"].values.item() for path in outputs] == [1, 2]
+
+    for path in outputs:
+        path.unlink()
+    writer.write(dataset.isel(time=slice(0, 1)), tmp_path / "output.nc")
+    assert len(list(tmp_path.glob("*.nc"))) == 1
+
+
+@pytest.mark.parametrize("interval, unit", [(0, "D"), (-1, "D"), (1, "bad")])
+def test_split_netcdf_writer_rejects_invalid_intervals(interval: int, unit: str):
+    with pytest.raises(ValueError):
+        SplitNetCDFWriter.Parameters(time_interval=interval, time_unit=unit)
+
+
+@pytest.mark.parametrize("writer_class", [NetCDFWriter, SplitNetCDFWriter, ZarrWriter])
+def test_writer_preserves_input_encoding(writer_class, tmp_path: Path):
+    dataset = xr.Dataset(
+        {"value": ("time", [1.0])},
+        coords={"time": pd.to_datetime(["2022-04-05"])},
+        attrs={"datastream": "test_writer"},
+    )
+    if writer_class is ZarrWriter:
+        dataset["value"].encoding["chunks"] = (1,)
+    else:
+        dataset["value"].encoding["chunksizes"] = (1,)
+        dataset["value"].encoding["contiguous"] = True
+    expected = {
+        name: variable.encoding.copy() for name, variable in dataset.variables.items()
+    }
+    writer = writer_class()
+    writer.write(dataset, tmp_path / f"output.{writer.file_extension}")
+    assert {
+        name: variable.encoding for name, variable in dataset.variables.items()
+    } == expected
 
 
 def test_csv_writer(sample_2D_dataset: xr.Dataset):

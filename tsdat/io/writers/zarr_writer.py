@@ -30,7 +30,7 @@ class ZarrWriter(FileWriter):
         encoding_dict: Dict[str, Dict[str, Any]] = {}
         for variable_name in cast(Iterable[str], dataset.variables):
             # Prevent Xarray from setting 'nan' as the default _FillValue
-            encoding_dict[variable_name] = dataset[variable_name].encoding  # type: ignore
+            encoding_dict[variable_name] = dataset[variable_name].encoding.copy()  # type: ignore
             if (
                 "_FillValue" not in encoding_dict[variable_name]
                 and "_FillValue" not in dataset[variable_name].attrs
