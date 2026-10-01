@@ -192,6 +192,10 @@ class FileSystem(Storage):
         """-----------------------------------------------------------------------------
         Fetches data for a given datastream between a specified time range.
 
+        Reads files starting in the range and the immediately preceding file. Data in
+        older files spanning past that predecessor cannot be found without an index of
+        file end times.
+
         Args:
             start (datetime): The minimum datetime to fetch.
             end (datetime): The maximum datetime to fetch.
@@ -260,7 +264,9 @@ class FileSystem(Storage):
     def _filter_between_dates(
         self, filepaths: Iterable[Path], start: datetime, end: datetime
     ) -> List[Path]:
-        valid_filepaths: List[Path] = []
+        in_range: List[Path] = []
+        predecessor: List[Path] = []
+        predecessor_date: datetime | None = None
         filename_template = Template(self.parameters.data_filename_template)
         for filepath in filepaths:
             if filename_template.extract_substitutions(filepath.name) is None:
@@ -268,9 +274,15 @@ class FileSystem(Storage):
             file_date = get_file_datetime(
                 filepath.name, self.parameters.data_filename_template
             )
-            if file_date <= end:
-                valid_filepaths.append(filepath)
-        return valid_filepaths
+            if start <= file_date <= end:
+                in_range.append(filepath)
+            elif file_date < start:
+                if predecessor_date is None or file_date > predecessor_date:
+                    predecessor_date = file_date
+                    predecessor = [filepath]
+                elif file_date == predecessor_date:
+                    predecessor.append(filepath)
+        return predecessor + in_range
 
     def _open_data_files(
         self, *filepaths: Path, start: datetime, end: datetime

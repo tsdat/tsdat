@@ -65,10 +65,11 @@ handler:
 
 ### Fetching a time range
 
-`FileSystem` and `FileSystemS3` retrieve files that begin before the requested end time, then read and select the samples
-in the requested inclusive range. A file starting before the requested start may still contain matching samples. Because
-filenames contain only the file's start time, a fetch may need to inspect older files in the datastream; for large
-archives, consider keeping each file's time span short.
+`FileSystem` and `FileSystemS3` read files whose filename timestamps fall in the requested inclusive range, plus the
+immediately preceding file (or files sharing its timestamp). They then select samples in the requested range. This
+handles a file spanning the request start without opening every historical file. Because filenames record start times
+only, an older file that spans the request but starts before a newer predecessor will not be found. Keep file spans
+short or provide a custom storage implementation with an end-time index when arbitrary overlaps are required.
 
 ### S3 bucket setup
 

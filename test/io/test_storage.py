@@ -336,6 +336,54 @@ def test_fetch_overlapping_previous_day(
 
 
 @pytest.mark.parametrize("storage_fixture", ["file_storage", "s3_storage"])
+def test_fetch_only_reads_immediate_predecessor(
+    storage_fixture: str, request: pytest.FixtureRequest, sample_dataset: xr.Dataset
+):
+    storage: FileSystem = request.getfixturevalue(storage_fixture)
+    storage.parameters.data_storage_path /= "{year}/{month}/{day}"
+    for day in (1, 2, 3, 4):
+        dataset = sample_dataset.assign_coords(
+            time=pd.to_datetime(
+                [
+                    f"2022-04-{day:02d} 23:00",
+                    f"2022-04-{day + 1:02d} 00:00",
+                    f"2022-04-{day + 1:02d} 01:00",
+                ]
+            )
+        )
+        dataset["temperature"] = ("time", [day, day + 10, day + 20])
+        storage.save_data(dataset)
+
+    with patch.object(
+        type(storage), "_open_data_files", wraps=storage._open_data_files
+    ) as open_files:
+        result = storage.fetch_data(
+            datetime(2022, 4, 5),
+            datetime(2022, 4, 5, 1),
+            sample_dataset.attrs["datastream"],
+            metadata_kwargs={"location_id": "sgp"},
+        )
+        assert result.temperature.values.tolist() == [14, 24]
+        opened = open_files.call_args.args
+        assert len(opened) == 1
+        assert "20220404" in opened[0].name
+
+    with patch.object(
+        type(storage), "_open_data_files", wraps=storage._open_data_files
+    ) as open_files:
+        result = storage.fetch_data(
+            datetime(2022, 4, 3),
+            datetime(2022, 4, 4, 1),
+            sample_dataset.attrs["datastream"],
+            metadata_kwargs={"location_id": "sgp"},
+        )
+        assert result.temperature.values.tolist() == [12, 22, 3, 13, 23]
+        opened = open_files.call_args.args
+        assert len(opened) == 2
+        assert all("20220401" not in path.name for path in opened)
+
+
+@pytest.mark.parametrize("storage_fixture", ["file_storage", "s3_storage"])
 def test_ancillary_target_required(
     storage_fixture: str, request: pytest.FixtureRequest
 ):
