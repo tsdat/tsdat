@@ -5,7 +5,9 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
+import botocore.exceptions
 import moto
 import numpy as np
 import pandas as pd
@@ -109,6 +111,7 @@ def s3_storage(aws_credentials: Any):
                 "bucket": "tsdat-core",
                 "storage_root": storage_root,
                 "region": "us-east-1",
+                "create_bucket": True,
             },  # type: ignore
         )
     )
@@ -311,6 +314,93 @@ def test_storage_saves_ancillary_files(
     else:
         assert expected_filepath.exists()
         os.remove(expected_filepath)
+
+
+@pytest.mark.parametrize("storage_fixture", ["file_storage", "s3_storage"])
+def test_fetch_overlapping_previous_day(
+    storage_fixture: str, request: pytest.FixtureRequest, sample_dataset: xr.Dataset
+):
+    storage: FileSystem = request.getfixturevalue(storage_fixture)
+    storage.parameters.data_storage_path /= "{year}/{month}/{day}"
+    sample_dataset["time"] = pd.to_datetime(
+        ["2022-04-05 23:00", "2022-04-06 00:00", "2022-04-06 01:00"]
+    )
+    storage.save_data(sample_dataset)
+    result = storage.fetch_data(
+        datetime(2022, 4, 6),
+        datetime(2022, 4, 6, 1),
+        sample_dataset.attrs["datastream"],
+        metadata_kwargs={"location_id": "sgp"},
+    )
+    assert result.temperature.values.tolist() == [71.2, 71.1]
+
+
+@pytest.mark.parametrize("storage_fixture", ["file_storage", "s3_storage"])
+def test_ancillary_target_required(
+    storage_fixture: str, request: pytest.FixtureRequest
+):
+    storage: Storage = request.getfixturevalue(storage_fixture)
+    with pytest.raises(ValueError, match="target_path is required"):
+        storage.save_ancillary_file(Path("plot.png"))
+
+
+@pytest.mark.parametrize("failure", ["body", "upload"])
+def test_uploadable_dir_cleans_up_on_failure(file_storage: FileSystem, failure: str):
+    if failure == "upload":
+        context = patch.object(
+            FileSystem, "save_ancillary_file", side_effect=OSError("upload failed")
+        )
+    else:
+        context = patch.object(FileSystem, "save_ancillary_file")
+    with context:
+        with pytest.raises(OSError, match="failed"):
+            with file_storage.uploadable_dir() as tmp_dir:
+                (tmp_dir / "plot.png").write_text("plot")
+                if failure == "body":
+                    raise OSError("body failed")
+    assert not tmp_dir.exists()
+
+
+@pytest.mark.parametrize("region", ["us-east-1", "us-west-2"])
+def test_s3_bucket_creation_requires_opt_in(aws_credentials: Any, region: str):
+    with moto.mock_aws():
+        params = dict(bucket=f"tsdat-test-{region}", region=region)
+        with pytest.raises(ValueError, match="create_bucket=true"):
+            FileSystemS3(parameters=FileSystemS3.Parameters(**params))
+        storage = FileSystemS3(
+            parameters=FileSystemS3.Parameters(**params, create_bucket=True)
+        )
+        assert storage._bucket.name == params["bucket"]
+        assert storage._bucket.meta.client.get_bucket_location(Bucket=params["bucket"])[
+            "LocationConstraint"
+        ] == (None if region == "us-east-1" else region)
+
+
+def test_s3_bucket_access_denied_does_not_create(aws_credentials: Any):
+    with moto.mock_aws():
+        error = botocore.exceptions.ClientError(
+            {"Error": {"Code": "403", "Message": "Access Denied"}}, "HeadBucket"
+        )
+        original = FileSystemS3._get_session
+        session = original(region="us-east-1")
+        session.client("sts").get_caller_identity()
+        make_call = botocore.client.BaseClient._make_api_call
+
+        def deny_head_bucket(client, operation_name, params):
+            if operation_name == "HeadBucket":
+                raise error
+            return make_call(client, operation_name, params)
+
+        with (
+            patch.object(FileSystemS3, "_get_session", return_value=session),
+            patch(
+                "botocore.client.BaseClient._make_api_call",
+                autospec=True,
+                side_effect=deny_head_bucket,
+            ),
+        ):
+            with pytest.raises(botocore.exceptions.ClientError):
+                FileSystemS3(parameters=FileSystemS3.Parameters(create_bucket=True))
 
 
 def test_last_modified_zarr(

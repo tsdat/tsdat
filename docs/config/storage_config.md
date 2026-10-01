@@ -21,6 +21,7 @@ Currently there are three storage classes provided out of the box:
 These are all file-based storage classes. For the `FileSystem` and `FileSystemS3` classes, users can specify the output
 file format via the `handler` classname parameter of the storage config file, although the default `NetCDFHandler` is
 recommended for most applications. For `ZarrLocalStorage` the default is `ZarrHandler` and should not be changed.
+Directory-based Zarr storage is not supported by `FileSystemS3`; use `ZarrLocalStorage` for local Zarr archives.
 
 Each of these file-based storage classes allow configuration of where output files should be saved. This includes both
 ancillary files (such as plots, reference files that may be created during processing, etc) and the data files produced
@@ -62,9 +63,22 @@ handler:
     classname: tsdat.NetCDFHandler
 ```
 
-!!! note
-    The FileSystemS3 class is meant to work with the AWS Pipeline Template which is currently being refactored and will
-    be included in a subsequent release by mid-late 2023.
+### Fetching a time range
+
+`FileSystem` and `FileSystemS3` retrieve files that begin before the requested end time, then read and select the samples
+in the requested inclusive range. A file starting before the requested start may still contain matching samples. Because
+filenames contain only the file's start time, a fetch may need to inspect older files in the datastream; for large
+archives, consider keeping each file's time span short.
+
+### S3 bucket setup
+
+`FileSystemS3` checks for an existing bucket during initialization. Bucket creation is disabled by default: missing
+buckets raise an error rather than being created as a side effect. Set `parameters.create_bucket: true` to create a
+missing bucket explicitly (requires AWS permissions). Access-denied and other AWS errors are not treated as missing
+buckets. Buckets created outside `us-east-1` use the configured `region` as their location constraint.
+
+Ancillary files made with `storage.uploadable_dir()` are uploaded on normal exit and the temporary directory is removed
+even if plotting or uploading raises an exception.
 
 !!! note
     To implement custom storage, such as storing in a database, you must extend the `tsdat.Storage` base class.
