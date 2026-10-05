@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import xarray as xr
 
@@ -10,6 +11,8 @@ from ._perform_bin_average_qc_checks import perform_bin_average_qc_checks
 from ._reshape_weights import reshape_weights
 from ._weighted_average import _weighted_average
 from ._weighted_std import _weighted_std
+
+logger = logging.getLogger(__name__)
 
 
 def calculate_bin_average(
@@ -48,10 +51,14 @@ def calculate_bin_average(
         add_transform_qc=True,
         add_metric_vars=add_metrics,
     )
-    # TODO: should warn if the bounds if not present and create center-aligned bounds.
+
     if f"{coord_name}_bounds" in input_dataset:
         input_coord_bounds = input_dataset[f"{coord_name}_bounds"].values
     else:
+        logger.warning(
+            f"Bounds for coordinate {coord_name} were not specified. Creating"
+            "center-aligned bounds"
+        )
         input_coord_bounds = create_bounds_from_labels(
             input_dataset[coord_name].values, alignment="center"
         )
