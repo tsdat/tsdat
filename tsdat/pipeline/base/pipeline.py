@@ -80,9 +80,6 @@ class Pipeline(ParameterizedClass, ABC):
         dataset = self._add_dataset_attrs(dataset, output_vars)
         # TODO: reorder dataset coords / data vars to match the order in the config file
 
-        # BUG: can't carry through old QC variables
-        dataset = self._force_drop_qc(dataset)
-
         return dataset
 
     def _add_dataset_variables(
@@ -141,10 +138,4 @@ class Pipeline(ParameterizedClass, ABC):
             f"Created by {getuser()} at {datetime.now().isoformat()} using "
             f"tsdat v{get_version()}"
         )
-        return dataset
-
-    def _force_drop_qc(self, dataset: xr.Dataset) -> xr.Dataset:
-        """Drop QC variables since act-atmos isn't smart enough to see repeated tests"""
-        qc_vars = [v for v in dataset.data_vars if "qc_" in v]
-        dataset = dataset.drop_vars(qc_vars)
         return dataset
