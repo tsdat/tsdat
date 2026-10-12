@@ -24,13 +24,13 @@ def test_init_prompts_for_destination(tmp_path, monkeypatch):
     result = runner.invoke(app, ["init"], input="prompted-project\n")
     assert result.exit_code == 0, result.output
     assert "Where should the new pipeline repository be created?" in result.output
-    assert (tmp_path / "prompted-project" / "runner.py").is_file()
+    assert not (tmp_path / "prompted-project" / "runner.py").exists()
 
 
 def test_init_copies_project_and_refuses_existing_destination(tmp_path, monkeypatch):
     project = init_project(tmp_path, monkeypatch)
     for name in (
-        "runner.py",
+        "pipelines/example_pipeline/config/pipeline.yaml",
         "pipelines/example_pipeline/test/data/expected/morro.buoy_z06-waves.a1.20201201.000000.nc",
         "templates/ingest/cookiecutter.json",
         "templates/vap/cookiecutter.json",
@@ -38,6 +38,9 @@ def test_init_copies_project_and_refuses_existing_destination(tmp_path, monkeypa
         ".gitignore",
     ):
         assert (project / name).is_file(), name
+    assert not (project / "runner.py").exists()
+    assert not (project / "utils/registry.py").exists()
+    assert (project / "utils/utils.py").is_file()
     marker = project / "marker"
     marker.write_text("preserve")
     result = runner.invoke(app, ["init", "project"])
@@ -148,4 +151,7 @@ def test_cli_works_outside_source_tree(tmp_path):
         check=False,
     )
     assert result.returncode == 0, result.stderr
-    assert (tmp_path / "example" / "runner.py").is_file()
+    assert not (tmp_path / "example" / "runner.py").exists()
+    assert (
+        tmp_path / "example" / "pipelines/example_pipeline/config/pipeline.yaml"
+    ).is_file()

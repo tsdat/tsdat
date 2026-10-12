@@ -131,26 +131,24 @@ A few quick things on VSCode: in the left-hand toolbar, we will use the `Explore
 icons in this tutorial. Also useful to know are the commands ++ctrl+grave++ (toggle the terminal on/off) and
 ++ctrl+shift+p++ (open command search bar).
 
-Navigate to the `runner.py` file and run
+From the pipeline repository root, run
 
 ```bash
-python runner.py ingest pipelines/example_pipeline/test/data/input/buoy.z06.00.20201201.000000.waves.csv
+tsdat ingest pipelines/example_pipeline/test/data/input/buoy.z06.00.20201201.000000.waves.csv
 ```
 
 This will run the example pipeline provided in the `pipelines/` folder in the template. All pipelines that we create are
 stored in the `pipelines/` folder and are run using
 
 ```bash
-python runner.py ingest <path_to_data>
+tsdat ingest <path_to_data>
 ```
 
-Additional options for the runner can be queried by running:
+Additional ingest options can be queried by running:
 
 ```bash
-python runner.py ingest --help
+tsdat ingest --help
 ```
-
-![runner.py screenshot](global_marine_data/intro4.png)
 
 After the code runs, notice that a new `storage/` folder is created with the following contents:
 
@@ -679,10 +677,10 @@ class NceiArcticCruiseExample(IngestPipeline):
 
 ## Running the Pipeline
 
-We can now re-run the pipeline using the `runner.py` file as before with:
+We can now re-run the pipeline using `tsdat ingest` as before:
 
 ```bash
-python runner.py pipelines/ncei_arctic_cruise_example/data/arctic_ocean.sample_data.csv
+tsdat ingest pipelines/ncei_arctic_cruise_example/data/arctic_ocean.sample_data.csv
 ```
 
 Which will run with the same output as before:

@@ -340,7 +340,7 @@ Next, we want to copy the data to this pipeline and rename it to match the regex
 Finally we can run this pipeline. Open a terminal (++ctrl+backslash++) and run
 
 ```bash
-python runner.py ingest pipelines/custom_pipeline_tutorial/test/data/input/custom.sample_data.csv
+tsdat ingest pipelines/custom_pipeline_tutorial/test/data/input/custom.sample_data.csv
 ```
 
 ![output from running ingest script](custom/custom11.png)
