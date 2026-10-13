@@ -156,7 +156,9 @@ class FileSystem(Storage):
                 path.
             target_path (str): The path to where the data should be saved.
         -----------------------------------------------------------------------------"""
-        target_path.parent.mkdir(exist_ok=True, parents=True)  # type: ignore
+        if target_path is None:
+            raise ValueError("target_path is required to save an ancillary file")
+        target_path.parent.mkdir(exist_ok=True, parents=True)
         saved_filepath = shutil.copy2(filepath, target_path)
         logger.info("Saved ancillary file to: %s", saved_filepath)
 
@@ -190,6 +192,10 @@ class FileSystem(Storage):
         """-----------------------------------------------------------------------------
         Fetches data for a given datastream between a specified time range.
 
+        Reads files starting in the range and the immediately preceding file. Data in
+        older files spanning past that predecessor cannot be found without an index of
+        file end times.
+
         Args:
             start (datetime): The minimum datetime to fetch.
             end (datetime): The maximum datetime to fetch.
@@ -206,7 +212,7 @@ class FileSystem(Storage):
         data_files = self._find_data(
             start, end, datastream, metadata_kwargs=metadata_kwargs
         )
-        datasets = self._open_data_files(*sorted(data_files))
+        datasets = self._open_data_files(*sorted(data_files), start=start, end=end)
         dataset = xr.Dataset()
         if len(datasets) == 0:
             logger.warning(
@@ -234,7 +240,7 @@ class FileSystem(Storage):
         **kwargs: Any,
     ) -> List[Path]:
         substitutions = self._get_substitutions(
-            datastream=datastream, time_range=(start, end), extra=metadata_kwargs
+            datastream=datastream, extra=metadata_kwargs
         )
         filepath_glob = self.data_filepath_template.substitute(
             substitutions, allow_missing=True, fill="*"
@@ -258,22 +264,38 @@ class FileSystem(Storage):
     def _filter_between_dates(
         self, filepaths: Iterable[Path], start: datetime, end: datetime
     ) -> List[Path]:
-        valid_filepaths: List[Path] = []
+        in_range: List[Path] = []
+        predecessor: List[Path] = []
+        predecessor_date: datetime | None = None
+        filename_template = Template(self.parameters.data_filename_template)
         for filepath in filepaths:
+            if filename_template.extract_substitutions(filepath.name) is None:
+                continue
             file_date = get_file_datetime(
                 filepath.name, self.parameters.data_filename_template
             )
             if start <= file_date <= end:
-                valid_filepaths.append(filepath)
-        return valid_filepaths
+                in_range.append(filepath)
+            elif file_date < start:
+                if predecessor_date is None or file_date > predecessor_date:
+                    predecessor_date = file_date
+                    predecessor = [filepath]
+                elif file_date == predecessor_date:
+                    predecessor.append(filepath)
+        return predecessor + in_range
 
-    def _open_data_files(self, *filepaths: Path) -> List[xr.Dataset]:
+    def _open_data_files(
+        self, *filepaths: Path, start: datetime, end: datetime
+    ) -> List[xr.Dataset]:
         dataset_list: List[xr.Dataset] = []
         for filepath in filepaths:
             data = self.handler.reader.read(filepath.as_posix())
             if isinstance(data, dict):
                 data = xr.merge(data.values(), join="outer", compat="no_conflicts")  # type: ignore
-            dataset_list.append(data)
+            selected = data.sel(time=slice(start, end))
+            if selected.sizes.get("time", 0):
+                dataset_list.append(selected.load())
+            data.close()
         return dataset_list
 
     def _get_substitutions(

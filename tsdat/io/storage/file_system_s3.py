@@ -52,6 +52,9 @@ class FileSystemS3(FileSystem):
 
         Defaults to ``us-west-2``."""
 
+        create_bucket: bool = False
+        """Create a missing bucket when explicitly enabled; otherwise require it to exist."""
+
         @field_validator("storage_root")
         @classmethod
         def _ensure_storage_root_exists(cls, storage_root: Path) -> Path:
@@ -90,9 +93,22 @@ class FileSystemS3(FileSystem):
         s3 = session.resource("s3", region_name=parameters.region)  # type: ignore
         try:
             s3.meta.client.head_bucket(Bucket=parameters.bucket)
-        except botocore.exceptions.ClientError:
-            logger.warning("Creating bucket '%s'.", parameters.bucket)
-            s3.create_bucket(Bucket=parameters.bucket)
+        except botocore.exceptions.ClientError as error:
+            code = error.response.get("Error", {}).get("Code")
+            if code not in {"404", "NoSuchBucket", "NotFound"}:
+                raise
+            if not parameters.create_bucket:
+                raise ValueError(
+                    f"S3 bucket '{parameters.bucket}' does not exist; "
+                    "set create_bucket=true to create it"
+                ) from error
+            logger.info("Creating bucket '%s'.", parameters.bucket)
+            options: dict[str, Any] = {"Bucket": parameters.bucket}
+            if parameters.region != "us-east-1":
+                options["CreateBucketConfiguration"] = {
+                    "LocationConstraint": parameters.region
+                }
+            s3.create_bucket(**options)
         return parameters
 
     @property
@@ -195,7 +211,7 @@ class FileSystemS3(FileSystem):
 
         return matches
 
-    def save_ancillary_file(self, filepath: Path, target_path: Path):
+    def save_ancillary_file(self, filepath: Path, target_path: Path | None = None):
         """-----------------------------------------------------------------------------
         Saves an ancillary filepath to the datastream's ancillary storage area.
 
@@ -208,6 +224,8 @@ class FileSystemS3(FileSystem):
                 path.
             target_path (str): The path to where the data should be saved.
         -----------------------------------------------------------------------------"""
+        if target_path is None:
+            raise ValueError("target_path is required to save an ancillary file")
         self._bucket.upload_file(Filename=str(filepath), Key=target_path.as_posix())
         logger.info("Saved ancillary file to: %s", target_path.as_posix())
 
@@ -245,7 +263,7 @@ class FileSystemS3(FileSystem):
         **kwargs: Any,
     ) -> List[Path]:
         substitutions = self._get_substitutions(
-            datastream=datastream, time_range=(start, end), extra=metadata_kwargs
+            datastream=datastream, extra=metadata_kwargs
         )
         filepath_glob = self.data_filepath_template.substitute(
             substitutions, allow_missing=True, fill=".*"
@@ -254,7 +272,9 @@ class FileSystemS3(FileSystem):
         paths = [Path(obj.key) for obj in matches]
         return self._filter_between_dates(paths, start, end)
 
-    def _open_data_files(self, *filepaths: Path) -> List[xr.Dataset]:
+    def _open_data_files(
+        self, *filepaths: Path, start: datetime, end: datetime
+    ) -> List[xr.Dataset]:
         dataset_list: List[xr.Dataset] = []
         with tempfile.TemporaryDirectory() as tmp_dir:
             for s3_filepath in filepaths:
@@ -266,8 +286,10 @@ class FileSystemS3(FileSystem):
                 data = self.handler.reader.read(tmp_filepath)
                 if isinstance(data, dict):
                     data = xr.merge(data.values(), join="outer", compat="no_conflicts")
-                data = data.load()
-                dataset_list.append(data)
+                selected = data.sel(time=slice(start, end))
+                if selected.sizes.get("time", 0):
+                    dataset_list.append(selected.load())
+                data.close()
         return dataset_list
 
     def _exists(self, key: Union[Path, str]) -> bool:

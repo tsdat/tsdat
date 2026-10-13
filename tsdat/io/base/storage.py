@@ -279,24 +279,16 @@ class Storage(ParameterizedClass, ABC):
         Yields:
             Path: A temporary directory where files can be saved.
         """
-        tmp_dir = tempfile.TemporaryDirectory()
-        tmp_dirpath = Path(tmp_dir.name)
+        with tempfile.TemporaryDirectory() as directory:
+            tmp_dirpath = Path(directory)
+            yield tmp_dirpath
 
-        yield tmp_dirpath
-
-        for path in tmp_dirpath.glob("**/*"):
-            if path.is_file():
-                # Users are expected to call self.get_ancillary_filename() with
-                # root_dir=tmp_dir (yield value from this function) or save files to
-                # tmp_dir / filename (using root_dir=None, the default, for
-                # get_ancillary_filename()).
-                #
-                # With these assumptions, we can get the target filepath by replacing
-                # tmp_dir with self.parameters.storage_root
-                target = self.parameters.storage_root / path.relative_to(tmp_dirpath)
-                self.save_ancillary_file(path, target_path=target)
-
-        tmp_dir.cleanup()
+            for path in tmp_dirpath.rglob("*"):
+                if path.is_file():
+                    target = self.parameters.storage_root / path.relative_to(
+                        tmp_dirpath
+                    )
+                    self.save_ancillary_file(path, target_path=target)
 
     def _get_substitutions(
         self,
