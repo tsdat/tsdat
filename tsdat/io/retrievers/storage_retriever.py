@@ -27,7 +27,6 @@ class StorageRetriever(Retriever):
 
     parameters: Optional[TransParameters] = None
 
-    # TODO: `input_data_hook` is not included in docstring.
     def retrieve(
         self,
         input_keys: List[str],
@@ -62,6 +61,8 @@ class StorageRetriever(Retriever):
             input_keys (List[str]): A list of input keys formatted as described above.
             dataset_config (DatasetConfig): The output dataset configuration.
             storage (Storage): Instance of a Storage class used to fetch saved data.
+            input_data_hook (Callable[dict, dict]): function hook operating on datasets
+            immediately after they are retrieved from storage.
 
         Returns:
             xr.Dataset: The retrieved dataset
@@ -160,8 +161,8 @@ class StorageRetriever(Retriever):
 
         return retrieved_dataset
 
-    # TODO: Seems like a static method here, should refactor into as such.
-    def _get_timedelta(self, time_string):
+    @staticmethod
+    def _get_timedelta(time_string):
         if time_string.replace(".", "").isnumeric():
             return pd.Timedelta(float(time_string), "s")
         else:
@@ -197,9 +198,9 @@ class StorageRetriever(Retriever):
             input_data[key.input_key] = retrieved_dataset
         return input_data
 
-    # TODO: Seems like a static method here, should refactor into as such.
+    @staticmethod
     def __trim_dataset(
-        self, dataset: xr.Dataset, input_keys: List[StorageRetrieverInput]
+        dataset: xr.Dataset, input_keys: List[StorageRetrieverInput]
     ) -> xr.Dataset:
         # Trim dataset to original start and end keys
         # Start and end keys don't change between inputs

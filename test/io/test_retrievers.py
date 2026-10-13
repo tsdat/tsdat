@@ -22,8 +22,8 @@ from tsdat import (
 from tsdat.transform.converters import _ADIBaseTransformer
 
 # Coords used in sample input data
-time_3pt = pd.date_range("2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left")  # type: ignore
-time_10pt = pd.date_range("2022-04-05", "2022-04-06", periods=10 + 1, inclusive="left")  # type: ignore
+time_3pt = pd.date_range("2022-04-05", "2022-04-06", periods=3 + 1, inclusive="left")
+time_10pt = pd.date_range("2022-04-05", "2022-04-06", periods=10 + 1, inclusive="left")
 
 height_3pt = [0.0, 5.0, 10.0]
 height_4pt = [1.0, 4.0, 11.0, 17.0]
@@ -114,6 +114,11 @@ def test_storage_retriever_input_key():
     with pytest.raises(ValueError):
         StorageRetrieverInput(key)
 
+    # end date before start date
+    key = "--datastream sgp.testing.c1 --start 20230801 --end 20230701"
+    with pytest.raises(ValueError):
+        StorageRetrieverInput(key)
+
 
 def test_simple_extract_dataset(
     simple_retriever: DefaultRetriever,
@@ -123,7 +128,7 @@ def test_simple_extract_dataset(
         coords={
             "time": (
                 "time",
-                pd.date_range("2022-03-24 21:43:00", "2022-03-24 21:45:00", periods=3),  # type: ignore
+                pd.date_range("2022-03-24 21:43:00", "2022-03-24 21:45:00", periods=3),
             ),
             "index": ("time", [0, 1, 2]),
         },
@@ -148,14 +153,14 @@ def test_simple_extract_multifile_dataset(
         coords={
             "time": (
                 "time",
-                pd.date_range("2022-03-24 21:43:00", "2022-03-24 21:48:00", periods=6),  # type: ignore
+                pd.date_range("2022-03-24 21:43:00", "2022-03-24 21:48:00", periods=6),
             ),
             "index": ("time", [0, 1, 2, 0, 1, 2]),
         },
         data_vars={
             "first": (
                 "time",
-                (np.array([71.4, 71.2, 71.1, 71.0, 70.8, 70.6]) - 32) * 5 / 9,  # type: ignore
+                (np.array([71.4, 71.2, 71.1, 71.0, 70.8, 70.6]) - 32) * 5 / 9,
                 {"units": "degC"},
             )
         },

@@ -23,6 +23,13 @@ class QualityManagement(BaseModel):
             xr.Dataset: The quality-checked dataset.
 
         """
+        dataset = self._force_drop_qc(dataset)
         for manager in self.managers:
             dataset = manager.run(dataset)
+        return dataset
+
+    def _force_drop_qc(self, dataset: xr.Dataset) -> xr.Dataset:
+        """Drop QC variables since tests may change between pipelines"""
+        qc_vars = [v for v in dataset.data_vars if "qc_" in v]
+        dataset = dataset.drop_vars(qc_vars)
         return dataset

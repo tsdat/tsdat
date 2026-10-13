@@ -48,8 +48,8 @@ class FailPipeline(QualityHandler):
             fail_rate: float = np.average(failures)  # type: ignore
             msg += (
                 f" {np.count_nonzero(failures)} / {failures.size} values failed"  # type: ignore
-                f" ({100*fail_rate:.2f}%), exceeding the allowable threshold of"
-                f" {100*self.parameters.tolerance}%.\n"
+                f" ({100 * fail_rate:.2f}%), exceeding the allowable threshold of"
+                f" {100 * self.parameters.tolerance}%.\n"
             )
 
             # Want to show the first few indexes where the test failed and also the
@@ -58,14 +58,15 @@ class FailPipeline(QualityHandler):
             # returns a hard-to-read tuple of indexes, so we modify that to be easier to
             # read and show the first self.parameters.display_limit # of errors.
             failed_where = np.nonzero(failures)  # type: ignore
-            failed_values = list(dataset[variable_name].values[failed_where][: self.parameters.display_limit])  # type: ignore
+            failed_values = list(
+                dataset[variable_name].values[failed_where][
+                    : self.parameters.display_limit
+                ]
+            )
             failed_indexes: Union[List[int], List[List[int]]]
             if len(failed_where) == 1:  # 1D
                 failed_indexes = list(failed_where[0][: self.parameters.display_limit])
             else:
-                # TODO: IDE is giving this the following warning on the var assignment:
-                #  Expected type 'list[int] | list[list[int]]', got
-                #  'list[list[ndarray[Any, dtype[signedinteger | long]]]]' instead
                 failed_indexes = [
                     [dim_idxs[i] for dim_idxs in failed_where]
                     for i in range(
@@ -80,8 +81,8 @@ class FailPipeline(QualityHandler):
             raise DataQualityError(msg)
         return dataset
 
-    def _exceeds_tolerance(self, failures: NDArray[np.bool_]) -> bool:
+    def _exceeds_tolerance(self, failures: NDArray[np.bool_]) -> np.bool_:
         if self.parameters.tolerance == 0:
-            return bool(failures.any())
-        failure_ratio: float = np.average(failures)  # type: ignore
+            return np.bool_(failures.any())
+        failure_ratio: float = np.average(failures)
         return failure_ratio > self.parameters.tolerance
